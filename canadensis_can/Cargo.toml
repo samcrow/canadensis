@@ -12,3 +12,8 @@ description = "A UAVCAN v1.0 implementation: CAN and CAN FD transport layer"
 
 [dependencies]
 fallible_collections = "0.1.2"
+
+# Local dependency, change before publishing
+[dependencies.canadensis_core]
+version = "0.1.0"
+path = "../canadensis_core"

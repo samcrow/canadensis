@@ -12,15 +12,16 @@ use core::fmt;
 use fallible_collections::{FallibleBox, FallibleVec, TryReserveError};
 
 use crate::crc::TransferCrc;
-use crate::data::*;
+use crate::data::{CanId, Frame};
 use crate::error::OutOfMemoryError;
 use crate::rx::buildup::{Buildup, BuildupError};
-use crate::transfer::{
+use canadensis_core::transfer::{
     MessageHeader, ServiceHeader, Transfer, TransferHeader, TransferKind, TransferKindHeader,
 };
+use canadensis_core::{Microseconds, NodeId, PortId, Priority, ServiceId, SubjectId, TransferId};
 
 /// One session per node ID
-const RX_SESSIONS_PER_SUBSCRIPTION: usize = *NORMAL_NODE_IDS.end() as usize + 1;
+const RX_SESSIONS_PER_SUBSCRIPTION: usize = NodeId::MAX.to_u8() as usize + 1;
 
 /// Transfer subscription state. The application can register its interest in a particular kind of data exchanged
 /// over the bus by creating such subscription objects. Frames that carry data for which there is no active
@@ -151,7 +152,6 @@ impl Receiver {
     /// situations, such as duplicate or malformed frames, are not considered errors and are not
     /// reported.
     pub fn accept(&mut self, frame: Frame) -> Result<Option<Transfer>, OutOfMemoryError> {
-
         // The current time is equal to or greater than the frame timestamp. Use that timestamp
         // to clean up expired sessions.
         self.clean_expired_sessions(frame.timestamp);

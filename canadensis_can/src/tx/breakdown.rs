@@ -1,8 +1,9 @@
+use alloc::vec::Vec;
 use core::mem;
 
-use crate::data::*;
-use alloc::vec::Vec;
 use fallible_collections::{FallibleVec, TryReserveError};
+
+use canadensis_core::TransferId;
 
 /// Toggle is set to 1 for the first frame in a transfer
 const TOGGLE_INIT: bool = true;

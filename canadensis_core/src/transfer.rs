@@ -8,7 +8,7 @@ use crate::{Microseconds, NodeId, PortId, Priority, ServiceId, SubjectId, Transf
 
 /// Transfer kinds as defined by the UAVCAN Specification
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub(crate) enum TransferKind {
+pub enum TransferKind {
     /// Multicast, from publisher to all subscribers
     Message,
     /// Point-to-point, from server to client
@@ -45,7 +45,7 @@ pub enum TransferKindHeader {
 
 impl TransferKindHeader {
     /// Returns the corresponding transfer kind for this header
-    pub(crate) fn kind(&self) -> TransferKind {
+    pub fn kind(&self) -> TransferKind {
         match *self {
             TransferKindHeader::Message(_) => TransferKind::Message,
             TransferKindHeader::Request(_) => TransferKind::Request,
@@ -54,7 +54,7 @@ impl TransferKindHeader {
     }
 
     /// Returns the port ID (subject or service ID) in this header
-    pub(crate) fn port_id(&self) -> PortId {
+    pub fn port_id(&self) -> PortId {
         match *self {
             TransferKindHeader::Message(ref header) => PortId::from(header.subject),
             TransferKindHeader::Request(ref header) => PortId::from(header.service),

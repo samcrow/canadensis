@@ -8,6 +8,7 @@
 //!
 
 extern crate alloc;
+extern crate canadensis_core;
 extern crate fallible_collections;
 
 mod crc;
@@ -15,7 +16,6 @@ mod data;
 mod error;
 mod heap;
 mod rx;
-pub mod transfer;
 mod tx;
 
 pub use crate::data::*;

@@ -1,9 +1,10 @@
-use super::TailByte;
-use crate::TransferId;
-use fallible_collections::{FallibleVec, TryReserveError};
-
 use alloc::vec::Vec;
 use core::mem;
+
+use canadensis_core::TransferId;
+use fallible_collections::{FallibleVec, TryReserveError};
+
+use super::TailByte;
 
 /// Reassembles frames into a transfer
 #[derive(Debug)]
