@@ -2,8 +2,6 @@
 //! Transfer data definitions
 //!
 
-use alloc::vec::Vec;
-
 use crate::{Microseconds, NodeId, PortId, Priority, ServiceId, SubjectId, TransferId};
 
 /// Transfer kinds as defined by the UAVCAN Specification
@@ -84,7 +82,7 @@ pub struct TransferHeader {
 
 /// A UAVCAN transfer (either incoming or outgoing)
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub struct Transfer {
+pub struct Transfer<P> {
     /// For RX transfers: reception timestamp.
     /// For TX transfers: transmission deadline.
     /// The time system may be arbitrary as long as the clock is monotonic (steady).
@@ -111,6 +109,8 @@ pub struct Transfer {
     /// and per (service-ID, server-node-ID) pair.
     pub transfer_id: TransferId,
 
-    /// The actual transfer payload.
-    pub payload: Vec<u8>,
+    /// The actual transfer payload
+    ///
+    /// The type P usually implements `AsRef<[u8]>`. It is often a `Vec<u8>` or a `&[u8]`.
+    pub payload: P,
 }

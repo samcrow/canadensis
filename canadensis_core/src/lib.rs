@@ -4,8 +4,6 @@
 //! This library provides types used by other canadensis crates.
 //!
 
-extern crate alloc;
-
 pub mod transfer;
 
 use core::cmp::Ordering;
@@ -23,6 +21,13 @@ const VALID_SUBJECT_IDS: RangeInclusive<u16> = 0..=32767;
 /// Subject ID, in range 0..=32767
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct SubjectId(u16);
+
+impl SubjectId {
+    /// Creates a SubjectId from a u16, truncating to the allowed number of bits
+    pub const fn from_truncating(value: u16) -> Self {
+        SubjectId(value & *VALID_SUBJECT_IDS.end())
+    }
+}
 
 impl TryFrom<u16> for SubjectId {
     type Error = InvalidValue;
@@ -47,6 +52,13 @@ const VALID_SERVICE_IDS: RangeInclusive<u16> = 0..=511;
 /// Service ID, in range 0..=511
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct ServiceId(u16);
+
+impl ServiceId {
+    /// Creates a ServiceId from a u16, truncating to the allowed number of bits
+    pub const fn from_truncating(value: u16) -> Self {
+        ServiceId(value & *VALID_SERVICE_IDS.end())
+    }
+}
 
 impl TryFrom<u16> for ServiceId {
     type Error = InvalidValue;

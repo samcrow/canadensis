@@ -3,13 +3,13 @@
 //!
 
 extern crate canadensis_can;
+extern crate canadensis_core;
 
 use core::convert::{TryFrom, TryInto};
 
-use canadensis_can::transfer::*;
-use canadensis_can::{
-    Frame, Microseconds, OutOfMemoryError, Priority, Receiver, ServiceId, SubjectId,
-};
+use canadensis_can::{Frame, OutOfMemoryError, Receiver};
+use canadensis_core::transfer::*;
+use canadensis_core::{Microseconds, Priority, ServiceId, SubjectId};
 
 #[test]
 fn test_heartbeat() -> Result<(), OutOfMemoryError> {
@@ -151,11 +151,11 @@ fn test_node_info_response() -> Result<(), OutOfMemoryError> {
             payload: frame_data.to_vec(),
         };
         if i != frames.len() - 1 {
-            assert_eq!(None, rx.accept(frame)?);
+            let maybe_transfer = rx.accept(frame)?;
+            assert!(maybe_transfer.is_none());
         } else {
             // End of transfer
-            let transfer = rx.accept(frame)?;
-            let transfer = transfer.expect("Didn't get a transfer");
+            let transfer = rx.accept(frame)?.expect("Didn't get a transfer");
 
             let expected = Transfer {
                 timestamp: Microseconds(0),
@@ -231,11 +231,11 @@ fn test_array() -> Result<(), OutOfMemoryError> {
             payload: frame_data.to_vec(),
         };
         if i != frames.len() - 1 {
-            assert_eq!(None, rx.accept(frame)?);
+            let maybe_transfer = rx.accept(frame)?;
+            assert!(maybe_transfer.is_none());
         } else {
             // End of transfer
-            let transfer = rx.accept(frame)?;
-            let transfer = transfer.expect("Didn't get a transfer");
+            let transfer = rx.accept(frame)?.expect("Didn't get a transfer");
 
             assert_eq!(expected, transfer);
         }

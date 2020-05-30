@@ -48,7 +48,18 @@ impl Transmitter {
     /// Breaks a transfer into frames
     ///
     /// The frames can be retrieved and sent using the peek() and pop() functions.
-    pub fn push(&mut self, transfer: Transfer) -> Result<(), OutOfMemoryError> {
+    pub fn push<P>(&mut self, transfer: Transfer<P>) -> Result<(), OutOfMemoryError>
+    where
+        P: AsRef<[u8]>,
+    {
+        // Convert the transfer payload into borrowed form
+        let transfer = Transfer {
+            timestamp: transfer.timestamp,
+            header: transfer.header,
+            transfer_id: transfer.transfer_id,
+            payload: transfer.payload.as_ref(),
+        };
+
         // Use a heap transaction to prevent having some frames left over in the queue after
         // running out of memory
         let mut transaction = self.frame_queue.transaction();
@@ -70,7 +81,7 @@ impl Transmitter {
     /// remaining in the transaction that need to be cleaned up.
     fn try_push(
         transaction: &mut Transaction<'_, Frame>,
-        transfer: Transfer,
+        transfer: Transfer<&'_ [u8]>,
         mtu: usize,
     ) -> Result<(), OutOfMemoryError> {
         let padding = calculate_padding(transfer.payload.len(), mtu);
@@ -79,7 +90,8 @@ impl Transmitter {
         let mut crc = TransferCrc::new();
         let payload_and_padding = transfer
             .payload
-            .into_iter()
+            .iter()
+            .cloned()
             .chain(iter::repeat(0).take(padding))
             .inspect(|byte| crc.add(*byte));
         // Break into frames

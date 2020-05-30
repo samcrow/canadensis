@@ -1,0 +1,863 @@
+
+use core::marker::PhantomData;
+use core::mem;
+
+use half::f16;
+
+use crate::DataType;
+
+/// Calculates the base-2 logarithm of a value, rounded up to the nearest integer
+fn ceiling_log_2(x: usize) -> u8 {
+    ((mem::size_of::<usize>() * 8) as u32 - (x - 1).leading_zeros()) as u8
+}
+
+// CAN bus notes:
+// Within each data byte, the most significant bit is first.
+
+/// A cursor over a byte slice for easy encoding of UAVCAN data types
+///
+/// Functions that write values will panic if no space is available in the slice.
+pub struct EncodeCursor<'b> {
+    /// The bytes available to write to
+    ///
+    /// This includes any bits already written in the current byte, but excludes bytes that have
+    /// already been filled up.
+    bytes: *mut u8,
+    /// The number of valid bytes that the bytes field points to
+    length: usize,
+    /// The number of bits in the current byte that have already been filled
+    ///
+    /// Invariant: This is in the range 0..=7.
+    bit_index: u8,
+    /// Phantom lifetime thing for the bytes
+    bytes_phantom: PhantomData<&'b mut [u8]>,
+}
+
+impl<'b> EncodeCursor<'b> {
+    /// Creates a cursor that will write starting at the beginning of the provided slice
+    pub fn new(bytes: &'b mut [u8]) -> Self {
+        // Reset all the bytes to zero
+        bytes.iter_mut().for_each(|b| *b = 0);
+        EncodeCursor {
+            bytes: bytes.as_mut_ptr(),
+            length: bytes.len(),
+            bit_index: 0,
+            bytes_phantom: PhantomData,
+        }
+    }
+
+    /// Writes an x-bit unsigned integer (x must be in the range 1..=64)
+    fn write_up_to_u64(&mut self, mut value: u64, bits: u8) {
+        debug_assert!(bits <= 64);
+        // Write whole bytes, least significant first
+        for _ in 0..(bits / 8) {
+            self.write_up_to_u8(value as u8, 8);
+            value >>= 8;
+        }
+        // Write any remaining bits that don't fill up a byte
+        self.write_up_to_u8(value as u8, bits % 8);
+    }
+
+    /// Writes an x-bit unsigned integer (x must be in the range 1..=32)
+    fn write_up_to_u32(&mut self, mut value: u32, bits: u8) {
+        debug_assert!(bits <= 32);
+        // Write whole bytes, least significant first
+        for _ in 0..(bits / 8) {
+            self.write_up_to_u8(value as u8, 8);
+            value >>= 8;
+        }
+        // Write any remaining bits that don't fill up a byte
+        self.write_up_to_u8(value as u8, bits % 8);
+    }
+
+    /// Writes an x-bit unsigned integer (x must be in the range 1..=16)
+    fn write_up_to_u16(&mut self, mut value: u16, bits: u8) {
+        debug_assert!(bits <= 16);
+        // Write whole bytes, least significant first
+        for _ in 0..(bits / 8) {
+            self.write_up_to_u8(value as u8, 8);
+            value >>= 8;
+        }
+        // Write any remaining bits that don't fill up a byte
+        self.write_up_to_u8(value as u8, bits % 8);
+    }
+
+    /// Writes an x-bit unsigned integer (x must be in the range 0..=8)
+    fn write_up_to_u8(&mut self, value: u8, bits: u8) {
+        debug_assert!(bits <= 8);
+        if bits == 0 {
+            return;
+        }
+        self.check_length(usize::from(bits));
+        // Constrain value to fit with the correct number of bits
+        // Use 16 bits to correctly handle the case when bits = 8
+        let mask = ((1u16 << u16::from(bits)) - 1) as u8;
+        let value = value & mask;
+
+        if self.bit_index <= 8 - bits {
+            // Write all bits to the current byte
+            unsafe {
+                *self.bytes |= value << ((8 - bits) - self.bit_index);
+            }
+        } else {
+            // Need to split across two bytes
+            let current_bits = value >> (self.bit_index + bits - 8);
+            let next_bits = value << (16 - self.bit_index - bits);
+            unsafe {
+                *self.bytes |= current_bits;
+                let next = self.bytes.offset(1);
+                *next |= next_bits;
+            }
+        }
+
+        self.advance_bits(usize::from(bits));
+    }
+
+    fn check_length(&self, bits: usize) {
+        let extended_bit_index = usize::from(self.bit_index) + bits;
+        let byte_increment = extended_bit_index / 8;
+        assert!(self.length >= byte_increment);
+    }
+
+    fn advance_bits(&mut self, bits: usize) {
+        let extended_bit_index = usize::from(self.bit_index) + bits;
+        self.bit_index = (extended_bit_index % 8) as u8;
+        let byte_increment = extended_bit_index / 8;
+        assert!(self.length >= byte_increment);
+        self.length -= byte_increment;
+        unsafe {
+            // This offset operation is safe even if it puts self.bytes one byte past the end of
+            // a byte array.
+            self.bytes = self.bytes.add(byte_increment);
+        }
+    }
+
+    fn skip_bits(&mut self, bits: u8) {
+        self.check_length(usize::from(bits));
+        self.advance_bits(usize::from(bits));
+    }
+
+    /// Writes a 16-bit floating-point value
+    #[inline]
+    pub fn write_f16(&mut self, value: f16) {
+        self.write_u16(value.to_bits());
+    }
+
+    /// Writes a 32-bit floating-point value
+    #[inline]
+    pub fn write_f32(&mut self, value: f32) {
+        self.write_u32(value.to_bits());
+    }
+
+    /// Writes a 64-bit floating-point value
+    #[inline]
+    pub fn write_f64(&mut self, value: f64) {
+        self.write_u64(value.to_bits());
+    }
+
+    /// Writes a byte array
+    pub fn write_bytes(&mut self, bytes: &[u8]) {
+        for byte in bytes {
+            self.write_u8(*byte);
+        }
+    }
+
+    /// Writes a fixed-length array of values
+    pub fn write_fixed_array<T>(&mut self, items: &[T]) where T: DataType {
+        for item in items {
+            item.encode(self);
+        }
+    }
+
+    /// Writes a variable-length array of values
+    pub fn write_variable_array<T>(&mut self, max_length: usize, items: &[T]) where T: DataType {
+        assert!(items.len() <= max_length);
+        let length_bits = ceiling_log_2(max_length + 1);
+        self.write_up_to_u64(items.len() as u64, length_bits);
+        self.write_fixed_array(items);
+    }
+}
+
+// Highly repetitive functions that just delegate
+impl EncodeCursor<'_> {
+    #[inline]
+    pub fn write_u1(&mut self, value: u8) {
+        self.write_up_to_u8(value, 1);
+    }
+    #[inline]
+    pub fn write_u2(&mut self, value: u8) {
+        self.write_up_to_u8(value, 2);
+    }
+    #[inline]
+    pub fn write_u3(&mut self, value: u8) {
+        self.write_up_to_u8(value, 3);
+    }
+    #[inline]
+    pub fn write_u4(&mut self, value: u8) {
+        self.write_up_to_u8(value, 4);
+    }
+    #[inline]
+    pub fn write_u5(&mut self, value: u8) {
+        self.write_up_to_u8(value, 5);
+    }
+    #[inline]
+    pub fn write_u6(&mut self, value: u8) {
+        self.write_up_to_u8(value, 6);
+    }
+    #[inline]
+    pub fn write_u7(&mut self, value: u8) {
+        self.write_up_to_u8(value, 7);
+    }
+    #[inline]
+    pub fn write_u8(&mut self, value: u8) {
+        self.write_up_to_u8(value, 8);
+    }
+    #[inline]
+    pub fn write_u9(&mut self, value: u16) {
+        self.write_up_to_u16(value, 9);
+    }
+    #[inline]
+    pub fn write_u10(&mut self, value: u16) {
+        self.write_up_to_u16(value, 10);
+    }
+    #[inline]
+    pub fn write_u11(&mut self, value: u16) {
+        self.write_up_to_u16(value, 11);
+    }
+    #[inline]
+    pub fn write_u12(&mut self, value: u16) {
+        self.write_up_to_u16(value, 12);
+    }
+    #[inline]
+    pub fn write_u13(&mut self, value: u16) {
+        self.write_up_to_u16(value, 13);
+    }
+    #[inline]
+    pub fn write_u14(&mut self, value: u16) {
+        self.write_up_to_u16(value, 14);
+    }
+    #[inline]
+    pub fn write_u15(&mut self, value: u16) {
+        self.write_up_to_u16(value, 15);
+    }
+    #[inline]
+    pub fn write_u16(&mut self, value: u16) {
+        self.write_up_to_u16(value, 16);
+    }
+    #[inline]
+    pub fn write_u18(&mut self, value: u32) {
+        self.write_up_to_u32(value, 18)
+    }
+    #[inline]
+    pub fn write_u19(&mut self, value: u32) {
+        self.write_up_to_u32(value, 19)
+    }
+    #[inline]
+    pub fn write_u20(&mut self, value: u32) {
+        self.write_up_to_u32(value, 20)
+    }
+    #[inline]
+    pub fn write_u21(&mut self, value: u32) {
+        self.write_up_to_u32(value, 21)
+    }
+    #[inline]
+    pub fn write_u22(&mut self, value: u32) {
+        self.write_up_to_u32(value, 22)
+    }
+    #[inline]
+    pub fn write_u23(&mut self, value: u32) {
+        self.write_up_to_u32(value, 23)
+    }
+    #[inline]
+    pub fn write_u24(&mut self, value: u32) {
+        self.write_up_to_u32(value, 24)
+    }
+    #[inline]
+    pub fn write_u25(&mut self, value: u32) {
+        self.write_up_to_u32(value, 25)
+    }
+    #[inline]
+    pub fn write_u26(&mut self, value: u32) {
+        self.write_up_to_u32(value, 26)
+    }
+    #[inline]
+    pub fn write_u27(&mut self, value: u32) {
+        self.write_up_to_u32(value, 27)
+    }
+    #[inline]
+    pub fn write_u28(&mut self, value: u32) {
+        self.write_up_to_u32(value, 28)
+    }
+    #[inline]
+    pub fn write_u29(&mut self, value: u32) {
+        self.write_up_to_u32(value, 29)
+    }
+    #[inline]
+    pub fn write_u30(&mut self, value: u32) {
+        self.write_up_to_u32(value, 30)
+    }
+    #[inline]
+    pub fn write_u31(&mut self, value: u32) {
+        self.write_up_to_u32(value, 31)
+    }
+    #[inline]
+    pub fn write_u32(&mut self, value: u32) {
+        self.write_up_to_u32(value, 32)
+    }
+    #[inline]
+    pub fn write_u33(&mut self, value: u64) {
+        self.write_up_to_u64(value, 33)
+    }
+    #[inline]
+    pub fn write_u34(&mut self, value: u64) {
+        self.write_up_to_u64(value, 34)
+    }
+    #[inline]
+    pub fn write_u35(&mut self, value: u64) {
+        self.write_up_to_u64(value, 35)
+    }
+    #[inline]
+    pub fn write_u36(&mut self, value: u64) {
+        self.write_up_to_u64(value, 36)
+    }
+    #[inline]
+    pub fn write_u37(&mut self, value: u64) {
+        self.write_up_to_u64(value, 37)
+    }
+    #[inline]
+    pub fn write_u38(&mut self, value: u64) {
+        self.write_up_to_u64(value, 38)
+    }
+    #[inline]
+    pub fn write_u39(&mut self, value: u64) {
+        self.write_up_to_u64(value, 39)
+    }
+    #[inline]
+    pub fn write_u40(&mut self, value: u64) {
+        self.write_up_to_u64(value, 40)
+    }
+    #[inline]
+    pub fn write_u41(&mut self, value: u64) {
+        self.write_up_to_u64(value, 41)
+    }
+    #[inline]
+    pub fn write_u42(&mut self, value: u64) {
+        self.write_up_to_u64(value, 42)
+    }
+    #[inline]
+    pub fn write_u43(&mut self, value: u64) {
+        self.write_up_to_u64(value, 43)
+    }
+    #[inline]
+    pub fn write_u44(&mut self, value: u64) {
+        self.write_up_to_u64(value, 44)
+    }
+    #[inline]
+    pub fn write_u45(&mut self, value: u64) {
+        self.write_up_to_u64(value, 45)
+    }
+    #[inline]
+    pub fn write_u46(&mut self, value: u64) {
+        self.write_up_to_u64(value, 46)
+    }
+    #[inline]
+    pub fn write_u47(&mut self, value: u64) {
+        self.write_up_to_u64(value, 47)
+    }
+    #[inline]
+    pub fn write_u48(&mut self, value: u64) {
+        self.write_up_to_u64(value, 48)
+    }
+    #[inline]
+    pub fn write_u49(&mut self, value: u64) {
+        self.write_up_to_u64(value, 49)
+    }
+    #[inline]
+    pub fn write_u50(&mut self, value: u64) {
+        self.write_up_to_u64(value, 50)
+    }
+    #[inline]
+    pub fn write_u51(&mut self, value: u64) {
+        self.write_up_to_u64(value, 51)
+    }
+    #[inline]
+    pub fn write_u52(&mut self, value: u64) {
+        self.write_up_to_u64(value, 52)
+    }
+    #[inline]
+    pub fn write_u53(&mut self, value: u64) {
+        self.write_up_to_u64(value, 53)
+    }
+    #[inline]
+    pub fn write_u54(&mut self, value: u64) {
+        self.write_up_to_u64(value, 54)
+    }
+    #[inline]
+    pub fn write_u55(&mut self, value: u64) {
+        self.write_up_to_u64(value, 55)
+    }
+    #[inline]
+    pub fn write_u56(&mut self, value: u64) {
+        self.write_up_to_u64(value, 56)
+    }
+    #[inline]
+    pub fn write_u57(&mut self, value: u64) {
+        self.write_up_to_u64(value, 57)
+    }
+    #[inline]
+    pub fn write_u58(&mut self, value: u64) {
+        self.write_up_to_u64(value, 58)
+    }
+    #[inline]
+    pub fn write_u59(&mut self, value: u64) {
+        self.write_up_to_u64(value, 59)
+    }
+    #[inline]
+    pub fn write_u60(&mut self, value: u64) {
+        self.write_up_to_u64(value, 60)
+    }
+    #[inline]
+    pub fn write_u61(&mut self, value: u64) {
+        self.write_up_to_u64(value, 61)
+    }
+    #[inline]
+    pub fn write_u62(&mut self, value: u64) {
+        self.write_up_to_u64(value, 62)
+    }
+    #[inline]
+    pub fn write_u63(&mut self, value: u64) {
+        self.write_up_to_u64(value, 63)
+    }
+    #[inline]
+    pub fn write_u64(&mut self, value: u64) {
+        self.write_up_to_u64(value, 64)
+    }
+}
+impl EncodeCursor<'_> {
+    #[inline]
+    pub fn skip_1(&mut self) {
+        self.skip_bits(1);
+    }
+    #[inline]
+    pub fn skip_2(&mut self) {
+        self.skip_bits(2);
+    }
+    #[inline]
+    pub fn skip_3(&mut self) {
+        self.skip_bits(3);
+    }
+    #[inline]
+    pub fn skip_4(&mut self) {
+        self.skip_bits(4);
+    }
+    #[inline]
+    pub fn skip_5(&mut self) {
+        self.skip_bits(5);
+    }
+    #[inline]
+    pub fn skip_6(&mut self) {
+        self.skip_bits(6);
+    }
+    #[inline]
+    pub fn skip_7(&mut self) {
+        self.skip_bits(7);
+    }
+    #[inline]
+    pub fn skip_8(&mut self) {
+        self.skip_bits(8);
+    }
+    #[inline]
+    pub fn skip_9(&mut self) {
+        self.skip_bits(9);
+    }
+    #[inline]
+    pub fn skip_10(&mut self) {
+        self.skip_bits(10);
+    }
+    #[inline]
+    pub fn skip_11(&mut self) {
+        self.skip_bits(11);
+    }
+    #[inline]
+    pub fn skip_12(&mut self) {
+        self.skip_bits(12);
+    }
+    #[inline]
+    pub fn skip_13(&mut self) {
+        self.skip_bits(13);
+    }
+    #[inline]
+    pub fn skip_14(&mut self) {
+        self.skip_bits(14);
+    }
+    #[inline]
+    pub fn skip_15(&mut self) {
+        self.skip_bits(15);
+    }
+    #[inline]
+    pub fn skip_16(&mut self) {
+        self.skip_bits(16);
+    }
+    #[inline]
+    pub fn skip_17(&mut self) {
+        self.skip_bits(17);
+    }
+    #[inline]
+    pub fn skip_18(&mut self) {
+        self.skip_bits(18);
+    }
+    #[inline]
+    pub fn skip_19(&mut self) {
+        self.skip_bits(19);
+    }
+    #[inline]
+    pub fn skip_20(&mut self) {
+        self.skip_bits(20);
+    }
+    #[inline]
+    pub fn skip_21(&mut self) {
+        self.skip_bits(21);
+    }
+    #[inline]
+    pub fn skip_22(&mut self) {
+        self.skip_bits(22);
+    }
+    #[inline]
+    pub fn skip_23(&mut self) {
+        self.skip_bits(23);
+    }
+    #[inline]
+    pub fn skip_24(&mut self) {
+        self.skip_bits(24);
+    }
+    #[inline]
+    pub fn skip_25(&mut self) {
+        self.skip_bits(25);
+    }
+    #[inline]
+    pub fn skip_26(&mut self) {
+        self.skip_bits(26);
+    }
+    #[inline]
+    pub fn skip_27(&mut self) {
+        self.skip_bits(27);
+    }
+    #[inline]
+    pub fn skip_28(&mut self) {
+        self.skip_bits(28);
+    }
+    #[inline]
+    pub fn skip_29(&mut self) {
+        self.skip_bits(29);
+    }
+    #[inline]
+    pub fn skip_30(&mut self) {
+        self.skip_bits(30);
+    }
+    #[inline]
+    pub fn skip_31(&mut self) {
+        self.skip_bits(31);
+    }
+    #[inline]
+    pub fn skip_32(&mut self) {
+        self.skip_bits(32);
+    }
+    #[inline]
+    pub fn skip_33(&mut self) {
+        self.skip_bits(33);
+    }
+    #[inline]
+    pub fn skip_34(&mut self) {
+        self.skip_bits(34);
+    }
+    #[inline]
+    pub fn skip_35(&mut self) {
+        self.skip_bits(35);
+    }
+    #[inline]
+    pub fn skip_36(&mut self) {
+        self.skip_bits(36);
+    }
+    #[inline]
+    pub fn skip_37(&mut self) {
+        self.skip_bits(37);
+    }
+    #[inline]
+    pub fn skip_38(&mut self) {
+        self.skip_bits(38);
+    }
+    #[inline]
+    pub fn skip_39(&mut self) {
+        self.skip_bits(39);
+    }
+    #[inline]
+    pub fn skip_40(&mut self) {
+        self.skip_bits(40);
+    }
+    #[inline]
+    pub fn skip_41(&mut self) {
+        self.skip_bits(41);
+    }
+    #[inline]
+    pub fn skip_42(&mut self) {
+        self.skip_bits(42);
+    }
+    #[inline]
+    pub fn skip_43(&mut self) {
+        self.skip_bits(43);
+    }
+    #[inline]
+    pub fn skip_44(&mut self) {
+        self.skip_bits(44);
+    }
+    #[inline]
+    pub fn skip_45(&mut self) {
+        self.skip_bits(45);
+    }
+    #[inline]
+    pub fn skip_46(&mut self) {
+        self.skip_bits(46);
+    }
+    #[inline]
+    pub fn skip_47(&mut self) {
+        self.skip_bits(47);
+    }
+    #[inline]
+    pub fn skip_48(&mut self) {
+        self.skip_bits(48);
+    }
+    #[inline]
+    pub fn skip_49(&mut self) {
+        self.skip_bits(49);
+    }
+    #[inline]
+    pub fn skip_50(&mut self) {
+        self.skip_bits(50);
+    }
+    #[inline]
+    pub fn skip_51(&mut self) {
+        self.skip_bits(51);
+    }
+    #[inline]
+    pub fn skip_52(&mut self) {
+        self.skip_bits(52);
+    }
+    #[inline]
+    pub fn skip_53(&mut self) {
+        self.skip_bits(53);
+    }
+    #[inline]
+    pub fn skip_54(&mut self) {
+        self.skip_bits(54);
+    }
+    #[inline]
+    pub fn skip_55(&mut self) {
+        self.skip_bits(55);
+    }
+    #[inline]
+    pub fn skip_56(&mut self) {
+        self.skip_bits(56);
+    }
+    #[inline]
+    pub fn skip_57(&mut self) {
+        self.skip_bits(57);
+    }
+    #[inline]
+    pub fn skip_58(&mut self) {
+        self.skip_bits(58);
+    }
+    #[inline]
+    pub fn skip_59(&mut self) {
+        self.skip_bits(59);
+    }
+    #[inline]
+    pub fn skip_60(&mut self) {
+        self.skip_bits(60);
+    }
+    #[inline]
+    pub fn skip_61(&mut self) {
+        self.skip_bits(61);
+    }
+    #[inline]
+    pub fn skip_62(&mut self) {
+        self.skip_bits(62);
+    }
+    #[inline]
+    pub fn skip_63(&mut self) {
+        self.skip_bits(63);
+    }
+    #[inline]
+    pub fn skip_64(&mut self) {
+        self.skip_bits(64);
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn u8_one() {
+        let mut bytes = [0u8];
+        let mut cursor = EncodeCursor::new(&mut bytes);
+        cursor.write_u8(0xe6);
+        assert_eq!(bytes[0], 0xe6);
+    }
+    #[test]
+    fn u8_many() {
+        let mut bytes = [0u8; 16];
+        let mut cursor = EncodeCursor::new(&mut bytes);
+        cursor.write_u8(0xe6);
+        cursor.write_u8(0x21);
+        cursor.write_u8(0xff);
+        cursor.write_u8(0xe9);
+        cursor.write_u8(0x02);
+        cursor.write_u8(0xf7);
+        cursor.write_u8(0x32);
+        cursor.write_u8(0x1c);
+        cursor.write_u8(0xc9);
+        cursor.write_u8(0xab);
+        cursor.write_u8(0xca);
+        cursor.write_u8(0xd2);
+        cursor.write_u8(0xe9);
+        cursor.write_u8(0xf0);
+        cursor.write_u8(0x39);
+        cursor.write_u8(0x18);
+
+        assert_eq!(
+            bytes,
+            [
+                0xe6, 0x21, 0xff, 0xe9, 0x02, 0xf7, 0x32, 0x1c, 0xc9, 0xab, 0xca, 0xd2, 0xe9, 0xf0,
+                0x39, 0x18
+            ]
+        );
+    }
+
+    #[test]
+    fn u1_assemble_u8() {
+        let mut bytes = [0u8];
+        let mut cursor = EncodeCursor::new(&mut bytes);
+        // Within a byte, the most significant bit is first
+        cursor.write_u1(1);
+        cursor.write_u1(0);
+        cursor.write_u1(1);
+        cursor.write_u1(1);
+        cursor.write_u1(0);
+        cursor.write_u1(1);
+        cursor.write_u1(0);
+        cursor.write_u1(1);
+        assert_eq!(bytes[0], 0xb5);
+    }
+
+    #[test]
+    fn u1_4_u8_u1_4() {
+        let mut bytes = [0u8; 2];
+        let mut cursor = EncodeCursor::new(&mut bytes);
+        // 4 u1s, 1 u8 (split between bytes), 4 u1s
+        cursor.write_u1(1);
+        cursor.write_u1(0);
+        cursor.write_u1(1);
+        cursor.write_u1(0);
+        assert_eq!(cursor.bit_index, 4);
+        cursor.write_u8(0x37);
+        assert_eq!(cursor.bit_index, 4);
+        cursor.write_u1(1);
+        cursor.write_u1(1);
+        cursor.write_u1(1);
+        cursor.write_u1(0);
+        assert_eq!(bytes, [0xa3, 0x7e]);
+    }
+
+    #[test]
+    fn u1_3_u8_u1_5() {
+        let mut bytes = [0u8; 2];
+        let mut cursor = EncodeCursor::new(&mut bytes);
+        // 3 u1s, 1 u8 (split between bytes), 5 u1s
+        cursor.write_u1(1);
+        cursor.write_u1(0);
+        cursor.write_u1(1);
+        cursor.write_u8(0x37);
+        cursor.write_u1(1);
+        cursor.write_u1(1);
+        cursor.write_u1(1);
+        cursor.write_u1(0);
+        cursor.write_u1(0);
+        assert_eq!(bytes, [0xa6, 0xfc]);
+    }
+
+    #[test]
+    fn u2_assemble_u8() {
+        let mut bytes = [0u8];
+        let mut cursor = EncodeCursor::new(&mut bytes);
+        cursor.write_u2(3);
+        cursor.write_u2(1);
+        cursor.write_u2(2);
+        cursor.write_u2(1);
+        assert_eq!(bytes[0], 0xd9);
+    }
+
+    #[test]
+    fn u1_7_u2_u1_7() {
+        let mut bytes = [0u8; 2];
+        let mut cursor = EncodeCursor::new(&mut bytes);
+        // 7 u1s, 1 u2 (split between bytes), 7 u1s
+        cursor.write_u1(1);
+        cursor.write_u1(0);
+        cursor.write_u1(1);
+        cursor.write_u1(0);
+        cursor.write_u1(0);
+        cursor.write_u1(0);
+        cursor.write_u1(0);
+        cursor.write_u2(3);
+        cursor.write_u1(0);
+        cursor.write_u1(0);
+        cursor.write_u1(1);
+        cursor.write_u1(1);
+        cursor.write_u1(1);
+        cursor.write_u1(0);
+        cursor.write_u1(0);
+        assert_eq!(bytes, [0xa1, 0x9c]);
+    }
+
+    #[test]
+    fn complex_example() {
+        let mut bytes = [0u8; 4];
+        let mut cursor = EncodeCursor::new(&mut bytes);
+        cursor.write_u12(48858);
+        cursor.write_u3((-1i8) as u8);
+        cursor.write_u4((-5i8) as u8);
+        cursor.write_u2((-1i8) as u8);
+        cursor.write_u4(136);
+
+        assert_eq!(bytes, [0b1101_1010, 0b1110_1111, 0b0111_1100, 0x0]);
+    }
+
+    #[test]
+    fn u64_basic() {
+        let mut bytes = [0u8; 8];
+        let mut cursor = EncodeCursor::new(&mut bytes);
+        cursor.write_u64(0xfd569a8b24bca386);
+        assert_eq!(bytes, [0x86, 0xa3, 0xbc, 0x24, 0x8b, 0x9a, 0x56, 0xfd]);
+    }
+
+    #[test]
+    fn test_ceiling_log_2() {
+        assert_eq!(0, ceiling_log_2(1));
+        assert_eq!(1, ceiling_log_2(2));
+        assert_eq!(2, ceiling_log_2(3));
+        assert_eq!(2, ceiling_log_2(4));
+        assert_eq!(3, ceiling_log_2(5));
+        assert_eq!(3, ceiling_log_2(6));
+        assert_eq!(3, ceiling_log_2(7));
+        assert_eq!(3, ceiling_log_2(8));
+        assert_eq!(4, ceiling_log_2(9));
+        assert_eq!(4, ceiling_log_2(10));
+        assert_eq!(4, ceiling_log_2(11));
+        assert_eq!(4, ceiling_log_2(12));
+        assert_eq!(4, ceiling_log_2(13));
+        assert_eq!(4, ceiling_log_2(14));
+        assert_eq!(4, ceiling_log_2(15));
+        assert_eq!(4, ceiling_log_2(16));
+        assert_eq!(5, ceiling_log_2(17));
+    }
+}

@@ -145,13 +145,14 @@ impl Receiver {
     /// Handles an incoming CAN or CAN FD frame
     ///
     /// If this frame is the last frame in a transfer, this function returns the completed transfer.
+    /// The transfer type is `Transfer<Vec<u8>>`, which owns the payload buffer.
     ///
     /// The payload of the returned transfer does not include any tail bytes or CRC.
     ///
     /// This function will return an error if memory allocation has failed. Other unexpected
     /// situations, such as duplicate or malformed frames, are not considered errors and are not
     /// reported.
-    pub fn accept(&mut self, frame: Frame) -> Result<Option<Transfer>, OutOfMemoryError> {
+    pub fn accept(&mut self, frame: Frame) -> Result<Option<Transfer<Vec<u8>>>, OutOfMemoryError> {
         // The current time is equal to or greater than the frame timestamp. Use that timestamp
         // to clean up expired sessions.
         self.clean_expired_sessions(frame.timestamp);
@@ -538,8 +539,8 @@ impl GetBits for u8 {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::transfer::MessageHeader;
-    use crate::{ServiceId, SubjectId};
+    use canadensis_core::transfer::MessageHeader;
+    use canadensis_core::{ServiceId, SubjectId};
 
     #[test]
     fn test_parse_can_id() {

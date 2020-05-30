@@ -1,5 +1,7 @@
 [workspace]
 members = [
     "canadensis_core",
-    "canadensis_can"
+    "canadensis_can",
+    "canadensis_node",
+    "canadensis_encoding"
 ]
