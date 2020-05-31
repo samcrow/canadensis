@@ -11,7 +11,7 @@ use std::env;
 use std::io;
 use std::time::{Duration, Instant};
 
-use socketcan::{CANFrame, CANSocket};
+use socketcan::CANSocket;
 
 use canadensis_can::{CanId, Frame, Mtu, Receiver, Transmitter};
 use canadensis_core::transfer::{
@@ -20,7 +20,6 @@ use canadensis_core::transfer::{
 use canadensis_core::{Microseconds, NodeId, Priority, TransferId};
 use canadensis_encoding::{Serialize, WriteCursor};
 use canadensis_node::{Mode, Node, NodeInfo};
-use std::io::Error;
 
 /// Runs a basic UAVCAN node, sending Heartbeat messages and responding to NodeInfo requests
 ///
@@ -45,7 +44,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )
     .expect("Node ID too large");
 
-    let mut can = CANSocket::open(&can_interface).expect("Failed to open CAN interface");
+    let can = CANSocket::open(&can_interface).expect("Failed to open CAN interface");
     can.set_read_timeout(Duration::from_millis(500))?;
     can.set_write_timeout(Duration::from_millis(500))?;
 
