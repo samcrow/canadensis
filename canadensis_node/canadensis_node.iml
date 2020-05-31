@@ -6,6 +6,9 @@
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/../canadensis_core/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/../canadensis_encoding/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../canadensis_can/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../canadensis_can/tests" isTestSource="true" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

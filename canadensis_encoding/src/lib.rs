@@ -4,11 +4,10 @@ extern crate half;
 
 mod cursor;
 
-pub use crate::cursor::encode::EncodeCursor;
+pub use crate::cursor::deserialize::ReadCursor;
+pub use crate::cursor::serialize::WriteCursor;
 
-use core::cmp;
 use core::mem::{self, MaybeUninit};
-use core::ptr;
 use core::slice;
 
 /// Trait for types that can be encoded into UAVCAN transfers, or decoded from transfers
@@ -19,58 +18,34 @@ pub trait DataType {
     fn zero_copy(&self) -> Option<&dyn ZeroCopy> {
         None
     }
+}
 
-    /// Returns the size of the encoded form of this data type, in bits
+/// Trait for types that can be serialized into UAVCAN transfers
+pub trait Serialize: DataType {
+    /// Returns the size of the encoded form of this value, in bits
     fn size_bits(&self) -> usize;
 
-    /// Encodes this value into a buffer
+    /// Serializes this value into a buffer
     ///
     /// The provided cursor will allow writing at least the number of bits returned by the
     /// size_bits() function.
-    fn encode(&self, cursor: &mut EncodeCursor<'_>);
+    fn serialize(&self, cursor: &mut WriteCursor<'_>);
+}
 
-    /// Decodes a value, replacing the content of self with the decoded value
-    ///
-    /// In accordance with section 3.7.1.5 of the specification, the provided byte slice may be
-    /// shorter than expected for this data type. This function must assume that all bytes not
-    /// provided are zero, as if bytes had an infinite sequence of zero values at the end.
-    fn decode_in_place(&mut self, bytes: &[u8]);
+/// Trait for types that can be deserialized from UAVCAN transfers
+pub trait Deserialize: DataType {
+    /// Deserializes a value, replacing the content of self with the decoded value
+    fn deserialize_in_place(&mut self, cursor: &mut ReadCursor<'_>) -> Result<(), DeserializeError>;
 
-    /// Decodes a value and returns it
-    ///
-    /// In accordance with section 3.7.1.5 of the specification, the provided byte slice may be
-    /// shorter than expected for this data type. This function must assume that all bytes not
-    /// provided are zero, as if bytes had an infinite sequence of zero values at the end.
-    fn decode(bytes: &[u8]) -> Self
+    /// Deserializes a value and returns it
+    fn deserialize(cursor: &mut ReadCursor<'_>) -> Result<Self, DeserializeError>
     where
         Self: Sized;
 }
 
 /// A trait for data types that have an in-memory representation that exactly matches their
 /// encoded representation
-pub unsafe trait ZeroCopy {
-    /// Returns a slice of bytes that represent this value
-    fn as_slice(&self) -> &[u8] {
-        unsafe { slice::from_raw_parts(self as *const Self as *const u8, mem::size_of_val(&self)) }
-    }
-
-    /// Returns a mutable slice of bytes that represent this value, and can be used to modify it
-    fn as_slice_mut(&mut self) -> &mut [u8] {
-        unsafe { slice::from_raw_parts_mut(self as *mut Self as *mut u8, mem::size_of_val(&self)) }
-    }
-
-    /// Creates a reference to a value of this type from a slice
-    ///
-    /// This function panics if the length of bytes is less than the size of this type.
-    fn from_slice(bytes: &[u8]) -> &Self
-    where
-        Self: Sized,
-    {
-        let self_size = mem::size_of::<Self>();
-        assert!(bytes.len() >= self_size);
-        unsafe { &*(bytes.as_ptr() as *const Self) }
-    }
-}
+pub unsafe trait ZeroCopy {}
 
 impl<T> DataType for T
 where
@@ -79,48 +54,55 @@ where
     fn zero_copy(&self) -> Option<&dyn ZeroCopy> {
         Some(self)
     }
-
+}
+impl<T> Serialize for T
+where
+    T: ZeroCopy,
+{
     fn size_bits(&self) -> usize {
         mem::size_of_val(self) * 8
     }
 
-    fn encode(&self, cursor: &mut EncodeCursor<'_>) {
-        cursor.write_bytes(self.as_slice());
+    fn serialize(&self, cursor: &mut WriteCursor<'_>) {
+        cursor.write_bytes(zero_copy_as_slice(self));
+    }
+}
+impl<T> Deserialize for T
+where
+    T: ZeroCopy,
+{
+    fn deserialize_in_place(&mut self, cursor: &mut ReadCursor<'_>) -> Result<(), DeserializeError> {
+        cursor.read_bytes(zero_copy_as_slice_mut(self));
+        Ok(())
     }
 
-    fn decode_in_place(&mut self, bytes: &[u8]) {
-        unsafe {
-            decode_in_place_ptr(self as *mut Self as *mut u8, mem::size_of_val(self), bytes);
-        }
-    }
-
-    fn decode(bytes: &[u8]) -> Self
+    fn deserialize(cursor: &mut ReadCursor<'_>) -> Result<Self, DeserializeError>
     where
         Self: Sized,
     {
-        let mut value = MaybeUninit::uninit();
+        let mut value = MaybeUninit::<Self>::uninit();
         unsafe {
-            decode_in_place_ptr(value.as_mut_ptr() as *mut u8, mem::size_of::<Self>(), bytes);
-            value.assume_init()
+            for i in 0..mem::size_of::<Self>() {
+                let value_ptr = (value.as_mut_ptr() as *mut u8).add(i);
+                *value_ptr = cursor.read_u8();
+            }
+            Ok(value.assume_init())
         }
     }
 }
 
-/// Copies up to size bytes to a "this" location. If bytes.len() < size, fills the remaining
-/// bytes with zeros
-unsafe fn decode_in_place_ptr(this: *mut u8, size: usize, bytes: &[u8]) {
-    let copy_length = cmp::min(size, bytes.len());
-    ptr::copy_nonoverlapping(bytes.as_ptr(), this, copy_length);
-    // Fill in this with extra zeroes
-    // This is safe even if bytes.len() > size, see the source:
-    // https://doc.rust-lang.org/stable/src/core/iter/range.rs.html#207-263
-    // In that case, it will have no effect.
-    for i in bytes.len()..size {
-        let this_offset = this.add(i);
-        ptr::write(this_offset, 0u8);
-    }
+/// Returns a slice of bytes that represent a value
+fn zero_copy_as_slice<T>(value: &T) -> &[u8]
+where
+    T: ZeroCopy,
+{
+    unsafe { slice::from_raw_parts(value as *const T as *const u8, mem::size_of_val(value)) }
 }
 
+/// Returns a mutable slice of bytes that represent a value, and can be used to modify it
+fn zero_copy_as_slice_mut<T>(value: &mut T) -> &mut [u8] where T: ZeroCopy {
+    unsafe { slice::from_raw_parts_mut(value as *mut T as *mut u8, mem::size_of_val(value)) }
+}
 
 unsafe impl ZeroCopy for u8 {}
 unsafe impl ZeroCopy for i8 {}
@@ -128,8 +110,8 @@ unsafe impl ZeroCopy for i8 {}
 // Implement ZeroCopy for multi-byte primitive types on little endian targets
 #[cfg(target_endian = "little")]
 mod primitive_zero_copy {
-    use half::f16;
     use super::ZeroCopy;
+    use half::f16;
 
     unsafe impl ZeroCopy for u16 {}
     unsafe impl ZeroCopy for u32 {}
@@ -143,4 +125,15 @@ mod primitive_zero_copy {
     unsafe impl ZeroCopy for f16 {}
     unsafe impl ZeroCopy for f32 {}
     unsafe impl ZeroCopy for f64 {}
+}
+
+#[cfg(target_endian = "big")]
+compile_error!("Big-endian DataType implementations for multi-byte primitive types are not currently implemented");
+
+/// Errors that can occur when deserializing
+#[non_exhaustive]
+#[derive(Debug)]
+pub enum DeserializeError {
+    /// A variable-length array length field was greater than the maximum allowed length
+    ArrayLength,
 }

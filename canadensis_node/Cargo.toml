@@ -26,3 +26,11 @@ path = "../canadensis_encoding"
 default = ["node-info"]
 # The node-info feature enables handling of uavcan.node.GetInfo requests
 node-info = []
+
+[dev-dependencies]
+socketcan = "1.7.0"
+rand = "0.7.3"
+
+[dev-dependencies.canadensis_can]
+version = "0.1.0"
+path = "../canadensis_can"

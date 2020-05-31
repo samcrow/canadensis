@@ -152,6 +152,20 @@ const VALID_TRANSFER_IDS: RangeInclusive<u8> = 0..=31;
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct TransferId(u8);
 
+impl TransferId {
+    /// Returns the next transfer ID after this, wrapping around after reaching the maximum
+    /// allowed value
+    #[must_use = "this returns the result of the operation, without modifying the original"]
+    pub fn increment(self) -> TransferId {
+        if self.0 == *VALID_TRANSFER_IDS.end() {
+            // Wrap around to 0
+            TransferId(0)
+        } else {
+            TransferId(self.0 + 1)
+        }
+    }
+}
+
 impl TryFrom<u8> for TransferId {
     type Error = InvalidValue;
 
@@ -167,6 +181,13 @@ impl TryFrom<u8> for TransferId {
 impl From<TransferId> for u8 {
     fn from(id: TransferId) -> Self {
         id.0
+    }
+}
+
+impl Default for TransferId {
+    /// Returns a transfer ID of 0
+    fn default() -> Self {
+        TransferId(0)
     }
 }
 

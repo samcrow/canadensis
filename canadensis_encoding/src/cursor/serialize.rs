@@ -1,10 +1,9 @@
-
 use core::marker::PhantomData;
 use core::mem;
 
 use half::f16;
 
-use crate::DataType;
+use crate::Serialize;
 
 /// Calculates the base-2 logarithm of a value, rounded up to the nearest integer
 fn ceiling_log_2(x: usize) -> u8 {
@@ -14,10 +13,10 @@ fn ceiling_log_2(x: usize) -> u8 {
 // CAN bus notes:
 // Within each data byte, the most significant bit is first.
 
-/// A cursor over a byte slice for easy encoding of UAVCAN data types
+/// A cursor over a byte slice for easy serializing of UAVCAN data types
 ///
 /// Functions that write values will panic if no space is available in the slice.
-pub struct EncodeCursor<'b> {
+pub struct WriteCursor<'b> {
     /// The bytes available to write to
     ///
     /// This includes any bits already written in the current byte, but excludes bytes that have
@@ -27,18 +26,21 @@ pub struct EncodeCursor<'b> {
     length: usize,
     /// The number of bits in the current byte that have already been filled
     ///
+    /// Multiple values within a byte are filled from right to left:
+    /// https://github.com/UAVCAN/specification/issues/70
+    ///
     /// Invariant: This is in the range 0..=7.
     bit_index: u8,
     /// Phantom lifetime thing for the bytes
     bytes_phantom: PhantomData<&'b mut [u8]>,
 }
 
-impl<'b> EncodeCursor<'b> {
+impl<'b> WriteCursor<'b> {
     /// Creates a cursor that will write starting at the beginning of the provided slice
     pub fn new(bytes: &'b mut [u8]) -> Self {
         // Reset all the bytes to zero
         bytes.iter_mut().for_each(|b| *b = 0);
-        EncodeCursor {
+        WriteCursor {
             bytes: bytes.as_mut_ptr(),
             length: bytes.len(),
             bit_index: 0,
@@ -95,14 +97,16 @@ impl<'b> EncodeCursor<'b> {
         let value = value & mask;
 
         if self.bit_index <= 8 - bits {
-            // Write all bits to the current byte
+            // Write all bits to the current byte, aligned to the right
             unsafe {
-                *self.bytes |= value << ((8 - bits) - self.bit_index);
+                *self.bytes |= value << self.bit_index;
             }
         } else {
             // Need to split across two bytes
-            let current_bits = value >> (self.bit_index + bits - 8);
-            let next_bits = value << (16 - self.bit_index - bits);
+            // current_bits: The less significant bits are aligned to the left of the current byte.
+            let current_bits = value << self.bit_index;
+            // next_bits: The more significant bits are aligned to the right of the next byte.
+            let next_bits = value >> (8 - self.bit_index);
             unsafe {
                 *self.bytes |= current_bits;
                 let next = self.bytes.offset(1);
@@ -113,12 +117,16 @@ impl<'b> EncodeCursor<'b> {
         self.advance_bits(usize::from(bits));
     }
 
+    /// Checks that enough space is available to write the specified number of bits, and panics
+    /// if space is not available
     fn check_length(&self, bits: usize) {
         let extended_bit_index = usize::from(self.bit_index) + bits;
         let byte_increment = extended_bit_index / 8;
         assert!(self.length >= byte_increment);
     }
 
+    /// Advances self.bit_index, self.bytes, and self.length to reflect that bits have been
+    /// written
     fn advance_bits(&mut self, bits: usize) {
         let extended_bit_index = usize::from(self.bit_index) + bits;
         self.bit_index = (extended_bit_index % 8) as u8;
@@ -163,23 +171,38 @@ impl<'b> EncodeCursor<'b> {
     }
 
     /// Writes a fixed-length array of values
-    pub fn write_fixed_array<T>(&mut self, items: &[T]) where T: DataType {
+    pub fn write_fixed_array<T>(&mut self, items: &[T])
+    where
+        T: Serialize,
+    {
         for item in items {
-            item.encode(self);
+            item.serialize(self);
         }
     }
 
     /// Writes a variable-length array of values
-    pub fn write_variable_array<T>(&mut self, max_length: usize, items: &[T]) where T: DataType {
-        assert!(items.len() <= max_length);
+    pub fn write_variable_array<T>(&mut self, max_length: usize, items: &[T])
+    where
+        T: Serialize,
+    {
+        let length = items.len();
+        assert!(length <= max_length);
         let length_bits = ceiling_log_2(max_length + 1);
-        self.write_up_to_u64(items.len() as u64, length_bits);
+        // Round up the length bits to 8, 16, 32, or 64
+        // https://github.com/UAVCAN/specification/issues/75
+        match length_bits {
+            0..=8 => self.write_u8(length as u8),
+            9..=16 => self.write_u16(length as u16),
+            17..=32 => self.write_u32(length as u32),
+            33..=64 => self.write_u64(length as u64),
+            _ => panic!("Bug: Number of bits required for array size is too large"),
+        };
         self.write_fixed_array(items);
     }
 }
 
 // Highly repetitive functions that just delegate
-impl EncodeCursor<'_> {
+impl WriteCursor<'_> {
     #[inline]
     pub fn write_u1(&mut self, value: u8) {
         self.write_up_to_u8(value, 1);
@@ -433,7 +456,7 @@ impl EncodeCursor<'_> {
         self.write_up_to_u64(value, 64)
     }
 }
-impl EncodeCursor<'_> {
+impl WriteCursor<'_> {
     #[inline]
     pub fn skip_1(&mut self) {
         self.skip_bits(1);
@@ -699,14 +722,14 @@ mod test {
     #[test]
     fn u8_one() {
         let mut bytes = [0u8];
-        let mut cursor = EncodeCursor::new(&mut bytes);
+        let mut cursor = WriteCursor::new(&mut bytes);
         cursor.write_u8(0xe6);
         assert_eq!(bytes[0], 0xe6);
     }
     #[test]
     fn u8_many() {
         let mut bytes = [0u8; 16];
-        let mut cursor = EncodeCursor::new(&mut bytes);
+        let mut cursor = WriteCursor::new(&mut bytes);
         cursor.write_u8(0xe6);
         cursor.write_u8(0x21);
         cursor.write_u8(0xff);
@@ -736,7 +759,7 @@ mod test {
     #[test]
     fn u1_assemble_u8() {
         let mut bytes = [0u8];
-        let mut cursor = EncodeCursor::new(&mut bytes);
+        let mut cursor = WriteCursor::new(&mut bytes);
         // Within a byte, the most significant bit is first
         cursor.write_u1(1);
         cursor.write_u1(0);
@@ -746,13 +769,13 @@ mod test {
         cursor.write_u1(1);
         cursor.write_u1(0);
         cursor.write_u1(1);
-        assert_eq!(bytes[0], 0xb5);
+        assert_eq!(bytes[0], 0b10101101);
     }
 
     #[test]
     fn u1_4_u8_u1_4() {
         let mut bytes = [0u8; 2];
-        let mut cursor = EncodeCursor::new(&mut bytes);
+        let mut cursor = WriteCursor::new(&mut bytes);
         // 4 u1s, 1 u8 (split between bytes), 4 u1s
         cursor.write_u1(1);
         cursor.write_u1(0);
@@ -765,13 +788,13 @@ mod test {
         cursor.write_u1(1);
         cursor.write_u1(1);
         cursor.write_u1(0);
-        assert_eq!(bytes, [0xa3, 0x7e]);
+        assert_eq!(bytes, [0b_0111_0101, 0b0111_0011]);
     }
 
     #[test]
     fn u1_3_u8_u1_5() {
         let mut bytes = [0u8; 2];
-        let mut cursor = EncodeCursor::new(&mut bytes);
+        let mut cursor = WriteCursor::new(&mut bytes);
         // 3 u1s, 1 u8 (split between bytes), 5 u1s
         cursor.write_u1(1);
         cursor.write_u1(0);
@@ -782,24 +805,24 @@ mod test {
         cursor.write_u1(1);
         cursor.write_u1(0);
         cursor.write_u1(0);
-        assert_eq!(bytes, [0xa6, 0xfc]);
+        assert_eq!(bytes, [0b1011_1101, 0b0011_1001]);
     }
 
     #[test]
     fn u2_assemble_u8() {
         let mut bytes = [0u8];
-        let mut cursor = EncodeCursor::new(&mut bytes);
+        let mut cursor = WriteCursor::new(&mut bytes);
         cursor.write_u2(3);
         cursor.write_u2(1);
         cursor.write_u2(2);
         cursor.write_u2(1);
-        assert_eq!(bytes[0], 0xd9);
+        assert_eq!(bytes[0], 0b01100111);
     }
 
     #[test]
     fn u1_7_u2_u1_7() {
         let mut bytes = [0u8; 2];
-        let mut cursor = EncodeCursor::new(&mut bytes);
+        let mut cursor = WriteCursor::new(&mut bytes);
         // 7 u1s, 1 u2 (split between bytes), 7 u1s
         cursor.write_u1(1);
         cursor.write_u1(0);
@@ -816,26 +839,30 @@ mod test {
         cursor.write_u1(1);
         cursor.write_u1(0);
         cursor.write_u1(0);
-        assert_eq!(bytes, [0xa1, 0x9c]);
+        assert_eq!(bytes, [0b1000_0101, 0b0011_1001]);
     }
 
+    /// Tests the example in section 3.7.5 of the specification
     #[test]
     fn complex_example() {
         let mut bytes = [0u8; 4];
-        let mut cursor = EncodeCursor::new(&mut bytes);
+        let mut cursor = WriteCursor::new(&mut bytes);
         cursor.write_u12(48858);
         cursor.write_u3((-1i8) as u8);
         cursor.write_u4((-5i8) as u8);
         cursor.write_u2((-1i8) as u8);
         cursor.write_u4(136);
 
-        assert_eq!(bytes, [0b1101_1010, 0b1110_1111, 0b0111_1100, 0x0]);
+        // This has the ordering of fields within bytes updated for
+        // https://github.com/UAVCAN/specification/issues/70 . The example in the specification
+        // hasn't been updated yet.
+        assert_eq!(bytes, [0b1101_1010, 0b1111_1110, 0b0001_1101, 0x1]);
     }
 
     #[test]
     fn u64_basic() {
         let mut bytes = [0u8; 8];
-        let mut cursor = EncodeCursor::new(&mut bytes);
+        let mut cursor = WriteCursor::new(&mut bytes);
         cursor.write_u64(0xfd569a8b24bca386);
         assert_eq!(bytes, [0x86, 0xa3, 0xbc, 0x24, 0x8b, 0x9a, 0x56, 0xfd]);
     }
