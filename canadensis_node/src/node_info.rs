@@ -3,7 +3,9 @@
 use core::slice;
 
 use canadensis_core::ServiceId;
-use canadensis_encoding::{DataType, Serialize, WriteCursor, ZeroCopy};
+use canadensis_encoding::{
+    DataType, Deserialize, DeserializeError, ReadCursor, Serialize, WriteCursor, ZeroCopy,
+};
 
 /// Node information service ID
 pub const INFO_SERVICE: ServiceId = ServiceId::from_truncating(430);
@@ -13,7 +15,7 @@ const PROTOCOL_VERSION: Version = Version { major: 1, minor: 0 };
 
 /// A version, containing major and minor fields but no patch version field
 #[repr(C, packed)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[cfg_attr(test, derive(PartialEq, Eq))]
 pub struct Version {
     pub major: u8,
@@ -31,7 +33,7 @@ unsafe impl ZeroCopy for Version {}
 /// Content of a GetInfo response
 ///
 /// Full details: https://github.com/UAVCAN/public_regulated_data_types/blob/master/uavcan/node/430.GetInfo.1.0.uavcan
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[cfg_attr(test, derive(PartialEq, Eq))]
 pub struct NodeInfo<'info> {
     // Protocol version is not here. It's hard-coded.
@@ -130,6 +132,27 @@ impl Serialize for NodeInfo<'_> {
             .unwrap_or(&[]);
         cursor.write_variable_array(1, crc_slice);
         cursor.write_variable_array(222, self.certificate_of_authenticity.unwrap_or(&[]));
+    }
+}
+
+/// An empty node information request
+pub struct NodeInfoRequest;
+
+impl DataType for NodeInfoRequest {}
+
+impl Deserialize for NodeInfoRequest {
+    fn deserialize_in_place(
+        &mut self,
+        _cursor: &mut ReadCursor<'_>,
+    ) -> Result<(), DeserializeError> {
+        Ok(())
+    }
+
+    fn deserialize(_cursor: &mut ReadCursor<'_>) -> Result<Self, DeserializeError>
+    where
+        Self: Sized,
+    {
+        Ok(NodeInfoRequest)
     }
 }
 

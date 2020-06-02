@@ -35,7 +35,8 @@ pub trait Serialize: DataType {
 /// Trait for types that can be deserialized from UAVCAN transfers
 pub trait Deserialize: DataType {
     /// Deserializes a value, replacing the content of self with the decoded value
-    fn deserialize_in_place(&mut self, cursor: &mut ReadCursor<'_>) -> Result<(), DeserializeError>;
+    fn deserialize_in_place(&mut self, cursor: &mut ReadCursor<'_>)
+        -> Result<(), DeserializeError>;
 
     /// Deserializes a value and returns it
     fn deserialize(cursor: &mut ReadCursor<'_>) -> Result<Self, DeserializeError>
@@ -45,7 +46,12 @@ pub trait Deserialize: DataType {
 
 /// A trait for data types that have an in-memory representation that exactly matches their
 /// encoded representation
-pub unsafe trait ZeroCopy {}
+pub unsafe trait ZeroCopy {
+    /// Returns a slice that points to the same memory as self
+    fn as_slice(&self) -> &[u8] {
+        zero_copy_as_slice(self)
+    }
+}
 
 impl<T> DataType for T
 where
@@ -71,7 +77,10 @@ impl<T> Deserialize for T
 where
     T: ZeroCopy,
 {
-    fn deserialize_in_place(&mut self, cursor: &mut ReadCursor<'_>) -> Result<(), DeserializeError> {
+    fn deserialize_in_place(
+        &mut self,
+        cursor: &mut ReadCursor<'_>,
+    ) -> Result<(), DeserializeError> {
         cursor.read_bytes(zero_copy_as_slice_mut(self));
         Ok(())
     }
@@ -94,13 +103,16 @@ where
 /// Returns a slice of bytes that represent a value
 fn zero_copy_as_slice<T>(value: &T) -> &[u8]
 where
-    T: ZeroCopy,
+    T: ZeroCopy + ?Sized,
 {
     unsafe { slice::from_raw_parts(value as *const T as *const u8, mem::size_of_val(value)) }
 }
 
 /// Returns a mutable slice of bytes that represent a value, and can be used to modify it
-fn zero_copy_as_slice_mut<T>(value: &mut T) -> &mut [u8] where T: ZeroCopy {
+fn zero_copy_as_slice_mut<T>(value: &mut T) -> &mut [u8]
+where
+    T: ZeroCopy,
+{
     unsafe { slice::from_raw_parts_mut(value as *mut T as *mut u8, mem::size_of_val(value)) }
 }
 

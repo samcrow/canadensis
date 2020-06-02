@@ -112,7 +112,8 @@ const VALID_NODE_IDS: RangeInclusive<u8> = 0..=127;
 
 /// Node ID
 ///
-/// Valid node IDs are in the range 0..=127.
+/// Valid node IDs are in the range 0..=127. IDs 126 and 127 are reserved for diagnostic and
+/// debugging tools.
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct NodeId(u8);
 
@@ -125,6 +126,17 @@ impl NodeId {
     /// Returns the integer value of this node ID
     pub const fn to_u8(self) -> u8 {
         self.0
+    }
+
+    /// Creates a valid NodeID from a u8, truncating values that are out of range
+    pub const fn from_truncating(value: u8) -> Self {
+        NodeId(value & *VALID_NODE_IDS.end())
+    }
+
+    /// Returns true if this node ID is one of the two highest values, which are reserved for
+    /// diagnostic and debugging tools
+    pub fn is_diagnostic_reserved(self) -> bool {
+        self.0 >= *VALID_NODE_IDS.end() - 1
     }
 }
 
