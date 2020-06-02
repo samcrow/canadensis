@@ -9,7 +9,11 @@ This project implements (most of) [UAVCAN](https://uavcan.org/) v1.0. As the UAV
 
 ## Current features
 
+* Common definitions (`canadensis_core`)
 * A transport layer for CAN and CAN FD (`canadensis_can`)
+* Transfer serialization and deserialization (`canadensis_encoding`)
+* Basic node functions (`canadensis_node`)
+* A basic presentation layer for CAN and CAN FD, reexporting other crates (`canadensis`)
 
 ## License
 
