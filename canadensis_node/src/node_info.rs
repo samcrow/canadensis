@@ -23,7 +23,7 @@ pub struct Version {
 }
 
 impl Version {
-    pub fn new(major: u8, minor: u8) -> Self {
+    pub const fn new(major: u8, minor: u8) -> Self {
         Version { major, minor }
     }
 }

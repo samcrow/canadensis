@@ -16,9 +16,7 @@ use core::marker::PhantomData;
 #[cfg(feature = "node-info")]
 mod node_info;
 #[cfg(feature = "node-info")]
-pub use crate::node_info::INFO_SERVICE;
-#[cfg(feature = "node-info")]
-pub use crate::node_info::{NodeInfo, NodeInfoRequest};
+pub use crate::node_info::{NodeInfo, NodeInfoRequest, Version, INFO_SERVICE};
 
 use canadensis_core::{NodeId, SubjectId};
 use canadensis_encoding::{DataType, Serialize, WriteCursor};
