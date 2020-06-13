@@ -46,12 +46,12 @@ impl Publisher {
     /// node: The ID of this node
     /// priority: The priority to use for messages
     /// subject: The subject ID to publish to
-    pub fn new(node: NodeId, priority: Priority, subject: SubjectId) -> Self {
+    pub const fn new(node: NodeId, priority: Priority, subject: SubjectId) -> Self {
         Publisher {
             source: node,
             priority,
             subject,
-            next_transfer_id: TransferId::default(),
+            next_transfer_id: TransferId::const_default(),
         }
     }
 
@@ -108,11 +108,11 @@ impl AnonymousPublisher {
     ///
     /// priority: The priority to use for messages
     /// subject: The subject ID to publish to
-    pub fn new(priority: Priority, subject: SubjectId) -> Self {
+    pub const fn new(priority: Priority, subject: SubjectId) -> Self {
         AnonymousPublisher {
             priority,
             subject,
-            next_transfer_id: TransferId::default(),
+            next_transfer_id: TransferId::const_default(),
         }
     }
 
@@ -172,12 +172,12 @@ impl Requester {
     /// this_node: The ID of this node
     /// priority: The priority to use for messages
     /// service: The service ID to request
-    pub fn new(this_node: NodeId, priority: Priority, service: ServiceId) -> Self {
+    pub const fn new(this_node: NodeId, priority: Priority, service: ServiceId) -> Self {
         Requester {
             this_node,
             priority,
             service,
-            next_transfer_id: TransferId::default(),
+            next_transfer_id: TransferId::const_default(),
         }
     }
 
@@ -273,7 +273,7 @@ pub struct Responder {
 
 impl Responder {
     /// Creates a responder to handle requests for a specific service
-    pub fn new(this_node: NodeId, service: ServiceId) -> Self {
+    pub const fn new(this_node: NodeId, service: ServiceId) -> Self {
         Responder { this_node, service }
     }
 

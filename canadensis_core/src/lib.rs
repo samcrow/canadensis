@@ -165,6 +165,12 @@ const VALID_TRANSFER_IDS: RangeInclusive<u8> = 0..=31;
 pub struct TransferId(u8);
 
 impl TransferId {
+    /// Returns the default transfer ID (0). This is equivalent to Default::default(), but it can
+    /// be called in a constant expression.
+    pub const fn const_default() -> Self {
+        TransferId(0)
+    }
+
     /// Returns the next transfer ID after this, wrapping around after reaching the maximum
     /// allowed value
     #[must_use = "this returns the result of the operation, without modifying the original"]
@@ -199,7 +205,7 @@ impl From<TransferId> for u8 {
 impl Default for TransferId {
     /// Returns a transfer ID of 0
     fn default() -> Self {
-        TransferId(0)
+        TransferId::const_default()
     }
 }
 
