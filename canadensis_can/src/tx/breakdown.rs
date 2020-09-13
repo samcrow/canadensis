@@ -1,7 +1,5 @@
-use alloc::vec::Vec;
 use core::mem;
-
-use fallible_collections::{FallibleVec, TryReserveError};
+use heapless::consts::U64;
 
 use canadensis_core::TransferId;
 
@@ -27,7 +25,7 @@ pub struct Breakdown {
     /// The current frame
     ///
     /// Invariant: Between calls to add, the length of this value is less than `self.mtu`.
-    frame: Vec<u8>,
+    frame: heapless::Vec<u8, U64>,
 }
 
 impl Breakdown {
@@ -37,7 +35,7 @@ impl Breakdown {
             transfer_id,
             start: true,
             toggle: TOGGLE_INIT,
-            frame: Vec::new(),
+            frame: heapless::Vec::new(),
         }
     }
 
@@ -46,46 +44,47 @@ impl Breakdown {
     /// If this operation exhausts the available memory, this function returns an error.
     ///
     /// If this byte fills up a frame, the frame is returned.
-    pub fn add(&mut self, byte: u8) -> Result<Option<Vec<u8>>, TryReserveError> {
+    pub fn add(&mut self, byte: u8) -> Option<heapless::Vec<u8, U64>> {
         // If the length of self.frame is equal to self.mtu - 1, we have a new byte that will need
         // to go into the next frame.
         // Add a tail byte to the current frame in preparation for returning it
-        let ret_frame: Option<Vec<u8>> = if self.frame.len() == self.mtu - 1 {
-            FallibleVec::try_reserve(&mut self.frame, 1)?;
-            self.frame.push(make_tail_byte(
-                self.start,
-                false,
-                self.toggle,
-                self.transfer_id,
-            ));
+        let ret_frame: Option<heapless::Vec<u8, U64>> = if self.frame.len() == self.mtu - 1 {
+            // The current frame is full. Add a tail byte and prepare to return the frame.
+            self.frame
+                .push(make_tail_byte(
+                    self.start,
+                    false,
+                    self.toggle,
+                    self.transfer_id,
+                ))
+                .expect("MTU > frame capacity");
             self.start = false;
             self.toggle = !self.toggle;
 
-            self.frame.shrink_to_fit();
             // Take out self.frame to return it
-            Some(mem::replace(&mut self.frame, Vec::new()))
+            Some(mem::replace(&mut self.frame, heapless::Vec::new()))
         } else {
             None
         };
         // Now we have either a new frame that's 0 bytes long, or a frame with one or more
         // bytes added but space for at least one byte before the tail byte.
-        FallibleVec::try_push(&mut self.frame, byte)?;
+        self.frame.push(byte).expect("MTU > frame capacity");
 
-        Ok(ret_frame)
+        ret_frame
     }
 
     /// Finishes this breakdown and returns the last frame
-    pub fn finish(mut self) -> Result<Vec<u8>, TryReserveError> {
+    pub fn finish(mut self) -> heapless::Vec<u8, U64> {
         // Add a tail byte to whatever bytes are in the current frame
-        FallibleVec::try_reserve(&mut self.frame, 1)?;
-        self.frame.push(make_tail_byte(
-            self.start,
-            true,
-            self.toggle,
-            self.transfer_id,
-        ));
-        self.frame.shrink_to_fit();
-        Ok(self.frame)
+        self.frame
+            .push(make_tail_byte(
+                self.start,
+                true,
+                self.toggle,
+                self.transfer_id,
+            ))
+            .expect("MTU > frame capacity");
+        self.frame
     }
 }
 
@@ -120,9 +119,9 @@ mod test {
             ];
 
             for byte in payload.iter() {
-                assert_eq!(Ok(None), breakdown.add(*byte));
+                assert_eq!(None, breakdown.add(*byte));
             }
-            assert_eq!(Ok(expected_frame.to_vec()), breakdown.finish());
+            assert_eq!(&expected_frame[..], &*breakdown.finish());
         }
 
         fn make_heartbeat_payload(uptime: u32) -> [u8; 7] {
@@ -154,10 +153,10 @@ mod test {
 
             // Put in the payload bytes
             for payload_byte in payload.iter() {
-                assert_eq!(Ok(None), breakdown.add(*payload_byte));
+                assert_eq!(None, breakdown.add(*payload_byte));
             }
             // Finish, get the whole frame
-            assert_eq!(Ok(frame.to_vec()), breakdown.finish());
+            assert_eq!(&frame[..], &*breakdown.finish());
         }
 
         fn make_frame(payload: &[u8; 15], transfer_id: u8) -> [u8; 16] {
@@ -175,7 +174,7 @@ mod test {
     #[test]
     fn test_node_info_request() {
         let breakdown = Breakdown::new(8, TransferId::try_from(1).unwrap());
-        assert_eq!(Ok([0xe1].to_vec()), breakdown.finish());
+        assert_eq!(&[0xe1], &*breakdown.finish());
     }
 
     #[test]
@@ -213,11 +212,11 @@ mod test {
 
         let mut breakdown = Breakdown::new(8, TransferId::try_from(1).unwrap());
 
-        let mut frames: Vec<Vec<u8>> = payload
+        let mut frames: Vec<heapless::Vec<u8, U64>> = payload
             .iter()
-            .flat_map(|&byte| breakdown.add(byte).unwrap())
+            .flat_map(|&byte| breakdown.add(byte))
             .collect();
-        frames.push(breakdown.finish().unwrap());
+        frames.push(breakdown.finish());
 
         assert_eq!(expected_frames.len(), frames.len());
         for (expected, actual) in expected_frames.iter().zip(frames.into_iter()) {
@@ -259,11 +258,11 @@ mod test {
         ];
         let mut breakdown = Breakdown::new(64, TransferId::try_from(0).unwrap());
 
-        let mut frames: Vec<Vec<u8>> = payload
+        let mut frames: Vec<heapless::Vec<u8, U64>> = payload
             .iter()
-            .flat_map(|&byte| breakdown.add(byte).unwrap())
+            .flat_map(|&byte| breakdown.add(byte))
             .collect();
-        frames.push(breakdown.finish().unwrap());
+        frames.push(breakdown.finish());
 
         assert_eq!(expected_frames.len(), frames.len());
         for (expected, actual) in expected_frames.iter().zip(frames.into_iter()) {

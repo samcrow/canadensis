@@ -82,11 +82,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let transfer_in = match rx_status {
             Ok(frame) => {
                 // Convert frame from socketcan to canadensis_can format
-                let frame = Frame {
-                    timestamp: Microseconds(0),
-                    can_id: CanId::try_from(frame.id()).unwrap(),
-                    payload: frame.data().to_vec(),
-                };
+                let frame = Frame::new(
+                    Microseconds(0),
+                    CanId::try_from(frame.id()).unwrap(),
+                    frame.data(),
+                );
                 println!("Handling frame {:#?}", frame);
                 rx.accept(frame).expect("Out of memory")
             }
@@ -150,12 +150,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Send frames
         while let Some(out_frame) = tx.pop() {
             // Convert to SocketCAN frame format
-            let out_frame = socketcan::CANFrame::new(
-                out_frame.can_id.into(),
-                &out_frame.payload,
-                false,
-                false,
-            )?;
+            let out_frame =
+                socketcan::CANFrame::new(out_frame.id().into(), out_frame.data(), false, false)?;
             can.write_frame(&out_frame)?;
         }
     }

@@ -30,11 +30,11 @@ fn test_heartbeat() {
     .unwrap();
 
     assert_eq!(
-        Some(Frame {
-            timestamp: Microseconds(0),
-            can_id: CanId::try_from(0x107d552a).unwrap(),
-            payload: vec![0x00, 0x00, 0x00, 0x00, 0x04, 0x78, 0x68, 0xe0]
-        }),
+        Some(Frame::new(
+            Microseconds(0),
+            CanId::try_from(0x107d552a).unwrap(),
+            &[0x00, 0x00, 0x00, 0x00, 0x04, 0x78, 0x68, 0xe0]
+        )),
         tx.pop()
     );
     assert_eq!(None, tx.pop());
@@ -56,11 +56,11 @@ fn test_heartbeat() {
     .unwrap();
 
     assert_eq!(
-        Some(Frame {
-            timestamp: Microseconds(0),
-            can_id: CanId::try_from(0x107d552a).unwrap(),
-            payload: vec![0x01, 0x00, 0x00, 0x00, 0x04, 0x78, 0x68, 0xe1]
-        }),
+        Some(Frame::new(
+            Microseconds(0),
+            CanId::try_from(0x107d552a).unwrap(),
+            &[0x01, 0x00, 0x00, 0x00, 0x04, 0x78, 0x68, 0xe1]
+        )),
         tx.pop()
     );
     assert_eq!(None, tx.pop());
@@ -88,14 +88,14 @@ fn test_string() {
     .unwrap();
 
     assert_eq!(
-        Some(Frame {
-            timestamp: Microseconds(0),
-            can_id: CanId::try_from(0x11133775).unwrap(),
-            payload: vec![
+        Some(Frame::new(
+            Microseconds(0),
+            CanId::try_from(0x11133775).unwrap(),
+            &[
                 0x00, 0x18, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21,
                 0x00, 0xe0
             ]
-        }),
+        )),
         tx.pop()
     );
     assert_eq!(None, tx.pop());
@@ -120,11 +120,11 @@ fn test_node_info_request() {
     .unwrap();
 
     assert_eq!(
-        Some(Frame {
-            timestamp: Microseconds(0),
-            can_id: CanId::try_from(0x136b957b).unwrap(),
-            payload: vec![0xe1]
-        }),
+        Some(Frame::new(
+            Microseconds(0),
+            CanId::try_from(0x136b957b).unwrap(),
+            &[0xe1]
+        )),
         tx.pop()
     );
     assert_eq!(None, tx.pop());
@@ -173,11 +173,7 @@ fn test_node_info_response() {
     ];
 
     for &expected_data in expected_frame_data.iter() {
-        let expected_frame = Frame {
-            timestamp: Microseconds(0),
-            can_id: expected_can_id,
-            payload: expected_data.to_vec(),
-        };
+        let expected_frame = Frame::new(Microseconds(0), expected_can_id, expected_data);
         assert_eq!(Some(expected_frame), tx.pop());
     }
     assert_eq!(None, tx.pop());
@@ -227,11 +223,7 @@ fn test_array() {
     ];
 
     for &expected_data in expected_frame_data.iter() {
-        let expected_frame = Frame {
-            timestamp: Microseconds(0),
-            can_id: expected_can_id,
-            payload: expected_data.to_vec(),
-        };
+        let expected_frame = Frame::new(Microseconds(0), expected_can_id, expected_data);
         assert_eq!(Some(expected_frame), tx.pop());
     }
     assert_eq!(None, tx.pop());

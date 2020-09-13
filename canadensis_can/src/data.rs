@@ -2,10 +2,10 @@
 //! Common UAVCAN data types
 //!
 
-use alloc::vec::Vec;
 use core::cmp::Ordering;
 use core::convert::TryFrom;
 use core::fmt;
+use heapless::consts::U64;
 
 use canadensis_core::{InvalidValue, Microseconds};
 
@@ -50,7 +50,7 @@ pub enum Mtu {
     CanFd64 = 64,
 }
 
-/// CAN data frame with an extended 29-bit ID
+/// CAN or CAN FD data frame with up to 64 bytes of data and an extended 29-bit ID
 ///
 /// RTR/Error frames are not used and therefore not modeled here.
 /// CAN frames with 11-bit ID are not used by UAVCAN/CAN and so they are not supported by the library.
@@ -59,11 +59,42 @@ pub struct Frame {
     /// For RX frames: reception timestamp.
     /// For TX frames: transmission deadline.
     /// The time system may be arbitrary as long as the clock is monotonic (steady).
-    pub timestamp: Microseconds,
+    timestamp: Microseconds,
     /// 29-bit extended ID
-    pub can_id: CanId,
-    /// The useful data in the frame
-    pub payload: Vec<u8>,
+    id: CanId,
+    /// The frame data
+    data: heapless::Vec<u8, U64>,
+}
+
+impl Frame {
+    /// Creates a frame
+    ///
+    /// # Panics
+    /// This function will panic if the length of data is greater than 64.
+    pub fn new(timestamp: Microseconds, id: CanId, data: &[u8]) -> Self {
+        Frame {
+            timestamp,
+            id,
+            data: heapless::Vec::from_slice(data).expect("Data to large for a CAN FD frame"),
+        }
+    }
+
+    /// Returns the timestamp when this frame was received (for incoming frames)
+    /// or the transmission deadline (for outgoing frames)
+    #[inline]
+    pub fn timestamp(&self) -> Microseconds {
+        self.timestamp
+    }
+    /// Returns the ID of this frame
+    #[inline]
+    pub fn id(&self) -> CanId {
+        self.id
+    }
+    /// Returns the data in this frame
+    #[inline]
+    pub fn data(&self) -> &[u8] {
+        &self.data
+    }
 }
 
 impl PartialOrd for Frame {
@@ -75,6 +106,6 @@ impl PartialOrd for Frame {
 impl Ord for Frame {
     /// Compare by CAN ID
     fn cmp(&self, other: &Self) -> Ordering {
-        self.can_id.cmp(&other.can_id)
+        self.id.cmp(&other.id)
     }
 }

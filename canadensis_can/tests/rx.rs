@@ -19,11 +19,11 @@ fn test_heartbeat() -> Result<(), OutOfMemoryError> {
     rx.subscribe_message(heartbeat_subject, 7, Microseconds(0))?;
 
     let transfer = rx
-        .accept(Frame {
-            timestamp: Microseconds(42),
-            can_id: 0x107d552a.try_into().unwrap(),
-            payload: vec![0x00, 0x00, 0x00, 0x00, 0x04, 0x78, 0x68, 0xe0],
-        })?
+        .accept(Frame::new(
+            Microseconds(42),
+            0x107d552a.try_into().unwrap(),
+            &[0x00, 0x00, 0x00, 0x00, 0x04, 0x78, 0x68, 0xe0],
+        ))?
         .expect("Didn't get a transfer");
 
     let expected = Transfer {
@@ -51,11 +51,11 @@ fn test_string() -> Result<(), OutOfMemoryError> {
     rx.subscribe_message(string_subject, 16, Microseconds(0))?;
 
     let transfer = rx
-        .accept(Frame {
-            timestamp: Microseconds(42),
-            can_id: 0x11133775.try_into().unwrap(),
-            payload: b"\x00\x18Hello world!\x00\xe0".to_vec(),
-        })?
+        .accept(Frame::new(
+            Microseconds(42),
+            0x11133775.try_into().unwrap(),
+            b"\x00\x18Hello world!\x00\xe0",
+        ))?
         .expect("Didn't get a transfer");
 
     let expected = Transfer {
@@ -84,11 +84,11 @@ fn test_node_info_request() -> Result<(), OutOfMemoryError> {
     rx.subscribe_request(service, 0, Microseconds(0))?;
 
     let transfer = rx
-        .accept(Frame {
-            timestamp: Microseconds(302),
-            can_id: 0x136b957b.try_into().unwrap(),
-            payload: vec![0xe1],
-        })?
+        .accept(Frame::new(
+            Microseconds(302),
+            0x136b957b.try_into().unwrap(),
+            &[0xe1],
+        ))?
         .expect("Didn't get a transfer");
 
     let expected = Transfer {
@@ -145,11 +145,11 @@ fn test_node_info_response() -> Result<(), OutOfMemoryError> {
     ];
 
     for (i, &frame_data) in frames.iter().enumerate() {
-        let frame = Frame {
-            timestamp: Microseconds(i as u64),
-            can_id: 0x126BBDAA.try_into().unwrap(),
-            payload: frame_data.to_vec(),
-        };
+        let frame = Frame::new(
+            Microseconds(i as u64),
+            0x126BBDAA.try_into().unwrap(),
+            frame_data,
+        );
         if i != frames.len() - 1 {
             let maybe_transfer = rx.accept(frame)?;
             assert!(maybe_transfer.is_none());
@@ -225,11 +225,11 @@ fn test_array() -> Result<(), OutOfMemoryError> {
     ];
 
     for (i, &frame_data) in frames.iter().enumerate() {
-        let frame = Frame {
-            timestamp: Microseconds(i as u64),
-            can_id: 0x1013373b.try_into().unwrap(),
-            payload: frame_data.to_vec(),
-        };
+        let frame = Frame::new(
+            Microseconds(i as u64),
+            0x1013373b.try_into().unwrap(),
+            frame_data,
+        );
         if i != frames.len() - 1 {
             let maybe_transfer = rx.accept(frame)?;
             assert!(maybe_transfer.is_none());

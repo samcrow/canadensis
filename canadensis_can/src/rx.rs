@@ -155,7 +155,7 @@ impl Receiver {
     pub fn accept(&mut self, frame: Frame) -> Result<Option<Transfer<Vec<u8>>>, OutOfMemoryError> {
         // The current time is equal to or greater than the frame timestamp. Use that timestamp
         // to clean up expired sessions.
-        self.clean_expired_sessions(frame.timestamp);
+        self.clean_expired_sessions(frame.timestamp());
 
         // Part 1: basic frame checks
         let header = match Self::frame_sanity_check(self.id, &frame) {
@@ -175,7 +175,7 @@ impl Receiver {
             // Get everything we need from the subscription before borrowing it to get the session
             let max_payload_length = subscription.payload_size_max;
             let transfer_timeout = subscription.timeout;
-            let tail = TailByte::parse(*frame.payload.last().unwrap());
+            let tail = TailByte::parse(*frame.data().last().unwrap());
             // Find the session for this source node
             let session = if let Some(session) = subscription.session_mut(header.source) {
                 // Use the existing session, if its transfer ID matches this frame
@@ -193,10 +193,10 @@ impl Receiver {
                 }
                 // This is the start, create a new session
                 // Error handling: This may fail to allocate memory. There's nothing to clean up.
-                subscription.create_session(header.source, frame.timestamp, tail.transfer_id)?
+                subscription.create_session(header.source, frame.timestamp(), tail.transfer_id)?
             };
             // Check if this frame will make the transfer exceed the maximum length
-            let new_payload_length = session.buildup.payload_length() + (frame.payload.len() - 1);
+            let new_payload_length = session.buildup.payload_length() + (frame.data().len() - 1);
             if new_payload_length > max_payload_length {
                 // Too much payload. Give up on this transfer.
                 subscription.destroy_session(header.source);
@@ -205,14 +205,18 @@ impl Receiver {
             // Check if this frame is too late
             let deadline = session.transfer_timestamp + transfer_timeout;
             #[cfg(test)]
-            println!("Deadline {}, frame timestamp {}", deadline, frame.timestamp);
-            if frame.timestamp > deadline {
+            println!(
+                "Deadline {}, frame timestamp {}",
+                deadline,
+                frame.timestamp()
+            );
+            if frame.timestamp() > deadline {
                 // Frame arrived too late. Give up on this transfer.
                 subscription.destroy_session(header.source);
                 return Ok(None);
             }
             // This frame looks OK. Do the reassembly.
-            match session.buildup.add(&frame.payload) {
+            match session.buildup.add(frame.data()) {
                 Ok(Some(mut transfer_data)) => {
                     // Got a transfer
                     let source = header.source;
@@ -262,11 +266,11 @@ impl Receiver {
 
     /// Runs basic sanity checks on an incoming frame. Returns the header if the frame is valid.
     fn frame_sanity_check(local_id: NodeId, frame: &Frame) -> Option<TransferHeader> {
-        if frame.payload.is_empty() {
+        if frame.data().is_empty() {
             // No tail byte, can't use
             return None;
         }
-        let header = match parse_can_id(frame.can_id) {
+        let header = match parse_can_id(frame.id()) {
             Ok(header) => header,
             Err(_) => {
                 // Invalid CAN ID format, can't use frame

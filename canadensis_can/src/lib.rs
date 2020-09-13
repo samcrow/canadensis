@@ -10,6 +10,7 @@
 extern crate alloc;
 extern crate canadensis_core;
 extern crate fallible_collections;
+extern crate heapless;
 
 mod crc;
 mod data;

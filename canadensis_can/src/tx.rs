@@ -12,7 +12,6 @@ use crate::error::OutOfMemoryError;
 use crate::heap::{Heap, Transaction};
 use crate::tx::breakdown::Breakdown;
 use crate::{CanId, Mtu};
-use alloc::vec::Vec;
 use canadensis_core::transfer::{ServiceHeader, Transfer, TransferHeader, TransferKindHeader};
 use canadensis_core::Microseconds;
 use core::convert::TryFrom;
@@ -100,9 +99,9 @@ impl Transmitter {
         let mut frames = 0;
         // Do the non-last frames
         for byte in payload_and_padding {
-            if let Some(frame_data) = breakdown.add(byte)? {
+            if let Some(frame_data) = breakdown.add(byte) {
                 // Filled up a frame
-                Self::push_frame(transaction, transfer.timestamp, can_id, frame_data)?;
+                Self::push_frame(transaction, transfer.timestamp, can_id, &frame_data)?;
                 frames += 1;
             }
         }
@@ -113,29 +112,25 @@ impl Transmitter {
             // Add the CRC value, most significant byte first
             let crc_bytes = [(crc_value >> 8) as u8, crc_value as u8];
             for &byte in crc_bytes.iter() {
-                if let Some(frame_data) = breakdown.add(byte)? {
+                if let Some(frame_data) = breakdown.add(byte) {
                     // Filled up a frame
-                    Self::push_frame(transaction, transfer.timestamp, can_id, frame_data)?;
+                    Self::push_frame(transaction, transfer.timestamp, can_id, &frame_data)?;
                 }
             }
         }
-        let last_frame_data = breakdown.finish()?;
-        Self::push_frame(transaction, transfer.timestamp, can_id, last_frame_data)?;
+        let last_frame_data = breakdown.finish();
+        Self::push_frame(transaction, transfer.timestamp, can_id, &last_frame_data)?;
         Ok(())
     }
 
-    /// Creates a frame nad adds it to a transaction
+    /// Creates a frame and adds it to a transaction
     fn push_frame(
         transaction: &mut Transaction<'_, Frame>,
         timestamp: Microseconds,
         id: CanId,
-        data: Vec<u8>,
+        data: &[u8],
     ) -> core::result::Result<(), TryReserveError> {
-        let frame = Frame {
-            timestamp,
-            can_id: id,
-            payload: data,
-        };
+        let frame = Frame::new(timestamp, id, data);
         transaction.push(frame)
     }
 
@@ -147,6 +142,14 @@ impl Transmitter {
     /// Removes and returns the next frame waiting to be sent, if any exists
     pub fn pop(&mut self) -> Option<Frame> {
         self.frame_queue.pop()
+    }
+
+    /// Returns a frame that has not been sent and queues it to be sent later
+    pub fn return_frame(&mut self, frame: Frame) -> Result<(), TryReserveError> {
+        let mut transaction = self.frame_queue.transaction();
+        transaction.push(frame)?;
+        transaction.commit();
+        Ok(())
     }
 }
 
