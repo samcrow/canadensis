@@ -114,3 +114,35 @@ pub struct Transfer<P> {
     /// The type P usually implements `AsRef<[u8]>`. It is often a `Vec<u8>` or a `&[u8]`.
     pub payload: P,
 }
+
+impl<P> Transfer<P> {
+    /// Returns true if this transfer is a request matching the provided service ID
+    pub fn is_request_for(&self, service_id: ServiceId) -> bool {
+        match &self.header.kind {
+            TransferKindHeader::Request(service_header) if service_header.service == service_id => {
+                true
+            }
+            _ => false,
+        }
+    }
+    /// Returns true if this transfer is a response matching the provided service ID
+    pub fn is_response_for(&self, service_id: ServiceId) -> bool {
+        match &self.header.kind {
+            TransferKindHeader::Response(service_header)
+                if service_header.service == service_id =>
+            {
+                true
+            }
+            _ => false,
+        }
+    }
+    /// Returns true if this transfer is a message matching the provided service ID
+    pub fn is_message_for(&self, subject_id: SubjectId) -> bool {
+        match &self.header.kind {
+            TransferKindHeader::Message(message_header) if message_header.subject == subject_id => {
+                true
+            }
+            _ => false,
+        }
+    }
+}
