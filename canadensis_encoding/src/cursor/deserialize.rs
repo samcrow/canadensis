@@ -98,7 +98,7 @@ impl<'b> ReadCursor<'b> {
 
     /// Reads an x-bit unsigned integer (x must be in the range 1..=64)
     fn read_up_to_u64(&mut self, bits: u8) -> u64 {
-        debug_assert!(bits <= 32);
+        debug_assert!(bits <= 64);
         let mut shift_bits = 0;
         // Read whole bytes, least significant first
         let mut value = 0;
@@ -170,7 +170,7 @@ impl<'b> ReadCursor<'b> {
 
     /// Reads a 64-bit floating-point value
     #[inline]
-    pub fn write_f64(&mut self) -> f64 {
+    pub fn read_f64(&mut self) -> f64 {
         f64::from_bits(self.read_u64())
     }
 
