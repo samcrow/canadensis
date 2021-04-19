@@ -205,6 +205,8 @@ fn make_can_id(header: TransferHeader) -> CanId {
         TransferKindHeader::Message(header) => {
             // Subject ID
             bits |= u32::from(u16::from(header.subject)) << 8;
+            // Set bits 21 and 22
+            bits |= (1 << 21) | (1 << 22);
             // Anonymous
             if header.anonymous {
                 bits |= 1 << 24;

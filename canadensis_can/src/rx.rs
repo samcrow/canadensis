@@ -480,7 +480,8 @@ fn parse_can_id(id: CanId) -> core::result::Result<TransferHeader, CanIdParseErr
         }
         let message_header = MessageHeader {
             anonymous: bits.bit_set(24),
-            subject: SubjectId::try_from(bits.get_u16(8) & 0x7fff)
+            // Subject ID is 13 bits, 0..=8191
+            subject: SubjectId::try_from(bits.get_u16(8) & 0x1fff)
                 .expect("Bug: Invalid subject ID"),
         };
         TransferKindHeader::Message(message_header)
@@ -556,7 +557,7 @@ mod test {
                 priority: Priority::Nominal,
                 kind: TransferKindHeader::Message(MessageHeader {
                     anonymous: false,
-                    subject: SubjectId::try_from(32085).unwrap(),
+                    subject: SubjectId::try_from(7509).unwrap(),
                 }),
             },
             0x107d552a,
@@ -572,7 +573,7 @@ mod test {
                     subject: SubjectId::try_from(4919).unwrap(),
                 }),
             },
-            0x11133775,
+            0x11733775,
         );
         // Node info request
         check_can_id(
@@ -608,7 +609,7 @@ mod test {
                     subject: SubjectId::try_from(4919).unwrap(),
                 }),
             },
-            0x1013373b,
+            0x1073373b,
         );
     }
 

@@ -21,7 +21,7 @@ fn test_heartbeat() {
             priority: Priority::Nominal,
             kind: TransferKindHeader::Message(MessageHeader {
                 anonymous: false,
-                subject: SubjectId::try_from(32085).unwrap(),
+                subject: SubjectId::try_from(7509).unwrap(),
             }),
         },
         transfer_id: TransferId::try_from(0).unwrap(),
@@ -47,7 +47,7 @@ fn test_heartbeat() {
             priority: Priority::Nominal,
             kind: TransferKindHeader::Message(MessageHeader {
                 anonymous: false,
-                subject: SubjectId::try_from(32085).unwrap(),
+                subject: SubjectId::try_from(7509).unwrap(),
             }),
         },
         transfer_id: TransferId::try_from(1).unwrap(),
@@ -90,7 +90,7 @@ fn test_string() {
     assert_eq!(
         Some(Frame::new(
             Microseconds(0),
-            CanId::try_from(0x11133775).unwrap(),
+            CanId::try_from(0x11733775).unwrap(),
             &[
                 0x00, 0x18, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21,
                 0x00, 0xe0
@@ -205,7 +205,7 @@ fn test_array() {
     })
     .unwrap();
 
-    let expected_can_id = CanId::try_from(0x1013373b).unwrap();
+    let expected_can_id = CanId::try_from(0x1073373b).unwrap();
     let expected_frame_data: [&[u8]; 2] = [
         &[
             0x00, 0xb8, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,

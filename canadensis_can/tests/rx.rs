@@ -15,7 +15,7 @@ use canadensis_core::{Microseconds, Priority, ServiceId, SubjectId};
 fn test_heartbeat() -> Result<(), OutOfMemoryError> {
     let mut rx = Receiver::new(0.try_into().unwrap());
 
-    let heartbeat_subject = SubjectId::try_from(32085).unwrap();
+    let heartbeat_subject = SubjectId::try_from(7509).unwrap();
     rx.subscribe_message(heartbeat_subject, 7, Microseconds(0))?;
 
     let transfer = rx

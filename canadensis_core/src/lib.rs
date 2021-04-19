@@ -16,9 +16,10 @@ use core::ops::{Add, Sub};
 #[derive(Debug)]
 pub struct InvalidValue;
 
-const VALID_SUBJECT_IDS: RangeInclusive<u16> = 0..=32767;
+/// Allowed subject ID values
+const VALID_SUBJECT_IDS: RangeInclusive<u16> = 0..=8191;
 
-/// Subject ID, in range 0..=32767
+/// Subject ID, in range 0..=8191
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct SubjectId(u16);
 
@@ -78,7 +79,7 @@ impl From<ServiceId> for u16 {
     }
 }
 
-/// A value that can represent a service ID (0..=511) or a subject ID (0..=32767)
+/// A value that can represent a service ID (0..=511) or a subject ID (0..=8192)
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct PortId(u16);
 
