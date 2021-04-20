@@ -156,6 +156,13 @@ impl<'b> ReadCursor<'b> {
         }
     }
 
+    /// Skips up to 7 bits so that this cursor is aligned to 8 bits (one byte)
+    fn align_to_8_bits(&mut self) {
+        if self.bit_index != 0 {
+            self.advance_bits(8 - usize::from(self.bit_index))
+        }
+    }
+
     /// Reads a 16-bit floating-point value
     #[inline]
     pub fn read_f16(&mut self) -> f16 {
@@ -181,7 +188,7 @@ impl<'b> ReadCursor<'b> {
         }
     }
 
-    /// Reads an array of values
+    /// Reads a fixed-length array of values
     pub fn read_array<T>(&mut self, items: &mut [T]) -> Result<(), DeserializeError>
     where
         T: Deserialize,
@@ -190,6 +197,33 @@ impl<'b> ReadCursor<'b> {
             item.deserialize_in_place(self)?;
         }
         Ok(())
+    }
+
+    /// Reads a composite object
+    ///
+    /// This function returns an error if T is delimited and the delimiter header has an
+    /// invalid length.
+    ///
+    /// It also return an error if T's deserialize implementation encounters an error.
+    pub fn read_composite<T>(&mut self) -> Result<T, DeserializeError>
+    where
+        T: Deserialize,
+    {
+        if T::EXTENSIBILITY.is_delimited() {
+            // Read the 32-bit delimiter header
+            let length_bytes = self.read_u32();
+            let length_bits = length_bytes * 8;
+            if !T::in_bit_length_set(length_bits as usize) {
+                // Invalid length
+                return Err(DeserializeError::DelimitedLength);
+            }
+        }
+        todo!()
+    }
+
+    /// Reads a boolean value (1 bit)
+    pub fn read_bool(&mut self) -> bool {
+        self.read_u1() == 1
     }
 }
 

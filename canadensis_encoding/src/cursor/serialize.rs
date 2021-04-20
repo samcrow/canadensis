@@ -3,7 +3,8 @@ use core::mem;
 
 use half::f16;
 
-use crate::Serialize;
+use crate::{Extensibility, Serialize};
+use core::convert::TryInto;
 
 /// Calculates the base-2 logarithm of a value, rounded up to the nearest integer
 fn ceiling_log_2(x: usize) -> u8 {
@@ -145,6 +146,13 @@ impl<'b> WriteCursor<'b> {
         self.advance_bits(usize::from(bits));
     }
 
+    /// Advances the cursor to a byte boundary (a multiple of 8 bits)
+    fn align_to_8_bits(&mut self) {
+        if self.bit_index != 0 {
+            self.skip_bits(8 - self.bit_index);
+        }
+    }
+
     /// Writes a 16-bit floating-point value
     #[inline]
     pub fn write_f16(&mut self, value: f16) {
@@ -185,6 +193,7 @@ impl<'b> WriteCursor<'b> {
     where
         T: Serialize,
     {
+        // TODO: The alignment of an array equals the alignment of its element type
         let length = items.len();
         assert!(length <= max_length);
         let length_bits = ceiling_log_2(max_length + 1);
@@ -198,6 +207,30 @@ impl<'b> WriteCursor<'b> {
             _ => panic!("Bug: Number of bits required for array size is too large"),
         };
         self.write_fixed_array(items);
+    }
+
+    /// Writes a composite value, aligned to 8 bits
+    pub fn write_composite<T>(&mut self, value: &T)
+    where
+        T: Serialize,
+    {
+        self.align_to_8_bits();
+        if T::EXTENSIBILITY.is_delimited() {
+            // Add delimiter header
+            let composite_size_bits = value.size_bits();
+            // Convert bits to bytes, round up
+            let composite_size_bytes: u32 = ((composite_size_bits + 7) / 8)
+                .try_into()
+                .expect("Composite too large for u32");
+            self.write_u32(composite_size_bytes);
+        }
+        // Now serialize the components
+        value.serialize(self);
+    }
+
+    /// Writes a boolean value (1 bit)
+    pub fn write_bool(&mut self, value: bool) {
+        self.write_u1(value as u8)
     }
 }
 

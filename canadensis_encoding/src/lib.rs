@@ -10,8 +10,33 @@ pub use crate::cursor::serialize::WriteCursor;
 use core::mem::{self, MaybeUninit};
 use core::slice;
 
+pub trait LengthSet {}
+
+/// Whether a type is sealed or delimited
+pub enum Extensibility {
+    /// A sealed type
+    Sealed,
+    /// A delimited type
+    ///
+    /// The enclosed value is the type's extent in bytes (not bits)
+    ///
+    /// Because the extent must be a multiple of 8 bits, no information is lost by storing
+    /// it as a number of bytes
+    Delimited(u32),
+}
+
+impl Extensibility {
+    /// Returns true if this is `Delimited`
+    pub fn is_delimited(&self) -> bool {
+        matches!(*self, Extensibility::Delimited(_))
+    }
+}
+
 /// Trait for types that can be encoded into UAVCAN transfers, or decoded from transfers
 pub trait DataType {
+    /// The sealed or delimited property of this type
+    const EXTENSIBILITY: Extensibility;
+
     /// Returns a zero-copy encoding implementation for this type, if one exists
     ///
     /// The default implementation returns None.
@@ -23,6 +48,8 @@ pub trait DataType {
 /// Trait for types that can be serialized into UAVCAN transfers
 pub trait Serialize: DataType {
     /// Returns the size of the encoded form of this value, in bits
+    ///
+    /// For composite types, this must be a multiple of 8.
     fn size_bits(&self) -> usize;
 
     /// Serializes this value into a buffer
@@ -34,6 +61,12 @@ pub trait Serialize: DataType {
 
 /// Trait for types that can be deserialized from UAVCAN transfers
 pub trait Deserialize: DataType {
+    /// Returns true if the provided number of bits is in this type's bit length set
+    ///
+    /// For composite types, this function must not return true for any input that is not
+    /// a multiple of 8.
+    fn in_bit_length_set(bit_length: usize) -> bool;
+
     /// Deserializes a value, replacing the content of self with the decoded value
     fn deserialize_in_place(&mut self, cursor: &mut ReadCursor<'_>)
         -> Result<(), DeserializeError>;
@@ -46,6 +79,9 @@ pub trait Deserialize: DataType {
 
 /// A trait for data types that have an in-memory representation that exactly matches their
 /// encoded representation
+///
+/// In addition, a type that implements ZeroCopy must be valid for all possible values of the
+/// memory where it is stored. It must not contain any types that have niches, like references (&T).
 pub unsafe trait ZeroCopy {
     /// Returns a slice that points to the same memory as self
     fn as_slice(&self) -> &[u8] {
@@ -53,17 +89,9 @@ pub unsafe trait ZeroCopy {
     }
 }
 
-impl<T> DataType for T
-where
-    T: ZeroCopy,
-{
-    fn zero_copy(&self) -> Option<&dyn ZeroCopy> {
-        Some(self)
-    }
-}
 impl<T> Serialize for T
 where
-    T: ZeroCopy,
+    T: ZeroCopy + DataType,
 {
     fn size_bits(&self) -> usize {
         mem::size_of_val(self) * 8
@@ -75,8 +103,13 @@ where
 }
 impl<T> Deserialize for T
 where
-    T: ZeroCopy,
+    T: ZeroCopy + DataType,
 {
+    fn in_bit_length_set(bit_length: usize) -> bool {
+        // Only one valid bit length
+        bit_length == mem::size_of::<T>() * 8
+    }
+
     fn deserialize_in_place(
         &mut self,
         cursor: &mut ReadCursor<'_>,
@@ -139,13 +172,14 @@ mod primitive_zero_copy {
     unsafe impl ZeroCopy for f64 {}
 }
 
-#[cfg(target_endian = "big")]
-compile_error!("Big-endian DataType implementations for multi-byte primitive types are not currently implemented");
-
 /// Errors that can occur when deserializing
 #[non_exhaustive]
 #[derive(Debug)]
 pub enum DeserializeError {
     /// A variable-length array length field was greater than the maximum allowed length
     ArrayLength,
+    /// A union tag field did not correspond to a known variant
+    UnionTag,
+    /// A delimiter header had a length that was not valid for the expected type
+    DelimitedLength,
 }
