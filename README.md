@@ -2,6 +2,8 @@
 
 This project implements (most of) [UAVCAN](https://uavcan.org/) v1.0. As the UAVCAN website explains, "UAVCAN is an open lightweight protocol designed for reliable intravehicular communication in aerospace and robotic applications over CAN bus, Ethernet, and other robust transports. It is created to address the challenge of deterministic on-board data exchange between systems and components of next-generation intelligent vehicles: manned and unmanned aircraft, spacecraft, robots, and cars."
 
+Note: As of 2020-12-27, this project implements an older revision of UAVCAN 1.0, before the beta release of the specification.
+
 ## Principles
 
 * Runs on embedded devices
