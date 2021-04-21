@@ -1,18 +1,12 @@
-use core::marker::PhantomData;
-use core::mem;
-
 use half::f16;
 
-use crate::{Extensibility, Serialize};
+use crate::Serialize;
 use core::convert::TryInto;
 
 /// Calculates the base-2 logarithm of a value, rounded up to the nearest integer
-fn ceiling_log_2(x: usize) -> u8 {
-    ((mem::size_of::<usize>() * 8) as u32 - (x - 1).leading_zeros()) as u8
-}
-
-// CAN bus notes:
-// Within each data byte, the most significant bit is first.
+// fn ceiling_log_2(x: usize) -> u8 {
+//     ((core::mem::size_of::<usize>() * 8) as u32 - (x - 1).leading_zeros()) as u8
+// }
 
 /// A cursor over a byte slice for easy serializing of UAVCAN data types
 ///
@@ -22,9 +16,9 @@ pub struct WriteCursor<'b> {
     ///
     /// This includes any bits already written in the current byte, but excludes bytes that have
     /// already been filled up.
-    bytes: *mut u8,
-    /// The number of valid bytes that the bytes field points to
-    length: usize,
+    bytes: &'b mut [u8],
+    /// The number of bytes in `bytes` that have been fully written
+    bytes_written: usize,
     /// The number of bits in the current byte that have already been filled
     ///
     /// Multiple values within a byte are filled from right to left:
@@ -32,8 +26,6 @@ pub struct WriteCursor<'b> {
     ///
     /// Invariant: This is in the range 0..=7.
     bit_index: u8,
-    /// Phantom lifetime thing for the bytes
-    bytes_phantom: PhantomData<&'b mut [u8]>,
 }
 
 impl<'b> WriteCursor<'b> {
@@ -42,11 +34,24 @@ impl<'b> WriteCursor<'b> {
         // Reset all the bytes to zero
         bytes.iter_mut().for_each(|b| *b = 0);
         WriteCursor {
-            bytes: bytes.as_mut_ptr(),
-            length: bytes.len(),
+            bytes,
+            bytes_written: 0,
             bit_index: 0,
-            bytes_phantom: PhantomData,
         }
+    }
+
+    /// Returns a reference to the slice of remaining bytes that can be written
+    /// (after the first self.bytes_written bytes). This may be an empty slice.
+    ///
+    /// # Panics
+    ///
+    /// This function panics if self.bytes_written is greater than self.bytes.len()
+    fn remaining_bytes(&mut self) -> &mut [u8] {
+        &mut self.bytes[self.bytes_written..]
+    }
+
+    fn is_aligned_to_8_bits(&self) -> bool {
+        self.bit_index == 0
     }
 
     /// Writes an x-bit unsigned integer (x must be in the range 1..=64)
@@ -99,23 +104,48 @@ impl<'b> WriteCursor<'b> {
 
         if self.bit_index <= 8 - bits {
             // Write all bits to the current byte, aligned to the right
-            unsafe {
-                *self.bytes |= value << self.bit_index;
-            }
+            let bit_index = self.bit_index;
+            let remaining_bytes = self.remaining_bytes();
+            remaining_bytes[0] |= value << bit_index;
         } else {
             // Need to split across two bytes
             // current_bits: The less significant bits are aligned to the left of the current byte.
             let current_bits = value << self.bit_index;
             // next_bits: The more significant bits are aligned to the right of the next byte.
             let next_bits = value >> (8 - self.bit_index);
-            unsafe {
-                *self.bytes |= current_bits;
-                let next = self.bytes.offset(1);
-                *next |= next_bits;
-            }
+            let remaining_bytes = self.remaining_bytes();
+            remaining_bytes[0] |= current_bits;
+            remaining_bytes[1] |= next_bits;
         }
 
         self.advance_bits(usize::from(bits));
+    }
+
+    pub fn write_aligned_u8(&mut self, value: u8) {
+        assert!(self.is_aligned_to_8_bits());
+        self.remaining_bytes()[0] = value;
+        self.advance_bits(8);
+    }
+
+    pub fn write_aligned_u16(&mut self, value: u16) {
+        assert!(self.is_aligned_to_8_bits());
+        let space = &mut self.remaining_bytes()[..2];
+        space.copy_from_slice(&value.to_le_bytes());
+        self.advance_bits(2 * 8);
+    }
+
+    pub fn write_aligned_u32(&mut self, value: u32) {
+        assert!(self.is_aligned_to_8_bits());
+        let space = &mut self.remaining_bytes()[..4];
+        space.copy_from_slice(&value.to_le_bytes());
+        self.advance_bits(4 * 8);
+    }
+
+    pub fn write_aligned_u64(&mut self, value: u64) {
+        assert!(self.is_aligned_to_8_bits());
+        let space = &mut self.remaining_bytes()[..8];
+        space.copy_from_slice(&value.to_le_bytes());
+        self.advance_bits(8 * 8);
     }
 
     /// Checks that enough space is available to write the specified number of bits, and panics
@@ -123,22 +153,17 @@ impl<'b> WriteCursor<'b> {
     fn check_length(&self, bits: usize) {
         let extended_bit_index = usize::from(self.bit_index) + bits;
         let byte_increment = extended_bit_index / 8;
-        assert!(self.length >= byte_increment);
+        assert!(self.bytes.len() - self.bytes_written >= byte_increment);
     }
 
-    /// Advances self.bit_index, self.bytes, and self.length to reflect that bits have been
+    /// Advances to reflect that bits have been
     /// written
     fn advance_bits(&mut self, bits: usize) {
+        self.check_length(bits);
         let extended_bit_index = usize::from(self.bit_index) + bits;
         self.bit_index = (extended_bit_index % 8) as u8;
         let byte_increment = extended_bit_index / 8;
-        assert!(self.length >= byte_increment);
-        self.length -= byte_increment;
-        unsafe {
-            // This offset operation is safe even if it puts self.bytes one byte past the end of
-            // a byte array.
-            self.bytes = self.bytes.add(byte_increment);
-        }
+        self.bytes_written += byte_increment;
     }
 
     fn skip_bits(&mut self, bits: u8) {
@@ -147,7 +172,7 @@ impl<'b> WriteCursor<'b> {
     }
 
     /// Advances the cursor to a byte boundary (a multiple of 8 bits)
-    fn align_to_8_bits(&mut self) {
+    pub fn align_to_8_bits(&mut self) {
         if self.bit_index != 0 {
             self.skip_bits(8 - self.bit_index);
         }
@@ -178,36 +203,43 @@ impl<'b> WriteCursor<'b> {
         }
     }
 
-    /// Writes a fixed-length array of values
-    pub fn write_fixed_array<T>(&mut self, items: &[T])
-    where
-        T: Serialize,
-    {
-        for item in items {
-            item.serialize(self);
-        }
+    pub fn write_aligned_bytes(&mut self, bytes: &[u8]) {
+        let remaining_bytes = self.remaining_bytes();
+        assert!(remaining_bytes.len() >= bytes.len());
+        remaining_bytes[..bytes.len()].copy_from_slice(bytes);
+        self.advance_bits(8 * bytes.len());
     }
 
-    /// Writes a variable-length array of values
-    pub fn write_variable_array<T>(&mut self, max_length: usize, items: &[T])
-    where
-        T: Serialize,
-    {
-        // TODO: The alignment of an array equals the alignment of its element type
-        let length = items.len();
-        assert!(length <= max_length);
-        let length_bits = ceiling_log_2(max_length + 1);
-        // Round up the length bits to 8, 16, 32, or 64
-        // https://github.com/UAVCAN/specification/issues/75
-        match length_bits {
-            0..=8 => self.write_u8(length as u8),
-            9..=16 => self.write_u16(length as u16),
-            17..=32 => self.write_u32(length as u32),
-            33..=64 => self.write_u64(length as u64),
-            _ => panic!("Bug: Number of bits required for array size is too large"),
-        };
-        self.write_fixed_array(items);
-    }
+    // /// Writes a fixed-length array of values
+    // pub fn write_fixed_array<T>(&mut self, items: &[T])
+    // where
+    //     T: Serialize,
+    // {
+    //     for item in items {
+    //         item.serialize(self);
+    //     }
+    // }
+    //
+    // /// Writes a variable-length array of values
+    // pub fn write_variable_array<T>(&mut self, max_length: usize, items: &[T])
+    // where
+    //     T: Serialize,
+    // {
+    //     // TODO: The alignment of an array equals the alignment of its element type
+    //     let length = items.len();
+    //     assert!(length <= max_length);
+    //     let length_bits = ceiling_log_2(max_length + 1);
+    //     // Round up the length bits to 8, 16, 32, or 64
+    //     // https://github.com/UAVCAN/specification/issues/75
+    //     match length_bits {
+    //         0..=8 => self.write_u8(length as u8),
+    //         9..=16 => self.write_u16(length as u16),
+    //         17..=32 => self.write_u32(length as u32),
+    //         33..=64 => self.write_u64(length as u64),
+    //         _ => panic!("Bug: Number of bits required for array size is too large"),
+    //     };
+    //     self.write_fixed_array(items);
+    // }
 
     /// Writes a composite value, aligned to 8 bits
     pub fn write_composite<T>(&mut self, value: &T)
@@ -215,7 +247,7 @@ impl<'b> WriteCursor<'b> {
         T: Serialize,
     {
         self.align_to_8_bits();
-        if T::EXTENSIBILITY.is_delimited() {
+        if T::EXTENT_BYTES.is_some() {
             // Add delimiter header
             let composite_size_bits = value.size_bits();
             // Convert bits to bytes, round up
@@ -901,23 +933,31 @@ mod test {
     }
 
     #[test]
-    fn test_ceiling_log_2() {
-        assert_eq!(0, ceiling_log_2(1));
-        assert_eq!(1, ceiling_log_2(2));
-        assert_eq!(2, ceiling_log_2(3));
-        assert_eq!(2, ceiling_log_2(4));
-        assert_eq!(3, ceiling_log_2(5));
-        assert_eq!(3, ceiling_log_2(6));
-        assert_eq!(3, ceiling_log_2(7));
-        assert_eq!(3, ceiling_log_2(8));
-        assert_eq!(4, ceiling_log_2(9));
-        assert_eq!(4, ceiling_log_2(10));
-        assert_eq!(4, ceiling_log_2(11));
-        assert_eq!(4, ceiling_log_2(12));
-        assert_eq!(4, ceiling_log_2(13));
-        assert_eq!(4, ceiling_log_2(14));
-        assert_eq!(4, ceiling_log_2(15));
-        assert_eq!(4, ceiling_log_2(16));
-        assert_eq!(5, ceiling_log_2(17));
+    fn u64_aligned_basic() {
+        let mut bytes = [0u8; 8];
+        let mut cursor = WriteCursor::new(&mut bytes);
+        cursor.write_aligned_u64(0xfd569a8b24bca386);
+        assert_eq!(bytes, [0x86, 0xa3, 0xbc, 0x24, 0x8b, 0x9a, 0x56, 0xfd]);
     }
+
+    // #[test]
+    // fn test_ceiling_log_2() {
+    //     assert_eq!(0, ceiling_log_2(1));
+    //     assert_eq!(1, ceiling_log_2(2));
+    //     assert_eq!(2, ceiling_log_2(3));
+    //     assert_eq!(2, ceiling_log_2(4));
+    //     assert_eq!(3, ceiling_log_2(5));
+    //     assert_eq!(3, ceiling_log_2(6));
+    //     assert_eq!(3, ceiling_log_2(7));
+    //     assert_eq!(3, ceiling_log_2(8));
+    //     assert_eq!(4, ceiling_log_2(9));
+    //     assert_eq!(4, ceiling_log_2(10));
+    //     assert_eq!(4, ceiling_log_2(11));
+    //     assert_eq!(4, ceiling_log_2(12));
+    //     assert_eq!(4, ceiling_log_2(13));
+    //     assert_eq!(4, ceiling_log_2(14));
+    //     assert_eq!(4, ceiling_log_2(15));
+    //     assert_eq!(4, ceiling_log_2(16));
+    //     assert_eq!(5, ceiling_log_2(17));
+    // }
 }

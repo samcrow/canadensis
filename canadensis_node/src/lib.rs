@@ -22,7 +22,7 @@ use canadensis_core::{NodeId, SubjectId};
 use canadensis_encoding::{DataType, Serialize, WriteCursor};
 
 /// The subject ID for Heartbeat messages
-pub const HEARTBEAT_SUBJECT: SubjectId = SubjectId::from_truncating(32085);
+pub const HEARTBEAT_SUBJECT: SubjectId = SubjectId::from_truncating(7509);
 
 /// Node health values
 #[derive(Debug, Copy, Clone)]
@@ -50,12 +50,7 @@ pub enum Mode {
     Maintenance = 2,
     /// New software/firmware is being loaded or the bootloader is running
     SoftwareUpdate = 3,
-    /// The node is no longer available
-    Offline = 7,
 }
-
-/// 19-bit mask for status codes
-const STATUS_CODE_MASK: u32 = 0x0007_ffff;
 
 pub struct Node<'info> {
     /// The identifier of this node
@@ -67,8 +62,8 @@ pub struct Node<'info> {
     health: Health,
     /// Operating mode
     mode: Mode,
-    /// Vendor-specific status information (this always fits within 19 bits)
-    status_code: u32,
+    /// Vendor-specific status information
+    status_code: u8,
     /// Node information
     #[cfg(feature = "node-info")]
     info: Option<NodeInfo<'info>>,
@@ -128,15 +123,7 @@ impl<'info> Node<'info> {
         self.mode = mode
     }
     /// Sets the vendor-specific status code
-    ///
-    /// # Panics
-    /// This function panics if the status code does not fit within 19 bits
-    pub fn set_status_code(&mut self, code: u32) {
-        assert_eq!(
-            code & !STATUS_CODE_MASK,
-            0,
-            "Status code does not fit within 19 bits"
-        );
+    pub fn set_status_code(&mut self, code: u8) {
         self.status_code = code;
     }
     /// Returns a heartbeat message
@@ -149,10 +136,12 @@ impl<'info> Node<'info> {
     }
 }
 
-/// A Node wrapper that can be serialized into a Hearbeat message
+/// A Node wrapper that can be serialized into a Heartbeat message
 pub struct Heartbeat<'node, 'info>(&'node Node<'info>);
 
-impl DataType for Heartbeat<'_, '_> {}
+impl DataType for Heartbeat<'_, '_> {
+    const EXTENT_BYTES: Option<u32> = Some(12);
+}
 
 impl Serialize for Heartbeat<'_, '_> {
     fn size_bits(&self) -> usize {
@@ -160,9 +149,115 @@ impl Serialize for Heartbeat<'_, '_> {
     }
 
     fn serialize(&self, cursor: &mut WriteCursor<'_>) {
-        cursor.write_u32(self.0.uptime);
+        cursor.write_aligned_u32(self.0.uptime);
         cursor.write_u2(self.0.health as u8);
+        cursor.align_to_8_bits();
         cursor.write_u3(self.0.mode as u8);
-        cursor.write_u19(self.0.status_code);
+        cursor.align_to_8_bits();
+        cursor.write_aligned_u8(self.0.status_code);
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::{Health, Heartbeat, Mode, Node};
+    use canadensis_core::NodeId;
+    use canadensis_encoding::{Serialize, WriteCursor};
+    use core::convert::TryFrom;
+
+    #[test]
+    fn heartbeat_basic() {
+        let mut node = Node::new(NodeId::try_from(1).unwrap());
+        check_serialize(
+            node.heartbeat(),
+            &[
+                0x0, 0x0, 0x0, 0x0, // Uptime 0
+                0x0, // Health nominal
+                0x1, // Mode initialization
+                0x0, // Vendor-specific status 0
+            ],
+        );
+        node.increment_uptime();
+        check_serialize(
+            node.heartbeat(),
+            &[
+                0x1, 0x0, 0x0, 0x0, // Uptime 1
+                0x0, // Health nominal
+                0x1, // Mode initialization
+                0x0, // Vendor-specific status 0
+            ],
+        );
+    }
+
+    #[test]
+    fn heartbeat_complex() {
+        let mut node = Node::new(NodeId::try_from(1).unwrap());
+        check_serialize(
+            node.heartbeat(),
+            &[
+                0x0, 0x0, 0x0, 0x0, // Uptime 0
+                0x0, // Health nominal
+                0x1, // Mode initialization
+                0x0, // Vendor-specific status 0
+            ],
+        );
+        node.set_health(Health::Advisory);
+        check_serialize(
+            node.heartbeat(),
+            &[
+                0x0, 0x0, 0x0, 0x0, // Uptime 0
+                0x1, // Health advisory
+                0x1, // Mode initialization
+                0x0, // Vendor-specific status 0
+            ],
+        );
+        node.set_health(Health::Caution);
+        check_serialize(
+            node.heartbeat(),
+            &[
+                0x0, 0x0, 0x0, 0x0, // Uptime 0
+                0x2, // Health caution
+                0x1, // Mode initialization
+                0x0, // Vendor-specific status 0
+            ],
+        );
+        node.set_health(Health::Warning);
+        check_serialize(
+            node.heartbeat(),
+            &[
+                0x0, 0x0, 0x0, 0x0, // Uptime 0
+                0x3, // Health warning
+                0x1, // Mode initialization
+                0x0, // Vendor-specific status 0
+            ],
+        );
+        node.set_mode(Mode::SoftwareUpdate);
+        check_serialize(
+            node.heartbeat(),
+            &[
+                0x0, 0x0, 0x0, 0x0, // Uptime 0
+                0x3, // Health warning
+                0x3, // Mode software update
+                0x0, // Vendor-specific status 0
+            ],
+        );
+        node.set_status_code(0x5a);
+        check_serialize(
+            node.heartbeat(),
+            &[
+                0x0, 0x0, 0x0, 0x0,  // Uptime 0
+                0x3,  // Health warning
+                0x3,  // Mode software update
+                0x5a, // Vendor-specific status
+            ],
+        );
+    }
+
+    fn check_serialize(heartbeat: Heartbeat<'_, '_>, expected: &[u8]) {
+        // All heartbeats fit into 7 bytes
+        let mut buffer = [0u8; 7];
+        let mut cursor = WriteCursor::new(&mut buffer);
+        heartbeat.serialize(&mut cursor);
+        assert_eq!(expected, &buffer[..]);
     }
 }

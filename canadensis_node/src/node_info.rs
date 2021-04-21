@@ -1,10 +1,8 @@
 //! Definitions used to handle uavcan.node.GetInfo requests
 
-use core::slice;
-
 use canadensis_core::ServiceId;
 use canadensis_encoding::{
-    DataType, Deserialize, DeserializeError, ReadCursor, Serialize, WriteCursor, ZeroCopy,
+    DataType, Deserialize, DeserializeError, ReadCursor, Serialize, WriteCursor,
 };
 
 /// Node information service ID
@@ -14,7 +12,7 @@ pub const INFO_SERVICE: ServiceId = ServiceId::from_truncating(430);
 const PROTOCOL_VERSION: Version = Version { major: 1, minor: 0 };
 
 /// A version, containing major and minor fields but no patch version field
-#[repr(C, packed)]
+#[repr(C)]
 #[derive(Debug, Clone)]
 #[cfg_attr(test, derive(PartialEq, Eq))]
 pub struct Version {
@@ -28,8 +26,6 @@ impl Version {
     }
 }
 
-unsafe impl ZeroCopy for Version {}
-
 /// Content of a GetInfo response
 ///
 /// Full details: https://github.com/UAVCAN/public_regulated_data_types/blob/master/uavcan/node/430.GetInfo.1.0.uavcan
@@ -41,6 +37,7 @@ pub struct NodeInfo<'info> {
     software_version: Version,
     software_vcs_revision_id: u64,
     unique_id: [u8; 16],
+    /// Human-readable name, ASCII only, maximum length 50 bytes
     name: &'info str,
     software_image_crc: Option<u64>,
     certificate_of_authenticity: Option<&'info [u8]>,
@@ -105,7 +102,10 @@ impl<'info> NodeInfo<'info> {
     }
 }
 
-impl DataType for NodeInfo<'_> {}
+impl DataType for NodeInfo<'_> {
+    /// NodeInfo is sealed
+    const EXTENT_BYTES: Option<u32> = None;
+}
 
 impl Serialize for NodeInfo<'_> {
     fn size_bits(&self) -> usize {
@@ -122,25 +122,37 @@ impl Serialize for NodeInfo<'_> {
         PROTOCOL_VERSION.serialize(cursor);
         self.hardware_version.serialize(cursor);
         self.software_version.serialize(cursor);
-        cursor.write_u64(self.software_vcs_revision_id);
-        cursor.write_bytes(&self.unique_id);
-        cursor.write_variable_array(50, self.name.as_bytes());
-        let crc_slice: &[u64] = self
-            .software_image_crc
-            .as_ref()
-            .map(slice::from_ref)
-            .unwrap_or(&[]);
-        cursor.write_variable_array(1, crc_slice);
-        cursor.write_variable_array(222, self.certificate_of_authenticity.unwrap_or(&[]));
+        cursor.write_aligned_u64(self.software_vcs_revision_id);
+        cursor.write_aligned_bytes(&self.unique_id);
+        cursor.write_aligned_u8(self.name.len() as u8);
+        cursor.write_aligned_bytes(self.name.as_bytes());
+        if let Some(crc) = self.software_image_crc {
+            // CRC length 1
+            cursor.write_aligned_u8(1);
+            cursor.write_aligned_u64(crc);
+        } else {
+            // CRC length 0
+            cursor.write_aligned_u8(0);
+        }
+        let coa = self.certificate_of_authenticity.unwrap_or(&[]);
+        cursor.write_aligned_u8(coa.len() as u8);
+        cursor.write_aligned_bytes(coa);
     }
 }
 
 /// An empty node information request
 pub struct NodeInfoRequest;
 
-impl DataType for NodeInfoRequest {}
+impl DataType for NodeInfoRequest {
+    /// Sealed
+    const EXTENT_BYTES: Option<u32> = None;
+}
 
 impl Deserialize for NodeInfoRequest {
+    fn in_bit_length_set(bit_length: usize) -> bool {
+        bit_length == 0
+    }
+
     fn deserialize_in_place(
         &mut self,
         _cursor: &mut ReadCursor<'_>,
@@ -153,6 +165,22 @@ impl Deserialize for NodeInfoRequest {
         Self: Sized,
     {
         Ok(NodeInfoRequest)
+    }
+}
+
+impl DataType for Version {
+    /// Sealed
+    const EXTENT_BYTES: Option<u32> = None;
+}
+
+impl Serialize for Version {
+    fn size_bits(&self) -> usize {
+        16
+    }
+
+    fn serialize(&self, cursor: &mut WriteCursor<'_>) {
+        cursor.write_aligned_u8(self.major);
+        cursor.write_aligned_u8(self.minor);
     }
 }
 

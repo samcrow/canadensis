@@ -2,7 +2,23 @@
 
 This project implements (most of) [UAVCAN](https://uavcan.org/) v1.0. As the UAVCAN website explains, "UAVCAN is an open lightweight protocol designed for reliable intravehicular communication in aerospace and robotic applications over CAN bus, Ethernet, and other robust transports. It is created to address the challenge of deterministic on-board data exchange between systems and components of next-generation intelligent vehicles: manned and unmanned aircraft, spacecraft, robots, and cars."
 
-Note: As of 2020-12-27, this project implements an older revision of UAVCAN 1.0, before the beta release of the specification.
+## Status
+
+This code is intended to conform to version 1.0-beta of the UAVCAN specification.
+
+Some parts of this code work:
+
+* Basic serialization and deserialization
+* Basic publishing, subscription, requesting, and responding
+
+Other parts are incomplete:
+
+* Transfer timeouts and general time management are not yet implemented.
+* There are some tests, but there are probably several bugs in areas that have not been tested.
+* The design is not the best.
+* The amount of dynamic memory allocation can be reduced.
+* No automatic generation of code from data structure description language (currently, all Rust data
+  types and serialization/deserialization code must be hand-written)
 
 ## Principles
 

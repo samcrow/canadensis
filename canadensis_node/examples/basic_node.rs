@@ -25,13 +25,29 @@ use canadensis_node::{Mode, Node, NodeInfo};
 ///
 /// Usage: `basic_node [SocketCAN interface name] [Node ID]`
 ///
-/// # Testing with pyuavcan
+/// # Testing
+///
+/// ## Create a virtual CAN device
+///
+/// ```
+/// sudo modprobe vcan
+/// sudo ip link add dev vcan0 type vcan
+/// sudo ip link set up vcan0
+/// ```
+///
+/// ## Start the node
+///
+/// ```
+/// basic_node vcan0 [node ID]
+/// ```
+///
+/// ## Interact with the node using Yakut
 ///
 /// To subscribe and print out Heartbeat messages:
-/// `pyuavcan subscribe --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',64),42)" uavcan.node.Heartbeat.1.0`
+/// `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" subscribe uavcan.node.Heartbeat.1.0`
 ///
 /// To send a NodeInfo request:
-/// `pyuavcan call --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0', 8),42)" [Node ID of basic_node] uavcan.node.GetInfo.1.0 {}`
+/// `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" call [Node ID of basic_node] uavcan.node.GetInfo.1.0 {}`
 ///
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);
@@ -45,6 +61,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     .expect("Node ID too large");
 
     let can = CANSocket::open(&can_interface).expect("Failed to open CAN interface");
+    // The read will timeout about 2 times per second, which is when the node will consider sending
+    // heartbeat messages.
     can.set_read_timeout(Duration::from_millis(500))?;
     can.set_write_timeout(Duration::from_millis(500))?;
 
@@ -57,6 +75,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     node.set_mode(Mode::Operational);
     // The ID of the next heartbeat transfer to be sent
     let mut next_heartbeat_transfer = TransferId::default();
+    let mut last_heartbeat_time = Instant::now();
+    let min_heartbeat_interval = Duration::from_millis(500);
 
     // UAVCAN TX/RX
     let mut tx = Transmitter::new(Mtu::Can8);
@@ -127,25 +147,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        // Send heartbeat
-        let heartbeat = node.heartbeat();
-        let mut heartbeat_payload = vec![0u8; (heartbeat.size_bits() + 7) / 8];
-        heartbeat.serialize(&mut WriteCursor::new(&mut heartbeat_payload));
-        let heartbeat_transfer: Transfer<&[u8]> = Transfer {
-            timestamp: Microseconds(0),
-            header: TransferHeader {
-                source: node.id(),
-                priority: Default::default(),
-                kind: TransferKindHeader::Message(MessageHeader {
-                    anonymous: false,
-                    subject: canadensis_node::HEARTBEAT_SUBJECT,
-                }),
-            },
-            transfer_id: next_heartbeat_transfer,
-            payload: &heartbeat_payload,
-        };
-        next_heartbeat_transfer = next_heartbeat_transfer.increment();
-        tx.push(heartbeat_transfer).expect("Out of memory");
+        let now = Instant::now();
+        if last_heartbeat_time + min_heartbeat_interval <= now {
+            last_heartbeat_time = now;
+            // Send heartbeat
+            let heartbeat = node.heartbeat();
+            let mut heartbeat_payload = vec![0u8; (heartbeat.size_bits() + 7) / 8];
+            heartbeat.serialize(&mut WriteCursor::new(&mut heartbeat_payload));
+            let heartbeat_transfer: Transfer<&[u8]> = Transfer {
+                timestamp: Microseconds(0),
+                header: TransferHeader {
+                    source: node.id(),
+                    priority: Default::default(),
+                    kind: TransferKindHeader::Message(MessageHeader {
+                        anonymous: false,
+                        subject: canadensis_node::HEARTBEAT_SUBJECT,
+                    }),
+                },
+                transfer_id: next_heartbeat_transfer,
+                payload: &heartbeat_payload,
+            };
+            next_heartbeat_transfer = next_heartbeat_transfer.increment();
+            tx.push(heartbeat_transfer).expect("Out of memory");
+        }
 
         // Send frames
         while let Some(out_frame) = tx.pop() {

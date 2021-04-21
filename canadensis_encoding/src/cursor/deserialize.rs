@@ -1,4 +1,4 @@
-use core::marker::PhantomData;
+use core::cmp;
 
 use half::f16;
 
@@ -13,9 +13,7 @@ pub struct ReadCursor<'b> {
     ///
     /// This includes any bits already read in the current byte, but excludes bytes that have
     /// already been fully read.
-    bytes: *const u8,
-    /// The number of valid bytes that the bytes field points to
-    length: usize,
+    bytes: &'b [u8],
     /// The number of bits in the current byte that have already been read
     ///
     /// Multiple values within a byte are read from right to left:
@@ -23,18 +21,14 @@ pub struct ReadCursor<'b> {
     ///
     /// Invariant: This is in the range 0..=7.
     bit_index: u8,
-    /// Phantom data to get the lifetimes right
-    bytes_phantom: PhantomData<&'b [u8]>,
 }
 
 impl<'b> ReadCursor<'b> {
     /// Creates a cursor that will read starting at the beginning of the provided slice
     pub fn new(bytes: &'b [u8]) -> Self {
         ReadCursor {
-            bytes: bytes.as_ptr(),
-            length: bytes.len(),
+            bytes,
             bit_index: 0,
-            bytes_phantom: PhantomData,
         }
     }
 
@@ -111,56 +105,69 @@ impl<'b> ReadCursor<'b> {
         value
     }
 
+    pub fn read_aligned_u8(&mut self) -> u8 {
+        assert!(self.is_aligned_to_8_bits());
+        let value = self.read_current();
+        self.advance_bytes(1);
+        value
+    }
+
+    pub fn read_aligned_u16(&mut self) -> u16 {
+        // Least significant byte first
+        let lsb = self.read_aligned_u8();
+        let msb = self.read_aligned_u8();
+        u16::from(msb) << 8 | u16::from(lsb)
+    }
+
+    pub fn read_aligned_u32(&mut self) -> u32 {
+        // Least significant byte first
+        let lsbs = self.read_aligned_u16();
+        let msbs = self.read_aligned_u16();
+        u32::from(msbs) << 16 | u32::from(lsbs)
+    }
+
+    pub fn read_aligned_u64(&mut self) -> u64 {
+        // Least significant byte first
+        let lsbs = self.read_aligned_u32();
+        let msbs = self.read_aligned_u32();
+        u64::from(msbs) << 32 | u64::from(lsbs)
+    }
+
     /// Returns the value of the current byte being read, or 0 if the cursor is past the end
     fn read_current(&self) -> u8 {
-        if self.length != 0 {
-            // A byte is available; read it
-            unsafe { *self.bytes }
-        } else {
-            // Past the end, just return 0
-            0
-        }
+        self.bytes.get(0).cloned().unwrap_or(0)
     }
     /// Returns the value of the byte after current byte being read, or 0 if that position is past
     /// the end
     fn read_next(&self) -> u8 {
-        if self.length > 1 {
-            // A byte is available; read it
-            unsafe {
-                let offset = self.bytes.add(1);
-                *offset
-            }
-        } else {
-            // Past the end, just return 0
-            0
-        }
+        self.bytes.get(1).cloned().unwrap_or(0)
     }
 
-    /// Advances self.bit_index, self.bytes, and self.length to reflect that bits have been read
+    /// Advances self.bit_index and self.bytes to reflect that bits have been read
     fn advance_bits(&mut self, bits: usize) {
         let extended_bit_index = usize::from(self.bit_index) + bits;
         self.bit_index = (extended_bit_index % 8) as u8;
         let byte_increment = extended_bit_index / 8;
-        if self.length >= byte_increment {
-            self.length -= byte_increment;
-            unsafe {
-                // This offset operation is safe even if it puts self.bytes one byte past the end of
-                // a byte array.
-                self.bytes = self.bytes.add(byte_increment);
-            }
-        } else {
-            // Reached or passed the end
-            // Advance self.bytes to one past the end
-            unsafe { self.bytes = self.bytes.add(self.length) };
-            self.length = 0;
-        }
+        self.advance_bytes(byte_increment);
+    }
+
+    fn advance_bytes(&mut self, byte_increment: usize) {
+        // Advance by the byte increment or number of bytes remaining, whichever is less
+        // If the number of bytes remaining is smaller,
+        // self.bytes will end up empty.
+        let real_byte_increment = cmp::min(byte_increment, self.bytes.len());
+        self.bytes = &self.bytes[real_byte_increment..];
     }
 
     /// Skips up to 7 bits so that this cursor is aligned to 8 bits (one byte)
-    fn align_to_8_bits(&mut self) {
+    pub fn align_to_8_bits(&mut self) {
         if self.bit_index != 0 {
             self.advance_bits(8 - usize::from(self.bit_index))
         }
+    }
+
+    fn is_aligned_to_8_bits(&self) -> bool {
+        self.bit_index == 0
     }
 
     /// Reads a 16-bit floating-point value
@@ -169,10 +176,20 @@ impl<'b> ReadCursor<'b> {
         f16::from_bits(self.read_u16())
     }
 
+    #[inline]
+    pub fn read_aligned_f16(&mut self) -> f16 {
+        f16::from_bits(self.read_aligned_u16())
+    }
+
     /// Reads a 32-bit floating-point value
     #[inline]
     pub fn read_f32(&mut self) -> f32 {
         f32::from_bits(self.read_u32())
+    }
+
+    #[inline]
+    pub fn read_aligned_f32(&mut self) -> f32 {
+        f32::from_bits(self.read_aligned_u32())
     }
 
     /// Reads a 64-bit floating-point value
@@ -181,22 +198,16 @@ impl<'b> ReadCursor<'b> {
         f64::from_bits(self.read_u64())
     }
 
+    #[inline]
+    pub fn read_aligned_f64(&mut self) -> f64 {
+        f64::from_bits(self.read_aligned_u64())
+    }
+
     /// Reads a byte array
     pub fn read_bytes(&mut self, bytes: &mut [u8]) {
         for byte in bytes {
             *byte = self.read_u8();
         }
-    }
-
-    /// Reads a fixed-length array of values
-    pub fn read_array<T>(&mut self, items: &mut [T]) -> Result<(), DeserializeError>
-    where
-        T: Deserialize,
-    {
-        for item in items {
-            item.deserialize_in_place(self)?;
-        }
-        Ok(())
     }
 
     /// Reads a composite object
@@ -209,21 +220,56 @@ impl<'b> ReadCursor<'b> {
     where
         T: Deserialize,
     {
-        if T::EXTENSIBILITY.is_delimited() {
-            // Read the 32-bit delimiter header
-            let length_bytes = self.read_u32();
-            let length_bits = length_bytes * 8;
-            if !T::in_bit_length_set(length_bits as usize) {
-                // Invalid length
-                return Err(DeserializeError::DelimitedLength);
+        self.align_to_8_bits();
+        if T::EXTENT_BYTES.is_some() {
+            // This is a delimited type. Read the header and fork to read the object
+            let composite_length_bytes = self.read_aligned_u32() as usize;
+            if composite_length_bytes > self.bytes.len() {
+                Err(DeserializeError::DelimitedLength)
+            } else {
+                let mut forked = self.fork(composite_length_bytes);
+                T::deserialize(&mut forked)
             }
+        } else {
+            // Sealed type, read directly
+            T::deserialize(self)
         }
-        todo!()
     }
 
     /// Reads a boolean value (1 bit)
     pub fn read_bool(&mut self) -> bool {
         self.read_u1() == 1
+    }
+
+    /// Creates another cursor to read a specified number of bytes, and skips this cursor past
+    /// those bytes
+    ///
+    /// The number of bytes to fork must be less than or equal to the number of bytes available
+    /// for this cursor to read.
+    ///
+    /// The returned cursor will read `bytes` bytes starting at the position of this cursor before
+    /// the call to `fork`, and then will read implicit zero bytes.
+    ///
+    /// After this function is called, this cursor will be advanced to just past the end of the
+    /// bytes that the returned cursor can read.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if this cursor is not aligned to a byte boundary (8 bits),
+    /// or if bytes is less then the number of bytes remaining for this cursor to read.
+    fn fork(&mut self, fork_bytes: usize) -> Self {
+        assert_eq!(self.bit_index, 0, "fork(): Not aligned to a byte");
+        assert!(
+            fork_bytes <= self.bytes.len(),
+            "fork(): Not enough bytes available to fork"
+        );
+
+        let forked_cursor = ReadCursor {
+            bytes: &self.bytes[..fork_bytes],
+            bit_index: 0,
+        };
+        self.bytes = &self.bytes[fork_bytes..];
+        forked_cursor
     }
 }
 

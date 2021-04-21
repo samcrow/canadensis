@@ -1,7 +1,7 @@
 extern crate canadensis_encoding;
 
 use canadensis_encoding::{
-    DataType, Deserialize, DeserializeError, Extensibility, ReadCursor, Serialize, WriteCursor,
+    DataType, Deserialize, DeserializeError, ReadCursor, Serialize, WriteCursor,
 };
 
 struct Inner {
@@ -13,7 +13,8 @@ struct Inner {
 }
 
 impl DataType for Inner {
-    const EXTENSIBILITY: Extensibility = Extensibility::Sealed;
+    /// Sealed
+    const EXTENT_BYTES: Option<u32> = None;
 }
 
 struct Outer {
@@ -30,7 +31,7 @@ struct Outer {
 
 impl DataType for Outer {
     // 12 bytes = 96 bits extent
-    const EXTENSIBILITY: Extensibility = Extensibility::Delimited(12);
+    const EXTENT_BYTES: Option<u32> = Some(12);
 }
 
 impl Serialize for Inner {
@@ -47,6 +48,10 @@ impl Serialize for Inner {
 }
 
 impl Deserialize for Inner {
+    fn in_bit_length_set(bit_length: usize) -> bool {
+        bit_length == 8
+    }
+
     fn deserialize_in_place(
         &mut self,
         cursor: &mut ReadCursor<'_>,
@@ -82,5 +87,47 @@ impl Serialize for Outer {
 
     fn serialize(&self, cursor: &mut WriteCursor<'_>) {
         cursor.write_u13(self.a);
+        cursor.align_to_8_bits();
+        cursor.write_composite(&self.inner);
+        cursor.align_to_8_bits();
+        cursor.write_u41(self.b);
     }
 }
+
+impl Deserialize for Outer {
+    fn in_bit_length_set(bit_length: usize) -> bool {
+        bit_length == 72
+    }
+
+    fn deserialize_in_place(
+        &mut self,
+        cursor: &mut ReadCursor<'_>,
+    ) -> Result<(), DeserializeError> {
+        self.a = cursor.read_u13();
+        cursor.align_to_8_bits();
+        self.inner = cursor.read_composite()?;
+        cursor.align_to_8_bits();
+        self.b = cursor.read_u41();
+        Ok(())
+    }
+
+    fn deserialize(cursor: &mut ReadCursor<'_>) -> Result<Self, DeserializeError>
+    where
+        Self: Sized,
+    {
+        let mut value = Outer {
+            a: 0,
+            inner: Inner {
+                a: false,
+                b: false,
+                c: false,
+                d: 0,
+            },
+            b: 0,
+        };
+        value.deserialize_in_place(cursor)?;
+        Ok(value)
+    }
+}
+
+// TODO: Write actual tests
