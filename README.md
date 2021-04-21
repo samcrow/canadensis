@@ -18,7 +18,8 @@ Other parts are incomplete:
 * The design is not the best.
 * The amount of dynamic memory allocation can be reduced.
 * No automatic generation of code from data structure description language (currently, all Rust data
-  types and serialization/deserialization code must be hand-written)
+  types and serialization/deserialization code must be hand-written.
+* Due to changes in `canadensis_encoding`, the `canadensis` library currently does not compile.
 
 ## Principles
 
