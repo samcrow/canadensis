@@ -55,12 +55,15 @@ impl Publisher {
         }
     }
 
-    pub fn send(
+    pub fn send<T>(
         &mut self,
-        payload: &dyn Serialize,
+        payload: &T,
         deadline: Microseconds,
         transmitter: &mut Transmitter,
-    ) -> Result<(), OutOfMemoryError> {
+    ) -> Result<(), OutOfMemoryError>
+    where
+        T: Serialize,
+    {
         // Part 1: Serialize
         do_serialize(payload, |payload_bytes| {
             self.send_payload(payload_bytes, deadline, transmitter)
@@ -108,7 +111,7 @@ impl AnonymousPublisher {
     ///
     /// priority: The priority to use for messages
     /// subject: The subject ID to publish to
-    pub const fn new(priority: Priority, subject: SubjectId) -> Self {
+    pub fn new(priority: Priority, subject: SubjectId) -> Self {
         AnonymousPublisher {
             priority,
             subject,
@@ -116,12 +119,15 @@ impl AnonymousPublisher {
         }
     }
 
-    pub fn send(
+    pub fn send<T>(
         &mut self,
-        payload: &dyn Serialize,
+        payload: &T,
         deadline: Microseconds,
         transmitter: &mut Transmitter,
-    ) -> Result<(), OutOfMemoryError> {
+    ) -> Result<(), OutOfMemoryError>
+    where
+        T: Serialize,
+    {
         // Part 1: Serialize
         do_serialize(payload, |payload_bytes| {
             self.send_payload(payload_bytes, deadline, transmitter)
@@ -172,7 +178,7 @@ impl Requester {
     /// this_node: The ID of this node
     /// priority: The priority to use for messages
     /// service: The service ID to request
-    pub const fn new(this_node: NodeId, priority: Priority, service: ServiceId) -> Self {
+    pub fn new(this_node: NodeId, priority: Priority, service: ServiceId) -> Self {
         Requester {
             this_node,
             priority,
@@ -181,13 +187,16 @@ impl Requester {
         }
     }
 
-    pub fn send(
+    pub fn send<T>(
         &mut self,
-        payload: &dyn Serialize,
+        payload: &T,
         destination: NodeId,
         deadline: Microseconds,
         transmitter: &mut Transmitter,
-    ) -> Result<(), OutOfMemoryError> {
+    ) -> Result<(), OutOfMemoryError>
+    where
+        T: Serialize,
+    {
         // Part 1: Serialize
         do_serialize(payload, |payload_bytes| {
             self.send_payload(payload_bytes, destination, deadline, transmitter)
@@ -222,26 +231,22 @@ impl Requester {
 }
 
 /// Serializes a payload into a buffer and passes the buffer to a closure
-fn do_serialize<F>(payload: &dyn Serialize, operation: F) -> Result<(), OutOfMemoryError>
+fn do_serialize<T, F>(payload: &T, operation: F) -> Result<(), OutOfMemoryError>
 where
+    T: Serialize,
     F: FnOnce(&[u8]) -> Result<(), OutOfMemoryError>,
 {
-    if let Some(zero_copy) = payload.zero_copy() {
-        let bytes = zero_copy.as_slice();
-        operation(bytes)
+    let payload_bytes = (payload.size_bits() + 7) / 8;
+    if payload_bytes > STACK_THRESHOLD {
+        let mut bytes: Vec<u8> = FallibleVec::try_with_capacity(payload_bytes)?;
+        bytes.extend(iter::repeat(0).take(payload_bytes));
+        payload.serialize(&mut WriteCursor::new(&mut bytes));
+        operation(&bytes)
     } else {
-        let payload_bytes = (payload.size_bits() + 7) / 8;
-        if payload_bytes > STACK_THRESHOLD {
-            let mut bytes: Vec<u8> = FallibleVec::try_with_capacity(payload_bytes)?;
-            bytes.extend(iter::repeat(0).take(payload_bytes));
-            payload.serialize(&mut WriteCursor::new(&mut bytes));
-            operation(&bytes)
-        } else {
-            let mut bytes = [0u8; STACK_THRESHOLD];
-            let bytes = &mut bytes[..payload_bytes];
-            payload.serialize(&mut WriteCursor::new(bytes));
-            operation(bytes)
-        }
+        let mut bytes = [0u8; STACK_THRESHOLD];
+        let bytes = &mut bytes[..payload_bytes];
+        payload.serialize(&mut WriteCursor::new(bytes));
+        operation(bytes)
     }
 }
 
