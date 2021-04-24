@@ -3,6 +3,7 @@ members = [
     "canadensis",
     "canadensis_core",
     "canadensis_can",
+    "canadensis_filter_config",
     "canadensis_node",
     "canadensis_encoding"
 ]

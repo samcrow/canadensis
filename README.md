@@ -10,6 +10,7 @@ Some parts of this code work:
 
 * Basic serialization and deserialization
 * Basic publishing, subscription, requesting, and responding
+* Automatic filter configuration (works in isolation, but not proven on real hardware)
 
 Other parts are incomplete:
 
@@ -33,6 +34,7 @@ Other parts are incomplete:
 * Transfer serialization and deserialization (`canadensis_encoding`)
 * Basic node functions (`canadensis_node`)
 * A basic presentation layer for CAN and CAN FD, reexporting other crates (`canadensis`)
+* Automatic filter configuration (`canadensis_filter_config`)
 
 ## License
 

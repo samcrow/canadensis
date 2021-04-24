@@ -1,0 +1,12 @@
+[package]
+name = "canadensis_filter_config"
+license = "MIT OR Apache-2.0"
+description = "Automatic receive filter configuration for UAVCAN"
+version = "0.1.0"
+authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
+edition = "2018"
+repository = "https://github.com/samcrow/canadensis"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
