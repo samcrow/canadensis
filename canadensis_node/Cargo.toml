@@ -30,6 +30,7 @@ node-info = []
 [dev-dependencies]
 socketcan = "1.7.0"
 rand = "0.7.3"
+embedded-time = "0.10.1"
 
 [dev-dependencies.canadensis_can]
 version = "0.1.0"

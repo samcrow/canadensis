@@ -2,7 +2,10 @@
 //! Transfer data definitions
 //!
 
-use crate::{Microseconds, NodeId, PortId, Priority, ServiceId, SubjectId, TransferId};
+use embedded_time::{Clock, Instant};
+
+use crate::{NodeId, PortId, Priority, ServiceId, SubjectId, TransferId};
+use core::fmt::Debug;
 
 /// Transfer kinds as defined by the UAVCAN Specification
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -81,12 +84,11 @@ pub struct TransferHeader {
 }
 
 /// A UAVCAN transfer (either incoming or outgoing)
-#[derive(Debug, Eq, PartialEq, Clone)]
-pub struct Transfer<P> {
-    /// For RX transfers: reception timestamp.
-    /// For TX transfers: transmission deadline.
+pub struct Transfer<P, C: Clock> {
+    /// For RX transfers: reception timestamp (the time when the first frame in the transfer was received)
+    /// For TX transfers: transmission deadline (all frames must be sent by this time)
     /// The time system may be arbitrary as long as the clock is monotonic (steady).
-    pub timestamp: Microseconds,
+    pub timestamp: Instant<C>,
 
     /// The transfer header
     ///
@@ -115,7 +117,61 @@ pub struct Transfer<P> {
     pub payload: P,
 }
 
-impl<P> Transfer<P> {
+impl<P, C> Debug for Transfer<P, C>
+where
+    C: Clock,
+    Instant<C>: Debug,
+    P: Debug,
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Transfer")
+            .field("timestamp", &self.timestamp)
+            .field("header", &self.header)
+            .field("transfer_id", &self.transfer_id)
+            .field("payload", &self.payload)
+            .finish()
+    }
+}
+
+impl<P, C> PartialEq for Transfer<P, C>
+where
+    C: Clock,
+    Instant<C>: PartialEq,
+    P: PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.timestamp.eq(&other.timestamp)
+            && self.header.eq(&other.header)
+            && self.transfer_id.eq(&other.transfer_id)
+            && self.payload.eq(&other.payload)
+    }
+}
+
+impl<P, C> Eq for Transfer<P, C>
+where
+    C: Clock,
+    Instant<C>: Eq + PartialEq,
+    P: Eq + PartialEq,
+{
+}
+
+impl<P, C> Clone for Transfer<P, C>
+where
+    C: Clock,
+    Instant<C>: Clone,
+    P: Clone,
+{
+    fn clone(&self) -> Self {
+        Transfer {
+            timestamp: self.timestamp.clone(),
+            header: self.header.clone(),
+            transfer_id: self.transfer_id.clone(),
+            payload: self.payload.clone(),
+        }
+    }
+}
+
+impl<P, C: Clock> Transfer<P, C> {
     /// Returns true if this transfer is a request matching the provided service ID
     pub fn is_request_for(&self, service_id: ServiceId) -> bool {
         match &self.header.kind {

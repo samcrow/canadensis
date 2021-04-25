@@ -3,6 +3,7 @@
 //!
 
 extern crate canadensis;
+extern crate embedded_time;
 extern crate rand;
 extern crate socketcan;
 
@@ -14,22 +15,38 @@ use std::time::{Duration, Instant};
 use socketcan::CANSocket;
 
 use canadensis::node::{Mode, Node, NodeInfo, NodeInfoRequest};
-use canadensis::{
-    CanId, Frame, Microseconds, Mtu, NodeId, Publisher, Receiver, Responder, Transmitter,
-};
+use canadensis::{CanId, Frame, Mtu, NodeId, Publisher, Receiver, Responder, Transmitter};
 use canadensis_core::Priority;
+use embedded_time::duration::{Fraction, Microseconds};
+use embedded_time::Clock;
 
 /// Runs a basic UAVCAN node, sending Heartbeat messages and responding to NodeInfo requests
 ///
 /// Usage: `basic_node [SocketCAN interface name] [Node ID]`
 ///
-/// # Testing with pyuavcan
+/// # Testing
+///
+/// ## Create a virtual CAN device
+///
+/// ```
+/// sudo modprobe vcan
+/// sudo ip link add dev vcan0 type vcan
+/// sudo ip link set up vcan0
+/// ```
+///
+/// ## Start the node
+///
+/// ```
+/// basic_node vcan0 [node ID]
+/// ```
+///
+/// ## Interact with the node using Yakut
 ///
 /// To subscribe and print out Heartbeat messages:
-/// `pyuavcan subscribe --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',64),42)" uavcan.node.Heartbeat.1.0`
+/// `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" subscribe uavcan.node.Heartbeat.1.0`
 ///
 /// To send a NodeInfo request:
-/// `pyuavcan call --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0', 8),42)" [Node ID of basic_node] uavcan.node.GetInfo.1.0 {}`
+/// `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" call [Node ID of basic_node] uavcan.node.GetInfo.1.0 {}`
 ///
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);
@@ -59,7 +76,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rx = Receiver::new(node_id);
 
     // Subscribe to NodeInfo
-    rx.subscribe_request(canadensis_node::INFO_SERVICE, 0, Microseconds(0))
+    rx.subscribe_request(canadensis_node::INFO_SERVICE, 0, Microseconds(10_000_u32))
         .expect("Failed to subscribe");
 
     // Presentation layer
@@ -71,6 +88,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut node_info_responder = Responder::new(node.id(), canadensis::node::INFO_SERVICE);
 
     let start_time = Instant::now();
+
+    let embedded_clock = SystemClock::new();
 
     loop {
         let run_time = Instant::now().duration_since(start_time);
@@ -87,7 +106,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(frame) => {
                 // Convert frame from socketcan to canadensis_can format
                 let frame = Frame::new(
-                    Microseconds(0),
+                    embedded_clock.try_now().unwrap(),
                     CanId::try_from(frame.id()).unwrap(),
                     frame.data(),
                 );
@@ -107,9 +126,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let Some(transfer_in) = transfer_in {
             if node_info_responder.interested(&transfer_in.header) {
                 node_info_responder
-                    .handle_request::<NodeInfoRequest, _, _, Infallible>(
+                    .handle_request::<NodeInfoRequest, _, _, Infallible, _>(
                         transfer_in,
-                        Microseconds(0),
+                        embedded_clock.try_now().unwrap() + Microseconds(10_000_u32),
                         &mut tx,
                         |_: NodeInfoRequest| Ok(node.info().unwrap().clone()),
                     )
@@ -118,7 +137,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         // Publish heartbeat
         heartbeat_publisher
-            .send(&node.heartbeat(), Microseconds(0), &mut tx)
+            .send(
+                &node.heartbeat(),
+                embedded_clock.try_now().unwrap() + Microseconds(10_000_u32),
+                &mut tx,
+            )
             .expect("Out of memory");
 
         // Send frames
@@ -128,5 +151,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 socketcan::CANFrame::new(out_frame.id().into(), out_frame.data(), false, false)?;
             can.write_frame(&out_frame)?;
         }
+    }
+}
+
+/// A clock with microsecond precision
+#[derive(Debug)]
+struct SystemClock {
+    start_time: Instant,
+}
+
+impl SystemClock {
+    pub fn new() -> Self {
+        SystemClock {
+            start_time: Instant::now(),
+        }
+    }
+}
+
+impl Clock for SystemClock {
+    type T = u64;
+    /// 1 tick = 1 microsecond
+    const SCALING_FACTOR: Fraction = Fraction::new(1, 1_000_000);
+
+    fn try_now(&self) -> Result<embedded_time::Instant<Self>, embedded_time::clock::Error> {
+        let now = Instant::now();
+        let since_start = now.duration_since(self.start_time);
+        // Truncate microseconds to 64 bits
+        Ok(embedded_time::Instant::new(since_start.as_micros() as u64))
     }
 }

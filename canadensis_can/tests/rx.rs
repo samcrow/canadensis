@@ -9,25 +9,42 @@ use core::convert::{TryFrom, TryInto};
 
 use canadensis_can::{Frame, OutOfMemoryError, Receiver};
 use canadensis_core::transfer::*;
-use canadensis_core::{Microseconds, Priority, ServiceId, SubjectId};
+use canadensis_core::{Priority, ServiceId, SubjectId};
+use embedded_time::clock::Error;
+use embedded_time::duration::{Fraction, Microseconds};
+use embedded_time::{Clock, Instant};
+
+/// A theoretical clock with microsecond precision
+#[derive(Debug)]
+struct SystemClock;
+
+impl Clock for SystemClock {
+    type T = u64;
+    /// 1 tick = 1 microsecond
+    const SCALING_FACTOR: Fraction = Fraction::new(1, 1_000_000);
+
+    fn try_now(&self) -> Result<Instant<Self>, Error> {
+        unimplemented!("These tests don't actually call this function")
+    }
+}
 
 #[test]
 fn test_heartbeat() -> Result<(), OutOfMemoryError> {
-    let mut rx = Receiver::new(0.try_into().unwrap());
+    let mut rx: Receiver<SystemClock, Microseconds> = Receiver::new(0.try_into().unwrap());
 
     let heartbeat_subject = SubjectId::try_from(7509).unwrap();
-    rx.subscribe_message(heartbeat_subject, 7, Microseconds(0))?;
+    rx.subscribe_message(heartbeat_subject, 7, Microseconds::new(10_000))?;
 
     let transfer = rx
         .accept(Frame::new(
-            Microseconds(42),
+            Instant::new(10),
             0x107d552a.try_into().unwrap(),
             &[0x00, 0x00, 0x00, 0x00, 0x04, 0x78, 0x68, 0xe0],
         ))?
         .expect("Didn't get a transfer");
 
     let expected = Transfer {
-        timestamp: Microseconds(42),
+        timestamp: Instant::new(10),
         header: TransferHeader {
             source: 42.try_into().unwrap(),
             priority: Priority::Nominal,
@@ -45,21 +62,21 @@ fn test_heartbeat() -> Result<(), OutOfMemoryError> {
 }
 #[test]
 fn test_string() -> Result<(), OutOfMemoryError> {
-    let mut rx = Receiver::new(0.try_into().unwrap());
+    let mut rx: Receiver<SystemClock, Microseconds> = Receiver::new(0.try_into().unwrap());
 
     let string_subject = SubjectId::try_from(4919).unwrap();
-    rx.subscribe_message(string_subject, 16, Microseconds(0))?;
+    rx.subscribe_message(string_subject, 16, Microseconds(10_000))?;
 
     let transfer = rx
         .accept(Frame::new(
-            Microseconds(42),
+            Instant::new(20),
             0x11133775.try_into().unwrap(),
             b"\x00\x18Hello world!\x00\xe0",
         ))?
         .expect("Didn't get a transfer");
 
     let expected = Transfer {
-        timestamp: Microseconds(42),
+        timestamp: Instant::new(20),
         header: TransferHeader {
             // Anonymous pseudo-ID
             source: 0x75.try_into().unwrap(),
@@ -78,21 +95,21 @@ fn test_string() -> Result<(), OutOfMemoryError> {
 }
 #[test]
 fn test_node_info_request() -> Result<(), OutOfMemoryError> {
-    let mut rx = Receiver::new(42.try_into().unwrap());
+    let mut rx: Receiver<SystemClock, Microseconds> = Receiver::new(42.try_into().unwrap());
 
     let service = ServiceId::try_from(430).unwrap();
-    rx.subscribe_request(service, 0, Microseconds(0))?;
+    rx.subscribe_request(service, 0, Microseconds(10_000))?;
 
     let transfer = rx
         .accept(Frame::new(
-            Microseconds(302),
+            Instant::new(30),
             0x136b957b.try_into().unwrap(),
             &[0xe1],
         ))?
         .expect("Didn't get a transfer");
 
     let expected = Transfer {
-        timestamp: Microseconds(302),
+        timestamp: Instant::new(30),
         header: TransferHeader {
             source: 123.try_into().unwrap(),
             priority: Priority::Nominal,
@@ -110,10 +127,10 @@ fn test_node_info_request() -> Result<(), OutOfMemoryError> {
 }
 #[test]
 fn test_node_info_response() -> Result<(), OutOfMemoryError> {
-    let mut rx = Receiver::new(123.try_into().unwrap());
+    let mut rx: Receiver<SystemClock, Microseconds> = Receiver::new(123.try_into().unwrap());
 
     let service = ServiceId::try_from(430).unwrap();
-    rx.subscribe_response(service, 313 * 8, Microseconds(12))?;
+    rx.subscribe_response(service, 313 * 8, Microseconds(10_000))?;
 
     let payload: [u8; 69] = [
         0x01, 0x00, // Protocol version
@@ -146,7 +163,7 @@ fn test_node_info_response() -> Result<(), OutOfMemoryError> {
 
     for (i, &frame_data) in frames.iter().enumerate() {
         let frame = Frame::new(
-            Microseconds(i as u64),
+            Instant::new(i as u64),
             0x126BBDAA.try_into().unwrap(),
             frame_data,
         );
@@ -158,7 +175,8 @@ fn test_node_info_response() -> Result<(), OutOfMemoryError> {
             let transfer = rx.accept(frame)?.expect("Didn't get a transfer");
 
             let expected = Transfer {
-                timestamp: Microseconds(0),
+                // This is the timestamp of the first frame
+                timestamp: Instant::new(0),
                 header: TransferHeader {
                     source: 42.try_into().unwrap(),
                     priority: Priority::Nominal,
@@ -178,13 +196,13 @@ fn test_node_info_response() -> Result<(), OutOfMemoryError> {
 }
 #[test]
 fn test_array() -> Result<(), OutOfMemoryError> {
-    let mut rx = Receiver::new(0.try_into().unwrap());
+    let mut rx: Receiver<SystemClock, Microseconds> = Receiver::new(0.try_into().unwrap());
 
     let subject = SubjectId::try_from(4919).unwrap();
-    rx.subscribe_message(subject, 1024, Microseconds(1))?;
+    rx.subscribe_message(subject, 1024, Microseconds(10_000))?;
 
     let expected = Transfer {
-        timestamp: Microseconds(0),
+        timestamp: Instant::new(40),
         header: TransferHeader {
             source: 59.try_into().unwrap(),
             priority: Priority::Nominal,
@@ -226,7 +244,7 @@ fn test_array() -> Result<(), OutOfMemoryError> {
 
     for (i, &frame_data) in frames.iter().enumerate() {
         let frame = Frame::new(
-            Microseconds(i as u64),
+            Instant::new(40 + i as u64),
             0x1013373b.try_into().unwrap(),
             frame_data,
         );

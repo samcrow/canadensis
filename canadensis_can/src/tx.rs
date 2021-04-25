@@ -13,20 +13,20 @@ use crate::heap::{Heap, Transaction};
 use crate::tx::breakdown::Breakdown;
 use crate::{CanId, Mtu};
 use canadensis_core::transfer::{ServiceHeader, Transfer, TransferHeader, TransferKindHeader};
-use canadensis_core::Microseconds;
 use core::convert::TryFrom;
 use core::iter;
+use embedded_time::{Clock, Instant};
 use fallible_collections::TryReserveError;
 
 /// Splits outgoing transfers into frames
-pub struct Transmitter {
+pub struct Transmitter<C: Clock> {
     /// Queue of frames waiting to be sent
-    frame_queue: Heap<Frame>,
+    frame_queue: Heap<Frame<C>>,
     /// Transport MTU
     mtu: usize,
 }
 
-impl Transmitter {
+impl<C: Clock> Transmitter<C> {
     /// Creates a transmitter
     ///
     /// mtu: The maximum number of bytes in a frame
@@ -47,7 +47,7 @@ impl Transmitter {
     /// Breaks a transfer into frames
     ///
     /// The frames can be retrieved and sent using the peek() and pop() functions.
-    pub fn push<P>(&mut self, transfer: Transfer<P>) -> Result<(), OutOfMemoryError>
+    pub fn push<P>(&mut self, transfer: Transfer<P, C>) -> Result<(), OutOfMemoryError>
     where
         P: AsRef<[u8]>,
     {
@@ -79,8 +79,8 @@ impl Transmitter {
     /// If an out-of-memory condition occurs, this function returns an error. There may be frames
     /// remaining in the transaction that need to be cleaned up.
     fn try_push(
-        transaction: &mut Transaction<'_, Frame>,
-        transfer: Transfer<&'_ [u8]>,
+        transaction: &mut Transaction<'_, Frame<C>>,
+        transfer: Transfer<&'_ [u8], C>,
         mtu: usize,
     ) -> Result<(), OutOfMemoryError> {
         let padding = calculate_padding(transfer.payload.len(), mtu);
@@ -125,8 +125,8 @@ impl Transmitter {
 
     /// Creates a frame and adds it to a transaction
     fn push_frame(
-        transaction: &mut Transaction<'_, Frame>,
-        timestamp: Microseconds,
+        transaction: &mut Transaction<'_, Frame<C>>,
+        timestamp: Instant<C>,
         id: CanId,
         data: &[u8],
     ) -> core::result::Result<(), TryReserveError> {
@@ -135,17 +135,17 @@ impl Transmitter {
     }
 
     /// Returns a reference to the next frame waiting to be sent, if any exists
-    pub fn peek(&self) -> Option<&Frame> {
+    pub fn peek(&self) -> Option<&Frame<C>> {
         self.frame_queue.peek()
     }
 
     /// Removes and returns the next frame waiting to be sent, if any exists
-    pub fn pop(&mut self) -> Option<Frame> {
+    pub fn pop(&mut self) -> Option<Frame<C>> {
         self.frame_queue.pop()
     }
 
     /// Returns a frame that has not been sent and queues it to be sent later
-    pub fn return_frame(&mut self, frame: Frame) -> Result<(), TryReserveError> {
+    pub fn return_frame(&mut self, frame: Frame<C>) -> Result<(), TryReserveError> {
         let mut transaction = self.frame_queue.transaction();
         transaction.push(frame)?;
         transaction.commit();

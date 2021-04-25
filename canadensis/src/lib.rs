@@ -1,6 +1,7 @@
 #![no_std]
 
 extern crate alloc;
+extern crate embedded_time;
 extern crate fallible_collections;
 
 extern crate canadensis_can;
@@ -23,6 +24,7 @@ use core::iter;
 
 use canadensis_core::transfer::*;
 use canadensis_encoding::{Deserialize, DeserializeError, ReadCursor, Serialize, WriteCursor};
+use embedded_time::{Clock, Instant};
 use fallible_collections::FallibleVec;
 
 /// Payloads above this size (in bytes) will use a dynamically allocated buffer
@@ -55,14 +57,15 @@ impl Publisher {
         }
     }
 
-    pub fn send<T>(
+    pub fn send<T, C>(
         &mut self,
         payload: &T,
-        deadline: Microseconds,
-        transmitter: &mut Transmitter,
+        deadline: Instant<C>,
+        transmitter: &mut Transmitter<C>,
     ) -> Result<(), OutOfMemoryError>
     where
         T: Serialize,
+        C: Clock,
     {
         // Part 1: Serialize
         do_serialize(payload, |payload_bytes| {
@@ -70,14 +73,17 @@ impl Publisher {
         })
     }
 
-    pub fn send_payload(
+    pub fn send_payload<C>(
         &mut self,
         payload: &[u8],
-        deadline: Microseconds,
-        transmitter: &mut Transmitter,
-    ) -> Result<(), OutOfMemoryError> {
+        deadline: Instant<C>,
+        transmitter: &mut Transmitter<C>,
+    ) -> Result<(), OutOfMemoryError>
+    where
+        C: Clock,
+    {
         // Assemble the transfer
-        let transfer: Transfer<&[u8]> = Transfer {
+        let transfer: Transfer<&[u8], C> = Transfer {
             timestamp: deadline,
             header: TransferHeader {
                 source: self.source,
@@ -119,14 +125,15 @@ impl AnonymousPublisher {
         }
     }
 
-    pub fn send<T>(
+    pub fn send<T, C>(
         &mut self,
         payload: &T,
-        deadline: Microseconds,
-        transmitter: &mut Transmitter,
+        deadline: Instant<C>,
+        transmitter: &mut Transmitter<C>,
     ) -> Result<(), OutOfMemoryError>
     where
         T: Serialize,
+        C: Clock,
     {
         // Part 1: Serialize
         do_serialize(payload, |payload_bytes| {
@@ -134,14 +141,17 @@ impl AnonymousPublisher {
         })
     }
 
-    pub fn send_payload(
+    pub fn send_payload<C>(
         &mut self,
         payload: &[u8],
-        deadline: Microseconds,
-        transmitter: &mut Transmitter,
-    ) -> Result<(), OutOfMemoryError> {
+        deadline: Instant<C>,
+        transmitter: &mut Transmitter<C>,
+    ) -> Result<(), OutOfMemoryError>
+    where
+        C: Clock,
+    {
         // Assemble the transfer
-        let transfer: Transfer<&[u8]> = Transfer {
+        let transfer: Transfer<&[u8], C> = Transfer {
             timestamp: deadline,
             header: TransferHeader {
                 source: make_pseudo_id(payload),
@@ -187,15 +197,16 @@ impl Requester {
         }
     }
 
-    pub fn send<T>(
+    pub fn send<T, C>(
         &mut self,
         payload: &T,
         destination: NodeId,
-        deadline: Microseconds,
-        transmitter: &mut Transmitter,
+        deadline: Instant<C>,
+        transmitter: &mut Transmitter<C>,
     ) -> Result<(), OutOfMemoryError>
     where
         T: Serialize,
+        C: Clock,
     {
         // Part 1: Serialize
         do_serialize(payload, |payload_bytes| {
@@ -203,15 +214,18 @@ impl Requester {
         })
     }
 
-    pub fn send_payload(
+    pub fn send_payload<C>(
         &mut self,
         payload: &[u8],
         destination: NodeId,
-        deadline: Microseconds,
-        transmitter: &mut Transmitter,
-    ) -> Result<(), OutOfMemoryError> {
+        deadline: Instant<C>,
+        transmitter: &mut Transmitter<C>,
+    ) -> Result<(), OutOfMemoryError>
+    where
+        C: Clock,
+    {
         // Assemble the transfer
-        let transfer: Transfer<&[u8]> = Transfer {
+        let transfer: Transfer<&[u8], C> = Transfer {
             timestamp: deadline,
             header: TransferHeader {
                 source: self.this_node,
@@ -305,17 +319,18 @@ impl Responder {
     /// transmitter: The transmitter to use when sending the response
     ///
     /// handler: A function that takes a request and returns a response
-    pub fn handle_request<Q, R, H, E>(
+    pub fn handle_request<Q, R, H, E, C>(
         &mut self,
-        transfer_in: Transfer<Vec<u8>>,
-        response_deadline: Microseconds,
-        transmitter: &mut Transmitter,
+        transfer_in: Transfer<Vec<u8>, C>,
+        response_deadline: Instant<C>,
+        transmitter: &mut Transmitter<C>,
         handler: H,
     ) -> Result<(), RespondError<E>>
     where
         Q: Deserialize,
         R: Serialize,
         H: FnOnce(Q) -> Result<R, E>,
+        C: Clock,
     {
         // Check that this is a service request and has the correct parameters
         assert!(

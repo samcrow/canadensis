@@ -1,3 +1,4 @@
+extern crate embedded_time;
 extern crate rand;
 extern crate socketcan;
 
@@ -17,9 +18,11 @@ use canadensis_can::{CanId, Frame, Mtu, Receiver, Transmitter};
 use canadensis_core::transfer::{
     MessageHeader, ServiceHeader, Transfer, TransferHeader, TransferKindHeader,
 };
-use canadensis_core::{Microseconds, NodeId, Priority, TransferId};
+use canadensis_core::{NodeId, Priority, TransferId};
 use canadensis_encoding::{Serialize, WriteCursor};
 use canadensis_node::{Mode, Node, NodeInfo};
+use embedded_time::duration::{Fraction, Microseconds};
+use embedded_time::Clock;
 
 /// Runs a basic UAVCAN node, sending Heartbeat messages and responding to NodeInfo requests
 ///
@@ -83,10 +86,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rx = Receiver::new(node_id);
 
     // Subscribe to NodeInfo
-    rx.subscribe_request(canadensis_node::INFO_SERVICE, 0, Microseconds(0))
+    rx.subscribe_request(canadensis_node::INFO_SERVICE, 0, Microseconds(0_u32))
         .expect("Failed to subscribe");
 
     let start_time = Instant::now();
+
+    // Start an embedded-time clock to use for the UAVCAN operations
+    let embedded_clock = SystemClock::new();
 
     loop {
         let run_time = Instant::now().duration_since(start_time);
@@ -103,7 +109,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(frame) => {
                 // Convert frame from socketcan to canadensis_can format
                 let frame = Frame::new(
-                    Microseconds(0),
+                    embedded_clock.try_now().unwrap(),
                     CanId::try_from(frame.id()).unwrap(),
                     frame.data(),
                 );
@@ -129,8 +135,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let response = node.info().unwrap();
                 let mut response_payload = vec![0u8; (response.size_bits() + 7) / 8];
                 response.serialize(&mut WriteCursor::new(&mut response_payload));
-                let response_transfer: Transfer<&[u8]> = Transfer {
-                    timestamp: Microseconds(0),
+                let response_transfer: Transfer<&[u8], SystemClock> = Transfer {
+                    timestamp: embedded_clock.try_now().unwrap(),
                     header: TransferHeader {
                         source: node.id(),
                         priority: Priority::default(),
@@ -154,8 +160,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let heartbeat = node.heartbeat();
             let mut heartbeat_payload = vec![0u8; (heartbeat.size_bits() + 7) / 8];
             heartbeat.serialize(&mut WriteCursor::new(&mut heartbeat_payload));
-            let heartbeat_transfer: Transfer<&[u8]> = Transfer {
-                timestamp: Microseconds(0),
+            let heartbeat_transfer: Transfer<&[u8], SystemClock> = Transfer {
+                timestamp: embedded_clock.try_now().unwrap(),
                 header: TransferHeader {
                     source: node.id(),
                     priority: Default::default(),
@@ -178,5 +184,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 socketcan::CANFrame::new(out_frame.id().into(), out_frame.data(), false, false)?;
             can.write_frame(&out_frame)?;
         }
+    }
+}
+
+/// A clock with microsecond precision
+#[derive(Debug)]
+struct SystemClock {
+    start_time: Instant,
+}
+
+impl SystemClock {
+    pub fn new() -> Self {
+        SystemClock {
+            start_time: Instant::now(),
+        }
+    }
+}
+
+impl Clock for SystemClock {
+    type T = u64;
+    /// 1 tick = 1 microsecond
+    const SCALING_FACTOR: Fraction = Fraction::new(1, 1_000_000);
+
+    fn try_now(&self) -> Result<embedded_time::Instant<Self>, embedded_time::clock::Error> {
+        let now = Instant::now();
+        let since_start = now.duration_since(self.start_time);
+        // Truncate microseconds to 64 bits
+        Ok(embedded_time::Instant::new(since_start.as_micros() as u64))
     }
 }

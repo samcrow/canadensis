@@ -9,6 +9,7 @@
 
 extern crate alloc;
 extern crate canadensis_core;
+extern crate embedded_time;
 extern crate fallible_collections;
 extern crate heapless;
 

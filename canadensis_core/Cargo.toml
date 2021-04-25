@@ -11,3 +11,4 @@ license = "MIT OR Apache-2.0"
 description = "A UAVCAN v1.0 implementation: Common definitions"
 
 [dependencies]
+embedded-time = "0.10.1"

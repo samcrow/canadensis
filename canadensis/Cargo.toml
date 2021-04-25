@@ -12,6 +12,7 @@ description = "A UAVCAN v1.0 implementation: Presentation and aplication layers 
 
 [dependencies]
 fallible_collections = "0.1.2"
+embedded-time = "0.10.1"
 
 # Local dependencies for development
 [dependencies.canadensis_can]

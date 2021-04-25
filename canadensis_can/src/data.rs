@@ -4,10 +4,11 @@
 
 use core::cmp::Ordering;
 use core::convert::TryFrom;
-use core::fmt;
+use core::fmt::{self, Debug};
 use heapless::consts::U64;
 
-use canadensis_core::{InvalidValue, Microseconds};
+use canadensis_core::InvalidValue;
+use embedded_time::{Clock, Instant};
 
 /// Bit mask for a 29-bit CAN ID
 const CAN_ID_MASK: u32 = 0x1f_ff_ff_ff;
@@ -54,24 +55,39 @@ pub enum Mtu {
 ///
 /// RTR/Error frames are not used and therefore not modeled here.
 /// CAN frames with 11-bit ID are not used by UAVCAN/CAN and so they are not supported by the library.
-#[derive(Debug, Eq, PartialEq)]
-pub struct Frame {
-    /// For RX frames: reception timestamp.
-    /// For TX frames: transmission deadline.
+///
+/// Frames with the same ID will compare as equal.
+pub struct Frame<C: Clock> {
+    /// For RX frames: reception timestamp (time when this frame was received)
+    /// For TX frames: transmission deadline (frame must be discarded if not transmitted by this time)
     /// The time system may be arbitrary as long as the clock is monotonic (steady).
-    timestamp: Microseconds,
+    timestamp: Instant<C>,
     /// 29-bit extended ID
     id: CanId,
     /// The frame data
     data: heapless::Vec<u8, U64>,
 }
 
-impl Frame {
+impl<C> Debug for Frame<C>
+where
+    C: Clock,
+    Instant<C>: Debug,
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        f.debug_struct("Frame")
+            .field("timestamp", &self.timestamp)
+            .field("id", &self.id)
+            .field("data", &self.data)
+            .finish()
+    }
+}
+
+impl<C: Clock> Frame<C> {
     /// Creates a frame
     ///
     /// # Panics
     /// This function will panic if the length of data is greater than 64.
-    pub fn new(timestamp: Microseconds, id: CanId, data: &[u8]) -> Self {
+    pub fn new(timestamp: Instant<C>, id: CanId, data: &[u8]) -> Self {
         Frame {
             timestamp,
             id,
@@ -82,7 +98,7 @@ impl Frame {
     /// Returns the timestamp when this frame was received (for incoming frames)
     /// or the transmission deadline (for outgoing frames)
     #[inline]
-    pub fn timestamp(&self) -> Microseconds {
+    pub fn timestamp(&self) -> Instant<C> {
         self.timestamp
     }
     /// Returns the ID of this frame
@@ -97,15 +113,24 @@ impl Frame {
     }
 }
 
-impl PartialOrd for Frame {
+impl<C: Clock> PartialOrd for Frame<C> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(Ord::cmp(self, other))
     }
 }
 
-impl Ord for Frame {
-    /// Compare by CAN ID
+impl<C: Clock> Ord for Frame<C> {
+    /// Compare by CAN ID, ignore other fields
     fn cmp(&self, other: &Self) -> Ordering {
         self.id.cmp(&other.id)
     }
 }
+
+impl<C: Clock> PartialEq for Frame<C> {
+    /// Compare by CAN ID, ignore other fields
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl<C: Clock> Eq for Frame<C> {}
