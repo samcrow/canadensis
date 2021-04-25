@@ -130,7 +130,7 @@ fn test_node_info_response() -> Result<(), OutOfMemoryError> {
     let mut rx: Receiver<SystemClock, Microseconds> = Receiver::new(123.try_into().unwrap());
 
     let service = ServiceId::try_from(430).unwrap();
-    rx.subscribe_response(service, 313 * 8, Microseconds(10_000))?;
+    rx.subscribe_response(service, 313 * 8, Microseconds(100))?;
 
     let payload: [u8; 69] = [
         0x01, 0x00, // Protocol version
@@ -147,27 +147,28 @@ fn test_node_info_response() -> Result<(), OutOfMemoryError> {
         0x00, // Certificate of authenticity length
     ];
 
-    let frames: [&[u8]; 11] = [
-        &[0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0xa1],
-        &[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01],
-        &[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x21],
-        &[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01],
-        b"\x00\x00\x24org.\x21",
-        b"uavcan.\x01",
-        b"pyuavca\x21",
-        b"n.demo.\x01",
-        b"basic_u\x21",
-        b"sage\x00\x00\x9a\x01",
-        &[0xe7, 0x61],
+    let frames_and_microseconds: [(&[u8], u64); 11] = [
+        (&[0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0xa1], 100),
+        (&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01], 110),
+        (&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x21], 111),
+        (&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01], 120),
+        (b"\x00\x00\x24org.\x21", 130),
+        (b"uavcan.\x01", 131),
+        (b"pyuavca\x21", 133),
+        (b"n.demo.\x01", 140),
+        (b"basic_u\x21", 179),
+        (b"sage\x00\x00\x9a\x01", 190),
+        // This frame barely makes th deadline of 100 microseconds after the first frame
+        (&[0xe7, 0x61], 199),
     ];
 
-    for (i, &frame_data) in frames.iter().enumerate() {
+    for (i, &(frame_data, frame_time)) in frames_and_microseconds.iter().enumerate() {
         let frame = Frame::new(
-            Instant::new(i as u64),
+            Instant::new(frame_time),
             0x126BBDAA.try_into().unwrap(),
             frame_data,
         );
-        if i != frames.len() - 1 {
+        if i != frames_and_microseconds.len() - 1 {
             let maybe_transfer = rx.accept(frame)?;
             assert!(maybe_transfer.is_none());
         } else {
@@ -176,7 +177,7 @@ fn test_node_info_response() -> Result<(), OutOfMemoryError> {
 
             let expected = Transfer {
                 // This is the timestamp of the first frame
-                timestamp: Instant::new(0),
+                timestamp: Instant::new(100),
                 header: TransferHeader {
                     source: 42.try_into().unwrap(),
                     priority: Priority::Nominal,
@@ -194,6 +195,43 @@ fn test_node_info_response() -> Result<(), OutOfMemoryError> {
 
     Ok(())
 }
+
+#[test]
+fn test_node_info_response_timeout() -> Result<(), OutOfMemoryError> {
+    let mut rx: Receiver<SystemClock, Microseconds> = Receiver::new(123.try_into().unwrap());
+
+    let service = ServiceId::try_from(430).unwrap();
+    // Timeout is 100 microseconds. The final frame will arrive one microsecond too late.
+    rx.subscribe_response(service, 313 * 8, Microseconds(100))?;
+
+    let frames_and_microseconds: [(&[u8], u64); 11] = [
+        (&[0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0xa1], 100),
+        (&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01], 110),
+        (&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x21], 111),
+        (&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01], 120),
+        (b"\x00\x00\x24org.\x21", 130),
+        (b"uavcan.\x01", 131),
+        (b"pyuavca\x21", 133),
+        (b"n.demo.\x01", 140),
+        (b"basic_u\x21", 179),
+        (b"sage\x00\x00\x9a\x01", 190),
+        // This frame is one microsecond too late
+        (&[0xe7, 0x61], 200),
+    ];
+
+    for &(frame_data, frame_time) in frames_and_microseconds.iter() {
+        let frame = Frame::new(
+            Instant::new(frame_time),
+            0x126BBDAA.try_into().unwrap(),
+            frame_data,
+        );
+        let maybe_transfer = rx.accept(frame)?;
+        assert!(maybe_transfer.is_none());
+    }
+
+    Ok(())
+}
+
 #[test]
 fn test_array() -> Result<(), OutOfMemoryError> {
     let mut rx: Receiver<SystemClock, Microseconds> = Receiver::new(0.try_into().unwrap());
