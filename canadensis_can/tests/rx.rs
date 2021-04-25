@@ -158,7 +158,7 @@ fn test_node_info_response() -> Result<(), OutOfMemoryError> {
         (b"n.demo.\x01", 140),
         (b"basic_u\x21", 179),
         (b"sage\x00\x00\x9a\x01", 190),
-        // This frame barely makes th deadline of 100 microseconds after the first frame
+        // This frame barely makes the deadline of 100 microseconds after the first frame
         (&[0xe7, 0x61], 199),
     ];
 
