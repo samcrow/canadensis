@@ -9,11 +9,8 @@ extern crate num_traits;
 pub mod time;
 pub mod transfer;
 
-use core::cmp::Ordering;
 use core::convert::TryFrom;
-use core::fmt;
 use core::ops::RangeInclusive;
-use core::ops::{Add, Sub};
 
 /// An error indicating that an unacceptable integer was provided to a TryFrom implementation
 #[derive(Debug)]
@@ -254,53 +251,5 @@ impl TryFrom<u8> for Priority {
             7 => Ok(Priority::Optional),
             _ => Err(InvalidValue),
         }
-    }
-}
-
-/// A time in microseconds, from any monotonic clock
-///
-/// Microsecond values can wrap around. The Microsecond comparison operators will correctly handle
-/// a single wraparound.
-#[derive(Debug, Eq, PartialEq, Copy, Clone)]
-pub struct Microseconds(pub u64);
-
-impl Add for Microseconds {
-    type Output = Self;
-    /// Adds, wrapping around
-    fn add(self, rhs: Self) -> Self::Output {
-        Microseconds(self.0.wrapping_add(rhs.0))
-    }
-}
-
-impl Sub for Microseconds {
-    type Output = Self;
-    /// Subtracts, wrapping around
-    fn sub(self, rhs: Self) -> Self::Output {
-        Microseconds(self.0.wrapping_sub(rhs.0))
-    }
-}
-
-impl PartialOrd for Microseconds {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(Ord::cmp(self, other))
-    }
-}
-
-impl Ord for Microseconds {
-    fn cmp(&self, other: &Self) -> Ordering {
-        // https://www.rapitasystems.com/blog/what-happened-first-handling-timer-wraparound
-        if self.0 == other.0 {
-            Ordering::Equal
-        } else if (other.0.wrapping_sub(self.0)) < u64::MAX / 2 {
-            Ordering::Less
-        } else {
-            Ordering::Greater
-        }
-    }
-}
-
-impl fmt::Display for Microseconds {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} us", self.0)
     }
 }

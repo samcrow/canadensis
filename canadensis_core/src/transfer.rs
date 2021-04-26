@@ -2,7 +2,7 @@
 //! Transfer data definitions
 //!
 
-use crate::{Microseconds, NodeId, PortId, Priority, ServiceId, SubjectId, TransferId};
+use crate::{NodeId, PortId, Priority, ServiceId, SubjectId, TransferId};
 
 /// Transfer kinds as defined by the UAVCAN Specification
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -82,11 +82,10 @@ pub struct TransferHeader {
 
 /// A UAVCAN transfer (either incoming or outgoing)
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub struct Transfer<P> {
-    /// For RX transfers: reception timestamp.
-    /// For TX transfers: transmission deadline.
-    /// The time system may be arbitrary as long as the clock is monotonic (steady).
-    pub timestamp: Microseconds,
+pub struct Transfer<P, I> {
+    /// For RX transfers: the time when the first frame was received
+    /// For TX transfers: the transmission deadline for all frames
+    pub timestamp: I,
 
     /// The transfer header
     ///
@@ -115,7 +114,7 @@ pub struct Transfer<P> {
     pub payload: P,
 }
 
-impl<P> Transfer<P> {
+impl<P, I> Transfer<P, I> {
     /// Returns true if this transfer is a request matching the provided service ID
     pub fn is_request_for(&self, service_id: ServiceId) -> bool {
         match &self.header.kind {

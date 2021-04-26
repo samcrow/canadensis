@@ -15,10 +15,11 @@ use crate::crc::TransferCrc;
 use crate::data::{CanId, Frame};
 use crate::error::OutOfMemoryError;
 use crate::rx::buildup::{Buildup, BuildupError};
+use canadensis_core::time::Instant;
 use canadensis_core::transfer::{
     MessageHeader, ServiceHeader, Transfer, TransferHeader, TransferKind, TransferKindHeader,
 };
-use canadensis_core::{Microseconds, NodeId, PortId, Priority, ServiceId, SubjectId, TransferId};
+use canadensis_core::{NodeId, PortId, Priority, ServiceId, SubjectId, TransferId};
 
 /// One session per node ID
 const RX_SESSIONS_PER_SUBSCRIPTION: usize = NodeId::MAX.to_u8() as usize + 1;
@@ -26,18 +27,18 @@ const RX_SESSIONS_PER_SUBSCRIPTION: usize = NodeId::MAX.to_u8() as usize + 1;
 /// Transfer subscription state. The application can register its interest in a particular kind of data exchanged
 /// over the bus by creating such subscription objects. Frames that carry data for which there is no active
 /// subscription will be silently dropped by the library.
-struct Subscription {
+struct Subscription<I: Instant> {
     /// A session for each node ID
-    sessions: [Option<Box<Session>>; RX_SESSIONS_PER_SUBSCRIPTION],
+    sessions: [Option<Box<Session<I>>>; RX_SESSIONS_PER_SUBSCRIPTION],
     /// Maximum time difference between the first and last frames in a transfer
-    timeout: Microseconds,
+    timeout: I::Duration,
     /// Maximum number of payload bytes, including 2 bytes for the CRC if necessary
     payload_size_max: usize,
     /// Subject or service ID that this subscription is about
     port_id: PortId,
 }
 
-impl fmt::Debug for Subscription {
+impl<I: Instant> fmt::Debug for Subscription<I> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Subscription")
             .field("sessions", &DebugSessions(&self.sessions))
@@ -49,9 +50,9 @@ impl fmt::Debug for Subscription {
 }
 
 /// A debug adapter for the session list
-struct DebugSessions<'s>(&'s [Option<Box<Session>>; RX_SESSIONS_PER_SUBSCRIPTION]);
+struct DebugSessions<'s, I>(&'s [Option<Box<Session<I>>>; RX_SESSIONS_PER_SUBSCRIPTION]);
 
-impl fmt::Debug for DebugSessions<'_> {
+impl<I: Instant> fmt::Debug for DebugSessions<'_, I> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Display as a set, showing only the non-empty entries
         f.debug_set()
@@ -60,9 +61,9 @@ impl fmt::Debug for DebugSessions<'_> {
     }
 }
 
-impl Subscription {
+impl<I: Instant> Subscription<I> {
     /// Creates a subscription
-    pub fn new(timeout: Microseconds, payload_size_max: usize, port_id: PortId) -> Self {
+    pub fn new(timeout: I::Duration, payload_size_max: usize, port_id: PortId) -> Self {
         Subscription {
             sessions: init_rx_sessions(),
             timeout,
@@ -72,7 +73,7 @@ impl Subscription {
     }
 
     /// Returns a reference to the active session for the provided node ID
-    pub fn session_mut(&mut self, node: NodeId) -> Option<&mut Session> {
+    pub fn session_mut(&mut self, node: NodeId) -> Option<&mut Session<I>> {
         self.sessions[usize::from(u8::from(node))].as_deref_mut()
     }
 
@@ -82,9 +83,9 @@ impl Subscription {
     pub fn create_session(
         &mut self,
         node: NodeId,
-        transfer_timestamp: Microseconds,
+        transfer_timestamp: I,
         transfer_id: TransferId,
-    ) -> core::result::Result<&mut Session, TryReserveError> {
+    ) -> core::result::Result<&mut Session<I>, TryReserveError> {
         let slot = &mut self.sessions[usize::from(u8::from(node))];
         *slot = Some(FallibleBox::try_new(Session::new(
             transfer_timestamp,
@@ -100,15 +101,15 @@ impl Subscription {
 
 /// A receive session, associated with a particular port ID and source node
 #[derive(Debug)]
-struct Session {
-    /// Timestamp of last received start-of-transfer frame
-    transfer_timestamp: Microseconds,
+struct Session<I> {
+    /// Timestamp of the first frame received in this transfer
+    transfer_timestamp: I,
     /// Transfer reassembly
     buildup: Buildup,
 }
 
-impl Session {
-    pub fn new(transfer_timestamp: Microseconds, transfer_id: TransferId) -> Self {
+impl<I> Session<I> {
+    pub fn new(transfer_timestamp: I, transfer_id: TransferId) -> Self {
         Session {
             transfer_timestamp,
             buildup: Buildup::new(transfer_id),
@@ -118,18 +119,18 @@ impl Session {
 
 /// Handles subscriptions and assembles incoming frames into transfers
 #[derive(Debug)]
-pub struct Receiver {
+pub struct Receiver<I: Instant> {
     /// Subscriptions for messages
-    subscriptions_message: Vec<Subscription>,
+    subscriptions_message: Vec<Subscription<I>>,
     /// Subscriptions for service responses
-    subscriptions_response: Vec<Subscription>,
+    subscriptions_response: Vec<Subscription<I>>,
     /// Subscriptions for service requests
-    subscriptions_request: Vec<Subscription>,
+    subscriptions_request: Vec<Subscription<I>>,
     /// The ID of this node
     id: NodeId,
 }
 
-impl Receiver {
+impl<I: Instant> Receiver<I> {
     /// Creates a receiver
     ///
     /// id: The ID of this node. This is used to filter incoming service requests and responses.
@@ -152,7 +153,10 @@ impl Receiver {
     /// This function will return an error if memory allocation has failed. Other unexpected
     /// situations, such as duplicate or malformed frames, are not considered errors and are not
     /// reported.
-    pub fn accept(&mut self, frame: Frame) -> Result<Option<Transfer<Vec<u8>>>, OutOfMemoryError> {
+    pub fn accept(
+        &mut self,
+        frame: Frame<I>,
+    ) -> Result<Option<Transfer<Vec<u8>, I>>, OutOfMemoryError> {
         // The current time is equal to or greater than the frame timestamp. Use that timestamp
         // to clean up expired sessions.
         self.clean_expired_sessions(frame.timestamp());
@@ -174,7 +178,7 @@ impl Receiver {
         {
             // Get everything we need from the subscription before borrowing it to get the session
             let max_payload_length = subscription.payload_size_max;
-            let transfer_timeout = subscription.timeout;
+            let transfer_timeout = subscription.timeout.clone();
             let tail = TailByte::parse(*frame.data().last().unwrap());
             // Find the session for this source node
             let session = if let Some(session) = subscription.session_mut(header.source) {
@@ -203,14 +207,11 @@ impl Receiver {
                 return Ok(None);
             }
             // Check if this frame is too late
-            let deadline = session.transfer_timestamp + transfer_timeout;
-            #[cfg(test)]
-            println!(
-                "Deadline {}, frame timestamp {}",
-                deadline,
-                frame.timestamp()
-            );
-            if frame.timestamp() > deadline {
+            let time_since_first_frame = frame
+                .timestamp()
+                .duration_since(&session.transfer_timestamp);
+
+            if time_since_first_frame > transfer_timeout {
                 // Frame arrived too late. Give up on this transfer.
                 subscription.destroy_session(header.source);
                 return Ok(None);
@@ -234,8 +235,8 @@ impl Receiver {
                     }
 
                     let transfer = Transfer {
-                        // This is the timestamp of the first frame (is this correct?)
-                        timestamp: session.transfer_timestamp,
+                        // This is the timestamp of the first frame
+                        timestamp: session.transfer_timestamp.clone(),
                         header,
                         transfer_id: session.buildup.transfer_id(),
                         payload: transfer_data,
@@ -265,7 +266,7 @@ impl Receiver {
     }
 
     /// Runs basic sanity checks on an incoming frame. Returns the header if the frame is valid.
-    fn frame_sanity_check(local_id: NodeId, frame: &Frame) -> Option<TransferHeader> {
+    fn frame_sanity_check(local_id: NodeId, frame: &Frame<I>) -> Option<TransferHeader> {
         if frame.data().is_empty() {
             // No tail byte, can't use
             return None;
@@ -302,11 +303,13 @@ impl Receiver {
     /// timeout: The maximum time between the first and last frames in a transfer (transfers that
     /// do not finish within this time will be dropped)
     ///
+    /// If all transfers fit into one frame, the timeout has no meaning and may be zero.
+    ///
     pub fn subscribe_message(
         &mut self,
         subject: SubjectId,
         payload_size_max: usize,
-        timeout: Microseconds,
+        timeout: I::Duration,
     ) -> Result<(), OutOfMemoryError> {
         self.subscribe(
             TransferKind::Message,
@@ -334,11 +337,13 @@ impl Receiver {
     /// timeout: The maximum time between the first and last frames in a transfer (transfers that
     /// do not finish within this time will be dropped)
     ///
+    /// If all transfers fit into one frame, the timeout has no meaning and may be zero.
+    ///
     pub fn subscribe_request(
         &mut self,
         service: ServiceId,
         payload_size_max: usize,
-        timeout: Microseconds,
+        timeout: I::Duration,
     ) -> Result<(), OutOfMemoryError> {
         self.subscribe(
             TransferKind::Request,
@@ -366,11 +371,13 @@ impl Receiver {
     /// timeout: The maximum time between the first and last frames in a transfer (transfers that
     /// do not finish within this time will be dropped)
     ///
+    /// If all transfers fit into one frame, the timeout has no meaning and may be zero.
+    ///
     pub fn subscribe_response(
         &mut self,
         service: ServiceId,
         payload_size_max: usize,
-        timeout: Microseconds,
+        timeout: I::Duration,
     ) -> Result<(), OutOfMemoryError> {
         self.subscribe(
             TransferKind::Response,
@@ -389,7 +396,7 @@ impl Receiver {
         kind: TransferKind,
         port_id: PortId,
         payload_size_max: usize,
-        timeout: Microseconds,
+        timeout: I::Duration,
     ) -> Result<(), OutOfMemoryError> {
         // Remove any existing subscription, ignore result
         self.unsubscribe(kind, port_id);
@@ -411,7 +418,7 @@ impl Receiver {
         subscriptions.retain(|sub| sub.port_id != port_id);
     }
 
-    fn subscriptions_for_kind(&mut self, kind: TransferKind) -> &mut Vec<Subscription> {
+    fn subscriptions_for_kind(&mut self, kind: TransferKind) -> &mut Vec<Subscription<I>> {
         match kind {
             TransferKind::Message => &mut self.subscriptions_message,
             TransferKind::Response => &mut self.subscriptions_response,
@@ -419,19 +426,22 @@ impl Receiver {
         }
     }
 
-    fn clean_expired_sessions(&mut self, now: Microseconds) {
-        clean_sessions_from_subscriptions(&mut self.subscriptions_message, now);
-        clean_sessions_from_subscriptions(&mut self.subscriptions_request, now);
-        clean_sessions_from_subscriptions(&mut self.subscriptions_response, now);
+    fn clean_expired_sessions(&mut self, now: I) {
+        clean_sessions_from_subscriptions(&mut self.subscriptions_message, &now);
+        clean_sessions_from_subscriptions(&mut self.subscriptions_request, &now);
+        clean_sessions_from_subscriptions(&mut self.subscriptions_response, &now);
     }
 }
 
-fn clean_sessions_from_subscriptions(subscriptions: &mut Vec<Subscription>, now: Microseconds) {
+fn clean_sessions_from_subscriptions<I: Instant>(
+    subscriptions: &mut Vec<Subscription<I>>,
+    now: &I,
+) {
     for subscription in subscriptions {
         for slot in subscription.sessions.iter_mut() {
             if let Some(session) = slot.as_deref_mut() {
-                let deadline = session.transfer_timestamp + subscription.timeout;
-                if now > deadline {
+                let time_since_first_frame = now.duration_since(&session.transfer_timestamp);
+                if time_since_first_frame > subscription.timeout {
                     // This session has timed out, delete it.
                     *slot = None;
                 }
@@ -495,7 +505,7 @@ fn parse_can_id(id: CanId) -> core::result::Result<TransferHeader, CanIdParseErr
 }
 
 /// Returns 128 Nones
-fn init_rx_sessions() -> [Option<Box<Session>>; RX_SESSIONS_PER_SUBSCRIPTION] {
+fn init_rx_sessions<I>() -> [Option<Box<Session<I>>>; RX_SESSIONS_PER_SUBSCRIPTION] {
     [
         None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
         None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,

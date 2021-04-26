@@ -14,23 +14,39 @@ use std::time::{Duration, Instant};
 use socketcan::CANSocket;
 
 use canadensis::node::{Mode, Node, NodeInfo, NodeInfoRequest};
-use canadensis::{
-    CanId, Frame, Microseconds, Mtu, NodeId, Publisher, Receiver, Responder, Transmitter,
-};
+use canadensis::{CanId, Frame, Mtu, NodeId, Publisher, Receiver, Responder, Transmitter};
+use canadensis_core::time::{PrimitiveDuration, PrimitiveInstant};
 use canadensis_core::Priority;
 
 /// Runs a basic UAVCAN node, sending Heartbeat messages and responding to NodeInfo requests
 ///
 /// Usage: `basic_node [SocketCAN interface name] [Node ID]`
 ///
-/// # Testing with pyuavcan
+/// # Testing
+///
+/// ## Create a virtual CAN device
+///
+/// ```
+/// sudo modprobe vcan
+/// sudo ip link add dev vcan0 type vcan
+/// sudo ip link set up vcan0
+/// ```
+///
+/// ## Start the node
+///
+/// ```
+/// basic_node vcan0 [node ID]
+/// ```
+///
+/// ## Interact with the node using Yakut
 ///
 /// To subscribe and print out Heartbeat messages:
-/// `pyuavcan subscribe --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',64),42)" uavcan.node.Heartbeat.1.0`
+/// `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" subscribe uavcan.node.Heartbeat.1.0`
 ///
 /// To send a NodeInfo request:
-/// `pyuavcan call --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0', 8),42)" [Node ID of basic_node] uavcan.node.GetInfo.1.0 {}`
+/// `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" call [Node ID of basic_node] uavcan.node.GetInfo.1.0 {}`
 ///
+/// In the above two commands, 8 is the MTU of standard CAN and 42 is the node ID of the Yakut node.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);
     let can_interface = args.next().expect("Expected CAN interface name");
@@ -59,7 +75,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rx = Receiver::new(node_id);
 
     // Subscribe to NodeInfo
-    rx.subscribe_request(canadensis_node::INFO_SERVICE, 0, Microseconds(0))
+    rx.subscribe_request(canadensis_node::INFO_SERVICE, 0, PrimitiveDuration::new(0))
         .expect("Failed to subscribe");
 
     // Presentation layer
@@ -71,6 +87,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut node_info_responder = Responder::new(node.id(), canadensis::node::INFO_SERVICE);
 
     let start_time = Instant::now();
+    let time_now = || -> PrimitiveInstant<u64> {
+        let since_start = Instant::now().duration_since(start_time);
+        let microseconds = since_start.as_micros();
+        PrimitiveInstant::new(microseconds as u64)
+    };
 
     loop {
         let run_time = Instant::now().duration_since(start_time);
@@ -87,7 +108,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(frame) => {
                 // Convert frame from socketcan to canadensis_can format
                 let frame = Frame::new(
-                    Microseconds(0),
+                    time_now(),
                     CanId::try_from(frame.id()).unwrap(),
                     frame.data(),
                 );
@@ -107,9 +128,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let Some(transfer_in) = transfer_in {
             if node_info_responder.interested(&transfer_in.header) {
                 node_info_responder
-                    .handle_request::<NodeInfoRequest, _, _, Infallible>(
+                    .handle_request::<NodeInfoRequest, _, _, Infallible, _>(
                         transfer_in,
-                        Microseconds(0),
+                        // All response frames must be sent by 100 milliseconds from now
+                        time_now() + PrimitiveDuration::new(100_000),
                         &mut tx,
                         |_: NodeInfoRequest| Ok(node.info().unwrap().clone()),
                     )
@@ -117,8 +139,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         // Publish heartbeat
+        // Heartbeat frame must be sent within 1 second
+        let deadline = time_now() + PrimitiveDuration::new(1_000_000);
         heartbeat_publisher
-            .send(&node.heartbeat(), Microseconds(0), &mut tx)
+            .send(&node.heartbeat(), deadline, &mut tx)
             .expect("Out of memory");
 
         // Send frames

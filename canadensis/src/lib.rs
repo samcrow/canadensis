@@ -21,6 +21,7 @@ pub mod node {
 use alloc::vec::Vec;
 use core::iter;
 
+use canadensis_core::time::Instant;
 use canadensis_core::transfer::*;
 use canadensis_encoding::{Deserialize, DeserializeError, ReadCursor, Serialize, WriteCursor};
 use fallible_collections::FallibleVec;
@@ -55,14 +56,15 @@ impl Publisher {
         }
     }
 
-    pub fn send<T>(
+    pub fn send<T, I>(
         &mut self,
         payload: &T,
-        deadline: Microseconds,
-        transmitter: &mut Transmitter,
+        deadline: I,
+        transmitter: &mut Transmitter<I>,
     ) -> Result<(), OutOfMemoryError>
     where
         T: Serialize,
+        I: Instant,
     {
         // Part 1: Serialize
         do_serialize(payload, |payload_bytes| {
@@ -70,14 +72,17 @@ impl Publisher {
         })
     }
 
-    pub fn send_payload(
+    pub fn send_payload<I>(
         &mut self,
         payload: &[u8],
-        deadline: Microseconds,
-        transmitter: &mut Transmitter,
-    ) -> Result<(), OutOfMemoryError> {
+        deadline: I,
+        transmitter: &mut Transmitter<I>,
+    ) -> Result<(), OutOfMemoryError>
+    where
+        I: Clone,
+    {
         // Assemble the transfer
-        let transfer: Transfer<&[u8]> = Transfer {
+        let transfer: Transfer<&[u8], I> = Transfer {
             timestamp: deadline,
             header: TransferHeader {
                 source: self.source,
@@ -119,14 +124,15 @@ impl AnonymousPublisher {
         }
     }
 
-    pub fn send<T>(
+    pub fn send<T, I>(
         &mut self,
         payload: &T,
-        deadline: Microseconds,
-        transmitter: &mut Transmitter,
+        deadline: I,
+        transmitter: &mut Transmitter<I>,
     ) -> Result<(), OutOfMemoryError>
     where
         T: Serialize,
+        I: Clone,
     {
         // Part 1: Serialize
         do_serialize(payload, |payload_bytes| {
@@ -134,14 +140,17 @@ impl AnonymousPublisher {
         })
     }
 
-    pub fn send_payload(
+    pub fn send_payload<I>(
         &mut self,
         payload: &[u8],
-        deadline: Microseconds,
-        transmitter: &mut Transmitter,
-    ) -> Result<(), OutOfMemoryError> {
+        deadline: I,
+        transmitter: &mut Transmitter<I>,
+    ) -> Result<(), OutOfMemoryError>
+    where
+        I: Clone,
+    {
         // Assemble the transfer
-        let transfer: Transfer<&[u8]> = Transfer {
+        let transfer: Transfer<&[u8], I> = Transfer {
             timestamp: deadline,
             header: TransferHeader {
                 source: make_pseudo_id(payload),
@@ -187,15 +196,16 @@ impl Requester {
         }
     }
 
-    pub fn send<T>(
+    pub fn send<T, I>(
         &mut self,
         payload: &T,
         destination: NodeId,
-        deadline: Microseconds,
-        transmitter: &mut Transmitter,
+        deadline: I,
+        transmitter: &mut Transmitter<I>,
     ) -> Result<(), OutOfMemoryError>
     where
         T: Serialize,
+        I: Clone,
     {
         // Part 1: Serialize
         do_serialize(payload, |payload_bytes| {
@@ -203,15 +213,18 @@ impl Requester {
         })
     }
 
-    pub fn send_payload(
+    pub fn send_payload<I>(
         &mut self,
         payload: &[u8],
         destination: NodeId,
-        deadline: Microseconds,
-        transmitter: &mut Transmitter,
-    ) -> Result<(), OutOfMemoryError> {
+        deadline: I,
+        transmitter: &mut Transmitter<I>,
+    ) -> Result<(), OutOfMemoryError>
+    where
+        I: Clone,
+    {
         // Assemble the transfer
-        let transfer: Transfer<&[u8]> = Transfer {
+        let transfer: Transfer<&[u8], I> = Transfer {
             timestamp: deadline,
             header: TransferHeader {
                 source: self.this_node,
@@ -305,17 +318,18 @@ impl Responder {
     /// transmitter: The transmitter to use when sending the response
     ///
     /// handler: A function that takes a request and returns a response
-    pub fn handle_request<Q, R, H, E>(
+    pub fn handle_request<Q, R, H, E, I>(
         &mut self,
-        transfer_in: Transfer<Vec<u8>>,
-        response_deadline: Microseconds,
-        transmitter: &mut Transmitter,
+        transfer_in: Transfer<Vec<u8>, I>,
+        response_deadline: I,
+        transmitter: &mut Transmitter<I>,
         handler: H,
     ) -> Result<(), RespondError<E>>
     where
         Q: Deserialize,
         R: Serialize,
         H: FnOnce(Q) -> Result<R, E>,
+        I: Clone,
     {
         // Check that this is a service request and has the correct parameters
         assert!(

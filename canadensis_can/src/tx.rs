@@ -11,22 +11,21 @@ use crate::data::Frame;
 use crate::error::OutOfMemoryError;
 use crate::heap::{Heap, Transaction};
 use crate::tx::breakdown::Breakdown;
-use crate::{CanId, Mtu};
+use crate::{CanId, FrameById, Mtu};
 use canadensis_core::transfer::{ServiceHeader, Transfer, TransferHeader, TransferKindHeader};
-use canadensis_core::Microseconds;
 use core::convert::TryFrom;
 use core::iter;
 use fallible_collections::TryReserveError;
 
 /// Splits outgoing transfers into frames
-pub struct Transmitter {
+pub struct Transmitter<I> {
     /// Queue of frames waiting to be sent
-    frame_queue: Heap<Frame>,
+    frame_queue: Heap<FrameById<I>>,
     /// Transport MTU
     mtu: usize,
 }
 
-impl Transmitter {
+impl<I: Clone> Transmitter<I> {
     /// Creates a transmitter
     ///
     /// mtu: The maximum number of bytes in a frame
@@ -47,7 +46,7 @@ impl Transmitter {
     /// Breaks a transfer into frames
     ///
     /// The frames can be retrieved and sent using the peek() and pop() functions.
-    pub fn push<P>(&mut self, transfer: Transfer<P>) -> Result<(), OutOfMemoryError>
+    pub fn push<P>(&mut self, transfer: Transfer<P, I>) -> Result<(), OutOfMemoryError>
     where
         P: AsRef<[u8]>,
     {
@@ -79,8 +78,8 @@ impl Transmitter {
     /// If an out-of-memory condition occurs, this function returns an error. There may be frames
     /// remaining in the transaction that need to be cleaned up.
     fn try_push(
-        transaction: &mut Transaction<'_, Frame>,
-        transfer: Transfer<&'_ [u8]>,
+        transaction: &mut Transaction<'_, FrameById<I>>,
+        transfer: Transfer<&'_ [u8], I>,
         mtu: usize,
     ) -> Result<(), OutOfMemoryError> {
         let padding = calculate_padding(transfer.payload.len(), mtu);
@@ -101,7 +100,7 @@ impl Transmitter {
         for byte in payload_and_padding {
             if let Some(frame_data) = breakdown.add(byte) {
                 // Filled up a frame
-                Self::push_frame(transaction, transfer.timestamp, can_id, &frame_data)?;
+                Self::push_frame(transaction, transfer.timestamp.clone(), can_id, &frame_data)?;
                 frames += 1;
             }
         }
@@ -114,7 +113,7 @@ impl Transmitter {
             for &byte in crc_bytes.iter() {
                 if let Some(frame_data) = breakdown.add(byte) {
                     // Filled up a frame
-                    Self::push_frame(transaction, transfer.timestamp, can_id, &frame_data)?;
+                    Self::push_frame(transaction, transfer.timestamp.clone(), can_id, &frame_data)?;
                 }
             }
         }
@@ -125,29 +124,33 @@ impl Transmitter {
 
     /// Creates a frame and adds it to a transaction
     fn push_frame(
-        transaction: &mut Transaction<'_, Frame>,
-        timestamp: Microseconds,
+        transaction: &mut Transaction<'_, FrameById<I>>,
+        timestamp: I,
         id: CanId,
         data: &[u8],
     ) -> core::result::Result<(), TryReserveError> {
         let frame = Frame::new(timestamp, id, data);
-        transaction.push(frame)
+        transaction.push(FrameById(frame))
     }
 
     /// Returns a reference to the next frame waiting to be sent, if any exists
-    pub fn peek(&self) -> Option<&Frame> {
-        self.frame_queue.peek()
+    pub fn peek(&self) -> Option<&Frame<I>> {
+        self.frame_queue
+            .peek()
+            .map(|compare_wrapper| &compare_wrapper.0)
     }
 
     /// Removes and returns the next frame waiting to be sent, if any exists
-    pub fn pop(&mut self) -> Option<Frame> {
-        self.frame_queue.pop()
+    pub fn pop(&mut self) -> Option<Frame<I>> {
+        self.frame_queue
+            .pop()
+            .map(|compare_wrapper| compare_wrapper.0)
     }
 
     /// Returns a frame that has not been sent and queues it to be sent later
-    pub fn return_frame(&mut self, frame: Frame) -> Result<(), TryReserveError> {
+    pub fn return_frame(&mut self, frame: Frame<I>) -> Result<(), TryReserveError> {
         let mut transaction = self.frame_queue.transaction();
-        transaction.push(frame)?;
+        transaction.push(FrameById(frame))?;
         transaction.commit();
         Ok(())
     }

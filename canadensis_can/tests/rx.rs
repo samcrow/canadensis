@@ -8,26 +8,37 @@ extern crate canadensis_core;
 use core::convert::{TryFrom, TryInto};
 
 use canadensis_can::{Frame, OutOfMemoryError, Receiver};
+use canadensis_core::time::{Instant, PrimitiveInstant};
 use canadensis_core::transfer::*;
-use canadensis_core::{Microseconds, Priority, ServiceId, SubjectId};
+use canadensis_core::{Priority, ServiceId, SubjectId};
+
+type TestInstant = PrimitiveInstant<u16>;
+type TestDuration = <TestInstant as Instant>::Duration;
+
+fn instant(ticks: u16) -> TestInstant {
+    TestInstant::new(ticks)
+}
+fn duration(ticks: u16) -> TestDuration {
+    TestDuration::new(ticks)
+}
 
 #[test]
 fn test_heartbeat() -> Result<(), OutOfMemoryError> {
     let mut rx = Receiver::new(0.try_into().unwrap());
 
     let heartbeat_subject = SubjectId::try_from(7509).unwrap();
-    rx.subscribe_message(heartbeat_subject, 7, Microseconds(0))?;
+    rx.subscribe_message(heartbeat_subject, 7, duration(0))?;
 
     let transfer = rx
         .accept(Frame::new(
-            Microseconds(42),
+            instant(42),
             0x107d552a.try_into().unwrap(),
             &[0x00, 0x00, 0x00, 0x00, 0x04, 0x78, 0x68, 0xe0],
         ))?
         .expect("Didn't get a transfer");
 
     let expected = Transfer {
-        timestamp: Microseconds(42),
+        timestamp: instant(42),
         header: TransferHeader {
             source: 42.try_into().unwrap(),
             priority: Priority::Nominal,
@@ -48,18 +59,18 @@ fn test_string() -> Result<(), OutOfMemoryError> {
     let mut rx = Receiver::new(0.try_into().unwrap());
 
     let string_subject = SubjectId::try_from(4919).unwrap();
-    rx.subscribe_message(string_subject, 16, Microseconds(0))?;
+    rx.subscribe_message(string_subject, 16, duration(0))?;
 
     let transfer = rx
         .accept(Frame::new(
-            Microseconds(42),
+            instant(42),
             0x11133775.try_into().unwrap(),
             b"\x00\x18Hello world!\x00\xe0",
         ))?
         .expect("Didn't get a transfer");
 
     let expected = Transfer {
-        timestamp: Microseconds(42),
+        timestamp: instant(42),
         header: TransferHeader {
             // Anonymous pseudo-ID
             source: 0x75.try_into().unwrap(),
@@ -81,18 +92,18 @@ fn test_node_info_request() -> Result<(), OutOfMemoryError> {
     let mut rx = Receiver::new(42.try_into().unwrap());
 
     let service = ServiceId::try_from(430).unwrap();
-    rx.subscribe_request(service, 0, Microseconds(0))?;
+    rx.subscribe_request(service, 0, duration(0))?;
 
     let transfer = rx
         .accept(Frame::new(
-            Microseconds(302),
+            instant(302),
             0x136b957b.try_into().unwrap(),
             &[0xe1],
         ))?
         .expect("Didn't get a transfer");
 
     let expected = Transfer {
-        timestamp: Microseconds(302),
+        timestamp: instant(302),
         header: TransferHeader {
             source: 123.try_into().unwrap(),
             priority: Priority::Nominal,
@@ -113,7 +124,7 @@ fn test_node_info_response() -> Result<(), OutOfMemoryError> {
     let mut rx = Receiver::new(123.try_into().unwrap());
 
     let service = ServiceId::try_from(430).unwrap();
-    rx.subscribe_response(service, 313 * 8, Microseconds(12))?;
+    rx.subscribe_response(service, 313 * 8, duration(100))?;
 
     let payload: [u8; 69] = [
         0x01, 0x00, // Protocol version
@@ -130,27 +141,28 @@ fn test_node_info_response() -> Result<(), OutOfMemoryError> {
         0x00, // Certificate of authenticity length
     ];
 
-    let frames: [&[u8]; 11] = [
-        &[0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0xa1],
-        &[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01],
-        &[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x21],
-        &[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01],
-        b"\x00\x00\x24org.\x21",
-        b"uavcan.\x01",
-        b"pyuavca\x21",
-        b"n.demo.\x01",
-        b"basic_u\x21",
-        b"sage\x00\x00\x9a\x01",
-        &[0xe7, 0x61],
+    let frames_and_times: [(&[u8], u16); 11] = [
+        (&[0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0xa1], 100),
+        (&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01], 102),
+        (&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x21], 105),
+        (&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01], 120),
+        (b"\x00\x00\x24org.\x21", 130),
+        (b"uavcan.\x01", 135),
+        (b"pyuavca\x21", 160),
+        (b"n.demo.\x01", 190),
+        (b"basic_u\x21", 197),
+        (b"sage\x00\x00\x9a\x01", 198),
+        // The last frame barely makes the deadline
+        (&[0xe7, 0x61], 200),
     ];
 
-    for (i, &frame_data) in frames.iter().enumerate() {
+    for (i, &(frame_data, frame_time)) in frames_and_times.iter().enumerate() {
         let frame = Frame::new(
-            Microseconds(i as u64),
+            instant(frame_time),
             0x126BBDAA.try_into().unwrap(),
             frame_data,
         );
-        if i != frames.len() - 1 {
+        if i != frames_and_times.len() - 1 {
             let maybe_transfer = rx.accept(frame)?;
             assert!(maybe_transfer.is_none());
         } else {
@@ -158,7 +170,8 @@ fn test_node_info_response() -> Result<(), OutOfMemoryError> {
             let transfer = rx.accept(frame)?.expect("Didn't get a transfer");
 
             let expected = Transfer {
-                timestamp: Microseconds(0),
+                // Timestamp matches the first frame's timestamp
+                timestamp: instant(100),
                 header: TransferHeader {
                     source: 42.try_into().unwrap(),
                     priority: Priority::Nominal,
@@ -177,14 +190,49 @@ fn test_node_info_response() -> Result<(), OutOfMemoryError> {
     Ok(())
 }
 #[test]
+fn test_node_info_response_timeout() -> Result<(), OutOfMemoryError> {
+    let mut rx = Receiver::new(123.try_into().unwrap());
+
+    let service = ServiceId::try_from(430).unwrap();
+    rx.subscribe_response(service, 313 * 8, duration(100))?;
+
+    let frames_and_times: [(&[u8], u16); 11] = [
+        (&[0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0xa1], 100),
+        (&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01], 102),
+        (&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x21], 105),
+        (&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01], 120),
+        (b"\x00\x00\x24org.\x21", 130),
+        (b"uavcan.\x01", 135),
+        (b"pyuavca\x21", 160),
+        (b"n.demo.\x01", 190),
+        (b"basic_u\x21", 197),
+        (b"sage\x00\x00\x9a\x01", 198),
+        // The last frame barely misses the deadline
+        (&[0xe7, 0x61], 201),
+    ];
+
+    for &(frame_data, frame_time) in frames_and_times.iter() {
+        let frame = Frame::new(
+            instant(frame_time),
+            0x126BBDAA.try_into().unwrap(),
+            frame_data,
+        );
+        // When the last frame is accepted, it has timed out and the whole transfer gets discarded.
+        let maybe_transfer = rx.accept(frame)?;
+        assert!(maybe_transfer.is_none());
+    }
+
+    Ok(())
+}
+#[test]
 fn test_array() -> Result<(), OutOfMemoryError> {
     let mut rx = Receiver::new(0.try_into().unwrap());
 
     let subject = SubjectId::try_from(4919).unwrap();
-    rx.subscribe_message(subject, 1024, Microseconds(1))?;
+    rx.subscribe_message(subject, 1024, duration(1))?;
 
     let expected = Transfer {
-        timestamp: Microseconds(0),
+        timestamp: instant(0),
         header: TransferHeader {
             source: 59.try_into().unwrap(),
             priority: Priority::Nominal,
@@ -226,7 +274,7 @@ fn test_array() -> Result<(), OutOfMemoryError> {
 
     for (i, &frame_data) in frames.iter().enumerate() {
         let frame = Frame::new(
-            Microseconds(i as u64),
+            instant(i as u16),
             0x1013373b.try_into().unwrap(),
             frame_data,
         );

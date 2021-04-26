@@ -8,14 +8,19 @@ extern crate canadensis_core;
 use core::convert::TryFrom;
 
 use canadensis_can::{CanId, Frame, Mtu, Transmitter};
+use canadensis_core::time::PrimitiveInstant;
 use canadensis_core::transfer::*;
-use canadensis_core::{Microseconds, NodeId, Priority, ServiceId, SubjectId, TransferId};
+use canadensis_core::{NodeId, Priority, ServiceId, SubjectId, TransferId};
+
+fn instant(ticks: u16) -> PrimitiveInstant<u16> {
+    PrimitiveInstant::new(ticks)
+}
 
 #[test]
 fn test_heartbeat() {
     let mut tx = Transmitter::new(Mtu::Can8);
     tx.push(Transfer {
-        timestamp: Microseconds(0),
+        timestamp: instant(0),
         header: TransferHeader {
             source: NodeId::try_from(42).unwrap(),
             priority: Priority::Nominal,
@@ -31,7 +36,7 @@ fn test_heartbeat() {
 
     assert_eq!(
         Some(Frame::new(
-            Microseconds(0),
+            instant(0),
             CanId::try_from(0x107d552a).unwrap(),
             &[0x00, 0x00, 0x00, 0x00, 0x04, 0x78, 0x68, 0xe0]
         )),
@@ -41,7 +46,7 @@ fn test_heartbeat() {
 
     // New transaction ID, new uptime
     tx.push(Transfer {
-        timestamp: Microseconds(0),
+        timestamp: instant(0),
         header: TransferHeader {
             source: NodeId::try_from(42).unwrap(),
             priority: Priority::Nominal,
@@ -57,7 +62,7 @@ fn test_heartbeat() {
 
     assert_eq!(
         Some(Frame::new(
-            Microseconds(0),
+            instant(0),
             CanId::try_from(0x107d552a).unwrap(),
             &[0x01, 0x00, 0x00, 0x00, 0x04, 0x78, 0x68, 0xe1]
         )),
@@ -70,7 +75,7 @@ fn test_heartbeat() {
 fn test_string() {
     let mut tx = Transmitter::new(Mtu::CanFd64);
     tx.push(Transfer {
-        timestamp: Microseconds(0),
+        timestamp: instant(0),
         header: TransferHeader {
             // Anonymous pseudo-ID
             source: NodeId::try_from(0x75).unwrap(),
@@ -89,7 +94,7 @@ fn test_string() {
 
     assert_eq!(
         Some(Frame::new(
-            Microseconds(0),
+            instant(0),
             CanId::try_from(0x11733775).unwrap(),
             &[
                 0x00, 0x18, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21,
@@ -105,7 +110,7 @@ fn test_string() {
 fn test_node_info_request() {
     let mut tx = Transmitter::new(Mtu::Can8);
     tx.push(Transfer {
-        timestamp: Microseconds(0),
+        timestamp: instant(0),
         header: TransferHeader {
             source: NodeId::try_from(123).unwrap(),
             priority: Priority::Nominal,
@@ -121,7 +126,7 @@ fn test_node_info_request() {
 
     assert_eq!(
         Some(Frame::new(
-            Microseconds(0),
+            instant(0),
             CanId::try_from(0x136b957b).unwrap(),
             &[0xe1]
         )),
@@ -134,7 +139,7 @@ fn test_node_info_request() {
 fn test_node_info_response() {
     let mut tx = Transmitter::new(Mtu::Can8);
     tx.push(Transfer {
-        timestamp: Microseconds(0),
+        timestamp: instant(0),
         header: TransferHeader {
             source: NodeId::try_from(42).unwrap(),
             priority: Priority::Nominal,
@@ -173,7 +178,7 @@ fn test_node_info_response() {
     ];
 
     for &expected_data in expected_frame_data.iter() {
-        let expected_frame = Frame::new(Microseconds(0), expected_can_id, expected_data);
+        let expected_frame = Frame::new(instant(0), expected_can_id, expected_data);
         assert_eq!(Some(expected_frame), tx.pop());
     }
     assert_eq!(None, tx.pop());
@@ -183,7 +188,7 @@ fn test_node_info_response() {
 fn test_array() {
     let mut tx = Transmitter::new(Mtu::CanFd64);
     tx.push(Transfer {
-        timestamp: Microseconds(0),
+        timestamp: instant(0),
         header: TransferHeader {
             source: NodeId::try_from(59).unwrap(),
             priority: Priority::Nominal,
@@ -223,7 +228,7 @@ fn test_array() {
     ];
 
     for &expected_data in expected_frame_data.iter() {
-        let expected_frame = Frame::new(Microseconds(0), expected_can_id, expected_data);
+        let expected_frame = Frame::new(instant(0), expected_can_id, expected_data);
         assert_eq!(Some(expected_frame), tx.pop());
     }
     assert_eq!(None, tx.pop());

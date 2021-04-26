@@ -1,6 +1,7 @@
 use core::cmp::Ordering;
-use core::ops::Shr;
-use num_traits::{Bounded, WrappingSub};
+use core::fmt::Debug;
+use core::ops::{Add, BitAnd, Shr};
+use num_traits::{Bounded, WrappingAdd, WrappingSub};
 
 /// A moment in time relative to some point in the past
 ///
@@ -15,12 +16,12 @@ use num_traits::{Bounded, WrappingSub};
 /// when overflow has happened once. If overflow has happened more than once between two instants,
 /// the calculated duration will be too short.
 ///
-pub trait Instant {
+pub trait Instant: Debug + Clone {
     /// The duration between two instants
     ///
     /// This type must be able to represent the difference between the maximum and minimum instant
     /// values.
-    type Duration: PartialOrd;
+    type Duration: PartialOrd + Debug + Clone;
 
     /// Calculates the duration between other and self
     ///
@@ -59,6 +60,12 @@ where
     }
 }
 
+/// An instant in time represented by an integer number of ticks
+///
+/// The tick interval is implementation-defined and not relevant for UAVCAN.
+///
+/// The integer type I can be a built-in integer type, or an integer type with a different number
+/// of bits.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct PrimitiveInstant<I>(I);
 
@@ -77,7 +84,7 @@ where
 
 impl<I> Instant for PrimitiveInstant<I>
 where
-    I: PartialOrd + Bounded + WrappingSub + Shr<u32, Output = I>,
+    I: PartialOrd + Bounded + WrappingSub + Shr<u32, Output = I> + Debug + Clone,
 {
     type Duration = PrimitiveDuration<I>;
 
@@ -95,6 +102,63 @@ where
         } else {
             Ordering::Greater
         }
+    }
+}
+
+fn add_duration_to_instant<I>(
+    lhs: &PrimitiveInstant<I>,
+    rhs: &PrimitiveDuration<I>,
+) -> PrimitiveInstant<I>
+where
+    I: WrappingAdd + Bounded + Add<Output = I> + BitAnd<Output = I> + Clone,
+{
+    // Normal add, wrap on overflow (this wrapping also works when I has a number of bits
+    // other than 8, 16, 32, 64, or 128)
+    let wrapped = lhs.ticks().wrapping_add(&rhs.ticks()) & I::max_value();
+    PrimitiveInstant::new(wrapped)
+}
+
+impl<I> Add<&'_ PrimitiveDuration<I>> for &'_ PrimitiveInstant<I>
+where
+    I: WrappingAdd + Bounded + Add<Output = I> + BitAnd<Output = I> + Clone,
+{
+    type Output = PrimitiveInstant<I>;
+
+    fn add(self, rhs: &PrimitiveDuration<I>) -> Self::Output {
+        add_duration_to_instant(self, rhs)
+    }
+}
+
+impl<I> Add<PrimitiveDuration<I>> for &'_ PrimitiveInstant<I>
+where
+    I: WrappingAdd + Bounded + Add<Output = I> + BitAnd<Output = I> + Clone,
+{
+    type Output = PrimitiveInstant<I>;
+
+    fn add(self, rhs: PrimitiveDuration<I>) -> Self::Output {
+        add_duration_to_instant(&self, &rhs)
+    }
+}
+
+impl<I> Add<&'_ PrimitiveDuration<I>> for PrimitiveInstant<I>
+where
+    I: WrappingAdd + Bounded + Add<Output = I> + BitAnd<Output = I> + Clone,
+{
+    type Output = Self;
+
+    fn add(self, rhs: &PrimitiveDuration<I>) -> Self::Output {
+        add_duration_to_instant(&self, rhs)
+    }
+}
+
+impl<I> Add<PrimitiveDuration<I>> for PrimitiveInstant<I>
+where
+    I: WrappingAdd + Bounded + Add<Output = I> + BitAnd<Output = I> + Clone,
+{
+    type Output = Self;
+
+    fn add(self, rhs: PrimitiveDuration<I>) -> Self::Output {
+        add_duration_to_instant(&self, &rhs)
     }
 }
 

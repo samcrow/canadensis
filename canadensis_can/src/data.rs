@@ -7,7 +7,7 @@ use core::convert::TryFrom;
 use core::fmt;
 use heapless::consts::U64;
 
-use canadensis_core::{InvalidValue, Microseconds};
+use canadensis_core::InvalidValue;
 
 /// Bit mask for a 29-bit CAN ID
 const CAN_ID_MASK: u32 = 0x1f_ff_ff_ff;
@@ -54,24 +54,24 @@ pub enum Mtu {
 ///
 /// RTR/Error frames are not used and therefore not modeled here.
 /// CAN frames with 11-bit ID are not used by UAVCAN/CAN and so they are not supported by the library.
-#[derive(Debug, Eq, PartialEq)]
-pub struct Frame {
+#[derive(Debug, Clone, PartialEq)]
+pub struct Frame<I> {
     /// For RX frames: reception timestamp.
     /// For TX frames: transmission deadline.
     /// The time system may be arbitrary as long as the clock is monotonic (steady).
-    timestamp: Microseconds,
+    timestamp: I,
     /// 29-bit extended ID
     id: CanId,
     /// The frame data
     data: heapless::Vec<u8, U64>,
 }
 
-impl Frame {
+impl<I: Clone> Frame<I> {
     /// Creates a frame
     ///
     /// # Panics
     /// This function will panic if the length of data is greater than 64.
-    pub fn new(timestamp: Microseconds, id: CanId, data: &[u8]) -> Self {
+    pub fn new(timestamp: I, id: CanId, data: &[u8]) -> Self {
         Frame {
             timestamp,
             id,
@@ -82,8 +82,8 @@ impl Frame {
     /// Returns the timestamp when this frame was received (for incoming frames)
     /// or the transmission deadline (for outgoing frames)
     #[inline]
-    pub fn timestamp(&self) -> Microseconds {
-        self.timestamp
+    pub fn timestamp(&self) -> I {
+        self.timestamp.clone()
     }
     /// Returns the ID of this frame
     #[inline]
@@ -97,15 +97,27 @@ impl Frame {
     }
 }
 
-impl PartialOrd for Frame {
+/// A frame wrapper that compares frames by ID and ignores all other fields
+#[derive(Debug)]
+pub(crate) struct FrameById<I>(pub Frame<I>);
+
+impl<I> PartialOrd for FrameById<I> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(Ord::cmp(self, other))
     }
 }
 
-impl Ord for Frame {
+impl<I> Ord for FrameById<I> {
     /// Compare by CAN ID
     fn cmp(&self, other: &Self) -> Ordering {
-        self.id.cmp(&other.id)
+        self.0.id.cmp(&other.0.id)
     }
 }
+
+impl<I> PartialEq for FrameById<I> {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.id.eq(&other.0.id)
+    }
+}
+
+impl<I> Eq for FrameById<I> {}

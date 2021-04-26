@@ -14,10 +14,11 @@ use std::time::{Duration, Instant};
 use socketcan::CANSocket;
 
 use canadensis_can::{CanId, Frame, Mtu, Receiver, Transmitter};
+use canadensis_core::time::{PrimitiveDuration, PrimitiveInstant};
 use canadensis_core::transfer::{
     MessageHeader, ServiceHeader, Transfer, TransferHeader, TransferKindHeader,
 };
-use canadensis_core::{Microseconds, NodeId, Priority, TransferId};
+use canadensis_core::{NodeId, Priority, TransferId};
 use canadensis_encoding::{Serialize, WriteCursor};
 use canadensis_node::{Mode, Node, NodeInfo};
 
@@ -48,6 +49,8 @@ use canadensis_node::{Mode, Node, NodeInfo};
 ///
 /// To send a NodeInfo request:
 /// `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" call [Node ID of basic_node] uavcan.node.GetInfo.1.0 {}`
+///
+/// In the above two commands, 8 is the MTU of standard CAN and 42 is the node ID of the Yakut node.
 ///
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);
@@ -83,10 +86,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rx = Receiver::new(node_id);
 
     // Subscribe to NodeInfo
-    rx.subscribe_request(canadensis_node::INFO_SERVICE, 0, Microseconds(0))
+    rx.subscribe_request(canadensis_node::INFO_SERVICE, 0, PrimitiveDuration::new(0))
         .expect("Failed to subscribe");
 
     let start_time = Instant::now();
+    let time_now = || -> PrimitiveInstant<u64> {
+        let since_start = Instant::now().duration_since(start_time);
+        let microseconds = since_start.as_micros();
+        PrimitiveInstant::new(microseconds as u64)
+    };
 
     loop {
         let run_time = Instant::now().duration_since(start_time);
@@ -103,7 +111,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(frame) => {
                 // Convert frame from socketcan to canadensis_can format
                 let frame = Frame::new(
-                    Microseconds(0),
+                    time_now(),
                     CanId::try_from(frame.id()).unwrap(),
                     frame.data(),
                 );
@@ -129,8 +137,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let response = node.info().unwrap();
                 let mut response_payload = vec![0u8; (response.size_bits() + 7) / 8];
                 response.serialize(&mut WriteCursor::new(&mut response_payload));
-                let response_transfer: Transfer<&[u8]> = Transfer {
-                    timestamp: Microseconds(0),
+                let response_transfer = Transfer {
+                    // 1-second timeout for sending all the frames
+                    timestamp: time_now() + PrimitiveDuration::new(1_000_000),
                     header: TransferHeader {
                         source: node.id(),
                         priority: Priority::default(),
@@ -154,8 +163,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let heartbeat = node.heartbeat();
             let mut heartbeat_payload = vec![0u8; (heartbeat.size_bits() + 7) / 8];
             heartbeat.serialize(&mut WriteCursor::new(&mut heartbeat_payload));
-            let heartbeat_transfer: Transfer<&[u8]> = Transfer {
-                timestamp: Microseconds(0),
+            let heartbeat_transfer = Transfer {
+                // 100-millisecond timeout for sending all the frames
+                timestamp: time_now() + PrimitiveDuration::new(1_000),
                 header: TransferHeader {
                     source: node.id(),
                     priority: Default::default(),
