@@ -4,6 +4,9 @@
 //! This library provides types used by other canadensis crates.
 //!
 
+extern crate num_traits;
+
+pub mod time;
 pub mod transfer;
 
 use core::cmp::Ordering;
