@@ -13,8 +13,9 @@ pub use canadensis_can::*;
 pub use canadensis_core::transfer;
 pub use canadensis_core::*;
 pub use canadensis_encoding::*;
+
 pub mod node {
-    ///! Basic node functionality
+    //! Basic node functionality
     pub use canadensis_node::*;
 }
 

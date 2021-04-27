@@ -3,11 +3,6 @@ use half::f16;
 use crate::Serialize;
 use core::convert::TryInto;
 
-/// Calculates the base-2 logarithm of a value, rounded up to the nearest integer
-// fn ceiling_log_2(x: usize) -> u8 {
-//     ((core::mem::size_of::<usize>() * 8) as u32 - (x - 1).leading_zeros()) as u8
-// }
-
 /// A cursor over a byte slice for easy serializing of UAVCAN data types
 ///
 /// Functions that write values will panic if no space is available in the slice.
