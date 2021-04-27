@@ -1,6 +1,11 @@
+//! Instant and duration definitions
+
+pub mod u48;
+
 use core::cmp::Ordering;
-use core::fmt::Debug;
-use core::ops::{Add, BitAnd, Shr};
+use core::fmt::{Debug, LowerHex};
+use core::ops::{Add, Shr};
+
 use num_traits::{Bounded, WrappingAdd, WrappingSub};
 
 /// A moment in time relative to some point in the past
@@ -44,6 +49,7 @@ pub trait Instant: Debug + Clone {
     fn overflow_safe_compare(&self, other: &Self) -> Ordering;
 }
 
+/// A duration, represented as an integer number of ticks
 #[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct PrimitiveDuration<I>(I);
 
@@ -66,6 +72,9 @@ where
 ///
 /// The integer type I can be a built-in integer type, or an integer type with a different number
 /// of bits.
+///
+/// The `Instant` implementation assumes that the clock overflows after reaching the maximum
+/// value of the type I.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct PrimitiveInstant<I>(I);
 
@@ -84,7 +93,7 @@ where
 
 impl<I> Instant for PrimitiveInstant<I>
 where
-    I: PartialOrd + Bounded + WrappingSub + Shr<u32, Output = I> + Debug + Clone,
+    I: PartialOrd + Bounded + WrappingSub + Shr<u32, Output = I> + Debug + Clone + LowerHex,
 {
     type Duration = PrimitiveDuration<I>;
 
@@ -97,10 +106,13 @@ where
         let half_max = I::max_value() >> 1;
         if self.0 == other.0 {
             Ordering::Equal
-        } else if (other.0.wrapping_sub(&self.0)) <= half_max {
-            Ordering::Less
         } else {
-            Ordering::Greater
+            let subtract_result = other.0.wrapping_sub(&self.0);
+            if subtract_result <= half_max {
+                Ordering::Less
+            } else {
+                Ordering::Greater
+            }
         }
     }
 }
@@ -110,17 +122,16 @@ fn add_duration_to_instant<I>(
     rhs: &PrimitiveDuration<I>,
 ) -> PrimitiveInstant<I>
 where
-    I: WrappingAdd + Bounded + Add<Output = I> + BitAnd<Output = I> + Clone,
+    I: WrappingAdd + Add<Output = I> + Clone,
 {
-    // Normal add, wrap on overflow (this wrapping also works when I has a number of bits
-    // other than 8, 16, 32, 64, or 128)
-    let wrapped = lhs.ticks().wrapping_add(&rhs.ticks()) & I::max_value();
+    // Normal add, wrap on overflow
+    let wrapped = lhs.ticks().wrapping_add(&rhs.ticks());
     PrimitiveInstant::new(wrapped)
 }
 
 impl<I> Add<&'_ PrimitiveDuration<I>> for &'_ PrimitiveInstant<I>
 where
-    I: WrappingAdd + Bounded + Add<Output = I> + BitAnd<Output = I> + Clone,
+    I: WrappingAdd + Add<Output = I> + Clone,
 {
     type Output = PrimitiveInstant<I>;
 
@@ -131,7 +142,7 @@ where
 
 impl<I> Add<PrimitiveDuration<I>> for &'_ PrimitiveInstant<I>
 where
-    I: WrappingAdd + Bounded + Add<Output = I> + BitAnd<Output = I> + Clone,
+    I: WrappingAdd + Add<Output = I> + Clone,
 {
     type Output = PrimitiveInstant<I>;
 
@@ -142,7 +153,7 @@ where
 
 impl<I> Add<&'_ PrimitiveDuration<I>> for PrimitiveInstant<I>
 where
-    I: WrappingAdd + Bounded + Add<Output = I> + BitAnd<Output = I> + Clone,
+    I: WrappingAdd + Add<Output = I> + Clone,
 {
     type Output = Self;
 
@@ -153,7 +164,7 @@ where
 
 impl<I> Add<PrimitiveDuration<I>> for PrimitiveInstant<I>
 where
-    I: WrappingAdd + Bounded + Add<Output = I> + BitAnd<Output = I> + Clone,
+    I: WrappingAdd + Add<Output = I> + Clone,
 {
     type Output = Self;
 
@@ -163,7 +174,7 @@ where
 }
 
 #[cfg(test)]
-mod test {
+mod test_u8 {
     use super::{Instant, PrimitiveInstant};
     use core::cmp::Ordering;
 
@@ -178,7 +189,7 @@ mod test {
         assert_eq!(compare(127, 127), Ordering::Equal);
         assert_eq!(compare(255, 255), Ordering::Equal);
 
-        // With a difference of less than or equal to 128, comparison assumes that overflow
+        // With a difference of less than 128, comparison assumes that overflow
         // hasn't happened and works normally
         assert_eq!(compare(0, 10), Ordering::Less);
         assert_eq!(compare(0, 126), Ordering::Less);

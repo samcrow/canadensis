@@ -1,4 +1,4 @@
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 
 //!
 //! This library provides types used by other canadensis crates.
