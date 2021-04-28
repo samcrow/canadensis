@@ -46,7 +46,9 @@ impl Publisher {
     /// Creates a message transmitter
     ///
     /// node: The ID of this node
+    ///
     /// priority: The priority to use for messages
+    ///
     /// subject: The subject ID to publish to
     pub const fn new(node: NodeId, priority: Priority, subject: SubjectId) -> Self {
         Publisher {
@@ -116,6 +118,7 @@ impl AnonymousPublisher {
     /// Creates an anonymous message transmitter
     ///
     /// priority: The priority to use for messages
+    ///
     /// subject: The subject ID to publish to
     pub fn new(priority: Priority, subject: SubjectId) -> Self {
         AnonymousPublisher {
@@ -186,7 +189,9 @@ impl Requester {
     /// Creates a service request transmitter
     ///
     /// this_node: The ID of this node
+    ///
     /// priority: The priority to use for messages
+    ///
     /// service: The service ID to request
     pub fn new(this_node: NodeId, priority: Priority, service: ServiceId) -> Self {
         Requester {

@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/canadensis/canadensis.iml" filepath="$PROJECT_DIR$/canadensis/canadensis.iml" />
+      <module fileurl="file://$PROJECT_DIR$/canadensis_bxcan/canadensis_bxcan.iml" filepath="$PROJECT_DIR$/canadensis_bxcan/canadensis_bxcan.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_can/canadensis_can.iml" filepath="$PROJECT_DIR$/canadensis_can/canadensis_can.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_core/canadensis_core.iml" filepath="$PROJECT_DIR$/canadensis_core/canadensis_core.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_encoding/canadensis_encoding.iml" filepath="$PROJECT_DIR$/canadensis_encoding/canadensis_encoding.iml" />

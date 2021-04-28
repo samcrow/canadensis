@@ -66,7 +66,7 @@ pub struct Frame<I> {
     data: heapless::Vec<u8, U64>,
 }
 
-impl<I: Clone> Frame<I> {
+impl<I> Frame<I> {
     /// Creates a frame
     ///
     /// # Panics
@@ -78,13 +78,6 @@ impl<I: Clone> Frame<I> {
             data: heapless::Vec::from_slice(data).expect("Data to large for a CAN FD frame"),
         }
     }
-
-    /// Returns the timestamp when this frame was received (for incoming frames)
-    /// or the transmission deadline (for outgoing frames)
-    #[inline]
-    pub fn timestamp(&self) -> I {
-        self.timestamp.clone()
-    }
     /// Returns the ID of this frame
     #[inline]
     pub fn id(&self) -> CanId {
@@ -94,6 +87,15 @@ impl<I: Clone> Frame<I> {
     #[inline]
     pub fn data(&self) -> &[u8] {
         &self.data
+    }
+}
+
+impl<I: Clone> Frame<I> {
+    /// Returns the timestamp when this frame was received (for incoming frames)
+    /// or the transmission deadline (for outgoing frames)
+    #[inline]
+    pub fn timestamp(&self) -> I {
+        self.timestamp.clone()
     }
 }
 

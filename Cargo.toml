@@ -1,9 +1,14 @@
 [workspace]
 members = [
     "canadensis",
+    "canadensis_bxcan",
     "canadensis_core",
     "canadensis_can",
     "canadensis_filter_config",
     "canadensis_node",
     "canadensis_encoding"
 ]
+
+# Pending https://github.com/stm32-rs/bxcan/pull/25
+[patch.crates-io]
+bxcan = { git = "https://github.com/samcrow/bxcan.git", branch = "mailbox-number" }
