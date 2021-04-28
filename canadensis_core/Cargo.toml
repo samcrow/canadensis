@@ -11,4 +11,4 @@ license = "MIT OR Apache-2.0"
 description = "A UAVCAN v1.0 implementation: Common definitions"
 
 [dependencies]
-num-traits = "0.2.14"
+num-traits = { version = "0.2.14", default-features = false }
