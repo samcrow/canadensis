@@ -18,6 +18,14 @@ where
     C: Instance,
     I: Instant,
 {
+    pub fn new(can: Tx<C>, uavcan_transmitter: Transmitter<I>) -> Self {
+        TransmitAdapter {
+            uavcan_transmitter,
+            can,
+            deadline_tracker: DeadlineTracker::new(),
+        }
+    }
+
     pub fn try_send(&mut self, now: I) {
         self.clean_expired_frames(&now);
         while let Some(frame) = self.uavcan_transmitter.pop() {

@@ -15,6 +15,12 @@ where
     C: Instance,
     I: Instant,
 {
+    pub fn new(can: Rx<C>, uavcan_receiver: Receiver<I>) -> Self {
+        ReceiveAdapter {
+            can,
+            uavcan_receiver,
+        }
+    }
     pub fn receive_frames<N, H>(&mut self, mut now: N, mut transfer_handler: H)
     where
         N: FnMut() -> I,

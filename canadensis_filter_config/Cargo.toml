@@ -9,4 +9,8 @@ repository = "https://github.com/samcrow/canadensis"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[[bin]]
+name = "optimize_filters"
+path = "bin/optimize_filters.rs"
+
 [dependencies]
