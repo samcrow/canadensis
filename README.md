@@ -16,7 +16,6 @@ Some parts of this code work:
 
 Other parts are incomplete:
 
-* Transfer timeouts and general time management are not yet implemented.
 * There are some tests, but there are probably several bugs in areas that have not been tested.
 * The design is not the best.
 * The amount of dynamic memory allocation can be reduced.
