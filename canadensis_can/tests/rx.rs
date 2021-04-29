@@ -7,10 +7,10 @@ extern crate canadensis_core;
 
 use core::convert::{TryFrom, TryInto};
 
-use canadensis_can::{Frame, OutOfMemoryError, Receiver};
-use canadensis_core::time::{Instant, PrimitiveInstant};
+use canadensis_can::{CanId, Frame, OutOfMemoryError, Receiver};
+use canadensis_core::time::{Instant, PrimitiveDuration, PrimitiveInstant};
 use canadensis_core::transfer::*;
-use canadensis_core::{Priority, ServiceId, SubjectId};
+use canadensis_core::{NodeId, Priority, ServiceId, SubjectId};
 
 type TestInstant = PrimitiveInstant<u16>;
 type TestDuration = <TestInstant as Instant>::Duration;
@@ -290,4 +290,81 @@ fn test_array() -> Result<(), OutOfMemoryError> {
     }
 
     Ok(())
+}
+
+#[test]
+fn test_multi_frame_anonymous() {
+    // Multi-frame anonymous transfers must be ignored
+    let mut receiver = Receiver::<PrimitiveInstant<u16>>::new(NodeId::try_from(3).unwrap());
+    let subject_id = SubjectId::try_from(10).unwrap();
+    receiver
+        .subscribe_message(subject_id, 16, PrimitiveDuration::new(100))
+        .unwrap();
+    // A non-anonymous 2-frame transfer works
+    let non_anonymous_id: CanId = 0b100_0_0_011_0000000001010_0_1000000_u32
+        .try_into()
+        .unwrap();
+    let frames: [&[u8]; 2] = [
+        &[
+            0x1,
+            0x2,
+            0x3,
+            0x4,
+            0x5,
+            0x6,
+            0x7,
+            /* tail */ 0b101_00000,
+        ],
+        &[0x8, /* CRC */ 0x47, 0x92, /* tail */ 0b010_00000],
+    ];
+    let non_anonymous_transfer = Transfer {
+        timestamp: PrimitiveInstant::new(1),
+        header: TransferHeader {
+            source: 64.try_into().unwrap(),
+            priority: Priority::Nominal,
+            kind: TransferKindHeader::Message(MessageHeader {
+                anonymous: false,
+                subject: subject_id,
+            }),
+        },
+        transfer_id: 0.try_into().unwrap(),
+        payload: vec![0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8],
+    };
+
+    assert_eq!(
+        Ok(None),
+        receiver.accept(Frame::new(
+            PrimitiveInstant::new(1),
+            non_anonymous_id,
+            frames[0]
+        ))
+    );
+    assert_eq!(
+        Ok(Some(non_anonymous_transfer)),
+        receiver.accept(Frame::new(
+            PrimitiveInstant::new(2),
+            non_anonymous_id,
+            frames[1]
+        ))
+    );
+    // Now make it anonymous
+    let anonymous_id: CanId = 0b100_0_1_011_0000000001010_0_1000000_u32
+        .try_into()
+        .unwrap();
+    assert_eq!(
+        Ok(None),
+        receiver.accept(Frame::new(
+            PrimitiveInstant::new(1),
+            anonymous_id,
+            frames[0]
+        ))
+    );
+    assert_eq!(
+        Ok(None),
+        receiver.accept(Frame::new(
+            PrimitiveInstant::new(2),
+            anonymous_id,
+            frames[1]
+        ))
+    );
 }

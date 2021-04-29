@@ -80,6 +80,21 @@ pub struct TransferHeader {
     pub kind: TransferKindHeader,
 }
 
+impl TransferHeader {
+    /// Returns true if this header is for an anonymous message transfer
+    ///
+    /// This function returns false if the transfer is not a message transfer.
+    pub fn is_anonymous(&self) -> bool {
+        matches!(
+            &self.kind,
+            TransferKindHeader::Message(MessageHeader {
+                anonymous: true,
+                ..
+            })
+        )
+    }
+}
+
 /// A UAVCAN transfer (either incoming or outgoing)
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Transfer<P, I> {

@@ -128,6 +128,13 @@ pub struct Receiver<I: Instant> {
     subscriptions_request: Vec<Subscription<I>>,
     /// The ID of this node
     id: NodeId,
+    /// Number of transfers successfully received
+    transfer_count: u64,
+    /// Number of transfers that could not be received
+    ///
+    /// Errors include failure to allocate memory (when handling incoming frames only), missing
+    /// frames, and malformed frames.
+    error_count: u64,
 }
 
 impl<I: Instant> Receiver<I> {
@@ -140,6 +147,8 @@ impl<I: Instant> Receiver<I> {
             subscriptions_response: Vec::new(),
             subscriptions_request: Vec::new(),
             id,
+            transfer_count: 0,
+            error_count: 0,
         }
     }
 
@@ -151,8 +160,9 @@ impl<I: Instant> Receiver<I> {
     /// The payload of the returned transfer does not include any tail bytes or CRC.
     ///
     /// This function will return an error if memory allocation has failed. Other unexpected
-    /// situations, such as duplicate or malformed frames, are not considered errors and are not
-    /// reported.
+    /// situations, such as duplicate or malformed frames, do not cause this function to return
+    /// an error but do increment the error counter. Valid frames on subjects that this receiver is
+    /// not subscribed to will be silently ignored.
     pub fn accept(
         &mut self,
         frame: Frame<I>,
@@ -162,10 +172,13 @@ impl<I: Instant> Receiver<I> {
         self.clean_expired_sessions(frame.timestamp());
 
         // Part 1: basic frame checks
-        let header = match Self::frame_sanity_check(self.id, &frame) {
-            Some(header) => header,
+        let (header, tail) = match Self::frame_sanity_check(self.id, &frame) {
+            Some(data) => data,
             None => {
                 // Can't use this frame
+                #[cfg(test)]
+                std::eprintln!("Frame failed sanity checks, ignoring");
+                self.increment_error_count();
                 return Ok(None);
             }
         };
@@ -179,12 +192,13 @@ impl<I: Instant> Receiver<I> {
             // Get everything we need from the subscription before borrowing it to get the session
             let max_payload_length = subscription.payload_size_max;
             let transfer_timeout = subscription.timeout.clone();
-            let tail = TailByte::parse(*frame.data().last().unwrap());
             // Find the session for this source node
             let session = if let Some(session) = subscription.session_mut(header.source) {
                 // Use the existing session, if its transfer ID matches this frame
                 if session.buildup.transfer_id() != tail.transfer_id {
                     // This is a frame from some other transfer. Ignore it.
+                    #[cfg(test)]
+                    std::eprintln!("Frame associated with a different session, ignoring");
                     return Ok(None);
                 }
 
@@ -193,17 +207,36 @@ impl<I: Instant> Receiver<I> {
                 // Create a new session (this should be the first frame in the transfer)
                 if !tail.start {
                     // No session, and this is not the start of a transfer. Ignore frame.
+                    #[cfg(test)]
+                    std::eprintln!("First frame does not have start bit set, ignoring");
                     return Ok(None);
                 }
                 // This is the start, create a new session
-                // Error handling: This may fail to allocate memory. There's nothing to clean up.
-                subscription.create_session(header.source, frame.timestamp(), tail.transfer_id)?
+                #[cfg(test)]
+                std::eprintln!(
+                    "Creating new session for transfer ID {:?} from node {:?}",
+                    tail.transfer_id,
+                    header.source
+                );
+                let new_session =
+                    subscription.create_session(header.source, frame.timestamp(), tail.transfer_id);
+                match new_session {
+                    Ok(session) => session,
+                    Err(_) => {
+                        self.increment_error_count();
+                        // Don't need to do any cleanup.
+                        return Err(OutOfMemoryError(()));
+                    }
+                }
             };
             // Check if this frame will make the transfer exceed the maximum length
             let new_payload_length = session.buildup.payload_length() + (frame.data().len() - 1);
             if new_payload_length > max_payload_length {
                 // Too much payload. Give up on this transfer.
+                #[cfg(test)]
+                std::eprintln!("Transfer payload too large, discarding");
                 subscription.destroy_session(header.source);
+                self.increment_error_count();
                 return Ok(None);
             }
             // Check if this frame is too late
@@ -213,7 +246,10 @@ impl<I: Instant> Receiver<I> {
 
             if time_since_first_frame > transfer_timeout {
                 // Frame arrived too late. Give up on this transfer.
+                #[cfg(test)]
+                std::eprintln!("Session timed out, discarding");
                 subscription.destroy_session(header.source);
+                self.increment_error_count();
                 return Ok(None);
             }
             // This frame looks OK. Do the reassembly.
@@ -228,6 +264,10 @@ impl<I: Instant> Receiver<I> {
                         crc.add_bytes(&transfer_data);
                         if crc.get() != 0 {
                             // Invalid CRC, drop transfer
+                            #[cfg(test)]
+                            std::eprintln!("Invalid CRC, discarding transfer");
+                            subscription.destroy_session(source);
+                            self.increment_error_count();
                             return Ok(None);
                         }
                         // Remove the CRC bytes from the transfer data
@@ -242,6 +282,7 @@ impl<I: Instant> Receiver<I> {
                         payload: transfer_data,
                     };
                     subscription.destroy_session(source);
+                    self.increment_transfer_count();
                     Ok(Some(transfer))
                 }
                 Ok(None) => {
@@ -251,26 +292,33 @@ impl<I: Instant> Receiver<I> {
                 Err(BuildupError::OutOfMemory(_)) => {
                     // We can't handle this frame, so delete the session
                     subscription.destroy_session(header.source);
+                    self.increment_error_count();
                     Ok(None)
                 }
                 Err(BuildupError::InvalidToggle) | Err(BuildupError::InvalidStart) => {
                     // Invalid frame, delete the session
                     subscription.destroy_session(header.source);
+                    self.increment_error_count();
                     Ok(None)
                 }
             }
         } else {
             // No matching subscription, ignore
+            #[cfg(test)]
+            std::eprintln!("Frame does not match any subscription, ignoring");
             Ok(None)
         }
     }
 
-    /// Runs basic sanity checks on an incoming frame. Returns the header if the frame is valid.
-    fn frame_sanity_check(local_id: NodeId, frame: &Frame<I>) -> Option<TransferHeader> {
-        if frame.data().is_empty() {
-            // No tail byte, can't use
-            return None;
-        }
+    /// Runs basic sanity checks on an incoming frame. Returns the header and tail byte if the frame
+    /// is valid.
+    fn frame_sanity_check(
+        local_id: NodeId,
+        frame: &Frame<I>,
+    ) -> Option<(TransferHeader, TailByte)> {
+        // Frame must have a tail byte to be valid
+        let tail_byte = TailByte::parse(frame.data().last()?.clone());
+
         let header = match parse_can_id(frame.id()) {
             Ok(header) => header,
             Err(_) => {
@@ -287,8 +335,18 @@ impl<I: Instant> Receiver<I> {
             // This frame is a service request or response going to some other node
             return None;
         }
+
+        if header.is_anonymous() {
+            // Anonymous message transfers must always fit into one frame
+            if !(tail_byte.toggle && tail_byte.start && tail_byte.end) {
+                #[cfg(test)]
+                std::eprintln!("Anonymous multi-frame transfer, ignoring");
+                return None;
+            }
+        }
+
         // OK
-        Some(header)
+        Some((header, tail_byte))
     }
 
     /// Subscribes to messages on a subject
@@ -424,6 +482,25 @@ impl<I: Instant> Receiver<I> {
             TransferKind::Response => &mut self.subscriptions_response,
             TransferKind::Request => &mut self.subscriptions_request,
         }
+    }
+
+    /// Returns the number of transfers successfully received
+    pub fn transfer_count(&self) -> u64 {
+        self.transfer_count
+    }
+    /// Returns the number of transfers that could not be received correctly
+    ///
+    /// Errors include failure to allocate memory (when handling incoming frames only), missing
+    /// frames, and malformed frames.
+    pub fn error_count(&self) -> u64 {
+        self.error_count
+    }
+
+    fn increment_transfer_count(&mut self) {
+        self.transfer_count = self.transfer_count.wrapping_add(1)
+    }
+    fn increment_error_count(&mut self) {
+        self.error_count = self.error_count.wrapping_add(1)
     }
 
     fn clean_expired_sessions(&mut self, now: I) {

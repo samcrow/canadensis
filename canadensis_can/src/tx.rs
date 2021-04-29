@@ -23,6 +23,15 @@ pub struct Transmitter<I> {
     frame_queue: Heap<FrameById<I>>,
     /// Transport MTU
     mtu: usize,
+    /// Number of transfers successfully transmitted
+    ///
+    /// Success means that the frames were placed into the frame queue successfully. CAN bus errors
+    /// are ignored.
+    transfer_count: u64,
+    /// Number of transfers that could not be transmitted
+    ///
+    /// A failure to allocate memory is considered an error. CAN bus errors are ignored.
+    error_count: u64,
 }
 
 impl<I: Clone> Transmitter<I> {
@@ -33,6 +42,8 @@ impl<I: Clone> Transmitter<I> {
         Transmitter {
             frame_queue: Heap::new(),
             mtu: mtu as usize,
+            transfer_count: 0,
+            error_count: 0,
         }
     }
 
@@ -64,10 +75,14 @@ impl<I: Clone> Transmitter<I> {
         match Self::try_push(&mut transaction, transfer, self.mtu) {
             Ok(()) => {
                 transaction.commit();
+                self.transfer_count = self.transfer_count.wrapping_add(1);
                 Ok(())
             }
             Err(_) => {
                 transaction.rollback();
+                // Try to reduce memory pressure by shrinking the queue
+                self.frame_queue.shrink_to_fit();
+                self.error_count = self.error_count.wrapping_add(1);
                 Err(OutOfMemoryError(()))
             }
         }
@@ -153,6 +168,23 @@ impl<I: Clone> Transmitter<I> {
         transaction.push(FrameById(frame))?;
         transaction.commit();
         Ok(())
+    }
+
+    /// Returns the number of transfers successfully transmitted
+    ///
+    /// Success means that the frames were placed into the frame queue successfully. CAN bus errors
+    ///  are ignored.
+    #[inline]
+    pub fn transfer_count(&self) -> u64 {
+        self.transfer_count
+    }
+
+    /// Returns the number of transfers that could not be transmitted
+    ///
+    /// A failure to allocate memory is considered an error. CAN bus errors are ignored.
+    #[inline]
+    pub fn error_count(&self) -> u64 {
+        self.error_count
     }
 }
 

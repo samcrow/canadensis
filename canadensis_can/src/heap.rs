@@ -135,6 +135,13 @@ where
             }
         }
     }
+
+    /// Removes any non-committed items and attempts to shrink the underlying storage to
+    /// free memory
+    pub fn shrink_to_fit(&mut self) {
+        self.clear_pending();
+        self.data.shrink_to_fit();
+    }
 }
 
 /// A transaction operating on a heap

@@ -22,5 +22,6 @@ mod tx;
 pub use crate::data::*;
 pub use crate::error::*;
 
+pub use crate::crc::TransferCrc;
 pub use crate::rx::Receiver;
 pub use crate::tx::Transmitter;

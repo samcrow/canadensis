@@ -18,3 +18,7 @@ heapless = "0.5.5"
 [dependencies.canadensis_core]
 version = "0.1.0"
 path = "../canadensis_core"
+
+[[bin]]
+name = "canadensis_crc"
+path = "bin/crc.rs"
