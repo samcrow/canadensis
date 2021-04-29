@@ -1,0 +1,18 @@
+[package]
+name = "canadensis_data_types"
+version = "0.1.0"
+authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
+edition = "2018"
+description = "Hand-written definitions for some UAVCAN public regulated data types"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+[dependencies.canadensis_encoding]
+path = "../canadensis_encoding"
+
+# Use an unreleased version that supports const generics
+[dependencies.heapless]
+git = "https://github.com/japaric/heapless.git"
+revision = "eff63f794f029ccc0ae66246d269e1e8e96b198e"

@@ -166,7 +166,7 @@ impl<'b> ReadCursor<'b> {
         }
     }
 
-    fn is_aligned_to_8_bits(&self) -> bool {
+    pub fn is_aligned_to_8_bits(&self) -> bool {
         self.bit_index == 0
     }
 
@@ -221,7 +221,7 @@ impl<'b> ReadCursor<'b> {
         T: Deserialize,
     {
         self.align_to_8_bits();
-        if T::EXTENT_BYTES.is_some() {
+        let status = if T::EXTENT_BYTES.is_some() {
             // This is a delimited type. Read the header and fork to read the object
             let composite_length_bytes = self.read_aligned_u32() as usize;
             if composite_length_bytes > self.bytes.len() {
@@ -233,7 +233,9 @@ impl<'b> ReadCursor<'b> {
         } else {
             // Sealed type, read directly
             T::deserialize(self)
-        }
+        };
+        self.align_to_8_bits();
+        status
     }
 
     /// Reads a boolean value (1 bit)

@@ -2,8 +2,9 @@
 members = [
     "canadensis",
     "canadensis_bxcan",
-    "canadensis_core",
     "canadensis_can",
+    "canadensis_core",
+    "canadensis_data_types",
     "canadensis_filter_config",
     "canadensis_node",
     "canadensis_encoding"

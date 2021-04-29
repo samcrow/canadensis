@@ -45,7 +45,7 @@ impl<'b> WriteCursor<'b> {
         &mut self.bytes[self.bytes_written..]
     }
 
-    fn is_aligned_to_8_bits(&self) -> bool {
+    pub fn is_aligned_to_8_bits(&self) -> bool {
         self.bit_index == 0
     }
 
@@ -253,6 +253,7 @@ impl<'b> WriteCursor<'b> {
         }
         // Now serialize the components
         value.serialize(self);
+        self.align_to_8_bits();
     }
 
     /// Writes a boolean value (1 bit)
