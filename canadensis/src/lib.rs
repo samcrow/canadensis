@@ -23,11 +23,16 @@ pub mod node {
     //! Basic node functionality
     pub use canadensis_node::*;
 }
+mod anonymous_publisher;
+mod publisher;
+mod requester;
 
 use alloc::vec::Vec;
 use core::iter;
 
 use crate::hash::TrivialIndexMap;
+use crate::publisher::Publisher;
+use crate::requester::Requester;
 use canadensis_core::time::Instant;
 use canadensis_core::transfer::*;
 use canadensis_encoding::{DeserializeError, Serialize, WriteCursor};
@@ -35,229 +40,6 @@ use fallible_collections::FallibleVec;
 
 /// Payloads above this size (in bytes) will use a dynamically allocated buffer
 const STACK_THRESHOLD: usize = 64;
-
-/// Assembles transfers and manages transfer IDs to send messages
-///
-/// The subject ID is not part of this struct because it is used as a key in the map of publishers.
-pub struct Publisher<I: Instant> {
-    /// The ID of the next transfer sent
-    next_transfer_id: TransferId,
-    /// Timeout for sending a transfer, measured from the time the payload is serialized
-    timeout: I::Duration,
-    /// Priority for transfers
-    priority: Priority,
-    /// ID of this node
-    source: NodeId,
-}
-
-impl<I: Instant> Publisher<I> {
-    /// Creates a message transmitter
-    ///
-    /// node: The ID of this node
-    ///
-    /// priority: The priority to use for messages
-    pub fn new(node_id: NodeId, timeout: I::Duration, priority: Priority) -> Self {
-        Publisher {
-            next_transfer_id: TransferId::const_default(),
-            timeout,
-            priority,
-            source: node_id,
-        }
-    }
-
-    pub fn publish<T>(
-        &mut self,
-        now: I,
-        subject: SubjectId,
-        payload: &T,
-        transmitter: &mut Transmitter<I>,
-    ) -> Result<(), OutOfMemoryError>
-    where
-        T: Serialize,
-        I: Instant,
-    {
-        let deadline = self.timeout.clone() + now;
-        // Part 1: Serialize
-        do_serialize(payload, |payload_bytes| {
-            // Part 2: Split into frames and put frames in the queue
-            self.send_payload(subject, payload_bytes, deadline, transmitter)
-        })
-    }
-
-    pub fn send_payload(
-        &mut self,
-        subject: SubjectId,
-        payload: &[u8],
-        deadline: I,
-        transmitter: &mut Transmitter<I>,
-    ) -> Result<(), OutOfMemoryError>
-    where
-        I: Clone,
-    {
-        // Assemble the transfer
-        let transfer: Transfer<&[u8], I> = Transfer {
-            timestamp: deadline,
-            header: TransferHeader {
-                source: self.source,
-                priority: self.priority,
-                kind: TransferKindHeader::Message(MessageHeader {
-                    anonymous: false,
-                    subject,
-                }),
-            },
-            transfer_id: self.next_transfer_id,
-            payload,
-        };
-        self.next_transfer_id = self.next_transfer_id.increment();
-
-        transmitter.push(transfer)
-    }
-}
-
-/// A transmitter that sends anonymous messages and does not require a node ID
-pub struct AnonymousPublisher {
-    /// The priority of transfers from this transmitter
-    priority: Priority,
-    /// The subject to transmit on
-    subject: SubjectId,
-    /// The ID of the next transfer sent
-    next_transfer_id: TransferId,
-}
-
-impl AnonymousPublisher {
-    /// Creates an anonymous message transmitter
-    ///
-    /// priority: The priority to use for messages
-    ///
-    /// subject: The subject ID to publish to
-    pub fn new(priority: Priority, subject: SubjectId) -> Self {
-        AnonymousPublisher {
-            priority,
-            subject,
-            next_transfer_id: TransferId::const_default(),
-        }
-    }
-
-    pub fn send<T, I>(
-        &mut self,
-        payload: &T,
-        deadline: I,
-        transmitter: &mut Transmitter<I>,
-    ) -> Result<(), OutOfMemoryError>
-    where
-        T: Serialize,
-        I: Clone,
-    {
-        // Part 1: Serialize
-        do_serialize(payload, |payload_bytes| {
-            self.send_payload(payload_bytes, deadline, transmitter)
-        })
-    }
-
-    pub fn send_payload<I>(
-        &mut self,
-        payload: &[u8],
-        deadline: I,
-        transmitter: &mut Transmitter<I>,
-    ) -> Result<(), OutOfMemoryError>
-    where
-        I: Clone,
-    {
-        // Assemble the transfer
-        let transfer: Transfer<&[u8], I> = Transfer {
-            timestamp: deadline,
-            header: TransferHeader {
-                source: make_pseudo_id(payload),
-                priority: self.priority,
-                kind: TransferKindHeader::Message(MessageHeader {
-                    anonymous: false,
-                    subject: self.subject,
-                }),
-            },
-            transfer_id: self.next_transfer_id,
-            payload,
-        };
-        self.next_transfer_id = self.next_transfer_id.increment();
-
-        transmitter.push(transfer)
-    }
-}
-
-/// Assembles transfers and manages transfer IDs to send service requests
-pub struct Requester<I: Instant> {
-    /// The ID of this node
-    this_node: NodeId,
-    /// The priority of transfers from this transmitter
-    priority: Priority,
-    /// The timeout for sending transfers
-    timeout: I::Duration,
-    /// The ID of the next transfer sent
-    next_transfer_id: TransferId,
-}
-
-impl<I: Instant> Requester<I> {
-    /// Creates a service request transmitter
-    ///
-    /// this_node: The ID of this node
-    ///
-    /// priority: The priority to use for messages
-    ///
-    /// service: The service ID to request
-    pub fn new(this_node: NodeId, timeout: I::Duration, priority: Priority) -> Self {
-        Requester {
-            this_node,
-            priority,
-            timeout,
-            next_transfer_id: TransferId::const_default(),
-        }
-    }
-
-    pub fn send<T>(
-        &mut self,
-        now: I,
-        service: ServiceId,
-        payload: &T,
-        destination: NodeId,
-        transmitter: &mut Transmitter<I>,
-    ) -> Result<(), OutOfMemoryError>
-    where
-        T: Serialize,
-    {
-        // Part 1: Serialize
-        let deadline = self.timeout.clone() + now;
-        do_serialize(payload, |payload_bytes| {
-            // Part 2: Split into frames and send
-            self.send_payload(payload_bytes, service, destination, deadline, transmitter)
-        })
-    }
-
-    pub fn send_payload(
-        &mut self,
-        payload: &[u8],
-        service: ServiceId,
-        destination: NodeId,
-        deadline: I,
-        transmitter: &mut Transmitter<I>,
-    ) -> Result<(), OutOfMemoryError> {
-        // Assemble the transfer
-        let transfer: Transfer<&[u8], I> = Transfer {
-            timestamp: deadline,
-            header: TransferHeader {
-                source: self.this_node,
-                priority: self.priority,
-                kind: TransferKindHeader::Request(ServiceHeader {
-                    service,
-                    destination,
-                }),
-            },
-            transfer_id: self.next_transfer_id,
-            payload,
-        };
-        self.next_transfer_id = self.next_transfer_id.increment();
-
-        transmitter.push(transfer)
-    }
-}
 
 /// Serializes a payload into a buffer and passes the buffer to a closure
 fn do_serialize<T, F>(payload: &T, operation: F) -> Result<(), OutOfMemoryError>
@@ -276,24 +58,6 @@ where
         let bytes = &mut bytes[..payload_bytes];
         payload.serialize(&mut WriteCursor::new(bytes));
         operation(bytes)
-    }
-}
-
-fn make_pseudo_id(payload: &[u8]) -> NodeId {
-    // XOR some things. I don't know if this will actually work well.
-    let mut id_bits = 37u8;
-    for &byte in payload {
-        id_bits ^= byte;
-    }
-    // Get a non-reserved ID
-    loop {
-        let id = NodeId::from_truncating(id_bits);
-        if !id.is_diagnostic_reserved() {
-            // Got a valid, non-diagnostic ID
-            break id;
-        }
-        // This one is reserved. Try one lower.
-        id_bits = id_bits.wrapping_sub(1);
     }
 }
 
