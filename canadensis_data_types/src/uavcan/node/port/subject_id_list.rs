@@ -9,12 +9,14 @@ use canadensis_encoding::{
 pub enum SubjectIdList {
     Mask(BitSet<{ (SubjectIdList::CAPACITY as usize + 7) / 8 }>),
     SparseList(heapless::Vec<SubjectId, 255>),
+    /// Total means that all subject IDs are in use
     Total,
 }
 
 impl Default for SubjectIdList {
+    /// Returns an empty subject ID list
     fn default() -> Self {
-        SubjectIdList::Total
+        SubjectIdList::SparseList(heapless::Vec::default())
     }
 }
 
@@ -40,6 +42,7 @@ impl Serialize for SubjectIdList {
     }
 
     fn serialize(&self, cursor: &mut WriteCursor<'_>) {
+        let start_bits = cursor.bits_written();
         match self {
             SubjectIdList::Mask(mask) => {
                 // Tag
@@ -48,6 +51,8 @@ impl Serialize for SubjectIdList {
             }
             SubjectIdList::SparseList(items) => {
                 // Tag
+                cursor.write_aligned_u8(1);
+                // Length and items
                 cursor.write_aligned_u8(items.len() as u8);
                 for item in items {
                     cursor.write_composite(item);
@@ -58,6 +63,8 @@ impl Serialize for SubjectIdList {
                 cursor.write_aligned_u8(2);
             }
         }
+        let bits_written = cursor.bits_written() - start_bits;
+        debug_assert_eq!(bits_written, self.size_bits());
     }
 }
 

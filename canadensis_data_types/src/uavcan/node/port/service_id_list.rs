@@ -32,7 +32,10 @@ impl Serialize for ServiceIdList {
     }
 
     fn serialize(&self, cursor: &mut WriteCursor<'_>) {
+        let start_bits = cursor.bits_written();
         self.mask.serialize(cursor);
+        let bits_written = cursor.bits_written() - start_bits;
+        debug_assert_eq!(bits_written, self.size_bits());
     }
 }
 

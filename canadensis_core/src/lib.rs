@@ -57,6 +57,12 @@ impl From<SubjectId> for u32 {
         id.0 as u32
     }
 }
+impl From<SubjectId> for usize {
+    #[inline]
+    fn from(id: SubjectId) -> Self {
+        id.0 as usize
+    }
+}
 
 const VALID_SERVICE_IDS: RangeInclusive<u16> = 0..=511;
 
@@ -93,6 +99,12 @@ impl From<ServiceId> for u32 {
     #[inline]
     fn from(id: ServiceId) -> Self {
         id.0 as u32
+    }
+}
+impl From<ServiceId> for usize {
+    #[inline]
+    fn from(id: ServiceId) -> Self {
+        id.0 as usize
     }
 }
 

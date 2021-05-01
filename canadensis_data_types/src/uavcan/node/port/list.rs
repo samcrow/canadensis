@@ -16,6 +16,7 @@ pub struct List {
 impl List {
     pub const SUBJECT: canadensis_core::SubjectId =
         canadensis_core::SubjectId::from_truncating(7510);
+    pub const MAX_PUBLICATION_PERIOD: u8 = 10;
 }
 
 impl DataType for List {
@@ -25,9 +26,13 @@ impl DataType for List {
 
 impl Serialize for List {
     fn size_bits(&self) -> usize {
-        self.publishers.size_bits()
+        // Add 32 bits for the delimiter header because each field is delimited
+        32 + self.publishers.size_bits()
+            + 32
             + self.subscribers.size_bits()
+            + 32
             + self.clients.size_bits()
+            + 32
             + self.servers.size_bits()
     }
 

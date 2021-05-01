@@ -163,7 +163,7 @@ impl<I: Clone> Transmitter<I> {
     }
 
     /// Returns a frame that has not been sent and queues it to be sent later
-    pub fn return_frame(&mut self, frame: Frame<I>) -> Result<(), TryReserveError> {
+    pub fn return_frame(&mut self, frame: Frame<I>) -> Result<(), OutOfMemoryError> {
         let mut transaction = self.frame_queue.transaction();
         transaction.push(FrameById(frame))?;
         transaction.commit();

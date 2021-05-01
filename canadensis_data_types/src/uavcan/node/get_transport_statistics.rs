@@ -3,7 +3,6 @@ use canadensis_core::ServiceId;
 use canadensis_encoding::{
     DataType, Deserialize, DeserializeError, ReadCursor, Serialize, WriteCursor,
 };
-use core::cmp;
 
 /// uavcan.node.GetTransportStatistics version 0.1 request
 #[derive(Debug, Clone, Default)]

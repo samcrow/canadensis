@@ -45,7 +45,7 @@ impl<const BYTES: usize> BitSet<BYTES> {
     /// Note: This doesn't implement DataType, Serialize, or Deserialize because it is not a
     /// composite type and has an alignment of only 1 bit.
     pub fn serialize(&self, cursor: &mut WriteCursor<'_>) {
-        if self.bit_length % 8 == 0 && cursor.is_aligned_to_8_bits() {
+        if self.bit_length == BYTES * 8 && cursor.is_aligned_to_8_bits() {
             cursor.write_aligned_bytes(&self.bytes);
         } else {
             for bit_index in 0..self.bit_length {

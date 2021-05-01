@@ -1,4 +1,5 @@
-#![no_std]
+// std only for debugging
+// #![no_std]
 
 extern crate alloc;
 extern crate fallible_collections;
@@ -553,6 +554,21 @@ where
             transmitter: &mut self.transmitter,
             clock: &mut self.clock,
         }
+    }
+
+    /// Removes an outgoing frame from the queue and returns it
+    pub fn pop_frame(&mut self) -> Option<Frame<C::Instant>> {
+        self.transmitter.pop()
+    }
+
+    /// Returns a reference to the next outgoing frame in the queue, and does not remove it
+    pub fn peek_frame(&mut self) -> Option<&Frame<C::Instant>> {
+        self.transmitter.peek()
+    }
+
+    /// Returns an outgoing frame to the queue so that it can be transmitted later
+    pub fn return_frame(&mut self, frame: Frame<C::Instant>) -> Result<(), OutOfMemoryError> {
+        self.transmitter.return_frame(frame)
     }
 }
 

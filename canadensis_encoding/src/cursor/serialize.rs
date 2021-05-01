@@ -205,37 +205,6 @@ impl<'b> WriteCursor<'b> {
         self.advance_bits(8 * bytes.len());
     }
 
-    // /// Writes a fixed-length array of values
-    // pub fn write_fixed_array<T>(&mut self, items: &[T])
-    // where
-    //     T: Serialize,
-    // {
-    //     for item in items {
-    //         item.serialize(self);
-    //     }
-    // }
-    //
-    // /// Writes a variable-length array of values
-    // pub fn write_variable_array<T>(&mut self, max_length: usize, items: &[T])
-    // where
-    //     T: Serialize,
-    // {
-    //     // TODO: The alignment of an array equals the alignment of its element type
-    //     let length = items.len();
-    //     assert!(length <= max_length);
-    //     let length_bits = ceiling_log_2(max_length + 1);
-    //     // Round up the length bits to 8, 16, 32, or 64
-    //     // https://github.com/UAVCAN/specification/issues/75
-    //     match length_bits {
-    //         0..=8 => self.write_u8(length as u8),
-    //         9..=16 => self.write_u16(length as u16),
-    //         17..=32 => self.write_u32(length as u32),
-    //         33..=64 => self.write_u64(length as u64),
-    //         _ => panic!("Bug: Number of bits required for array size is too large"),
-    //     };
-    //     self.write_fixed_array(items);
-    // }
-
     /// Writes a composite value, aligned to 8 bits
     pub fn write_composite<T>(&mut self, value: &T)
     where
@@ -259,6 +228,11 @@ impl<'b> WriteCursor<'b> {
     /// Writes a boolean value (1 bit)
     pub fn write_bool(&mut self, value: bool) {
         self.write_u1(value as u8)
+    }
+
+    /// Returns the number of bits that have been written to this cursor
+    pub fn bits_written(&self) -> usize {
+        self.bytes_written * 8 + usize::from(self.bit_index)
     }
 }
 

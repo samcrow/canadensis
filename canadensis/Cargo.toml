@@ -37,3 +37,6 @@ rev = "eff63f794f029ccc0ae66246d269e1e8e96b198e"
 [dev-dependencies]
 socketcan = "1.7.0"
 rand = "0.7.3"
+
+[dev-dependencies.canadensis_data_types]
+path = "../canadensis_data_types"
