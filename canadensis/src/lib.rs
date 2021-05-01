@@ -61,20 +61,6 @@ where
     }
 }
 
-/// An incoming request to be processed
-#[derive(Debug)]
-struct RequestIn<T> {
-    pub request: T,
-    pub metadata: ResponseToken,
-}
-
-/// An outgoing response to a `RequestIn`, with the same metadata
-#[derive(Debug)]
-struct ResponseOut<T> {
-    pub response: T,
-    pub metadata: ResponseToken,
-}
-
 /// A token from a request that is needed to send a response
 #[derive(Debug)]
 pub struct ResponseToken {
@@ -110,52 +96,61 @@ pub trait TransferHandler<C: Clock> {
 ///
 /// Type parameters:
 /// * `C`: The clock used to get the current time
-/// * `H`: The `TransferHandler` that receives incoming transfers
 /// * `P`: The maximum number of topics that can be published
 /// * `R`: The maximum number of services for which requests can be sent
 ///
-pub struct Node<C, H, const P: usize, const R: usize>
+pub struct Node<C, const P: usize, const R: usize>
 where
     C: Clock,
 {
     clock: C,
     transmitter: Transmitter<C::Instant>,
     receiver: Receiver<C::Instant>,
-    transfer_handler: H,
     node_id: NodeId,
     publishers: TrivialIndexMap<SubjectId, Publisher<C::Instant>, P>,
     // TODO: Need a separate next transfer ID for each destination node
     requesters: TrivialIndexMap<ServiceId, Requester<C::Instant>, R>,
 }
 
-impl<C, H, const P: usize, const R: usize> Node<C, H, P, R>
+impl<C, const P: usize, const R: usize> Node<C, P, R>
 where
     C: Clock,
-    H: TransferHandler<C>,
 {
-    pub fn new(clock: C, transfer_handler: H, node_id: NodeId, mtu: Mtu) -> Self {
+    pub fn new(clock: C, node_id: NodeId, mtu: Mtu) -> Self {
         Node {
             clock,
             transmitter: Transmitter::new(mtu),
             receiver: Receiver::new(node_id),
-            transfer_handler,
             node_id,
             publishers: TrivialIndexMap::new(),
             requesters: TrivialIndexMap::new(),
         }
     }
 
-    pub fn accept_frame(&mut self, frame: Frame<C::Instant>) -> Result<(), OutOfMemoryError> {
+    pub fn accept_frame<H>(
+        &mut self,
+        frame: Frame<C::Instant>,
+        handler: &mut H,
+    ) -> Result<(), OutOfMemoryError>
+    where
+        H: TransferHandler<C>,
+    {
         match self.receiver.accept(frame)? {
             Some(transfer) => {
-                self.handle_incoming_transfer(transfer);
+                self.handle_incoming_transfer(transfer, handler);
             }
             None => {}
         }
         Ok(())
     }
 
-    fn handle_incoming_transfer(&mut self, transfer: Transfer<Vec<u8>, C::Instant>) {
+    fn handle_incoming_transfer<H>(
+        &mut self,
+        transfer: Transfer<Vec<u8>, C::Instant>,
+        handler: &mut H,
+    ) where
+        H: TransferHandler<C>,
+    {
         match transfer.header.kind {
             TransferKindHeader::Message(message_header) => {
                 let message_transfer = MessageTransfer {
@@ -168,7 +163,7 @@ where
                     transfer_id: transfer.transfer_id,
                     payload: transfer.payload,
                 };
-                self.transfer_handler.handle_message(message_transfer);
+                handler.handle_message(message_transfer);
             }
             TransferKindHeader::Request(service_header) => {
                 let token = ResponseToken {
@@ -192,8 +187,7 @@ where
                     transmitter: &mut self.transmitter,
                     clock: &mut self.clock,
                 };
-                self.transfer_handler
-                    .handle_request(service_transfer, token, responder);
+                handler.handle_request(service_transfer, token, responder);
             }
             TransferKindHeader::Response(service_header) => {
                 let service_transfer = ServiceTransfer {
@@ -206,7 +200,7 @@ where
                     transfer_id: transfer.transfer_id,
                     payload: transfer.payload,
                 };
-                self.transfer_handler.handle_response(service_transfer);
+                handler.handle_response(service_transfer);
             }
         }
     }

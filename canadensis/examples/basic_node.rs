@@ -69,16 +69,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     .expect("Node ID too large");
 
     let can = CANSocket::open(&can_interface).expect("Failed to open CAN interface");
-    can.set_read_timeout(Duration::from_millis(500))?;
-    can.set_write_timeout(Duration::from_millis(500))?;
+    can.set_read_timeout(Duration::from_millis(100))?;
+    can.set_write_timeout(Duration::from_millis(100))?;
 
     // Generate a random unique ID
     let unique_id: [u8; 16] = rand::random();
-    let transfer_handler = BasicTransferHandler { unique_id };
+    let mut transfer_handler = BasicTransferHandler { unique_id };
     let mut clock = SystemClock::new();
 
-    let mut uavcan: canadensis::Node<_, _, 4, 4> =
-        canadensis::Node::new(clock.clone(), transfer_handler, node_id, Mtu::Can8);
+    let mut uavcan: canadensis::Node<_, 4, 4> =
+        canadensis::Node::new(clock.clone(), node_id, Mtu::Can8);
 
     let heartbeat_token = uavcan
         .start_publishing_topic(
@@ -98,9 +98,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .subscribe_request(GetInfoRequest::SERVICE, 0, PrimitiveDuration::new(0))
         .expect("Out of memory");
 
+    let mut last_run_time_seconds = 0u64;
     loop {
         let run_time = Instant::now().duration_since(clock.start_time);
         let run_time_seconds = run_time.as_secs();
+        let new_second = run_time_seconds != last_run_time_seconds;
+        last_run_time_seconds = run_time_seconds;
         let run_time_seconds = if run_time_seconds > u64::from(u32::MAX) {
             u32::MAX
         } else {
@@ -118,7 +121,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 );
                 println!("Handling frame {:#?}", frame);
 
-                uavcan.accept_frame(frame).expect("Out of memory");
+                uavcan
+                    .accept_frame(frame, &mut transfer_handler)
+                    .expect("Out of memory");
             }
             Err(e) => match e.kind() {
                 io::ErrorKind::WouldBlock | io::ErrorKind::TimedOut => {}
@@ -126,49 +131,50 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             },
         };
 
-        // Publish heartbeat
-        let heartbeat = Heartbeat {
-            uptime: run_time_seconds,
-            health: Health::Nominal,
-            mode: Mode::Operational,
-            vendor_specific_status_code: 0,
-        };
-        uavcan
-            .publish_to_topic(&heartbeat_token, &heartbeat)
-            .expect("Out of memory");
-
-        if run_time_seconds % u32::from(List::MAX_PUBLICATION_PERIOD) == 0 {
-            // Send port list every 10 seconds
-            let publishers = SubjectIdList::SparseList({
-                let mut subject_ids = heapless::Vec::new();
-                subject_ids
-                    .push(port::subject_id::SubjectId {
-                        value: Heartbeat::SUBJECT.into(),
-                    })
-                    .unwrap();
-                subject_ids
-                    .push(port::subject_id::SubjectId {
-                        value: List::SUBJECT.into(),
-                    })
-                    .unwrap();
-                subject_ids
-            });
-            let servers = {
-                let mut servers = ServiceIdList::default();
-                servers.mask.set(usize::from(GetInfoRequest::SERVICE), true);
-                servers
-            };
-            let port_list = List {
-                publishers,
-                subscribers: Default::default(),
-                clients: Default::default(),
-                servers,
+        if new_second {
+            // Publish heartbeat
+            let heartbeat = Heartbeat {
+                uptime: run_time_seconds,
+                health: Health::Nominal,
+                mode: Mode::Operational,
+                vendor_specific_status_code: 0,
             };
             uavcan
-                .publish_to_topic(&port_list_token, &port_list)
+                .publish_to_topic(&heartbeat_token, &heartbeat)
                 .expect("Out of memory");
-        }
 
+            if run_time_seconds % u32::from(List::MAX_PUBLICATION_PERIOD) == 0 {
+                // Send port list every 10 seconds
+                let publishers = SubjectIdList::SparseList({
+                    let mut subject_ids = heapless::Vec::new();
+                    subject_ids
+                        .push(port::subject_id::SubjectId {
+                            value: Heartbeat::SUBJECT.into(),
+                        })
+                        .unwrap();
+                    subject_ids
+                        .push(port::subject_id::SubjectId {
+                            value: List::SUBJECT.into(),
+                        })
+                        .unwrap();
+                    subject_ids
+                });
+                let servers = {
+                    let mut servers = ServiceIdList::default();
+                    servers.mask.set(usize::from(GetInfoRequest::SERVICE), true);
+                    servers
+                };
+                let port_list = List {
+                    publishers,
+                    subscribers: Default::default(),
+                    clients: Default::default(),
+                    servers,
+                };
+                uavcan
+                    .publish_to_topic(&port_list_token, &port_list)
+                    .expect("Out of memory");
+            }
+        }
         // Send frames
         while let Some(out_frame) = uavcan.pop_frame() {
             // Convert to SocketCAN frame format
