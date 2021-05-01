@@ -20,6 +20,7 @@ use canadensis_core::transfer::{
     MessageHeader, ServiceHeader, Transfer, TransferHeader, TransferKind, TransferKindHeader,
 };
 use canadensis_core::{NodeId, PortId, Priority, ServiceId, SubjectId, TransferId};
+use canadensis_filter_config::Filter;
 
 /// One session per node ID
 const RX_SESSIONS_PER_SUBSCRIPTION: usize = NodeId::MAX.to_u8() as usize + 1;
@@ -541,6 +542,7 @@ fn parse_can_id(id: CanId) -> core::result::Result<TransferHeader, CanIdParseErr
     if bits.bit_set(23) {
         return Err(CanIdParseError::Bit23Set);
     }
+    // Ignore bits 22 and 21
 
     let priority = Priority::try_from(bits.get_u8(26)).expect("Bug: Invalid priority");
     let source_id = NodeId::try_from(bits.get_u8(0) & 0x7f).expect("Bug: Invalid source node ID");
@@ -579,6 +581,49 @@ fn parse_can_id(id: CanId) -> core::result::Result<TransferHeader, CanIdParseErr
         priority,
         kind: header_kind,
     })
+}
+
+/// Returns a filter that matches message transfers on one subject
+///
+/// Criteria:
+/// * Priority: any
+/// * Anonymous: any
+/// * Subject ID: matching the provided subject ID
+/// * Source node ID: any
+pub fn subject_filter(subject: SubjectId) -> Filter {
+    let m_id: u32 = 0b0_0000_0110_0000_0000_0000_0000_0000 | u32::from(subject) << 8;
+    let mask: u32 = 0b0_0010_1001_1111_1111_1111_1000_0000;
+    Filter::new(mask, m_id)
+}
+
+/// Returns a filter that matches service request transfers for one service to one node ID
+///
+/// Criteria:
+/// * Priority: any
+/// * Request or response: request
+/// * Service ID: matching the provided service ID
+/// * Destination: matching the provided node ID
+/// * Source: any
+pub fn request_filter(service: ServiceId, client: NodeId) -> Filter {
+    let dynamic_id_bits = u32::from(service) << 14 | u32::from(client) << 7;
+    let m_id: u32 = 0b0_0011_0000_0000_0000_0000_0000_0000 | dynamic_id_bits;
+    let mask: u32 = 0b0_0011_1111_1111_1111_1111_1000_0000;
+    Filter::new(mask, m_id)
+}
+
+/// Returns a filter that matches service response transfers for one service to one node ID
+///
+/// Criteria:
+/// * Priority: any
+/// * Request or response: response
+/// * Service ID: matching the provided service ID
+/// * Destination: matching the provided node ID
+/// * Source: any
+pub fn response_filter(service: ServiceId, server: NodeId) -> Filter {
+    let dynamic_id_bits = u32::from(u16::from(service)) << 14 | u32::from(u8::from(server)) << 7;
+    let m_id: u32 = 0b0_0010_0000_0000_0000_0000_0000_0000 | dynamic_id_bits;
+    let mask: u32 = 0b0_0011_1111_1111_1111_1111_1000_0000;
+    Filter::new(mask, m_id)
 }
 
 /// Returns 128 Nones

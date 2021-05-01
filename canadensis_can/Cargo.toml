@@ -19,6 +19,5 @@ heapless = "0.5.5"
 version = "0.1.0"
 path = "../canadensis_core"
 
-[[bin]]
-name = "canadensis_crc"
-path = "bin/crc.rs"
+[dependencies.canadensis_filter_config]
+path = "../canadensis_filter_config"

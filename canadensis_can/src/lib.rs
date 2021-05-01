@@ -9,6 +9,7 @@
 
 extern crate alloc;
 extern crate canadensis_core;
+extern crate canadensis_filter_config;
 extern crate fallible_collections;
 extern crate heapless;
 
@@ -23,5 +24,5 @@ pub use crate::data::*;
 pub use crate::error::*;
 
 pub use crate::crc::TransferCrc;
-pub use crate::rx::Receiver;
+pub use crate::rx::{request_filter, response_filter, subject_filter, Receiver};
 pub use crate::tx::Transmitter;

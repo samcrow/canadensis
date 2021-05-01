@@ -26,7 +26,9 @@ pub trait Instant: Debug + Clone {
     ///
     /// This type must be able to represent the difference between the maximum and minimum instant
     /// values.
-    type Duration: PartialOrd + Debug + Clone;
+    ///
+    /// The Duration must also support adding a Duration and Instant to produce an Instant
+    type Duration: PartialOrd + Debug + Clone + Add<Self, Output = Self>;
 
     /// Calculates the duration between other and self
     ///
@@ -93,7 +95,14 @@ where
 
 impl<I> Instant for PrimitiveInstant<I>
 where
-    I: PartialOrd + Bounded + WrappingSub + Shr<u32, Output = I> + Debug + Clone + LowerHex,
+    I: PartialOrd
+        + Bounded
+        + WrappingSub
+        + WrappingAdd
+        + Shr<u32, Output = I>
+        + Debug
+        + Clone
+        + LowerHex,
 {
     type Duration = PrimitiveDuration<I>;
 
@@ -170,6 +179,17 @@ where
 
     fn add(self, rhs: PrimitiveDuration<I>) -> Self::Output {
         add_duration_to_instant(&self, &rhs)
+    }
+}
+
+impl<I> Add<PrimitiveInstant<I>> for PrimitiveDuration<I>
+where
+    I: WrappingAdd + Add<Output = I> + Clone,
+{
+    type Output = PrimitiveInstant<I>;
+
+    fn add(self, rhs: PrimitiveInstant<I>) -> Self::Output {
+        Add::add(rhs, self)
     }
 }
 

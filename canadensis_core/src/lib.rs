@@ -4,6 +4,8 @@
 //! This library provides types used by other canadensis crates.
 //!
 
+extern crate hash32;
+extern crate hash32_derive;
 extern crate num_traits;
 
 pub mod time;
@@ -11,6 +13,7 @@ pub mod transfer;
 
 use core::convert::TryFrom;
 use core::ops::RangeInclusive;
+use hash32_derive::Hash32;
 
 /// An error indicating that an unacceptable integer was provided to a TryFrom implementation
 #[derive(Debug)]
@@ -20,7 +23,7 @@ pub struct InvalidValue;
 const VALID_SUBJECT_IDS: RangeInclusive<u16> = 0..=8191;
 
 /// Subject ID, in range 0..=8191
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Hash32)]
 pub struct SubjectId(u16);
 
 impl SubjectId {
@@ -43,15 +46,22 @@ impl TryFrom<u16> for SubjectId {
 }
 
 impl From<SubjectId> for u16 {
+    #[inline]
     fn from(id: SubjectId) -> Self {
         id.0
+    }
+}
+impl From<SubjectId> for u32 {
+    #[inline]
+    fn from(id: SubjectId) -> Self {
+        id.0 as u32
     }
 }
 
 const VALID_SERVICE_IDS: RangeInclusive<u16> = 0..=511;
 
 /// Service ID, in range 0..=511
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Hash32)]
 pub struct ServiceId(u16);
 
 impl ServiceId {
@@ -74,13 +84,20 @@ impl TryFrom<u16> for ServiceId {
 }
 
 impl From<ServiceId> for u16 {
+    #[inline]
     fn from(id: ServiceId) -> Self {
         id.0
     }
 }
+impl From<ServiceId> for u32 {
+    #[inline]
+    fn from(id: ServiceId) -> Self {
+        id.0 as u32
+    }
+}
 
 /// A value that can represent a service ID (0..=511) or a subject ID (0..=8192)
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Hash32)]
 pub struct PortId(u16);
 
 impl From<SubjectId> for PortId {
@@ -154,8 +171,21 @@ impl TryFrom<u8> for NodeId {
 }
 
 impl From<NodeId> for u8 {
+    #[inline]
     fn from(id: NodeId) -> Self {
         id.0
+    }
+}
+impl From<NodeId> for u16 {
+    #[inline]
+    fn from(id: NodeId) -> Self {
+        id.0 as u16
+    }
+}
+impl From<NodeId> for u32 {
+    #[inline]
+    fn from(id: NodeId) -> Self {
+        id.0 as u32
     }
 }
 
@@ -198,8 +228,21 @@ impl TryFrom<u8> for TransferId {
 }
 
 impl From<TransferId> for u8 {
+    #[inline]
     fn from(id: TransferId) -> Self {
         id.0
+    }
+}
+impl From<TransferId> for u16 {
+    #[inline]
+    fn from(id: TransferId) -> Self {
+        id.0 as u16
+    }
+}
+impl From<TransferId> for u32 {
+    #[inline]
+    fn from(id: TransferId) -> Self {
+        id.0 as u32
     }
 }
 

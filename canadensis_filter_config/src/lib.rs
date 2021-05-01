@@ -68,6 +68,7 @@ impl Filter {
     /// Creates a filter
     ///
     /// If the mask or ID is too large to fit into 29 bits, it will be silently truncated.
+    #[inline]
     pub fn new(mask: u32, id: u32) -> Self {
         Filter {
             mask: mask & EXTENDED_ID_MASK,
@@ -82,10 +83,12 @@ impl Filter {
     }
 
     /// Returns the mask of this filter, which indicates the bits that are checked
+    #[inline]
     pub fn mask(&self) -> u32 {
         self.mask
     }
     /// Returns the message ID that this filter (partially) matches
+    #[inline]
     pub fn id(&self) -> u32 {
         self.id_and_valid & EXTENDED_ID_MASK
     }

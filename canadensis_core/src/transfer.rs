@@ -3,6 +3,7 @@
 //!
 
 use crate::{NodeId, PortId, Priority, ServiceId, SubjectId, TransferId};
+use core::convert::TryFrom;
 
 /// Transfer kinds as defined by the UAVCAN Specification
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -160,3 +161,98 @@ impl<P, I> Transfer<P, I> {
         }
     }
 }
+
+/// A type of transfer header with only the fields available in a service request or response
+pub struct ServiceOnlyHeader {
+    /// The node ID of the source of this transfer
+    pub source: NodeId,
+    /// The priority of this transfer
+    pub priority: Priority,
+    /// The service ID and destination node
+    pub service: ServiceHeader,
+}
+
+impl TryFrom<&'_ TransferHeader> for ServiceOnlyHeader {
+    type Error = SubtypeError;
+
+    fn try_from(header: &TransferHeader) -> Result<Self, Self::Error> {
+        match &header.kind {
+            TransferKindHeader::Message(_) => Err(SubtypeError(())),
+            TransferKindHeader::Request(service_header) => Ok(ServiceOnlyHeader {
+                source: header.source,
+                priority: header.priority,
+                service: service_header.clone(),
+            }),
+            TransferKindHeader::Response(_) => Err(SubtypeError(())),
+        }
+    }
+}
+
+/// A type of transfer header with only the fields available in a message transfer
+pub struct MessageOnlyHeader {
+    /// The node ID of the source of this transfer
+    pub source: NodeId,
+    /// The priority of this transfer
+    pub priority: Priority,
+    /// The anonymous flag and subject
+    pub message: MessageHeader,
+}
+
+impl TryFrom<&'_ TransferHeader> for MessageOnlyHeader {
+    type Error = SubtypeError;
+
+    fn try_from(header: &TransferHeader) -> Result<Self, Self::Error> {
+        match &header.kind {
+            TransferKindHeader::Message(message_header) => Ok(MessageOnlyHeader {
+                source: header.source,
+                priority: header.priority,
+                message: message_header.clone(),
+            }),
+            TransferKindHeader::Request(_) => Err(SubtypeError(())),
+            TransferKindHeader::Response(_) => Err(SubtypeError(())),
+        }
+    }
+}
+
+/// A type of transfer that is always a message transfer
+pub struct MessageTransfer<P, I> {
+    /// The time when the first frame was received
+    pub timestamp: I,
+
+    /// The transfer header
+    ///
+    /// Per the Specification, all frames belonging to a given transfer shall share the same priority level.
+    /// If this is not the case, then this field contains the priority level of the last frame to arrive.
+    pub header: MessageOnlyHeader,
+
+    /// The ID of this transfer
+    pub transfer_id: TransferId,
+
+    /// The actual transfer payload
+    ///
+    /// The type P usually implements `AsRef<[u8]>`. It is often a `Vec<u8>` or a `&[u8]`.
+    pub payload: P,
+}
+
+/// A type of transfer that is always a service request or response
+pub struct ServiceTransfer<P, I> {
+    /// The time when the first frame was received
+    pub timestamp: I,
+
+    /// The transfer header
+    ///
+    /// Per the Specification, all frames belonging to a given transfer shall share the same priority level.
+    /// If this is not the case, then this field contains the priority level of the last frame to arrive.
+    pub header: ServiceOnlyHeader,
+
+    /// The ID of this transfer
+    pub transfer_id: TransferId,
+
+    /// The actual transfer payload
+    ///
+    /// The type P usually implements `AsRef<[u8]>`. It is often a `Vec<u8>` or a `&[u8]`.
+    pub payload: P,
+}
+
+#[derive(Debug)]
+pub struct SubtypeError(());
