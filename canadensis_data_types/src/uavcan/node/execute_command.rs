@@ -1,4 +1,5 @@
 use crate::uavcan::file::path::Path;
+use canadensis_core::ServiceId;
 use canadensis_encoding::{
     DataType, Deserialize, DeserializeError, ReadCursor, Serialize, WriteCursor,
 };
@@ -8,6 +9,10 @@ use canadensis_encoding::{
 pub struct ExecuteCommandRequest {
     pub command: Command,
     pub parameter: heapless::Vec<u8, { Path::MAX_LENGTH as usize }>,
+}
+
+impl ExecuteCommandRequest {
+    pub const SERVICE: ServiceId = ServiceId::from_truncating(435);
 }
 
 impl Default for ExecuteCommandRequest {
@@ -112,6 +117,10 @@ impl Deserialize for ExecuteCommandRequest {
 #[derive(Debug, Clone, Default)]
 pub struct ExecuteCommandResponse {
     pub status: Status,
+}
+
+impl ExecuteCommandResponse {
+    pub const SERVICE: ServiceId = ServiceId::from_truncating(435);
 }
 
 #[derive(Debug, Clone)]

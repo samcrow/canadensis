@@ -1,4 +1,5 @@
 use crate::uavcan::node::port::io_statistics::IoStatistics;
+use canadensis_core::ServiceId;
 use canadensis_encoding::{
     DataType, Deserialize, DeserializeError, ReadCursor, Serialize, WriteCursor,
 };
@@ -7,6 +8,10 @@ use core::cmp;
 /// uavcan.node.GetTransportStatistics version 0.1 request
 #[derive(Debug, Clone, Default)]
 pub struct GetTransportStatisticsRequest;
+
+impl GetTransportStatisticsRequest {
+    pub const SERVICE: ServiceId = ServiceId::from_truncating(434);
+}
 
 impl DataType for GetTransportStatisticsRequest {
     // Sealed type
@@ -49,19 +54,15 @@ impl Deserialize for GetTransportStatisticsRequest {
 #[derive(Debug, Clone, Default)]
 pub struct GetTransportStatisticsResponse {
     pub transfer_statistics: IoStatistics,
-    /// Allowed range 0..3
-    // TODO: Make this less error-prone. Use a regular Vec or heapless::Vec?
-    pub network_interface_statistics_length: u8,
-    pub network_interface_statistics:
-        [IoStatistics; GetTransportStatisticsResponse::MAX_NETWORK_INTERFACES as usize],
+    pub network_interface_statistics: heapless::Vec<
+        IoStatistics,
+        { GetTransportStatisticsResponse::MAX_NETWORK_INTERFACES as usize },
+    >,
 }
 
 impl GetTransportStatisticsResponse {
-    const MAX_NETWORK_INTERFACES: u8 = 3;
-
-    fn real_length(&self) -> u8 {
-        cmp::min(self.network_interface_statistics_length, 2)
-    }
+    pub const SERVICE: ServiceId = ServiceId::from_truncating(434);
+    pub const MAX_NETWORK_INTERFACES: u8 = 3;
 }
 
 impl DataType for GetTransportStatisticsResponse {
@@ -70,14 +71,13 @@ impl DataType for GetTransportStatisticsResponse {
 
 impl Serialize for GetTransportStatisticsResponse {
     fn size_bits(&self) -> usize {
-        120 + usize::from(self.real_length()) * 120
+        120 + self.network_interface_statistics.len() * 120
     }
 
     fn serialize(&self, cursor: &mut WriteCursor<'_>) {
         cursor.write_composite(&self.transfer_statistics);
-        let real_length = self.real_length();
-        cursor.write_aligned_u8(real_length);
-        for interface_stats in &self.network_interface_statistics[..usize::from(real_length)] {
+        cursor.write_aligned_u8(self.network_interface_statistics.len() as u8);
+        for interface_stats in &self.network_interface_statistics {
             cursor.write_composite(interface_stats);
         }
     }
@@ -96,11 +96,13 @@ impl Deserialize for GetTransportStatisticsResponse {
         cursor: &mut ReadCursor<'_>,
     ) -> Result<(), DeserializeError> {
         self.transfer_statistics = cursor.read_composite()?;
+        self.network_interface_statistics.clear();
         let length_read = cursor.read_aligned_u8();
         if length_read <= GetTransportStatisticsResponse::MAX_NETWORK_INTERFACES {
-            self.network_interface_statistics_length = length_read;
-            for slot in &mut self.network_interface_statistics[..usize::from(length_read)] {
-                *slot = cursor.read_composite()?;
+            for _ in 0..length_read {
+                self.network_interface_statistics
+                    .push(cursor.read_composite()?)
+                    .expect("Array too long");
             }
             Ok(())
         } else {

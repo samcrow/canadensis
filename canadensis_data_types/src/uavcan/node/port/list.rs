@@ -13,6 +13,11 @@ pub struct List {
     pub servers: ServiceIdList,
 }
 
+impl List {
+    pub const SUBJECT: canadensis_core::SubjectId =
+        canadensis_core::SubjectId::from_truncating(7510);
+}
+
 impl DataType for List {
     // Sealed type
     const EXTENT_BYTES: Option<u32> = None;

@@ -11,6 +11,8 @@ description = "Hand-written definitions for some UAVCAN public regulated data ty
 
 [dependencies.canadensis_encoding]
 path = "../canadensis_encoding"
+[dependencies.canadensis_core]
+path = "../canadensis_core"
 
 # Use an unreleased version that supports const generics
 [dependencies.heapless]
