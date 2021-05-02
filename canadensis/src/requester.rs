@@ -1,7 +1,7 @@
 use crate::do_serialize;
 use canadensis_can::{OutOfMemoryError, Transmitter};
 use canadensis_core::time::Instant;
-use canadensis_core::transfer::{ServiceHeader, Transfer, TransferHeader, TransferKindHeader};
+use canadensis_core::transfer::{Header, ServiceHeader, Transfer};
 use canadensis_core::{NodeId, Priority, ServiceId, TransferId};
 use canadensis_encoding::Serialize;
 
@@ -64,16 +64,14 @@ impl<I: Instant> Requester<I> {
         // Assemble the transfer
         let transfer_id = self.next_transfer_ids.get_and_increment(destination);
         let transfer: Transfer<&[u8], I> = Transfer {
-            timestamp: deadline,
-            header: TransferHeader {
-                source: self.this_node,
+            header: Header::Request(ServiceHeader {
+                timestamp: deadline,
+                transfer_id,
                 priority: self.priority,
-                kind: TransferKindHeader::Request(ServiceHeader {
-                    service,
-                    destination,
-                }),
-            },
-            transfer_id,
+                service,
+                source: self.this_node,
+                destination,
+            }),
             payload,
         };
 

@@ -153,48 +153,30 @@ where
     ) where
         H: TransferHandler<C, P, R>,
     {
-        match transfer.header.kind {
-            TransferKindHeader::Message(message_header) => {
+        match transfer.header {
+            Header::Message(message_header) => {
                 let message_transfer = MessageTransfer {
-                    timestamp: transfer.timestamp,
-                    header: MessageOnlyHeader {
-                        source: transfer.header.source,
-                        priority: transfer.header.priority,
-                        message: message_header,
-                    },
-                    transfer_id: transfer.transfer_id,
+                    header: message_header,
                     payload: transfer.payload,
                 };
                 handler.handle_message(self, message_transfer);
             }
-            TransferKindHeader::Request(service_header) => {
+            Header::Request(service_header) => {
                 let token = ResponseToken {
                     service: service_header.service,
-                    client: transfer.header.source,
-                    transfer: transfer.transfer_id,
-                    priority: transfer.header.priority,
+                    client: service_header.source,
+                    transfer: service_header.transfer_id,
+                    priority: service_header.priority,
                 };
                 let service_transfer = ServiceTransfer {
-                    timestamp: transfer.timestamp,
-                    header: ServiceOnlyHeader {
-                        source: transfer.header.source,
-                        priority: transfer.header.priority,
-                        service: service_header,
-                    },
-                    transfer_id: transfer.transfer_id,
+                    header: service_header,
                     payload: transfer.payload,
                 };
                 handler.handle_request(self, token, service_transfer);
             }
-            TransferKindHeader::Response(service_header) => {
+            Header::Response(service_header) => {
                 let service_transfer = ServiceTransfer {
-                    timestamp: transfer.timestamp,
-                    header: ServiceOnlyHeader {
-                        source: transfer.header.source,
-                        priority: transfer.header.priority,
-                        service: service_header,
-                    },
-                    transfer_id: transfer.transfer_id,
+                    header: service_header,
                     payload: transfer.payload,
                 };
                 handler.handle_response(self, service_transfer);
@@ -331,16 +313,14 @@ where
         payload: &[u8],
     ) -> Result<(), OutOfMemoryError> {
         let transfer_out = Transfer {
-            timestamp: deadline,
-            header: TransferHeader {
-                source: self.node_id,
+            header: Header::Response(ServiceHeader {
+                timestamp: deadline,
+                transfer_id: token.transfer,
                 priority: token.priority,
-                kind: TransferKindHeader::Response(ServiceHeader {
-                    service: token.service,
-                    destination: token.client,
-                }),
-            },
-            transfer_id: token.transfer,
+                service: token.service,
+                source: self.node_id,
+                destination: token.client,
+            }),
             payload,
         };
         self.transmitter.push(transfer_out)

@@ -5,7 +5,6 @@
 use core::cmp::Ordering;
 use core::convert::TryFrom;
 use core::fmt;
-use heapless::consts::U64;
 
 use canadensis_core::InvalidValue;
 
@@ -70,7 +69,7 @@ pub struct Frame<I> {
     /// 29-bit extended ID
     id: CanId,
     /// The frame data
-    data: heapless::Vec<u8, U64>,
+    data: heapless::Vec<u8, 64>,
 }
 
 impl<I> Frame<I> {

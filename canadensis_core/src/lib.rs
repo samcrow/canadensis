@@ -142,8 +142,8 @@ const VALID_NODE_IDS: RangeInclusive<u8> = 0..=127;
 
 /// Node ID
 ///
-/// Valid node IDs are in the range 0..=127. IDs 126 and 127 are reserved for diagnostic and
-/// debugging tools.
+/// Valid node IDs are in the range 0..=127 (7 bits). IDs 126 and 127 are reserved for diagnostic
+/// and debugging tools.
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct NodeId(u8);
 

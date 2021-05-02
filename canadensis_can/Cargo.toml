@@ -12,7 +12,11 @@ description = "A UAVCAN v1.0 implementation: CAN and CAN FD transport layer"
 
 [dependencies]
 fallible_collections = "0.1.2"
-heapless = "0.5.5"
+
+# Use an unreleased version that supports const generics
+[dependencies.heapless]
+git = "https://github.com/japaric/heapless.git"
+rev = "eff63f794f029ccc0ae66246d269e1e8e96b198e"
 
 # Local dependency, change before publishing
 [dependencies.canadensis_core]

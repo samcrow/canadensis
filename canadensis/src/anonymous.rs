@@ -1,8 +1,8 @@
 use crate::{do_serialize, Clock};
-use canadensis_can::{Frame, Mtu, OutOfMemoryError, Transmitter};
+use canadensis_can::{Mtu, OutOfMemoryError, Transmitter};
 use canadensis_core::time::Instant;
-use canadensis_core::transfer::{MessageHeader, Transfer, TransferHeader, TransferKindHeader};
-use canadensis_core::{NodeId, Priority, SubjectId, TransferId};
+use canadensis_core::transfer::{Header, MessageHeader, Transfer};
+use canadensis_core::{Priority, SubjectId, TransferId};
 use canadensis_encoding::{Message, Serialize};
 use std::marker::PhantomData;
 
@@ -59,7 +59,8 @@ where
         transmitter: &mut Transmitter<C::Instant>,
     ) -> Result<(), AnonymousPublishError> {
         // Check that the message fits into one frame
-        let mtu_bits = self.mtu.as_bytes() * 8;
+        // (subtract one byte to leave room for the tail byte)
+        let mtu_bits = (self.mtu.as_bytes() - 1) * 8;
         if payload.size_bits() > mtu_bits {
             return Err(AnonymousPublishError::Length);
         }
@@ -82,40 +83,19 @@ where
     {
         // Assemble the transfer
         let transfer: Transfer<&[u8], I> = Transfer {
-            timestamp: deadline,
-            header: TransferHeader {
-                source: make_pseudo_id(payload),
+            header: Header::Message(MessageHeader {
+                timestamp: deadline,
+                transfer_id: self.next_transfer_id,
                 priority: self.priority,
-                kind: TransferKindHeader::Message(MessageHeader {
-                    anonymous: false,
-                    subject: self.subject,
-                }),
-            },
-            transfer_id: self.next_transfer_id,
+                subject: self.subject,
+                source: None,
+            }),
             payload,
         };
         self.next_transfer_id = self.next_transfer_id.increment();
 
         transmitter.push(transfer)?;
         Ok(())
-    }
-}
-
-fn make_pseudo_id(payload: &[u8]) -> NodeId {
-    // XOR some things. I don't know if this will actually work well.
-    let mut id_bits = 37u8;
-    for &byte in payload {
-        id_bits ^= byte;
-    }
-    // Get a non-reserved ID
-    loop {
-        let id = NodeId::from_truncating(id_bits);
-        if !id.is_diagnostic_reserved() {
-            // Got a valid, non-diagnostic ID
-            break id;
-        }
-        // This one is reserved. Try one lower.
-        id_bits = id_bits.wrapping_sub(1);
     }
 }
 

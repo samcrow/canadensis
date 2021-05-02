@@ -204,7 +204,7 @@ impl<const H: usize, const P: usize> TransferHandler<SystemClock, H, P> for Basi
         token: ResponseToken,
         transfer: ServiceTransfer<Vec<u8>, <SystemClock as Clock>::Instant>,
     ) {
-        if transfer.header.service.service == GetInfoRequest::SERVICE {
+        if transfer.header.service == GetInfoRequest::SERVICE {
             // Send a node information response
             let response = GetInfoResponse {
                 protocol_version: Version { major: 1, minor: 0 },

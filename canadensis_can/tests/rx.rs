@@ -38,16 +38,23 @@ fn test_heartbeat() -> Result<(), OutOfMemoryError> {
         .expect("Didn't get a transfer");
 
     let expected = Transfer {
-        timestamp: instant(42),
-        header: TransferHeader {
-            source: 42.try_into().unwrap(),
+        // timestamp: instant(42),
+        // header: TransferHeader {
+        //     source: 42.try_into().unwrap(),
+        //     priority: Priority::Nominal,
+        //     kind: TransferKindHeader::Message(MessageHeader {
+        //         anonymous: false,
+        //         subject: heartbeat_subject,
+        //     }),
+        // },
+        // transfer_id: 0.try_into().unwrap(),
+        header: Header::Message(MessageHeader {
+            timestamp: instant(42),
+            transfer_id: 0.try_into().unwrap(),
             priority: Priority::Nominal,
-            kind: TransferKindHeader::Message(MessageHeader {
-                anonymous: false,
-                subject: heartbeat_subject,
-            }),
-        },
-        transfer_id: 0.try_into().unwrap(),
+            subject: heartbeat_subject,
+            source: Some(42.try_into().unwrap()),
+        }),
         payload: vec![0x00, 0x00, 0x00, 0x00, 0x04, 0x78, 0x68],
     };
     assert_eq!(expected, transfer);
@@ -70,17 +77,13 @@ fn test_string() -> Result<(), OutOfMemoryError> {
         .expect("Didn't get a transfer");
 
     let expected = Transfer {
-        timestamp: instant(42),
-        header: TransferHeader {
-            // Anonymous pseudo-ID
-            source: 0x75.try_into().unwrap(),
+        header: Header::Message(MessageHeader {
+            timestamp: instant(42),
+            transfer_id: 0.try_into().unwrap(),
             priority: Priority::Nominal,
-            kind: TransferKindHeader::Message(MessageHeader {
-                anonymous: true,
-                subject: string_subject,
-            }),
-        },
-        transfer_id: 0.try_into().unwrap(),
+            subject: string_subject,
+            source: None,
+        }),
         payload: b"\x00\x18Hello world!\x00".to_vec(),
     };
     assert_eq!(expected, transfer);
@@ -103,16 +106,14 @@ fn test_node_info_request() -> Result<(), OutOfMemoryError> {
         .expect("Didn't get a transfer");
 
     let expected = Transfer {
-        timestamp: instant(302),
-        header: TransferHeader {
-            source: 123.try_into().unwrap(),
+        header: Header::Request(ServiceHeader {
+            timestamp: instant(302),
+            transfer_id: 1.try_into().unwrap(),
             priority: Priority::Nominal,
-            kind: TransferKindHeader::Request(ServiceHeader {
-                service,
-                destination: 42.try_into().unwrap(),
-            }),
-        },
-        transfer_id: 1.try_into().unwrap(),
+            service,
+            source: 123.try_into().unwrap(),
+            destination: 42.try_into().unwrap(),
+        }),
         payload: vec![],
     };
     assert_eq!(expected, transfer);
@@ -170,17 +171,15 @@ fn test_node_info_response() -> Result<(), OutOfMemoryError> {
             let transfer = rx.accept(frame)?.expect("Didn't get a transfer");
 
             let expected = Transfer {
-                // Timestamp matches the first frame's timestamp
-                timestamp: instant(100),
-                header: TransferHeader {
-                    source: 42.try_into().unwrap(),
+                header: Header::Response(ServiceHeader {
+                    // Timestamp matches the first frame's timestamp
+                    timestamp: instant(100),
+                    transfer_id: 1.try_into().unwrap(),
                     priority: Priority::Nominal,
-                    kind: TransferKindHeader::Response(ServiceHeader {
-                        service,
-                        destination: 123.try_into().unwrap(),
-                    }),
-                },
-                transfer_id: 1.try_into().unwrap(),
+                    service,
+                    source: 42.try_into().unwrap(),
+                    destination: 123.try_into().unwrap(),
+                }),
                 payload: payload.to_vec(),
             };
             assert_eq!(expected, transfer);
@@ -232,16 +231,13 @@ fn test_array() -> Result<(), OutOfMemoryError> {
     rx.subscribe_message(subject, 1024, duration(1))?;
 
     let expected = Transfer {
-        timestamp: instant(0),
-        header: TransferHeader {
-            source: 59.try_into().unwrap(),
+        header: Header::Message(MessageHeader {
+            timestamp: instant(0),
+            transfer_id: 0.try_into().unwrap(),
             priority: Priority::Nominal,
-            kind: TransferKindHeader::Message(MessageHeader {
-                anonymous: false,
-                subject,
-            }),
-        },
-        transfer_id: 0.try_into().unwrap(),
+            subject,
+            source: Some(59.try_into().unwrap()),
+        }),
         payload: [
             0x00, 0xb8, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
             0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19,
@@ -318,16 +314,13 @@ fn test_multi_frame_anonymous() {
         &[0x8, /* CRC */ 0x47, 0x92, /* tail */ 0b010_00000],
     ];
     let non_anonymous_transfer = Transfer {
-        timestamp: PrimitiveInstant::new(1),
-        header: TransferHeader {
-            source: 64.try_into().unwrap(),
+        header: Header::Message(MessageHeader {
+            timestamp: instant(1),
+            transfer_id: 0.try_into().unwrap(),
             priority: Priority::Nominal,
-            kind: TransferKindHeader::Message(MessageHeader {
-                anonymous: false,
-                subject: subject_id,
-            }),
-        },
-        transfer_id: 0.try_into().unwrap(),
+            subject: subject_id,
+            source: Some(64.try_into().unwrap()),
+        }),
         payload: vec![0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8],
     };
 
@@ -367,4 +360,22 @@ fn test_multi_frame_anonymous() {
             frames[1]
         ))
     );
+}
+
+#[test]
+fn test_ignore_request_to_other_node() {
+    let mut rx = Receiver::new(43.try_into().unwrap());
+
+    let service = ServiceId::try_from(430).unwrap();
+    rx.subscribe_request(service, 0, duration(0)).unwrap();
+    // This transfer is going to node 42.
+    let transfer = rx
+        .accept(Frame::new(
+            instant(302),
+            0x136b957b.try_into().unwrap(),
+            &[0xe1],
+        ))
+        .unwrap();
+
+    assert_eq!(transfer, None);
 }

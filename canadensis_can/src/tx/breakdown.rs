@@ -1,5 +1,4 @@
 use core::mem;
-use heapless::consts::U64;
 
 use canadensis_core::TransferId;
 
@@ -25,7 +24,7 @@ pub struct Breakdown {
     /// The current frame
     ///
     /// Invariant: Between calls to add, the length of this value is less than `self.mtu`.
-    frame: heapless::Vec<u8, U64>,
+    frame: heapless::Vec<u8, 64>,
 }
 
 impl Breakdown {
@@ -44,11 +43,11 @@ impl Breakdown {
     /// If this operation exhausts the available memory, this function returns an error.
     ///
     /// If this byte fills up a frame, the frame is returned.
-    pub fn add(&mut self, byte: u8) -> Option<heapless::Vec<u8, U64>> {
+    pub fn add(&mut self, byte: u8) -> Option<heapless::Vec<u8, 64>> {
         // If the length of self.frame is equal to self.mtu - 1, we have a new byte that will need
         // to go into the next frame.
         // Add a tail byte to the current frame in preparation for returning it
-        let ret_frame: Option<heapless::Vec<u8, U64>> = if self.frame.len() == self.mtu - 1 {
+        let ret_frame: Option<heapless::Vec<u8, 64>> = if self.frame.len() == self.mtu - 1 {
             // The current frame is full. Add a tail byte and prepare to return the frame.
             self.frame
                 .push(make_tail_byte(
@@ -74,7 +73,7 @@ impl Breakdown {
     }
 
     /// Finishes this breakdown and returns the last frame
-    pub fn finish(mut self) -> heapless::Vec<u8, U64> {
+    pub fn finish(mut self) -> heapless::Vec<u8, 64> {
         // Add a tail byte to whatever bytes are in the current frame
         self.frame
             .push(make_tail_byte(
@@ -212,7 +211,7 @@ mod test {
 
         let mut breakdown = Breakdown::new(8, TransferId::try_from(1).unwrap());
 
-        let mut frames: Vec<heapless::Vec<u8, U64>> = payload
+        let mut frames: Vec<heapless::Vec<u8, 64>> = payload
             .iter()
             .flat_map(|&byte| breakdown.add(byte))
             .collect();
@@ -258,7 +257,7 @@ mod test {
         ];
         let mut breakdown = Breakdown::new(64, TransferId::try_from(0).unwrap());
 
-        let mut frames: Vec<heapless::Vec<u8, U64>> = payload
+        let mut frames: Vec<heapless::Vec<u8, 64>> = payload
             .iter()
             .flat_map(|&byte| breakdown.add(byte))
             .collect();

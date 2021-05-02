@@ -1,75 +1,78 @@
 use super::*;
 use canadensis_core::transfer::MessageHeader;
-use canadensis_core::{NodeId, Priority, ServiceId, SubjectId};
+use canadensis_core::{NodeId, Priority, ServiceId, SubjectId, TransferId};
 
 #[test]
 fn test_make_can_id() {
     // Examples from section 4.2.3 of the specification
     // Heartbeat
     check_can_id(
-        TransferHeader {
-            source: NodeId::try_from(42).unwrap(),
+        Header::Message(MessageHeader {
+            timestamp: (),
+            transfer_id: TransferId::try_from(0).unwrap(),
             priority: Priority::Nominal,
-            kind: TransferKindHeader::Message(MessageHeader {
-                anonymous: false,
-                subject: SubjectId::try_from(7509).unwrap(),
-            }),
-        },
+            subject: SubjectId::try_from(7509).unwrap(),
+            source: Some(NodeId::try_from(42).unwrap()),
+        }),
+        &[],
         0x107d552a,
     );
     // String primitive
     check_can_id(
-        TransferHeader {
-            // Anonymous pseudo-ID
-            source: NodeId::try_from(0x75).unwrap(),
+        Header::Message(MessageHeader {
+            timestamp: (),
+            transfer_id: TransferId::try_from(0).unwrap(),
             priority: Priority::Nominal,
-            kind: TransferKindHeader::Message(MessageHeader {
-                anonymous: true,
-                subject: SubjectId::try_from(4919).unwrap(),
-            }),
-        },
+            subject: SubjectId::try_from(4919).unwrap(),
+            source: None,
+        }),
+        // This payload will result in an anonymous pseudo-ID of 0x75. The pseudo-ID generation
+        // method is really an implementation detail.
+        &[0x20],
         0x11733775,
     );
     // Node info request
     check_can_id(
-        TransferHeader {
-            source: NodeId::try_from(123).unwrap(),
+        Header::Request(ServiceHeader {
+            timestamp: (),
+            transfer_id: Default::default(),
             priority: Priority::Nominal,
-            kind: TransferKindHeader::Request(ServiceHeader {
-                service: ServiceId::try_from(430).unwrap(),
-                destination: NodeId::try_from(42).unwrap(),
-            }),
-        },
+            service: ServiceId::try_from(430).unwrap(),
+            source: NodeId::try_from(123).unwrap(),
+            destination: NodeId::try_from(42).unwrap(),
+        }),
+        &[],
         0x136b957b,
     );
     // Node info response
     check_can_id(
-        TransferHeader {
-            source: NodeId::try_from(42).unwrap(),
+        Header::Response(ServiceHeader {
+            timestamp: (),
+            transfer_id: Default::default(),
             priority: Priority::Nominal,
-            kind: TransferKindHeader::Response(ServiceHeader {
-                service: ServiceId::try_from(430).unwrap(),
-                destination: NodeId::try_from(123).unwrap(),
-            }),
-        },
+            service: ServiceId::try_from(430).unwrap(),
+            source: NodeId::try_from(42).unwrap(),
+            destination: NodeId::try_from(123).unwrap(),
+        }),
+        &[],
         0x126bbdaa,
     );
     // Array message
     check_can_id(
-        TransferHeader {
-            source: NodeId::try_from(59).unwrap(),
+        Header::Message(MessageHeader {
+            timestamp: (),
+            transfer_id: Default::default(),
             priority: Priority::Nominal,
-            kind: TransferKindHeader::Message(MessageHeader {
-                anonymous: false,
-                subject: SubjectId::try_from(4919).unwrap(),
-            }),
-        },
+            subject: SubjectId::try_from(4919).unwrap(),
+            source: Some(NodeId::try_from(59).unwrap()),
+        }),
+        &[],
         0x1073373b,
     );
 }
 
-fn check_can_id(header: TransferHeader, expected_bits: u32) {
-    let actual_id = make_can_id(header);
+fn check_can_id<I>(header: Header<I>, payload: &[u8], expected_bits: u32) {
+    let actual_id = make_can_id(&header, payload);
     let expected_id = CanId::try_from(expected_bits).unwrap();
     assert_eq!(actual_id, expected_id)
 }

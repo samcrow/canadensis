@@ -1,7 +1,7 @@
 //!
 //! A command-line tool to calculate the CRC of one or more bytes
 //!
-//! Usage: canadensis_crc byte...
+//! Usage: crc byte...
 //!
 //! Each byte must be in hexadecimal, but without the 0x prefix.
 //!

@@ -1,7 +1,8 @@
 use crate::do_serialize;
+use crate::transfer::MessageHeader;
 use canadensis_can::{OutOfMemoryError, Transmitter};
 use canadensis_core::time::Instant;
-use canadensis_core::transfer::{MessageHeader, Transfer, TransferHeader, TransferKindHeader};
+use canadensis_core::transfer::{Header, Transfer};
 use canadensis_core::{NodeId, Priority, SubjectId, TransferId};
 use canadensis_encoding::Serialize;
 
@@ -65,16 +66,13 @@ impl<I: Instant> Publisher<I> {
     {
         // Assemble the transfer
         let transfer: Transfer<&[u8], I> = Transfer {
-            timestamp: deadline,
-            header: TransferHeader {
-                source: self.source,
+            header: Header::Message(MessageHeader {
+                timestamp: deadline,
+                transfer_id: self.next_transfer_id,
                 priority: self.priority,
-                kind: TransferKindHeader::Message(MessageHeader {
-                    anonymous: false,
-                    subject,
-                }),
-            },
-            transfer_id: self.next_transfer_id,
+                subject,
+                source: Some(self.source),
+            }),
             payload,
         };
         self.next_transfer_id = self.next_transfer_id.increment();

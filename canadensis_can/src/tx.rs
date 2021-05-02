@@ -12,7 +12,8 @@ use crate::error::OutOfMemoryError;
 use crate::heap::{Heap, Transaction};
 use crate::tx::breakdown::Breakdown;
 use crate::{CanId, FrameById, Mtu};
-use canadensis_core::transfer::{ServiceHeader, Transfer, TransferHeader, TransferKindHeader};
+use canadensis_core::transfer::{Header, ServiceHeader, Transfer};
+use canadensis_core::NodeId;
 use core::convert::TryFrom;
 use core::iter;
 use fallible_collections::TryReserveError;
@@ -63,9 +64,7 @@ impl<I: Clone> Transmitter<I> {
     {
         // Convert the transfer payload into borrowed form
         let transfer = Transfer {
-            timestamp: transfer.timestamp,
             header: transfer.header,
-            transfer_id: transfer.transfer_id,
             payload: transfer.payload.as_ref(),
         };
 
@@ -108,14 +107,19 @@ impl<I: Clone> Transmitter<I> {
             .chain(iter::repeat(0).take(padding))
             .inspect(|byte| crc.add(*byte));
         // Break into frames
-        let can_id = make_can_id(transfer.header);
-        let mut breakdown = Breakdown::new(mtu, transfer.transfer_id);
+        let can_id = make_can_id(&transfer.header, &transfer.payload);
+        let mut breakdown = Breakdown::new(mtu, transfer.header.transfer_id());
         let mut frames = 0;
         // Do the non-last frames
         for byte in payload_and_padding {
             if let Some(frame_data) = breakdown.add(byte) {
                 // Filled up a frame
-                Self::push_frame(transaction, transfer.timestamp.clone(), can_id, &frame_data)?;
+                Self::push_frame(
+                    transaction,
+                    transfer.header.timestamp(),
+                    can_id,
+                    &frame_data,
+                )?;
                 frames += 1;
             }
         }
@@ -128,12 +132,22 @@ impl<I: Clone> Transmitter<I> {
             for &byte in crc_bytes.iter() {
                 if let Some(frame_data) = breakdown.add(byte) {
                     // Filled up a frame
-                    Self::push_frame(transaction, transfer.timestamp.clone(), can_id, &frame_data)?;
+                    Self::push_frame(
+                        transaction,
+                        transfer.header.timestamp(),
+                        can_id,
+                        &frame_data,
+                    )?;
                 }
             }
         }
         let last_frame_data = breakdown.finish();
-        Self::push_frame(transaction, transfer.timestamp, can_id, &last_frame_data)?;
+        Self::push_frame(
+            transaction,
+            transfer.header.timestamp(),
+            can_id,
+            &last_frame_data,
+        )?;
         Ok(())
     }
 
@@ -229,31 +243,32 @@ fn round_up_frame_length(length: usize) -> usize {
     }
 }
 
-fn make_can_id(header: TransferHeader) -> CanId {
+fn make_can_id<I>(header: &Header<I>, payload: &[u8]) -> CanId {
     let mut bits = 0u32;
 
     // Common fields for all transfer types
-    bits |= (header.priority as u32) << 26;
-    bits |= u32::from(u8::from(header.source));
+    bits |= (header.priority() as u32) << 26;
+    let source_node = header.source().unwrap_or_else(|| make_pseudo_id(payload));
+    bits |= u32::from(source_node);
 
-    match header.kind {
-        TransferKindHeader::Message(header) => {
+    match header {
+        Header::Message(message_header) => {
             // Subject ID
-            bits |= u32::from(u16::from(header.subject)) << 8;
+            bits |= u32::from(u16::from(message_header.subject)) << 8;
             // Set bits 21 and 22
             bits |= (1 << 21) | (1 << 22);
             // Anonymous
-            if header.anonymous {
+            if message_header.source.is_none() {
                 bits |= 1 << 24;
             }
         }
-        TransferKindHeader::Request(header) => {
-            bits |= encode_common_service_fields(header);
+        Header::Request(service_header) => {
+            bits |= encode_common_service_fields(service_header);
             // Set bit 24 to indicate request
             bits |= 1 << 24;
         }
-        TransferKindHeader::Response(header) => {
-            bits |= encode_common_service_fields(header);
+        Header::Response(service_header) => {
+            bits |= encode_common_service_fields(service_header);
             // Leave bit 24 clear
         }
     }
@@ -263,11 +278,24 @@ fn make_can_id(header: TransferHeader) -> CanId {
 
 /// Encodes the service ID, destination ID, and service flag into a 29-bit CAN ID, and returns
 /// it
-fn encode_common_service_fields(header: ServiceHeader) -> u32 {
+fn encode_common_service_fields<I>(header: &ServiceHeader<I>) -> u32 {
     // Service ID
     (u32::from(u16::from(header.service)) << 14)
         // Destination node ID
         | (u32::from(u8::from(header.destination)) << 7)
         // Set bit 25 to indicate service
         | (1 << 25)
+}
+
+/// Generates a non-reserved node pseudo-ID based on the provided transfer payload
+fn make_pseudo_id(payload: &[u8]) -> NodeId {
+    // Just XOR the payload
+    let bits = payload
+        .iter()
+        .fold(0x55u8, |state, payload_byte| state ^ *payload_byte);
+    let mut id = NodeId::from_truncating(bits);
+    while id.is_diagnostic_reserved() {
+        id = NodeId::from_truncating(u8::from(id) - 1);
+    }
+    id
 }
