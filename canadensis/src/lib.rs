@@ -30,7 +30,7 @@ use crate::publisher::Publisher;
 use crate::requester::Requester;
 use canadensis_core::time::Instant;
 use canadensis_core::transfer::*;
-use canadensis_encoding::{DeserializeError, Serialize, WriteCursor};
+use canadensis_encoding::{Serialize, WriteCursor};
 use fallible_collections::FallibleVec;
 use std::marker::PhantomData;
 
@@ -378,27 +378,4 @@ impl From<OutOfMemoryError> for CapacityOrMemoryError {
 pub trait Clock {
     type Instant: Instant;
     fn now(&mut self) -> Self::Instant;
-}
-
-/// Errors that may occur when responding to a request
-#[derive(Debug)]
-pub enum RespondError<E> {
-    /// The request could not be deserialized
-    Deserialize(DeserializeError),
-    /// Memory was not available
-    OutOfMemory(OutOfMemoryError),
-    /// The request handler returned an error
-    Handler(E),
-}
-
-impl<E> From<DeserializeError> for RespondError<E> {
-    fn from(deserialize: DeserializeError) -> Self {
-        RespondError::Deserialize(deserialize)
-    }
-}
-
-impl<E> From<OutOfMemoryError> for RespondError<E> {
-    fn from(oom: OutOfMemoryError) -> Self {
-        RespondError::OutOfMemory(oom)
-    }
 }
