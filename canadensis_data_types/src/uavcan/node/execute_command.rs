@@ -1,7 +1,7 @@
 use crate::uavcan::file::path::Path;
 use canadensis_core::ServiceId;
 use canadensis_encoding::{
-    DataType, Deserialize, DeserializeError, ReadCursor, Serialize, WriteCursor,
+    DataType, Deserialize, DeserializeError, ReadCursor, Response, Serialize, WriteCursor,
 };
 
 /// uavcan.node.ExecuteCommand version 1.0 request
@@ -66,6 +66,8 @@ impl From<Command> for u16 {
 impl DataType for ExecuteCommandRequest {
     const EXTENT_BYTES: Option<u32> = Some(300);
 }
+
+impl canadensis_encoding::Request for ExecuteCommandRequest {}
 
 impl Serialize for ExecuteCommandRequest {
     fn size_bits(&self) -> usize {
@@ -174,6 +176,8 @@ impl From<Status> for u8 {
 impl DataType for ExecuteCommandResponse {
     const EXTENT_BYTES: Option<u32> = Some(48);
 }
+
+impl Response for ExecuteCommandResponse {}
 
 impl Serialize for ExecuteCommandResponse {
     fn size_bits(&self) -> usize {

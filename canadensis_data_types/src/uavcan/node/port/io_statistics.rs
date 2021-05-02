@@ -1,5 +1,5 @@
 use canadensis_encoding::{
-    DataType, Deserialize, DeserializeError, ReadCursor, Serialize, WriteCursor,
+    DataType, Deserialize, DeserializeError, Message, ReadCursor, Serialize, WriteCursor,
 };
 
 /// uavcan.node.IOStatistics version 0.1
@@ -17,6 +17,8 @@ impl DataType for IoStatistics {
     // Sealed type
     const EXTENT_BYTES: Option<u32> = None;
 }
+
+impl Message for IoStatistics {}
 
 impl Serialize for IoStatistics {
     fn size_bits(&self) -> usize {

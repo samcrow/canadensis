@@ -1,7 +1,7 @@
 use crate::uavcan::node::version::Version;
 use canadensis_core::ServiceId;
 use canadensis_encoding::{
-    DataType, Deserialize, DeserializeError, ReadCursor, Serialize, WriteCursor,
+    DataType, Deserialize, DeserializeError, ReadCursor, Request, Response, Serialize, WriteCursor,
 };
 
 /// uavcan.node.GetInfo version 1.0 request
@@ -16,6 +16,8 @@ impl DataType for GetInfoRequest {
     // Sealed type
     const EXTENT_BYTES: Option<u32> = None;
 }
+
+impl Request for GetInfoRequest {}
 
 impl Serialize for GetInfoRequest {
     fn size_bits(&self) -> usize {
@@ -67,6 +69,8 @@ impl GetInfoResponse {
 impl DataType for GetInfoResponse {
     const EXTENT_BYTES: Option<u32> = Some(448);
 }
+
+impl Response for GetInfoResponse {}
 
 impl Serialize for GetInfoResponse {
     fn size_bits(&self) -> usize {

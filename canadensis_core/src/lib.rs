@@ -200,6 +200,12 @@ impl From<NodeId> for u32 {
         id.0 as u32
     }
 }
+impl From<NodeId> for usize {
+    #[inline]
+    fn from(id: NodeId) -> Self {
+        id.0 as usize
+    }
+}
 
 const VALID_TRANSFER_IDS: RangeInclusive<u8> = 0..=31;
 
@@ -255,6 +261,12 @@ impl From<TransferId> for u32 {
     #[inline]
     fn from(id: TransferId) -> Self {
         id.0 as u32
+    }
+}
+impl From<TransferId> for usize {
+    #[inline]
+    fn from(id: TransferId) -> Self {
+        id.0 as usize
     }
 }
 

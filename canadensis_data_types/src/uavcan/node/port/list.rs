@@ -1,7 +1,7 @@
 use crate::uavcan::node::port::service_id_list::ServiceIdList;
 use crate::uavcan::node::port::subject_id_list::SubjectIdList;
 use canadensis_encoding::{
-    DataType, Deserialize, DeserializeError, ReadCursor, Serialize, WriteCursor,
+    DataType, Deserialize, DeserializeError, Message, ReadCursor, Serialize, WriteCursor,
 };
 
 /// uavcan.node.port.List version 0.1
@@ -23,6 +23,8 @@ impl DataType for List {
     // Sealed type
     const EXTENT_BYTES: Option<u32> = None;
 }
+
+impl Message for List {}
 
 impl Serialize for List {
     fn size_bits(&self) -> usize {

@@ -1,5 +1,5 @@
 use canadensis_encoding::{
-    DataType, Deserialize, DeserializeError, ReadCursor, Serialize, WriteCursor,
+    DataType, Deserialize, DeserializeError, Message, ReadCursor, Serialize, WriteCursor,
 };
 
 /// uavcan.node.Version version 1.0
@@ -13,6 +13,8 @@ impl DataType for Version {
     // Sealed type
     const EXTENT_BYTES: Option<u32> = None;
 }
+
+impl Message for Version {}
 
 impl Serialize for Version {
     fn size_bits(&self) -> usize {

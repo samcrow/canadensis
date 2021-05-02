@@ -13,8 +13,8 @@ pub struct Requester<I: Instant> {
     priority: Priority,
     /// The timeout for sending transfers
     timeout: I::Duration,
-    /// The ID of the next transfer sent
-    next_transfer_id: TransferId,
+    /// The ID of the next transfer to send, for each destination node
+    next_transfer_ids: NextTransferIds,
 }
 
 impl<I: Instant> Requester<I> {
@@ -30,7 +30,7 @@ impl<I: Instant> Requester<I> {
             this_node,
             priority,
             timeout,
-            next_transfer_id: TransferId::const_default(),
+            next_transfer_ids: NextTransferIds::new(),
         }
     }
 
@@ -62,6 +62,7 @@ impl<I: Instant> Requester<I> {
         transmitter: &mut Transmitter<I>,
     ) -> Result<(), OutOfMemoryError> {
         // Assemble the transfer
+        let transfer_id = self.next_transfer_ids.get_and_increment(destination);
         let transfer: Transfer<&[u8], I> = Transfer {
             timestamp: deadline,
             header: TransferHeader {
@@ -72,11 +73,32 @@ impl<I: Instant> Requester<I> {
                     destination,
                 }),
             },
-            transfer_id: self.next_transfer_id,
+            transfer_id,
             payload,
         };
-        self.next_transfer_id = self.next_transfer_id.increment();
 
         transmitter.push(transfer)
+    }
+}
+
+/// A map from destination node IDs to transfer IDs of the next transfer
+struct NextTransferIds {
+    ids: [TransferId; NodeId::MAX.to_u8() as usize],
+}
+
+impl NextTransferIds {
+    /// Creates a new transfer ID map with the default transfer ID for each node
+    pub fn new() -> Self {
+        NextTransferIds {
+            ids: [TransferId::default(); NodeId::MAX.to_u8() as usize],
+        }
+    }
+    /// Returns the next transfer ID for the provided node, and increments the stored transfer
+    /// ID
+    pub fn get_and_increment(&mut self, destination: NodeId) -> TransferId {
+        let entry = &mut self.ids[usize::from(destination)];
+        let current = *entry;
+        *entry = entry.increment();
+        current
     }
 }

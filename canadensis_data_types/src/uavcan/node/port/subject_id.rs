@@ -1,5 +1,5 @@
 use canadensis_encoding::{
-    DataType, Deserialize, DeserializeError, ReadCursor, Serialize, WriteCursor,
+    DataType, Deserialize, DeserializeError, Message, ReadCursor, Serialize, WriteCursor,
 };
 
 /// uavcan.node.port.SubjectID version 1.0
@@ -17,6 +17,8 @@ impl DataType for SubjectId {
     // Sealed type
     const EXTENT_BYTES: Option<u32> = None;
 }
+
+impl Message for SubjectId {}
 
 impl Serialize for SubjectId {
     fn size_bits(&self) -> usize {

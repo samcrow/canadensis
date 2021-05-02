@@ -1,7 +1,7 @@
 use crate::uavcan::node::port::io_statistics::IoStatistics;
 use canadensis_core::ServiceId;
 use canadensis_encoding::{
-    DataType, Deserialize, DeserializeError, ReadCursor, Serialize, WriteCursor,
+    DataType, Deserialize, DeserializeError, ReadCursor, Request, Response, Serialize, WriteCursor,
 };
 
 /// uavcan.node.GetTransportStatistics version 0.1 request
@@ -16,6 +16,8 @@ impl DataType for GetTransportStatisticsRequest {
     // Sealed type
     const EXTENT_BYTES: Option<u32> = None;
 }
+
+impl Request for GetTransportStatisticsRequest {}
 
 impl Serialize for GetTransportStatisticsRequest {
     fn size_bits(&self) -> usize {
@@ -67,6 +69,8 @@ impl GetTransportStatisticsResponse {
 impl DataType for GetTransportStatisticsResponse {
     const EXTENT_BYTES: Option<u32> = Some(192);
 }
+
+impl Response for GetTransportStatisticsResponse {}
 
 impl Serialize for GetTransportStatisticsResponse {
     fn size_bits(&self) -> usize {

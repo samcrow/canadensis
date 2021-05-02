@@ -1,5 +1,5 @@
 use canadensis_encoding::{
-    DataType, Deserialize, DeserializeError, ReadCursor, Serialize, WriteCursor,
+    DataType, Deserialize, DeserializeError, Message, ReadCursor, Serialize, WriteCursor,
 };
 
 /// uavcan.node.Health version 1.0
@@ -21,6 +21,8 @@ impl DataType for Health {
     // Sealed type
     const EXTENT_BYTES: Option<u32> = None;
 }
+
+impl Message for Health {}
 
 impl Serialize for Health {
     fn size_bits(&self) -> usize {

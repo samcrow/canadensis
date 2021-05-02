@@ -14,7 +14,7 @@ use std::time::{Duration, Instant};
 use socketcan::CANSocket;
 
 use canadensis::transfer::{MessageTransfer, ServiceTransfer};
-use canadensis::{CanId, Clock, Frame, Mtu, NodeId, Responder, ResponseToken, TransferHandler};
+use canadensis::{CanId, Clock, Frame, Mtu, NodeId, ResponseToken, TransferHandler};
 use canadensis_core::time::{PrimitiveDuration, PrimitiveInstant};
 use canadensis_core::Priority;
 use canadensis_data_types::uavcan::node::get_info::{GetInfoRequest, GetInfoResponse};
@@ -189,9 +189,10 @@ struct BasicTransferHandler {
     unique_id: [u8; 16],
 }
 
-impl TransferHandler<SystemClock> for BasicTransferHandler {
+impl<const H: usize, const P: usize> TransferHandler<SystemClock, H, P> for BasicTransferHandler {
     fn handle_message(
         &mut self,
+        _node: &mut canadensis::Node<SystemClock, H, P>,
         _transfer: MessageTransfer<Vec<u8>, <SystemClock as Clock>::Instant>,
     ) {
         // Not subscribed to anything
@@ -199,9 +200,9 @@ impl TransferHandler<SystemClock> for BasicTransferHandler {
 
     fn handle_request(
         &mut self,
-        transfer: ServiceTransfer<Vec<u8>, <SystemClock as Clock>::Instant>,
+        node: &mut canadensis::Node<SystemClock, H, P>,
         token: ResponseToken,
-        mut responder: Responder<'_, SystemClock>,
+        transfer: ServiceTransfer<Vec<u8>, <SystemClock as Clock>::Instant>,
     ) {
         if transfer.header.service.service == GetInfoRequest::SERVICE {
             // Send a node information response
@@ -215,14 +216,14 @@ impl TransferHandler<SystemClock> for BasicTransferHandler {
                 software_image_crc: None,
                 certificate_of_authenticity: heapless::Vec::new(),
             };
-            responder
-                .send_response(token, PrimitiveDuration::new(1_000_000), &response)
+            node.send_response(token, PrimitiveDuration::new(1_000_000), &response)
                 .expect("Out of memory");
         }
     }
 
     fn handle_response(
         &mut self,
+        _node: &mut canadensis::Node<SystemClock, H, P>,
         _transfer: ServiceTransfer<Vec<u8>, <SystemClock as Clock>::Instant>,
     ) {
         // Not subscribed to anything

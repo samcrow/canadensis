@@ -42,12 +42,19 @@ impl From<CanId> for u32 {
 }
 
 /// Allowed maximum transmission unit (MTU) values
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub enum Mtu {
     /// 8 bytes, for standard CAN
     Can8 = 8,
     /// 64 bytes, for CAN FD
     CanFd64 = 64,
+}
+
+impl Mtu {
+    /// Returns the number of bytes that this MTU represents
+    pub fn as_bytes(&self) -> usize {
+        *self as usize
+    }
 }
 
 /// CAN or CAN FD data frame with up to 64 bytes of data and an extended 29-bit ID

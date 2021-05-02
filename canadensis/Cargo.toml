@@ -25,9 +25,6 @@ path = "../canadensis_core"
 [dependencies.canadensis_encoding]
 version = "0.1.0"
 path = "../canadensis_encoding"
-[dependencies.canadensis_node]
-version = "0.1.0"
-path = "../canadensis_node"
 
 # Use an unreleased version that supports const generics
 [dependencies.heapless]

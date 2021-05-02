@@ -9,7 +9,6 @@ extern crate heapless;
 extern crate canadensis_can;
 extern crate canadensis_core;
 extern crate canadensis_encoding;
-extern crate canadensis_node;
 
 mod hash;
 
@@ -19,11 +18,7 @@ pub use canadensis_core::transfer;
 pub use canadensis_core::*;
 pub use canadensis_encoding::*;
 
-pub mod node {
-    //! Basic node functionality
-    pub use canadensis_node::*;
-}
-mod anonymous_publisher;
+pub mod anonymous;
 mod publisher;
 mod requester;
 
@@ -37,6 +32,7 @@ use canadensis_core::time::Instant;
 use canadensis_core::transfer::*;
 use canadensis_encoding::{DeserializeError, Serialize, WriteCursor};
 use fallible_collections::FallibleVec;
+use std::marker::PhantomData;
 
 /// Payloads above this size (in bytes) will use a dynamically allocated buffer
 const STACK_THRESHOLD: usize = 64;
@@ -75,21 +71,28 @@ pub struct ResponseToken {
 }
 
 /// Something that may be able to handle incoming transfers
-pub trait TransferHandler<C: Clock> {
+pub trait TransferHandler<C: Clock, const P: usize, const R: usize> {
     /// Potentially handles an incoming message transfer
-    // TODO: Provide a way to react by publishing something?
-    fn handle_message(&mut self, transfer: MessageTransfer<Vec<u8>, C::Instant>);
+    fn handle_message(
+        &mut self,
+        node: &mut Node<C, P, R>,
+        transfer: MessageTransfer<Vec<u8>, C::Instant>,
+    );
 
     /// Potentially handles an incoming service request
     fn handle_request(
         &mut self,
-        transfer: ServiceTransfer<Vec<u8>, C::Instant>,
+        node: &mut Node<C, P, R>,
         token: ResponseToken,
-        responder: Responder<'_, C>,
+        transfer: ServiceTransfer<Vec<u8>, C::Instant>,
     );
 
     /// Potentially handles an incoming service response
-    fn handle_response(&mut self, transfer: ServiceTransfer<Vec<u8>, C::Instant>);
+    fn handle_response(
+        &mut self,
+        node: &mut Node<C, P, R>,
+        transfer: ServiceTransfer<Vec<u8>, C::Instant>,
+    );
 }
 
 /// A high-level interface with UAVCAN node functionality
@@ -108,7 +111,6 @@ where
     receiver: Receiver<C::Instant>,
     node_id: NodeId,
     publishers: TrivialIndexMap<SubjectId, Publisher<C::Instant>, P>,
-    // TODO: Need a separate next transfer ID for each destination node
     requesters: TrivialIndexMap<ServiceId, Requester<C::Instant>, R>,
 }
 
@@ -133,7 +135,7 @@ where
         handler: &mut H,
     ) -> Result<(), OutOfMemoryError>
     where
-        H: TransferHandler<C>,
+        H: TransferHandler<C, P, R>,
     {
         match self.receiver.accept(frame)? {
             Some(transfer) => {
@@ -149,7 +151,7 @@ where
         transfer: Transfer<Vec<u8>, C::Instant>,
         handler: &mut H,
     ) where
-        H: TransferHandler<C>,
+        H: TransferHandler<C, P, R>,
     {
         match transfer.header.kind {
             TransferKindHeader::Message(message_header) => {
@@ -163,7 +165,7 @@ where
                     transfer_id: transfer.transfer_id,
                     payload: transfer.payload,
                 };
-                handler.handle_message(message_transfer);
+                handler.handle_message(self, message_transfer);
             }
             TransferKindHeader::Request(service_header) => {
                 let token = ResponseToken {
@@ -182,12 +184,7 @@ where
                     transfer_id: transfer.transfer_id,
                     payload: transfer.payload,
                 };
-                let responder = Responder {
-                    this_node: self.node_id,
-                    transmitter: &mut self.transmitter,
-                    clock: &mut self.clock,
-                };
-                handler.handle_request(service_transfer, token, responder);
+                handler.handle_request(self, token, service_transfer);
             }
             TransferKindHeader::Response(service_header) => {
                 let service_transfer = ServiceTransfer {
@@ -200,18 +197,21 @@ where
                     transfer_id: transfer.transfer_id,
                     payload: transfer.payload,
                 };
-                handler.handle_response(service_transfer);
+                handler.handle_response(self, service_transfer);
             }
         }
     }
 
-    pub fn start_publishing_topic(
+    pub fn start_publishing_topic<T>(
         &mut self,
         subject: SubjectId,
         timeout: <C::Instant as Instant>::Duration,
         priority: Priority,
-    ) -> Result<SubscriptionToken, CapacityError> {
-        let token = SubscriptionToken(subject.clone());
+    ) -> Result<SubscriptionToken<T>, CapacityError>
+    where
+        T: Message,
+    {
+        let token = SubscriptionToken(subject.clone(), PhantomData);
         self.publishers
             .insert(subject, Publisher::new(self.node_id, timeout, priority))
             .map(|_| token)
@@ -220,11 +220,11 @@ where
 
     pub fn publish_to_topic<T>(
         &mut self,
-        token: &SubscriptionToken,
+        token: &SubscriptionToken<T>,
         payload: &T,
     ) -> Result<(), OutOfMemoryError>
     where
-        T: Serialize,
+        T: Message + Serialize,
     {
         let publisher = self
             .publishers
@@ -236,14 +236,17 @@ where
     /// Sets up to send requests for a service
     ///
     /// This also subscribes to the corresponding responses.
-    pub fn start_sending_requests(
+    pub fn start_sending_requests<T>(
         &mut self,
         service: ServiceId,
         receive_timeout: <C::Instant as Instant>::Duration,
         response_payload_size_max: usize,
         priority: Priority,
-    ) -> Result<ServiceToken, CapacityOrMemoryError> {
-        let token = ServiceToken(service);
+    ) -> Result<ServiceToken<T>, CapacityOrMemoryError>
+    where
+        T: Request,
+    {
+        let token = ServiceToken(service, PhantomData);
         self.requesters
             .insert(
                 service,
@@ -265,12 +268,12 @@ where
 
     pub fn send_request<T>(
         &mut self,
-        token: &ServiceToken,
+        token: &ServiceToken<T>,
         payload: &T,
         destination: NodeId,
     ) -> Result<(), OutOfMemoryError>
     where
-        T: Serialize,
+        T: Request + Serialize,
     {
         let requester = self
             .requesters
@@ -305,13 +308,42 @@ where
             .subscribe_request(service, payload_size_max, timeout)
     }
 
-    /// Returns a responder, which can be used to respond to service requests
-    pub fn responder(&mut self) -> Responder<'_, C> {
-        Responder {
-            this_node: self.node_id,
-            transmitter: &mut self.transmitter,
-            clock: &mut self.clock,
-        }
+    pub fn send_response<T>(
+        &mut self,
+        token: ResponseToken,
+        timeout: <C::Instant as Instant>::Duration,
+        payload: &T,
+    ) -> Result<(), OutOfMemoryError>
+    where
+        T: Response + Serialize,
+    {
+        let now = self.clock.now();
+        let deadline = timeout + now;
+        do_serialize(payload, |payload| {
+            self.send_response_payload(token, deadline, payload)
+        })
+    }
+
+    fn send_response_payload(
+        &mut self,
+        token: ResponseToken,
+        deadline: C::Instant,
+        payload: &[u8],
+    ) -> Result<(), OutOfMemoryError> {
+        let transfer_out = Transfer {
+            timestamp: deadline,
+            header: TransferHeader {
+                source: self.node_id,
+                priority: token.priority,
+                kind: TransferKindHeader::Response(ServiceHeader {
+                    service: token.service,
+                    destination: token.client,
+                }),
+            },
+            transfer_id: token.transfer,
+            payload,
+        };
+        self.transmitter.push(transfer_out)
     }
 
     /// Removes an outgoing frame from the queue and returns it
@@ -330,65 +362,17 @@ where
     }
 }
 
-pub struct Responder<'a, C>
-where
-    C: Clock,
-{
-    this_node: NodeId,
-    transmitter: &'a mut Transmitter<C::Instant>,
-    clock: &'a mut C,
-}
-
-impl<C> Responder<'_, C>
-where
-    C: Clock,
-{
-    pub fn send_response<T>(
-        &mut self,
-        token: ResponseToken,
-        timeout: <C::Instant as Instant>::Duration,
-        payload: &T,
-    ) -> Result<(), OutOfMemoryError>
-    where
-        T: Serialize,
-    {
-        let now = self.clock.now();
-        let deadline = timeout + now;
-        do_serialize(payload, |payload| {
-            self.send_response_payload(token, deadline, payload)
-        })
-    }
-
-    fn send_response_payload(
-        &mut self,
-        token: ResponseToken,
-        deadline: C::Instant,
-        payload: &[u8],
-    ) -> Result<(), OutOfMemoryError> {
-        let transfer_out = Transfer {
-            timestamp: deadline,
-            header: TransferHeader {
-                source: self.this_node,
-                priority: token.priority,
-                kind: TransferKindHeader::Response(ServiceHeader {
-                    service: token.service,
-                    destination: token.client,
-                }),
-            },
-            transfer_id: token.transfer,
-            payload,
-        };
-        self.transmitter.push(transfer_out)
-    }
-}
-
 /// A token returned from start_publishing_topic that can be used to a publish a transfer using the
 /// associated subject ID
-pub struct SubscriptionToken(SubjectId);
+///
+/// The type parameter `T` constrains the type of message sent.
+pub struct SubscriptionToken<T>(SubjectId, PhantomData<*mut T>);
 
 /// A token returned from start_sending_requests that can be used to a request a service using the
 /// associated service ID
-pub struct ServiceToken(ServiceId);
+///
+/// The type parameter `T` constrains the type of request sent.
+pub struct ServiceToken<T>(ServiceId, PhantomData<*mut T>);
 
 /// An error indicating that an operation ran out of space in a fixed-capacity data structure
 #[derive(Debug)]

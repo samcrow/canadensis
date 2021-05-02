@@ -2,7 +2,7 @@ use crate::uavcan::node::health::Health;
 use crate::uavcan::node::mode::Mode;
 use canadensis_core::SubjectId;
 use canadensis_encoding::{
-    DataType, Deserialize, DeserializeError, ReadCursor, Serialize, WriteCursor,
+    DataType, Deserialize, DeserializeError, Message, ReadCursor, Serialize, WriteCursor,
 };
 
 /// uavcan.node.Heartbeat version 1.0
@@ -23,6 +23,8 @@ impl Heartbeat {
 impl DataType for Heartbeat {
     const EXTENT_BYTES: Option<u32> = Some(12);
 }
+
+impl Message for Heartbeat {}
 
 impl Serialize for Heartbeat {
     fn size_bits(&self) -> usize {

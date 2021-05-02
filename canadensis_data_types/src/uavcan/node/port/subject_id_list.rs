@@ -1,7 +1,7 @@
 use crate::bits::BitSet;
 use crate::uavcan::node::port::subject_id::SubjectId;
 use canadensis_encoding::{
-    DataType, Deserialize, DeserializeError, ReadCursor, Serialize, WriteCursor,
+    DataType, Deserialize, DeserializeError, Message, ReadCursor, Serialize, WriteCursor,
 };
 
 /// uavcan.node.port.SubjectIDList version 0.1
@@ -27,6 +27,8 @@ impl SubjectIdList {
 impl DataType for SubjectIdList {
     const EXTENT_BYTES: Option<u32> = Some(4097);
 }
+
+impl Message for SubjectIdList {}
 
 impl Serialize for SubjectIdList {
     fn size_bits(&self) -> usize {

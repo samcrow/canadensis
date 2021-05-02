@@ -45,6 +45,13 @@ pub trait Deserialize: DataType {
         Self: Sized;
 }
 
+/// Marker for message data types
+pub trait Message {}
+/// Marker for service request data types
+pub trait Request {}
+/// Marker for service response data types
+pub trait Response {}
+
 /// Errors that can occur when deserializing
 #[non_exhaustive]
 #[derive(Debug)]

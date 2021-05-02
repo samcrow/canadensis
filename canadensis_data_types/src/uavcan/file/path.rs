@@ -1,5 +1,5 @@
 use canadensis_encoding::{
-    DataType, Deserialize, DeserializeError, ReadCursor, Serialize, WriteCursor,
+    DataType, Deserialize, DeserializeError, Message, ReadCursor, Serialize, WriteCursor,
 };
 
 /// uavcan.file.Path version 2.0
@@ -17,6 +17,8 @@ impl DataType for Path {
     // Sealed type
     const EXTENT_BYTES: Option<u32> = None;
 }
+
+impl Message for Path {}
 
 impl Serialize for Path {
     fn size_bits(&self) -> usize {
