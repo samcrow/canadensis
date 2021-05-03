@@ -119,7 +119,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     CanId::try_from(frame.id()).unwrap(),
                     frame.data(),
                 );
-                println!("Handling frame {:#?}", frame);
 
                 uavcan
                     .accept_frame(frame, &mut transfer_handler)
@@ -204,6 +203,7 @@ impl<const H: usize, const P: usize> TransferHandler<SystemClock, H, P> for Basi
         token: ResponseToken,
         transfer: ServiceTransfer<Vec<u8>, <SystemClock as Clock>::Instant>,
     ) {
+        println!("Handling request {:?}", transfer);
         if transfer.header.service == GetInfoRequest::SERVICE {
             // Send a node information response
             let response = GetInfoResponse {

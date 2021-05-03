@@ -85,7 +85,35 @@ impl<I: Instant> Subscription<I> {
         }
     }
 
-    pub fn accept_non_anonymous(
+    fn accept_non_anonymous(
+        &mut self,
+        frame: Frame<I>,
+        frame_header: Header<I>,
+        source_node: NodeId,
+        tail: TailByte,
+    ) -> Result<Option<Transfer<Vec<u8>, I>>, SubscriptionError> {
+        let max_payload_length = self.payload_size_max;
+
+        if tail.start && tail.end {
+            // Special case: Everything fits into one frame, so we don't need to allocate a session
+            if frame.data().len() > max_payload_length + 1 {
+                return Err(SubscriptionError::Session(SessionError::PayloadLength));
+            }
+            // Make a transfer from this frame (remove the tail byte)
+            let data_without_tail = &frame.data()[..frame.data().len() - 1];
+            let mut payload = Vec::new();
+            payload.try_extend_from_slice(data_without_tail)?;
+            let transfer = Transfer {
+                header: frame_header,
+                payload,
+            };
+            Ok(Some(transfer))
+        } else {
+            self.accept_with_session(frame, frame_header, source_node, tail)
+        }
+    }
+
+    fn accept_with_session(
         &mut self,
         frame: Frame<I>,
         frame_header: Header<I>,
@@ -136,7 +164,7 @@ impl<I: Instant> Subscription<I> {
         }
     }
 
-    pub fn accept_anonymous(
+    fn accept_anonymous(
         &mut self,
         frame: Frame<I>,
         frame_header: Header<I>,
@@ -301,8 +329,8 @@ pub struct Receiver<I: Instant> {
     subscriptions_response: Vec<Subscription<I>>,
     /// Subscriptions for service requests
     subscriptions_request: Vec<Subscription<I>>,
-    /// The ID of this node
-    id: NodeId,
+    /// The ID of this node, or None if this node is anonymous
+    id: Option<NodeId>,
     /// Number of transfers successfully received
     transfer_count: u64,
     /// Number of transfers that could not be received
@@ -317,6 +345,17 @@ impl<I: Instant> Receiver<I> {
     ///
     /// id: The ID of this node. This is used to filter incoming service requests and responses.
     pub fn new(id: NodeId) -> Self {
+        Self::new_inner(Some(id))
+    }
+
+    /// Creates an anonymous receiver
+    ///
+    /// An anonymous receiver cannot receive service requests or responses.
+    pub fn new_anonymous() -> Self {
+        Self::new_inner(None)
+    }
+
+    fn new_inner(id: Option<NodeId>) -> Self {
         Receiver {
             subscriptions_message: Vec::new(),
             subscriptions_response: Vec::new(),
@@ -357,10 +396,15 @@ impl<I: Instant> Receiver<I> {
                 return Ok(None);
             }
         };
-        // Check that the frame is actually destined for this node
+        // Check that the frame is actually destined for this node, and this node can handle services
         if let Header::Request(service_header) | Header::Response(service_header) = &frame_header {
-            if service_header.destination != self.id {
-                // This frame is a service request or response going to some other node
+            if let Some(this_id) = self.id {
+                if service_header.destination != this_id {
+                    // This frame is a service request or response going to some other node
+                    return Ok(None);
+                }
+            } else {
+                // This node is anonymous, so it must ignore all service frames
                 return Ok(None);
             }
         }

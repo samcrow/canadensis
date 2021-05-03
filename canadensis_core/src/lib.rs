@@ -12,6 +12,7 @@ pub mod time;
 pub mod transfer;
 
 use core::convert::TryFrom;
+use core::fmt;
 use core::ops::RangeInclusive;
 use hash32_derive::Hash32;
 
@@ -167,6 +168,12 @@ impl NodeId {
     /// diagnostic and debugging tools
     pub fn is_diagnostic_reserved(self) -> bool {
         self.0 >= *VALID_NODE_IDS.end() - 1
+    }
+}
+
+impl fmt::Display for NodeId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Display::fmt(&self.0, f)
     }
 }
 

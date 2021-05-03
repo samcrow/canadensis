@@ -9,11 +9,12 @@ extern crate canadensis_data_types;
 extern crate socketcan;
 
 use canadensis::time::{PrimitiveDuration, PrimitiveInstant};
-use canadensis::CanId;
-use canadensis::{Clock, DataType, NodeId};
+use canadensis::{CanId, Deserialize, ReadCursor};
+use canadensis::{Clock, DataType};
 use canadensis_can::Receiver;
 
 use canadensis_data_types::uavcan::diagnostic::record::Record;
+use canadensis_data_types::uavcan::diagnostic::severity::Severity;
 use std::convert::TryFrom;
 use std::env;
 use std::error::Error;
@@ -28,12 +29,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let can = socketcan::CANSocket::open(&interface)?;
 
     let mut clock = SystemClock::new();
-    let mut receiver = Receiver::new(NodeId::MAX);
+    let mut receiver = Receiver::new_anonymous();
     receiver
         .subscribe_message(
             Record::SUBJECT,
             Record::EXTENT_BYTES.unwrap() as usize,
-            PrimitiveDuration::new(10_000_000),
+            PrimitiveDuration::new(1_000_000),
         )
         .unwrap();
 
@@ -46,8 +47,34 @@ fn main() -> Result<(), Box<dyn Error>> {
             frame.data(),
         );
         if let Some(transfer) = receiver.accept(frame).unwrap() {
-            // TODO: Better printing
-            println!("{:?}", transfer);
+            match Record::deserialize(&mut ReadCursor::new(&transfer.payload)) {
+                Ok(log_record) => {
+                    let node_text = transfer
+                        .header
+                        .source()
+                        .map(|node| node.to_string())
+                        .unwrap_or_else(|| "?".to_owned());
+                    let level_text = match log_record.severity {
+                        Severity::Trace => 'T',
+                        Severity::Debug => 'D',
+                        Severity::Info => 'I',
+                        Severity::Notice => 'N',
+                        Severity::Warning => 'W',
+                        Severity::Error => 'E',
+                        Severity::Critical => 'C',
+                        Severity::Alert => 'A',
+                    };
+                    let text = String::from_utf8_lossy(&log_record.text);
+
+                    println!(
+                        "[{node}][{level}] {text}",
+                        node = node_text,
+                        level = level_text,
+                        text = text
+                    );
+                }
+                Err(e) => eprintln!("Couldn't deserialize log record: {:?}", e),
+            }
         }
     }
 }
