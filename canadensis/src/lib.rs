@@ -1,5 +1,4 @@
-// std only for debugging
-// #![no_std]
+#![no_std]
 
 extern crate alloc;
 extern crate fallible_collections;
@@ -12,27 +11,25 @@ extern crate canadensis_encoding;
 
 mod hash;
 
-// Reexports from other canadensis crates
-pub use canadensis_can::*;
-pub use canadensis_core::transfer;
-pub use canadensis_core::*;
-pub use canadensis_encoding::*;
-
 pub mod anonymous;
 mod publisher;
 mod requester;
 
 use alloc::vec::Vec;
 use core::iter;
+use core::marker::PhantomData;
+
+use fallible_collections::FallibleVec;
+
+use canadensis_can::{Frame, Mtu, OutOfMemoryError, Receiver, Transmitter};
+use canadensis_core::time::Instant;
+use canadensis_core::transfer::*;
+use canadensis_core::{NodeId, Priority, ServiceId, SubjectId, TransferId};
+use canadensis_encoding::{Message, Request, Response, Serialize, WriteCursor};
 
 use crate::hash::TrivialIndexMap;
 use crate::publisher::Publisher;
 use crate::requester::Requester;
-use canadensis_core::time::Instant;
-use canadensis_core::transfer::*;
-use canadensis_encoding::{Serialize, WriteCursor};
-use fallible_collections::FallibleVec;
-use std::marker::PhantomData;
 
 /// Payloads above this size (in bytes) will use a dynamically allocated buffer
 const STACK_THRESHOLD: usize = 64;

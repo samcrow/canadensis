@@ -8,18 +8,18 @@ extern crate canadensis;
 extern crate canadensis_data_types;
 extern crate socketcan;
 
-use canadensis::time::{PrimitiveDuration, PrimitiveInstant};
-use canadensis::{CanId, Deserialize, ReadCursor};
-use canadensis::{Clock, DataType};
-use canadensis_can::Receiver;
-
-use canadensis_data_types::uavcan::diagnostic::record::Record;
-use canadensis_data_types::uavcan::diagnostic::severity::Severity;
 use std::convert::TryFrom;
 use std::env;
 use std::error::Error;
 use std::process;
 use std::time::Instant;
+
+use canadensis::Clock;
+use canadensis_can::{CanId, Frame, Receiver};
+use canadensis_core::time::{PrimitiveDuration, PrimitiveInstant};
+use canadensis_data_types::uavcan::diagnostic::record::Record;
+use canadensis_data_types::uavcan::diagnostic::severity::Severity;
+use canadensis_encoding::{DataType, Deserialize, ReadCursor};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let interface = env::args().skip(1).next().unwrap_or_else(|| {
@@ -41,7 +41,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     loop {
         let frame = can.read_frame()?;
         // Convert from SocketCAN to Canadensis
-        let frame = canadensis::Frame::new(
+        let frame = Frame::new(
             clock.now(),
             CanId::try_from(frame.id()).unwrap(),
             frame.data(),

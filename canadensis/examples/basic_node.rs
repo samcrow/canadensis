@@ -9,14 +9,16 @@ extern crate socketcan;
 use std::convert::TryFrom;
 use std::env;
 use std::io;
+use std::iter::FromIterator;
 use std::time::{Duration, Instant};
 
 use socketcan::CANSocket;
 
-use canadensis::transfer::{MessageTransfer, ServiceTransfer};
-use canadensis::{CanId, Clock, Frame, Mtu, NodeId, ResponseToken, TransferHandler};
+use canadensis::{Clock, ResponseToken, TransferHandler};
+use canadensis_can::{CanId, Frame, Mtu};
 use canadensis_core::time::{PrimitiveDuration, PrimitiveInstant};
-use canadensis_core::Priority;
+use canadensis_core::transfer::{MessageTransfer, ServiceTransfer};
+use canadensis_core::{NodeId, Priority};
 use canadensis_data_types::uavcan::node::get_info::{GetInfoRequest, GetInfoResponse};
 use canadensis_data_types::uavcan::node::health::Health;
 use canadensis_data_types::uavcan::node::heartbeat::Heartbeat;
@@ -26,7 +28,6 @@ use canadensis_data_types::uavcan::node::port::list::List;
 use canadensis_data_types::uavcan::node::port::service_id_list::ServiceIdList;
 use canadensis_data_types::uavcan::node::port::subject_id_list::SubjectIdList;
 use canadensis_data_types::uavcan::node::version::Version;
-use std::iter::FromIterator;
 
 /// Runs a basic UAVCAN node, sending Heartbeat messages and responding to NodeInfo requests
 ///

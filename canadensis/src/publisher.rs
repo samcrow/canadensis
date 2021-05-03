@@ -1,8 +1,7 @@
 use crate::do_serialize;
-use crate::transfer::MessageHeader;
 use canadensis_can::{OutOfMemoryError, Transmitter};
 use canadensis_core::time::Instant;
-use canadensis_core::transfer::{Header, Transfer};
+use canadensis_core::transfer::{Header, MessageHeader, Transfer};
 use canadensis_core::{NodeId, Priority, SubjectId, TransferId};
 use canadensis_encoding::Serialize;
 

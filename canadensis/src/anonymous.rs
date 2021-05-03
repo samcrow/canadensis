@@ -1,10 +1,15 @@
+//!
+//! A publisher that can be used by anonymous nodes
+//!
+
+use core::marker::PhantomData;
+
 use crate::{do_serialize, Clock};
 use canadensis_can::{Mtu, OutOfMemoryError, Transmitter};
 use canadensis_core::time::Instant;
 use canadensis_core::transfer::{Header, MessageHeader, Transfer};
 use canadensis_core::{Priority, SubjectId, TransferId};
 use canadensis_encoding::{Message, Serialize};
-use std::marker::PhantomData;
 
 /// A transmitter that sends anonymous messages and does not require a node ID
 ///

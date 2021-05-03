@@ -1,9 +1,9 @@
 use crate::bxcan_frame_to_uavcan;
 use alloc::vec::Vec;
 use bxcan::{Instance, Rx};
-use canadensis::time::Instant;
-use canadensis::transfer::Transfer;
-use canadensis::Receiver;
+use canadensis_can::Receiver;
+use canadensis_core::time::Instant;
+use canadensis_core::transfer::Transfer;
 
 pub struct ReceiveAdapter<C, I: Instant> {
     can: Rx<C>,
@@ -54,8 +54,11 @@ where
         }
     }
 
-    fn handle_incoming_frame<H>(&mut self, frame: canadensis::Frame<I>, transfer_handler: &mut H)
-    where
+    fn handle_incoming_frame<H>(
+        &mut self,
+        frame: canadensis_can::Frame<I>,
+        transfer_handler: &mut H,
+    ) where
         H: FnMut(Transfer<Vec<u8>, I>),
     {
         match self.uavcan_receiver.accept(frame) {

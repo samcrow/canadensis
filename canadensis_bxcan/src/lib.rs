@@ -3,7 +3,8 @@
 extern crate alloc;
 
 extern crate bxcan;
-extern crate canadensis;
+extern crate canadensis_can;
+extern crate canadensis_core;
 extern crate nb;
 
 pub mod rx;
@@ -16,7 +17,7 @@ use core::convert::TryFrom;
 /// # Panics
 ///
 /// This function panics if the provided frame has more than 8 bits of data.
-fn uavcan_frame_to_bxcan<I>(frame: &canadensis::Frame<I>) -> bxcan::Frame {
+fn uavcan_frame_to_bxcan<I>(frame: &canadensis_can::Frame<I>) -> bxcan::Frame {
     let bxcan_id = bxcan::ExtendedId::new(frame.id().into()).unwrap();
     let bxcan_data = bxcan::Data::new(frame.data()).expect("Frame data more than 8 bytes");
     bxcan::Frame::new_data(bxcan_id, bxcan_data)
@@ -29,14 +30,14 @@ fn uavcan_frame_to_bxcan<I>(frame: &canadensis::Frame<I>) -> bxcan::Frame {
 fn bxcan_frame_to_uavcan<I>(
     frame: &bxcan::Frame,
     deadline: I,
-) -> Result<canadensis::Frame<I>, InvalidFrameFormat> {
+) -> Result<canadensis_can::Frame<I>, InvalidFrameFormat> {
     let id_bits = match frame.id() {
         bxcan::Id::Extended(extended_id) => extended_id.as_raw(),
         bxcan::Id::Standard(_) => return Err(InvalidFrameFormat),
     };
-    let uavcan_id = canadensis::CanId::try_from(id_bits).map_err(|_| InvalidFrameFormat)?;
+    let uavcan_id = canadensis_can::CanId::try_from(id_bits).map_err(|_| InvalidFrameFormat)?;
     let uavcan_data = frame.data().ok_or(InvalidFrameFormat)?;
-    Ok(canadensis::Frame::new(
+    Ok(canadensis_can::Frame::new(
         deadline,
         uavcan_id,
         uavcan_data.as_ref(),

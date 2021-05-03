@@ -1,6 +1,10 @@
 # Canadensis: A UAVCAN 1.0 implementation
 
-This project implements (most of) [UAVCAN](https://uavcan.org/) v1.0. As the UAVCAN website explains, "UAVCAN is an open lightweight protocol designed for reliable intravehicular communication in aerospace and robotic applications over CAN bus, Ethernet, and other robust transports. It is created to address the challenge of deterministic on-board data exchange between systems and components of next-generation intelligent vehicles: manned and unmanned aircraft, spacecraft, robots, and cars."
+This project implements (most of) [UAVCAN](https://uavcan.org/) v1.0. As the UAVCAN website explains, "UAVCAN is an open
+lightweight protocol designed for reliable intravehicular communication in aerospace and robotic applications over CAN
+bus, Ethernet, and other robust transports. It is created to address the challenge of deterministic on-board data
+exchange between systems and components of next-generation intelligent vehicles: manned and unmanned aircraft,
+spacecraft, robots, and cars."
 
 This is currently an independent project, not affiliated with the UAVCAN Consortium.
 
@@ -26,14 +30,17 @@ Other parts are incomplete:
 
 * Runs on embedded devices
 * Uses dynamic memory allocation, but only when necessary
+* Supports UAVCAN/CAN (classic CAN and CAN FD)
+    * Other transports are not part of the specification as of this writing, but this library may support them in the
+      future.
 
 ## Current features
 
 * Common definitions (`canadensis_core`)
-* A transport layer for CAN and CAN FD (`canadensis_can`)
+* A transport layer and session layer for CAN and CAN FD (`canadensis_can`)
 * Transfer serialization and deserialization (`canadensis_encoding`)
-* Basic node functions (`canadensis_node`)
-* A basic presentation layer for CAN and CAN FD, reexporting other crates (`canadensis`)
+* A basic presentation layer for CAN and CAN FD, which provides a relatively simple API (`canadensis`)
+* Basic application-layer node functions (`canadensis_node`)
 * Automatic filter configuration (`canadensis_filter_config`)
 
 ## License

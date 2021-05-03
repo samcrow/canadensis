@@ -2,8 +2,8 @@
 
 use crate::{bxcan_frame_to_uavcan, uavcan_frame_to_bxcan};
 use bxcan::{Instance, Mailbox, Tx};
-use canadensis::time::Instant;
-use canadensis::Transmitter;
+use canadensis_can::Transmitter;
+use canadensis_core::time::Instant;
 use core::cmp::Ordering;
 use core::convert::Infallible;
 
@@ -48,7 +48,7 @@ where
         }
     }
 
-    fn send_frame(&mut self, frame: canadensis::Frame<I>) -> nb::Result<(), Infallible> {
+    fn send_frame(&mut self, frame: canadensis_can::Frame<I>) -> nb::Result<(), Infallible> {
         // Convert frame to BXCAN format
         let bxcan_frame = uavcan_frame_to_bxcan(&frame);
         match self.can.transmit_and_get_mailbox(&bxcan_frame) {
