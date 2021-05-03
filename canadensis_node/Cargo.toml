@@ -15,17 +15,13 @@ fallible_collections = "0.1.2"
 
 # Local dependency, change before publishing
 [dependencies.canadensis_core]
-version = "0.1.0"
 path = "../canadensis_core"
-# Local dependency, change before publishing
 [dependencies.canadensis_encoding]
-version = "0.1.0"
 path = "../canadensis_encoding"
-
-[features]
-default = ["node-info"]
-# The node-info feature enables handling of uavcan.node.GetInfo requests
-node-info = []
+[dependencies.canadensis]
+path = "../canadensis"
+[dependencies.canadensis_data_types]
+path = "../canadensis_data_types"
 
 [dev-dependencies]
 socketcan = "1.7.0"

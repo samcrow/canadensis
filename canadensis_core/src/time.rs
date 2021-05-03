@@ -30,6 +30,11 @@ pub trait Instant: Debug + Clone {
     /// The Duration must also support adding a Duration and Instant to produce an Instant
     type Duration: PartialOrd + Debug + Clone + Add<Self, Output = Self>;
 
+    /// Returns the number of whole seconds in this instant
+    fn as_secs(&self) -> u64;
+    /// Returns the fractional part of this instant in nanoseconds
+    fn subsec_nanos(&self) -> u32;
+
     /// Calculates the duration between other and self
     ///
     /// # Overflow

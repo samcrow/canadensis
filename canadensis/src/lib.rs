@@ -323,6 +323,8 @@ where
         self.transmitter.push(transfer_out)
     }
 
+    // Outgoing frames
+
     /// Removes an outgoing frame from the queue and returns it
     pub fn pop_frame(&mut self) -> Option<Frame<C::Instant>> {
         self.transmitter.pop()
@@ -336,6 +338,38 @@ where
     /// Returns an outgoing frame to the queue so that it can be transmitted later
     pub fn return_frame(&mut self, frame: Frame<C::Instant>) -> Result<(), OutOfMemoryError> {
         self.transmitter.return_frame(frame)
+    }
+
+    // Component access
+
+    /// Returns a reference to the enclosed transmitter
+    pub fn transmitter(&self) -> &Transmitter<C::Instant> {
+        &self.transmitter
+    }
+    /// Returns a mutable reference to the enclosed transmitter
+    pub fn transmitter_mut(&mut self) -> &mut Transmitter<C::Instant> {
+        &mut self.transmitter
+    }
+    /// Returns a reference to the enclosed receiver
+    pub fn receiver(&self) -> &Receiver<C::Instant> {
+        &self.receiver
+    }
+    /// Returns a mutable reference to the enclosed receiver
+    pub fn receiver_mut(&mut self) -> &mut Receiver<C::Instant> {
+        &mut self.receiver
+    }
+    /// Returns a reference to the enclosed clock
+    pub fn clock(&self) -> &C {
+        &self.clock
+    }
+    /// Returns a mutable reference to the enclosed clock
+    pub fn clock_mut(&mut self) -> &mut C {
+        &mut self.clock
+    }
+
+    /// Returns the identifier of this node
+    pub fn node_id(&self) -> NodeId {
+        self.node_id
     }
 }
 
