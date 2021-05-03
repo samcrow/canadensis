@@ -163,6 +163,8 @@ where
     }
 
     /// Commits this transaction, putting all associated items in the heap
+    ///
+    /// This function is cannot fail because it does not allocate memory.
     pub fn commit(mut self) {
         self.committed = true;
         self.heap.commit_transaction();
@@ -347,6 +349,51 @@ mod test {
             let removed = heap.pop().unwrap();
             assert_eq!(i, removed.0);
         }
+    }
+
+    #[test]
+    fn test_equal_elements_reinsert_order() {
+        /// A struct compared based only on element 0, ignoring element 1
+        struct PartialCompare(u32, u32);
+        impl Eq for PartialCompare {}
+        impl PartialEq for PartialCompare {
+            fn eq(&self, other: &Self) -> bool {
+                self.0 == other.0
+            }
+        }
+        impl Ord for PartialCompare {
+            fn cmp(&self, other: &Self) -> Ordering {
+                self.0.cmp(&other.0)
+            }
+        }
+        impl PartialOrd for PartialCompare {
+            fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+                Some(self.cmp(other))
+            }
+        }
+
+        let mut heap = Heap::new();
+        let mut transaction = heap.transaction();
+        // (1, 1) and (1, 2) compare equal
+        transaction.push(PartialCompare(1, 1)).unwrap();
+        transaction.push(PartialCompare(1, 2)).unwrap();
+        transaction.push(PartialCompare(2, 1)).unwrap();
+        transaction.push(PartialCompare(3, 1)).unwrap();
+        transaction.commit();
+
+        // Remove (1, 1)
+        let removed = heap.pop().unwrap();
+        assert_eq!(removed.0, 1);
+        assert_eq!(removed.1, 1);
+        // Put (1, 1) back
+        let mut transaction = heap.transaction();
+        transaction.push(removed).unwrap();
+        transaction.commit();
+        // Because the ordering in the heap is stable, (1, 1) must end up at the front again,
+        // not behind (1, 2)
+        let front = heap.peek().unwrap();
+        assert_eq!(front.0, 1);
+        assert_eq!(front.1, 1);
     }
 }
 
