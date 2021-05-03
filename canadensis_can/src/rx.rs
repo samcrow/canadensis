@@ -121,7 +121,12 @@ impl<I: Instant> Subscription<I> {
             transfer_timeout,
         );
         match accept_status {
-            Ok(maybe_transfer) => Ok(maybe_transfer),
+            Ok(Some(transfer)) => {
+                // Transfer received, this session has served its purpose and can be deleted.
+                *slot = None;
+                Ok(Some(transfer))
+            }
+            Ok(None) => Ok(None),
             Err(e) => {
                 // This is either out-of-memory or an unexpected frame that invalidates
                 // the session. Delete the session to free memory.
