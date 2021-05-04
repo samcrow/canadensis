@@ -45,6 +45,7 @@ pub enum Mtu {
     /// 8 bytes, for standard CAN
     Can8 = 8,
     /// 64 bytes, for CAN FD
+    #[cfg(feature = "can-fd")]
     CanFd64 = 64,
 }
 
@@ -54,6 +55,13 @@ impl Mtu {
         *self as usize
     }
 }
+
+/// Maximum number of bytes in a frame
+#[cfg(feature = "can-fd")]
+pub const FRAME_CAPACITY: usize = 64;
+/// Maximum number of bytes in a frame
+#[cfg(not(feature = "can-fd"))]
+pub const FRAME_CAPACITY: usize = 8;
 
 /// CAN or CAN FD data frame with up to 64 bytes of data and an extended 29-bit ID
 ///
@@ -68,7 +76,7 @@ pub struct Frame<I> {
     /// 29-bit extended ID
     id: CanId,
     /// The frame data
-    data: heapless::Vec<u8, 64>,
+    data: heapless::Vec<u8, FRAME_CAPACITY>,
 }
 
 impl<I> Frame<I> {
@@ -80,7 +88,7 @@ impl<I> Frame<I> {
         Frame {
             timestamp,
             id,
-            data: heapless::Vec::from_slice(data).expect("Data to large for a CAN FD frame"),
+            data: heapless::Vec::from_slice(data).expect("Data to large for a frame"),
         }
     }
     /// Returns the ID of this frame

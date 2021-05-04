@@ -69,6 +69,7 @@ fn test_heartbeat() {
 }
 
 #[test]
+#[cfg(feature = "can-fd")]
 fn test_string() {
     let mut tx = Transmitter::new(Mtu::CanFd64, TestQueue::new());
     tx.push(Transfer {
@@ -174,6 +175,7 @@ fn test_node_info_response() {
 }
 
 #[test]
+#[cfg(feature = "can-fd")]
 fn test_array() {
     let mut tx = Transmitter::new(Mtu::CanFd64, TestQueue::new());
     tx.push(Transfer {

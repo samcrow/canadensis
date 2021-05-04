@@ -62,6 +62,7 @@ fn test_heartbeat() -> Result<(), OutOfMemoryError> {
     Ok(())
 }
 #[test]
+#[cfg(feature = "can-fd")]
 fn test_string() -> Result<(), OutOfMemoryError> {
     let mut rx = Receiver::new(0.try_into().unwrap());
 
@@ -224,6 +225,7 @@ fn test_node_info_response_timeout() -> Result<(), OutOfMemoryError> {
     Ok(())
 }
 #[test]
+#[cfg(feature = "can-fd")]
 fn test_array() -> Result<(), OutOfMemoryError> {
     let mut rx = Receiver::new(0.try_into().unwrap());
 
