@@ -40,8 +40,6 @@ impl Breakdown {
 
     /// Processes a byte
     ///
-    /// If this operation exhausts the available memory, this function returns an error.
-    ///
     /// If this byte fills up a frame, the frame is returned.
     pub fn add(&mut self, byte: u8) -> Option<heapless::Vec<u8, 64>> {
         // If the length of self.frame is equal to self.mtu - 1, we have a new byte that will need
@@ -173,6 +171,7 @@ mod test {
     #[test]
     fn test_node_info_request() {
         let breakdown = Breakdown::new(8, TransferId::try_from(1).unwrap());
+        // With no payload, the breakdown produces only one frame containing only a tail byte
         assert_eq!(&[0xe1], &*breakdown.finish());
     }
 

@@ -207,7 +207,7 @@ impl From<OutOfMemoryError> for SubscriptionError {
 }
 impl From<TryReserveError> for SubscriptionError {
     fn from(_inner: TryReserveError) -> Self {
-        SubscriptionError::Memory(OutOfMemoryError(()))
+        SubscriptionError::Memory(OutOfMemoryError)
     }
 }
 

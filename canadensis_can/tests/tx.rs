@@ -7,6 +7,7 @@ extern crate canadensis_core;
 
 use core::convert::TryFrom;
 
+use canadensis_can::queue::{ArrayQueue, FrameQueueSource};
 use canadensis_can::{CanId, Frame, Mtu, Transmitter};
 use canadensis_core::time::PrimitiveInstant;
 use canadensis_core::transfer::*;
@@ -16,9 +17,11 @@ fn instant(ticks: u16) -> PrimitiveInstant<u16> {
     PrimitiveInstant::new(ticks)
 }
 
+type TestQueue = ArrayQueue<PrimitiveInstant<u16>, 64>;
+
 #[test]
 fn test_heartbeat() {
-    let mut tx = Transmitter::new(Mtu::Can8);
+    let mut tx = Transmitter::new(Mtu::Can8, TestQueue::new());
     tx.push(Transfer {
         header: Header::Message(MessageHeader {
             timestamp: instant(0),
@@ -37,9 +40,9 @@ fn test_heartbeat() {
             CanId::try_from(0x107d552a).unwrap(),
             &[0x00, 0x00, 0x00, 0x00, 0x04, 0x78, 0x68, 0xe0]
         )),
-        tx.pop()
+        tx.frame_queue_mut().pop_frame()
     );
-    assert_eq!(None, tx.pop());
+    assert_eq!(None, tx.frame_queue_mut().pop_frame());
 
     // New transaction ID, new uptime
     tx.push(Transfer {
@@ -60,14 +63,14 @@ fn test_heartbeat() {
             CanId::try_from(0x107d552a).unwrap(),
             &[0x01, 0x00, 0x00, 0x00, 0x04, 0x78, 0x68, 0xe1]
         )),
-        tx.pop()
+        tx.frame_queue_mut().pop_frame()
     );
-    assert_eq!(None, tx.pop());
+    assert_eq!(None, tx.frame_queue_mut().pop_frame());
 }
 
 #[test]
 fn test_string() {
-    let mut tx = Transmitter::new(Mtu::CanFd64);
+    let mut tx = Transmitter::new(Mtu::CanFd64, TestQueue::new());
     tx.push(Transfer {
         header: Header::Message(MessageHeader {
             timestamp: instant(0),
@@ -91,14 +94,14 @@ fn test_string() {
                 0x00, 0xe0
             ]
         )),
-        tx.pop()
+        tx.frame_queue_mut().pop_frame()
     );
-    assert_eq!(None, tx.pop());
+    assert_eq!(None, tx.frame_queue_mut().pop_frame());
 }
 
 #[test]
 fn test_node_info_request() {
-    let mut tx = Transmitter::new(Mtu::Can8);
+    let mut tx = Transmitter::new(Mtu::Can8, TestQueue::new());
     tx.push(Transfer {
         header: Header::Request(ServiceHeader {
             timestamp: instant(0),
@@ -118,14 +121,14 @@ fn test_node_info_request() {
             CanId::try_from(0x136b957b).unwrap(),
             &[0xe1]
         )),
-        tx.pop()
+        tx.frame_queue_mut().pop_frame()
     );
-    assert_eq!(None, tx.pop());
+    assert_eq!(None, tx.frame_queue_mut().pop_frame());
 }
 
 #[test]
 fn test_node_info_response() {
-    let mut tx = Transmitter::new(Mtu::Can8);
+    let mut tx = Transmitter::new(Mtu::Can8, TestQueue::new());
     tx.push(Transfer {
         header: Header::Response(ServiceHeader {
             timestamp: instant(0),
@@ -165,14 +168,14 @@ fn test_node_info_response() {
 
     for &expected_data in expected_frame_data.iter() {
         let expected_frame = Frame::new(instant(0), expected_can_id, expected_data);
-        assert_eq!(Some(expected_frame), tx.pop());
+        assert_eq!(Some(expected_frame), tx.frame_queue_mut().pop_frame());
     }
-    assert_eq!(None, tx.pop());
+    assert_eq!(None, tx.frame_queue_mut().pop_frame());
 }
 
 #[test]
 fn test_array() {
-    let mut tx = Transmitter::new(Mtu::CanFd64);
+    let mut tx = Transmitter::new(Mtu::CanFd64, TestQueue::new());
     tx.push(Transfer {
         header: Header::Message(MessageHeader {
             timestamp: instant(0),
@@ -212,7 +215,7 @@ fn test_array() {
 
     for &expected_data in expected_frame_data.iter() {
         let expected_frame = Frame::new(instant(0), expected_can_id, expected_data);
-        assert_eq!(Some(expected_frame), tx.pop());
+        assert_eq!(Some(expected_frame), tx.frame_queue_mut().pop_frame());
     }
-    assert_eq!(None, tx.pop());
+    assert_eq!(None, tx.frame_queue_mut().pop_frame());
 }

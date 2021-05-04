@@ -16,7 +16,6 @@ extern crate heapless;
 mod crc;
 mod data;
 mod error;
-mod heap;
 pub mod queue;
 mod rx;
 mod tx;

@@ -9,19 +9,18 @@ mod tx_test;
 use crate::crc::TransferCrc;
 use crate::data::Frame;
 use crate::error::OutOfMemoryError;
-use crate::heap::{Heap, Transaction};
+use crate::queue::FrameSink;
 use crate::tx::breakdown::Breakdown;
-use crate::{CanId, FrameById, Mtu};
+use crate::{CanId, Mtu};
 use canadensis_core::transfer::{Header, ServiceHeader, Transfer};
 use canadensis_core::NodeId;
 use core::convert::TryFrom;
-use core::iter;
-use fallible_collections::TryReserveError;
+use core::{cmp, iter};
 
 /// Splits outgoing transfers into frames
-pub struct Transmitter<I> {
+pub struct Transmitter<Q> {
     /// Queue of frames waiting to be sent
-    frame_queue: Heap<FrameById<I>>,
+    frame_queue: Q,
     /// Transport MTU
     mtu: usize,
     /// Number of transfers successfully transmitted
@@ -35,13 +34,13 @@ pub struct Transmitter<I> {
     error_count: u64,
 }
 
-impl<I: Clone> Transmitter<I> {
+impl<Q> Transmitter<Q> {
     /// Creates a transmitter
     ///
     /// mtu: The maximum number of bytes in a frame
-    pub fn new(mtu: Mtu) -> Self {
+    pub fn new(mtu: Mtu, frame_queue: Q) -> Self {
         Transmitter {
-            frame_queue: Heap::new(),
+            frame_queue,
             mtu: mtu as usize,
             transfer_count: 0,
             error_count: 0,
@@ -58,9 +57,14 @@ impl<I: Clone> Transmitter<I> {
     /// Breaks a transfer into frames
     ///
     /// The frames can be retrieved and sent using the peek() and pop() functions.
-    pub fn push<P>(&mut self, transfer: Transfer<P, I>) -> Result<(), OutOfMemoryError>
+    ///
+    /// This function returns an error if the queue does not have enough space to hold all
+    /// the required frames.
+    pub fn push<P, I>(&mut self, transfer: Transfer<P, I>) -> Result<(), OutOfMemoryError>
     where
         P: AsRef<[u8]>,
+        Q: FrameSink<I>,
+        I: Clone,
     {
         // Convert the transfer payload into borrowed form
         let transfer = Transfer {
@@ -68,35 +72,27 @@ impl<I: Clone> Transmitter<I> {
             payload: transfer.payload.as_ref(),
         };
 
-        // Use a heap transaction to prevent having some frames left over in the queue after
-        // running out of memory
-        let mut transaction = self.frame_queue.transaction();
-        match Self::try_push(&mut transaction, transfer, self.mtu) {
+        match self.push_inner(transfer) {
             Ok(()) => {
-                transaction.commit();
                 self.transfer_count = self.transfer_count.wrapping_add(1);
                 Ok(())
             }
-            Err(_) => {
-                transaction.rollback();
-                // Try to reduce memory pressure by shrinking the queue
-                self.frame_queue.shrink_to_fit();
+            Err(e) => {
                 self.error_count = self.error_count.wrapping_add(1);
-                Err(OutOfMemoryError(()))
+                Err(e)
             }
         }
     }
 
-    /// Breaks a transfer into frames and stores the frames
-    ///
-    /// If an out-of-memory condition occurs, this function returns an error. There may be frames
-    /// remaining in the transaction that need to be cleaned up.
-    fn try_push(
-        transaction: &mut Transaction<'_, FrameById<I>>,
-        transfer: Transfer<&'_ [u8], I>,
-        mtu: usize,
-    ) -> Result<(), OutOfMemoryError> {
-        let padding = calculate_padding(transfer.payload.len(), mtu);
+    fn push_inner<I>(&mut self, transfer: Transfer<&[u8], I>) -> Result<(), OutOfMemoryError>
+    where
+        Q: FrameSink<I>,
+        I: Clone,
+    {
+        let frame_stats = calculate_frame_stats(transfer.payload.len(), self.mtu);
+        // Check that enough space is available in the queue for all the frames.
+        // Return an error if space is not available.
+        self.frame_queue.try_reserve(frame_stats.frames)?;
 
         // Make an iterator over the payload bytes and padding. Run the CRC on that.
         let mut crc = TransferCrc::new();
@@ -104,22 +100,17 @@ impl<I: Clone> Transmitter<I> {
             .payload
             .iter()
             .cloned()
-            .chain(iter::repeat(0).take(padding))
+            .chain(iter::repeat(0).take(frame_stats.last_frame_padding))
             .inspect(|byte| crc.add(*byte));
         // Break into frames
         let can_id = make_can_id(&transfer.header, &transfer.payload);
-        let mut breakdown = Breakdown::new(mtu, transfer.header.transfer_id());
+        let mut breakdown = Breakdown::new(self.mtu, transfer.header.transfer_id());
         let mut frames = 0;
         // Do the non-last frames
         for byte in payload_and_padding {
             if let Some(frame_data) = breakdown.add(byte) {
                 // Filled up a frame
-                Self::push_frame(
-                    transaction,
-                    transfer.header.timestamp(),
-                    can_id,
-                    &frame_data,
-                )?;
+                self.push_frame(transfer.header.timestamp(), can_id, &frame_data)?;
                 frames += 1;
             }
         }
@@ -132,56 +123,38 @@ impl<I: Clone> Transmitter<I> {
             for &byte in crc_bytes.iter() {
                 if let Some(frame_data) = breakdown.add(byte) {
                     // Filled up a frame
-                    Self::push_frame(
-                        transaction,
-                        transfer.header.timestamp(),
-                        can_id,
-                        &frame_data,
-                    )?;
+                    self.push_frame(transfer.header.timestamp(), can_id, &frame_data)?;
                 }
             }
         }
         let last_frame_data = breakdown.finish();
-        Self::push_frame(
-            transaction,
-            transfer.header.timestamp(),
-            can_id,
-            &last_frame_data,
-        )?;
+        self.push_frame(transfer.header.timestamp(), can_id, &last_frame_data)?;
         Ok(())
     }
 
     /// Creates a frame and adds it to a transaction
-    fn push_frame(
-        transaction: &mut Transaction<'_, FrameById<I>>,
+    fn push_frame<I>(
+        &mut self,
         timestamp: I,
         id: CanId,
         data: &[u8],
-    ) -> core::result::Result<(), TryReserveError> {
+    ) -> core::result::Result<(), OutOfMemoryError>
+    where
+        Q: FrameSink<I>,
+        I: Clone,
+    {
         let frame = Frame::new(timestamp, id, data);
-        transaction.push(FrameById(frame))
+        self.frame_queue.push_frame(frame)
     }
 
-    /// Returns a reference to the next frame waiting to be sent, if any exists
-    pub fn peek(&self) -> Option<&Frame<I>> {
-        self.frame_queue
-            .peek()
-            .map(|compare_wrapper| &compare_wrapper.0)
+    /// Returns a reference to the frame queue, where outgoing frames are stored
+    pub fn frame_queue(&self) -> &Q {
+        &self.frame_queue
     }
 
-    /// Removes and returns the next frame waiting to be sent, if any exists
-    pub fn pop(&mut self) -> Option<Frame<I>> {
-        self.frame_queue
-            .pop()
-            .map(|compare_wrapper| compare_wrapper.0)
-    }
-
-    /// Returns a frame that has not been sent and queues it to be sent later
-    pub fn return_frame(&mut self, frame: Frame<I>) -> Result<(), OutOfMemoryError> {
-        let mut transaction = self.frame_queue.transaction();
-        transaction.push(FrameById(frame))?;
-        transaction.commit();
-        Ok(())
+    /// Returns a mutable reference to the frame queue, where outgoing frames are stored
+    pub fn frame_queue_mut(&mut self) -> &mut Q {
+        &mut self.frame_queue
     }
 
     /// Returns the number of transfers successfully transmitted
@@ -204,7 +177,7 @@ impl<I: Clone> Transmitter<I> {
 
 /// Calculates the number of padding bytes to add to a payload so that all frames will have valid
 /// length values for CAN FD
-fn calculate_padding(payload_length: usize, mtu: usize) -> usize {
+fn calculate_frame_stats(payload_length: usize, mtu: usize) -> FrameStats {
     assert!(mtu <= 64, "MTU too large for CAN FD");
     assert!(mtu > 1, "MTU too small");
     let mtu_without_tail = mtu - 1;
@@ -218,14 +191,34 @@ fn calculate_padding(payload_length: usize, mtu: usize) -> usize {
         2
     };
     // Total length of all tail bytes
-    // Divide and round up
-    let tail_bytes = (payload_length + crc_length + (mtu_without_tail - 1)) / mtu_without_tail;
+    // Divide and round up (minimum 1 tail byte)
+    let tail_bytes = cmp::max(
+        1,
+        (payload_length + crc_length + (mtu_without_tail - 1)) / mtu_without_tail,
+    );
+    // Total length of the payloads of all frames, including CRC and tail bytes
     let total_length = payload_length + crc_length + tail_bytes;
+    let frames = (total_length + mtu - 1) / mtu;
 
     // Get the number of bytes in the last frame (may be 0)
     let last_frame_length = total_length % mtu;
     let last_frame_rounded_length = round_up_frame_length(last_frame_length);
-    last_frame_rounded_length - last_frame_length
+    let last_frame_padding = last_frame_rounded_length - last_frame_length;
+
+    FrameStats {
+        frames,
+        last_frame_padding,
+    }
+}
+
+/// Information about how to fit a transfer payload into frames
+#[derive(Debug, Eq, PartialEq)]
+struct FrameStats {
+    /// The total number of frames
+    frames: usize,
+    /// The number of bytes that must be added to the last frame to give it a valid length
+    /// for CAN FD
+    last_frame_padding: usize,
 }
 
 /// Rounds up a frame length to a value that can be represented by a CAN FD data length code

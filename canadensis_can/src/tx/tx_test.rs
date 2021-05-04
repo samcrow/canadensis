@@ -2,6 +2,10 @@ use super::*;
 use canadensis_core::transfer::MessageHeader;
 use canadensis_core::{NodeId, Priority, ServiceId, SubjectId, TransferId};
 
+fn calculate_padding(payload_length: usize, mtu: usize) -> usize {
+    calculate_frame_stats(payload_length, mtu).last_frame_padding
+}
+
 #[test]
 fn test_make_can_id() {
     // Examples from section 4.2.3 of the specification
@@ -237,4 +241,118 @@ fn test_calculate_padding_can_fd() {
     assert_eq!(2, calculate_padding(122, mtu));
     assert_eq!(1, calculate_padding(123, mtu));
     assert_eq!(0, calculate_padding(124, mtu));
+}
+
+#[test]
+fn test_frame_stats_classic_can() {
+    let mtu = 8;
+    for length in 0..8 {
+        println!("Payload length {}", length);
+        // 1 tail byte, up to 7 data bytes
+        assert_eq!(
+            FrameStats {
+                frames: 1,
+                last_frame_padding: 0
+            },
+            calculate_frame_stats(length, mtu)
+        );
+    }
+    for length in 8..13 {
+        println!("Payload length {}", length);
+        // 2 tail bytes, 2 CRC bytes, up to 12 data bytes
+        assert_eq!(
+            FrameStats {
+                frames: 2,
+                last_frame_padding: 0
+            },
+            calculate_frame_stats(length, mtu)
+        );
+    }
+    for length in 13..20 {
+        println!("Payload length {}", length);
+        // 3 tail bytes, 2 CRC bytes, up to 19 data bytes
+        assert_eq!(
+            FrameStats {
+                frames: 3,
+                last_frame_padding: 0
+            },
+            calculate_frame_stats(length, mtu)
+        );
+    }
+    for length in 20..27 {
+        println!("Payload length {}", length);
+        // 4 tail bytes, 2 CRC bytes, up to 26 data bytes
+        assert_eq!(
+            FrameStats {
+                frames: 4,
+                last_frame_padding: 0
+            },
+            calculate_frame_stats(length, mtu)
+        );
+    }
+}
+
+#[test]
+fn test_frame_stats_can_fd() {
+    let mtu = 64;
+    // Part 1: Transfers fit into one frame (up to 64 bytes, possibly with padding)
+    for length in 0..8 {
+        println!("Payload length {}", length);
+        // 1 tail byte, up to 63 data bytes
+        assert_eq!(
+            FrameStats {
+                frames: 1,
+                last_frame_padding: 0
+            },
+            calculate_frame_stats(length, mtu)
+        );
+    }
+    for length in 8..12 {
+        println!("Payload length {}", length);
+        // 1 tail byte, up to 63 data bytes
+        assert_eq!(
+            FrameStats {
+                frames: 1,
+                last_frame_padding: 11 - length
+            },
+            calculate_frame_stats(length, mtu)
+        );
+    }
+    // ...
+    for length in 48..64 {
+        println!("Payload length {}", length);
+        // 1 tail byte, up to 63 data bytes
+        assert_eq!(
+            FrameStats {
+                frames: 1,
+                last_frame_padding: 63 - length
+            },
+            calculate_frame_stats(length, mtu)
+        );
+    }
+    // Two frames
+    for length in 64..69 {
+        println!("Payload length {}", length);
+        // Frame 1: 63 bytes of data, tail byte
+        // Frame 2: up to 5 bytes of data, 2 bytes CRC, tail byte
+        assert_eq!(
+            FrameStats {
+                frames: 2,
+                last_frame_padding: 0
+            },
+            calculate_frame_stats(length, mtu)
+        );
+    }
+    for length in 69..73 {
+        println!("Payload length {}", length);
+        // Frame 1: 63 bytes of data, tail byte
+        // Frame 2: up to 9 bytes of data, 2 bytes CRC, tail byte (padded to 12 bytes)
+        assert_eq!(
+            FrameStats {
+                frames: 2,
+                last_frame_padding: 72 - length
+            },
+            calculate_frame_stats(length, mtu)
+        );
+    }
 }

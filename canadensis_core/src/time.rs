@@ -52,7 +52,7 @@ pub trait Instant: Debug + Clone {
 }
 
 /// A duration, represented as an integer number of ticks
-#[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Default, Debug, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct PrimitiveDuration<I>(I);
 
 impl<I> PrimitiveDuration<I>
@@ -77,7 +77,7 @@ where
 ///
 /// The `Instant` implementation assumes that the clock overflows after reaching the maximum
 /// value of the type I.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Default, Debug, Clone, Eq, PartialEq)]
 pub struct PrimitiveInstant<I>(I);
 
 impl<I> PrimitiveInstant<I>

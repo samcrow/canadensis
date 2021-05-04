@@ -2,7 +2,6 @@
 //! Common UAVCAN data types
 //!
 
-use core::cmp::Ordering;
 use core::convert::TryFrom;
 use core::fmt;
 
@@ -12,7 +11,7 @@ use canadensis_core::InvalidValue;
 const CAN_ID_MASK: u32 = 0x1f_ff_ff_ff;
 
 /// A 29-bit extended CAN ID
-#[derive(Eq, PartialEq, Copy, Clone, Ord, PartialOrd)]
+#[derive(Eq, PartialEq, Copy, Clone, Ord, PartialOrd, Default)]
 pub struct CanId(u32);
 
 impl fmt::Debug for CanId {
@@ -60,7 +59,7 @@ impl Mtu {
 ///
 /// RTR/Error frames are not used and therefore not modeled here.
 /// CAN frames with 11-bit ID are not used by UAVCAN/CAN and so they are not supported by the library.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct Frame<I> {
     /// For RX frames: reception timestamp.
     /// For TX frames: transmission deadline.
@@ -104,28 +103,3 @@ impl<I: Clone> Frame<I> {
         self.timestamp.clone()
     }
 }
-
-/// A frame wrapper that compares frames by ID and ignores all other fields
-#[derive(Debug)]
-pub(crate) struct FrameById<I>(pub Frame<I>);
-
-impl<I> PartialOrd for FrameById<I> {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(Ord::cmp(self, other))
-    }
-}
-
-impl<I> Ord for FrameById<I> {
-    /// Compare by CAN ID
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.0.id.cmp(&other.0.id)
-    }
-}
-
-impl<I> PartialEq for FrameById<I> {
-    fn eq(&self, other: &Self) -> bool {
-        self.0.id.eq(&other.0.id)
-    }
-}
-
-impl<I> Eq for FrameById<I> {}
