@@ -5,6 +5,7 @@
 use core::marker::PhantomData;
 
 use crate::{do_serialize, Clock};
+use canadensis_can::queue::FrameSink;
 use canadensis_can::{Mtu, OutOfMemoryError, Transmitter};
 use canadensis_core::time::Instant;
 use canadensis_core::transfer::{Header, MessageHeader, Transfer};
@@ -57,12 +58,15 @@ where
     ///
     /// This function returns an error if the message is too long to fit into one frame, or if
     /// memory allocation fails.
-    pub fn send(
+    pub fn send<Q>(
         &mut self,
         payload: &T,
         now: C::Instant,
-        transmitter: &mut Transmitter<C::Instant>,
-    ) -> Result<(), AnonymousPublishError> {
+        transmitter: &mut Transmitter<Q>,
+    ) -> Result<(), AnonymousPublishError>
+    where
+        Q: FrameSink<C::Instant>,
+    {
         // Check that the message fits into one frame
         // (subtract one byte to leave room for the tail byte)
         let mtu_bits = (self.mtu.as_bytes() - 1) * 8;
@@ -77,17 +81,17 @@ where
         Ok(())
     }
 
-    fn send_payload<I>(
+    fn send_payload<Q>(
         &mut self,
         payload: &[u8],
-        deadline: I,
-        transmitter: &mut Transmitter<I>,
+        deadline: C::Instant,
+        transmitter: &mut Transmitter<Q>,
     ) -> Result<(), OutOfMemoryError>
     where
-        I: Clone,
+        Q: FrameSink<C::Instant>,
     {
         // Assemble the transfer
-        let transfer: Transfer<&[u8], I> = Transfer {
+        let transfer: Transfer<&[u8], C::Instant> = Transfer {
             header: Header::Message(MessageHeader {
                 timestamp: deadline,
                 transfer_id: self.next_transfer_id,

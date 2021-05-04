@@ -15,6 +15,7 @@ use std::time::{Duration, Instant};
 use socketcan::CANSocket;
 
 use canadensis::{Clock, ResponseToken, TransferHandler};
+use canadensis_can::queue::{ArrayQueue, FrameSink};
 use canadensis_can::{CanId, Frame, Mtu};
 use canadensis_core::time::{PrimitiveDuration, PrimitiveInstant};
 use canadensis_core::transfer::{MessageTransfer, ServiceTransfer};
@@ -78,8 +79,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut transfer_handler = BasicTransferHandler { unique_id };
     let mut clock = SystemClock::new();
 
-    let mut uavcan: canadensis::Node<_, 4, 4> =
-        canadensis::Node::new(clock.clone(), node_id, Mtu::Can8);
+    let frame_queue = ArrayQueue::<_, 64>::new();
+
+    let mut uavcan: canadensis::Node<_, _, 4, 4> =
+        canadensis::Node::new(clock.clone(), node_id, Mtu::Can8, frame_queue);
 
     let heartbeat_token = uavcan
         .start_publishing_topic(
@@ -189,10 +192,14 @@ struct BasicTransferHandler {
     unique_id: [u8; 16],
 }
 
-impl<const H: usize, const P: usize> TransferHandler<SystemClock, H, P> for BasicTransferHandler {
+impl<Q, const H: usize, const P: usize> TransferHandler<SystemClock, Q, H, P>
+    for BasicTransferHandler
+where
+    Q: FrameSink<<SystemClock as Clock>::Instant>,
+{
     fn handle_message(
         &mut self,
-        _node: &mut canadensis::Node<SystemClock, H, P>,
+        _node: &mut canadensis::Node<SystemClock, Q, H, P>,
         _transfer: MessageTransfer<Vec<u8>, <SystemClock as Clock>::Instant>,
     ) {
         // Not subscribed to anything
@@ -200,7 +207,7 @@ impl<const H: usize, const P: usize> TransferHandler<SystemClock, H, P> for Basi
 
     fn handle_request(
         &mut self,
-        node: &mut canadensis::Node<SystemClock, H, P>,
+        node: &mut canadensis::Node<SystemClock, Q, H, P>,
         token: ResponseToken,
         transfer: ServiceTransfer<Vec<u8>, <SystemClock as Clock>::Instant>,
     ) {
@@ -224,7 +231,7 @@ impl<const H: usize, const P: usize> TransferHandler<SystemClock, H, P> for Basi
 
     fn handle_response(
         &mut self,
-        _node: &mut canadensis::Node<SystemClock, H, P>,
+        _node: &mut canadensis::Node<SystemClock, Q, H, P>,
         _transfer: ServiceTransfer<Vec<u8>, <SystemClock as Clock>::Instant>,
     ) {
         // Not subscribed to anything

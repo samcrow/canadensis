@@ -2,23 +2,25 @@
 
 use crate::{bxcan_frame_to_uavcan, uavcan_frame_to_bxcan};
 use bxcan::{Instance, Mailbox, Tx};
+use canadensis_can::queue::FrameQueueSource;
 use canadensis_can::Transmitter;
 use canadensis_core::time::Instant;
 use core::cmp::Ordering;
 use core::convert::Infallible;
 
-pub struct TransmitAdapter<C, I> {
-    uavcan_transmitter: Transmitter<I>,
+pub struct TransmitAdapter<C, I, Q> {
+    uavcan_transmitter: Transmitter<Q>,
     can: Tx<C>,
     deadline_tracker: DeadlineTracker<I>,
 }
 
-impl<C, I> TransmitAdapter<C, I>
+impl<C, I, Q> TransmitAdapter<C, I, Q>
 where
     C: Instance,
     I: Instant,
+    Q: FrameQueueSource<I>,
 {
-    pub fn new(can: Tx<C>, uavcan_transmitter: Transmitter<I>) -> Self {
+    pub fn new(can: Tx<C>, uavcan_transmitter: Transmitter<Q>) -> Self {
         TransmitAdapter {
             uavcan_transmitter,
             can,
@@ -28,7 +30,7 @@ where
 
     pub fn try_send(&mut self, now: I) {
         self.clean_expired_frames(&now);
-        while let Some(frame) = self.uavcan_transmitter.pop() {
+        while let Some(frame) = self.uavcan_transmitter.frame_queue_mut().pop_frame() {
             // Check that the frame's deadline has not passed
             match frame.timestamp().overflow_safe_compare(&now) {
                 Ordering::Greater | Ordering::Equal => {
@@ -69,7 +71,10 @@ where
                 // Put the removed frame back in the queue to be transmitted later
                 // This may return an error if it runs out of memory, but there's nothing we can
                 // do about that.
-                let _ = self.uavcan_transmitter.return_frame(removed_frame);
+                let _ = self
+                    .uavcan_transmitter
+                    .frame_queue_mut()
+                    .return_frame(removed_frame);
                 Ok(())
             }
             Err(nb::Error::WouldBlock) => {

@@ -30,6 +30,7 @@ use canadensis_encoding::{Message, Request, Response, Serialize, WriteCursor};
 use crate::hash::TrivialIndexMap;
 use crate::publisher::Publisher;
 use crate::requester::Requester;
+use canadensis_can::queue::{FrameQueueSource, FrameSink};
 
 /// Payloads above this size (in bytes) will use a dynamically allocated buffer
 const STACK_THRESHOLD: usize = 64;
@@ -68,18 +69,18 @@ pub struct ResponseToken {
 }
 
 /// Something that may be able to handle incoming transfers
-pub trait TransferHandler<C: Clock, const P: usize, const R: usize> {
+pub trait TransferHandler<C: Clock, Q, const P: usize, const R: usize> {
     /// Potentially handles an incoming message transfer
     fn handle_message(
         &mut self,
-        node: &mut Node<C, P, R>,
+        node: &mut Node<C, Q, P, R>,
         transfer: MessageTransfer<Vec<u8>, C::Instant>,
     );
 
     /// Potentially handles an incoming service request
     fn handle_request(
         &mut self,
-        node: &mut Node<C, P, R>,
+        node: &mut Node<C, Q, P, R>,
         token: ResponseToken,
         transfer: ServiceTransfer<Vec<u8>, C::Instant>,
     );
@@ -87,7 +88,7 @@ pub trait TransferHandler<C: Clock, const P: usize, const R: usize> {
     /// Potentially handles an incoming service response
     fn handle_response(
         &mut self,
-        node: &mut Node<C, P, R>,
+        node: &mut Node<C, Q, P, R>,
         transfer: ServiceTransfer<Vec<u8>, C::Instant>,
     );
 }
@@ -96,29 +97,31 @@ pub trait TransferHandler<C: Clock, const P: usize, const R: usize> {
 ///
 /// Type parameters:
 /// * `C`: The clock used to get the current time
+/// * `Q`: The queue type used to store outgoing frames
 /// * `P`: The maximum number of topics that can be published
 /// * `R`: The maximum number of services for which requests can be sent
 ///
-pub struct Node<C, const P: usize, const R: usize>
+pub struct Node<C, Q, const P: usize, const R: usize>
 where
     C: Clock,
 {
     clock: C,
-    transmitter: Transmitter<C::Instant>,
+    transmitter: Transmitter<Q>,
     receiver: Receiver<C::Instant>,
     node_id: NodeId,
     publishers: TrivialIndexMap<SubjectId, Publisher<C::Instant>, P>,
     requesters: TrivialIndexMap<ServiceId, Requester<C::Instant>, R>,
 }
 
-impl<C, const P: usize, const R: usize> Node<C, P, R>
+impl<C, Q, const P: usize, const R: usize> Node<C, Q, P, R>
 where
     C: Clock,
+    Q: FrameSink<C::Instant>,
 {
-    pub fn new(clock: C, node_id: NodeId, mtu: Mtu) -> Self {
+    pub fn new(clock: C, node_id: NodeId, mtu: Mtu, transmit_queue: Q) -> Self {
         Node {
             clock,
-            transmitter: Transmitter::new(mtu),
+            transmitter: Transmitter::new(mtu, transmit_queue),
             receiver: Receiver::new(node_id),
             node_id,
             publishers: TrivialIndexMap::new(),
@@ -132,7 +135,7 @@ where
         handler: &mut H,
     ) -> Result<(), OutOfMemoryError>
     where
-        H: TransferHandler<C, P, R>,
+        H: TransferHandler<C, Q, P, R>,
     {
         match self.receiver.accept(frame)? {
             Some(transfer) => {
@@ -148,7 +151,7 @@ where
         transfer: Transfer<Vec<u8>, C::Instant>,
         handler: &mut H,
     ) where
-        H: TransferHandler<C, P, R>,
+        H: TransferHandler<C, Q, P, R>,
     {
         match transfer.header {
             Header::Message(message_header) => {
@@ -323,31 +326,14 @@ where
         self.transmitter.push(transfer_out)
     }
 
-    // Outgoing frames
-
-    /// Removes an outgoing frame from the queue and returns it
-    pub fn pop_frame(&mut self) -> Option<Frame<C::Instant>> {
-        self.transmitter.pop()
-    }
-
-    /// Returns a reference to the next outgoing frame in the queue, and does not remove it
-    pub fn peek_frame(&mut self) -> Option<&Frame<C::Instant>> {
-        self.transmitter.peek()
-    }
-
-    /// Returns an outgoing frame to the queue so that it can be transmitted later
-    pub fn return_frame(&mut self, frame: Frame<C::Instant>) -> Result<(), OutOfMemoryError> {
-        self.transmitter.return_frame(frame)
-    }
-
     // Component access
 
     /// Returns a reference to the enclosed transmitter
-    pub fn transmitter(&self) -> &Transmitter<C::Instant> {
+    pub fn transmitter(&self) -> &Transmitter<Q> {
         &self.transmitter
     }
     /// Returns a mutable reference to the enclosed transmitter
-    pub fn transmitter_mut(&mut self) -> &mut Transmitter<C::Instant> {
+    pub fn transmitter_mut(&mut self) -> &mut Transmitter<Q> {
         &mut self.transmitter
     }
     /// Returns a reference to the enclosed receiver
@@ -370,6 +356,27 @@ where
     /// Returns the identifier of this node
     pub fn node_id(&self) -> NodeId {
         self.node_id
+    }
+}
+
+impl<C, Q, const P: usize, const R: usize> Node<C, Q, P, R>
+where
+    C: Clock,
+    Q: FrameQueueSource<C::Instant>,
+{
+    /// Removes an outgoing frame from the queue and returns it
+    pub fn pop_frame(&mut self) -> Option<Frame<C::Instant>> {
+        self.transmitter.frame_queue_mut().pop_frame()
+    }
+
+    /// Returns a reference to the next outgoing frame in the queue, and does not remove it
+    pub fn peek_frame(&mut self) -> Option<&Frame<C::Instant>> {
+        self.transmitter.frame_queue_mut().peek_frame()
+    }
+
+    /// Returns an outgoing frame to the queue so that it can be transmitted later
+    pub fn return_frame(&mut self, frame: Frame<C::Instant>) -> Result<(), OutOfMemoryError> {
+        self.transmitter.frame_queue_mut().return_frame(frame)
     }
 }
 

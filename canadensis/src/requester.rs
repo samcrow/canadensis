@@ -1,4 +1,5 @@
 use crate::do_serialize;
+use canadensis_can::queue::FrameSink;
 use canadensis_can::{OutOfMemoryError, Transmitter};
 use canadensis_core::time::Instant;
 use canadensis_core::transfer::{Header, ServiceHeader, Transfer};
@@ -34,16 +35,17 @@ impl<I: Instant> Requester<I> {
         }
     }
 
-    pub fn send<T>(
+    pub fn send<T, Q>(
         &mut self,
         now: I,
         service: ServiceId,
         payload: &T,
         destination: NodeId,
-        transmitter: &mut Transmitter<I>,
+        transmitter: &mut Transmitter<Q>,
     ) -> Result<(), OutOfMemoryError>
     where
         T: Serialize,
+        Q: FrameSink<I>,
     {
         // Part 1: Serialize
         let deadline = self.timeout.clone() + now;
@@ -53,14 +55,17 @@ impl<I: Instant> Requester<I> {
         })
     }
 
-    pub fn send_payload(
+    fn send_payload<Q>(
         &mut self,
         payload: &[u8],
         service: ServiceId,
         destination: NodeId,
         deadline: I,
-        transmitter: &mut Transmitter<I>,
-    ) -> Result<(), OutOfMemoryError> {
+        transmitter: &mut Transmitter<Q>,
+    ) -> Result<(), OutOfMemoryError>
+    where
+        Q: FrameSink<I>,
+    {
         // Assemble the transfer
         let transfer_id = self.next_transfer_ids.get_and_increment(destination);
         let transfer: Transfer<&[u8], I> = Transfer {
