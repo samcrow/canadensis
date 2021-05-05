@@ -118,7 +118,11 @@ where
     where
         H: TransferHandler<Self>,
     {
-        let mut adapter = MiddlewareHandlerAdapter::new(&mut self.middleware, handler);
+        // Figure out the types:
+        // H: TransferHandler<Self>, also known as TransferHandler<MiddlewareAdapter<N, M>>
+        // The MiddlewareHandlerAdapter needs to implement TransferHandler<N>.
+
+        let mut adapter = MiddlewareHandlerAdapter::new(self, handler);
         self.node.accept_frame(frame, &mut adapter)
     }
 
@@ -252,13 +256,13 @@ where
 ///
 /// The middleware is given each transfer first. If the middleware does not handle a transfer,
 /// the transfer is then given to the standard handler.
-struct MiddlewareHandlerAdapter<'m, 'h, M, H> {
-    middleware: &'m mut M,
+struct MiddlewareHandlerAdapter<'m, 'h, N, M, H> {
+    middleware: &'m mut MiddlewareAdapter<N, M>,
     handler: &'h mut H,
 }
 
-impl<'m, 'h, M, H> MiddlewareHandlerAdapter<'m, 'h, M, H> {
-    pub fn new(middleware: &'m mut M, handler: &'h mut H) -> Self {
+impl<'m, 'h, N, M, H> MiddlewareHandlerAdapter<'m, 'h, N, M, H> {
+    pub fn new(middleware: &'m mut MiddlewareAdapter<N, M>, handler: &'h mut H) -> Self {
         MiddlewareHandlerAdapter {
             middleware,
             handler,
@@ -266,10 +270,10 @@ impl<'m, 'h, M, H> MiddlewareHandlerAdapter<'m, 'h, M, H> {
     }
 }
 
-impl<'m, 'h, M, H, N> TransferHandler<N> for MiddlewareHandlerAdapter<'m, 'h, M, H>
+impl<'m, 'h, N, M, H> TransferHandler<N> for MiddlewareHandlerAdapter<'m, 'h, N, M, H>
 where
     M: Middleware<N>,
-    H: TransferHandler<N>,
+    H: TransferHandler<MiddlewareAdapter<N, M>>,
     N: Node,
 {
     fn handle_message(
@@ -277,9 +281,9 @@ where
         node: &mut N,
         transfer: MessageTransfer<Vec<u8>, <<N as Node>::Clock as Clock>::Instant>,
     ) {
-        let handled_by_middleware = self.middleware.handle_message(node, &transfer);
+        let handled_by_middleware = self.middleware.middleware.handle_message(node, &transfer);
         if !handled_by_middleware {
-            self.handler.handle_message(node, transfer);
+            self.handler.handle_message(&mut self.middleware, transfer);
         }
     }
 
@@ -291,9 +295,11 @@ where
     ) {
         let handled_by_middleware =
             self.middleware
+                .middleware
                 .handle_request(node, token.private_clone(), &transfer);
         if !handled_by_middleware {
-            self.handler.handle_request(node, token, transfer);
+            self.handler
+                .handle_request(&mut self.middleware, token, transfer);
         }
     }
 
@@ -302,9 +308,9 @@ where
         node: &mut N,
         transfer: ServiceTransfer<Vec<u8>, <<N as Node>::Clock as Clock>::Instant>,
     ) {
-        let handled_by_middleware = self.middleware.handle_response(node, &transfer);
+        let handled_by_middleware = self.middleware.middleware.handle_response(node, &transfer);
         if !handled_by_middleware {
-            self.handler.handle_response(node, transfer);
+            self.handler.handle_response(&mut self.middleware, transfer);
         }
     }
 }
