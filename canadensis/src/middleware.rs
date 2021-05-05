@@ -12,40 +12,26 @@ use canadensis_core::time::{Clock, Instant};
 use canadensis_encoding::{Message, Request, Response, Serialize};
 
 /// A middleware entity that can respond to various node events
-pub trait Middleware<N>
-where
-    N: Node,
-{
-    fn wrap_node(self, node: N) -> MiddlewareAdapter<N, Self>
-    where
-        Self: Sized,
-        N: Sized,
-    {
-        MiddlewareAdapter {
-            node,
-            middleware: self,
-        }
-    }
-
+pub trait Middleware {
     //noinspection RsDropRef
-    fn periodic_tasks(&mut self, node: &mut N) {
+    fn periodic_tasks<N: Node>(&mut self, node: &mut N) {
         drop(node);
     }
 
-    fn handle_subscribe_message(&mut self, node: &mut N, subject: SubjectId) {
+    fn handle_subscribe_message<N: Node>(&mut self, node: &mut N, subject: SubjectId) {
         drop((node, subject));
     }
-    fn handle_subscribe_request(&mut self, node: &mut N, service: ServiceId) {
+    fn handle_subscribe_request<N: Node>(&mut self, node: &mut N, service: ServiceId) {
         drop((node, service));
     }
-    fn handle_subscribe_response(&mut self, node: &mut N, service: ServiceId) {
+    fn handle_subscribe_response<N: Node>(&mut self, node: &mut N, service: ServiceId) {
         drop((node, service));
     }
 
-    fn handle_start_publishing(&mut self, node: &mut N, subject: SubjectId) {
+    fn handle_start_publishing<N: Node>(&mut self, node: &mut N, subject: SubjectId) {
         drop((node, subject));
     }
-    fn handle_start_sending_requests(&mut self, node: &mut N, service: ServiceId) {
+    fn handle_start_sending_requests<N: Node>(&mut self, node: &mut N, service: ServiceId) {
         drop((node, service));
     }
     // TODO: Unsubscribe events
@@ -56,7 +42,7 @@ where
     /// the message
     ///
     /// The default implementation does nothing and returns false.
-    fn handle_message(
+    fn handle_message<N: Node>(
         &mut self,
         node: &mut N,
         transfer: &MessageTransfer<Vec<u8>, <N::Clock as Clock>::Instant>,
@@ -71,7 +57,7 @@ where
     /// the request
     ///
     /// The default implementation does nothing and returns false.
-    fn handle_request(
+    fn handle_request<N: Node>(
         &mut self,
         node: &mut N,
         token: ResponseToken,
@@ -87,7 +73,7 @@ where
     /// the response
     ///
     /// The default implementation does nothing and returns false.
-    fn handle_response(
+    fn handle_response<N: Node>(
         &mut self,
         node: &mut N,
         transfer: &ServiceTransfer<Vec<u8>, <N::Clock as Clock>::Instant>,
@@ -98,14 +84,14 @@ where
 }
 
 pub struct MiddlewareAdapter<N, M> {
-    node: N,
-    middleware: M,
+    pub(crate) node: N,
+    pub(crate) middleware: M,
 }
 
 impl<N, M> Node for MiddlewareAdapter<N, M>
 where
     N: Node,
-    M: Middleware<N>,
+    M: Middleware,
 {
     type Clock = N::Clock;
     type FrameQueue = N::FrameQueue;
@@ -116,13 +102,9 @@ where
         handler: &mut H,
     ) -> Result<(), OutOfMemoryError>
     where
-        H: TransferHandler<Self>,
+        H: TransferHandler,
     {
-        // Figure out the types:
-        // H: TransferHandler<Self>, also known as TransferHandler<MiddlewareAdapter<N, M>>
-        // The MiddlewareHandlerAdapter needs to implement TransferHandler<N>.
-
-        let mut adapter = MiddlewareHandlerAdapter::new(self, handler);
+        let mut adapter = MiddlewareHandlerAdapter::new(&mut self.middleware, handler);
         self.node.accept_frame(frame, &mut adapter)
     }
 
@@ -256,13 +238,13 @@ where
 ///
 /// The middleware is given each transfer first. If the middleware does not handle a transfer,
 /// the transfer is then given to the standard handler.
-struct MiddlewareHandlerAdapter<'m, 'h, N, M, H> {
-    middleware: &'m mut MiddlewareAdapter<N, M>,
+struct MiddlewareHandlerAdapter<'m, 'h, M, H> {
+    middleware: &'m mut M,
     handler: &'h mut H,
 }
 
-impl<'m, 'h, N, M, H> MiddlewareHandlerAdapter<'m, 'h, N, M, H> {
-    pub fn new(middleware: &'m mut MiddlewareAdapter<N, M>, handler: &'h mut H) -> Self {
+impl<'m, 'h, M, H> MiddlewareHandlerAdapter<'m, 'h, M, H> {
+    pub fn new(middleware: &'m mut M, handler: &'h mut H) -> Self {
         MiddlewareHandlerAdapter {
             middleware,
             handler,
@@ -270,24 +252,23 @@ impl<'m, 'h, N, M, H> MiddlewareHandlerAdapter<'m, 'h, N, M, H> {
     }
 }
 
-impl<'m, 'h, N, M, H> TransferHandler<N> for MiddlewareHandlerAdapter<'m, 'h, N, M, H>
+impl<'m, 'h, M, H> TransferHandler for MiddlewareHandlerAdapter<'m, 'h, M, H>
 where
-    M: Middleware<N>,
-    H: TransferHandler<MiddlewareAdapter<N, M>>,
-    N: Node,
+    M: Middleware,
+    H: TransferHandler,
 {
-    fn handle_message(
+    fn handle_message<N: Node>(
         &mut self,
         node: &mut N,
         transfer: MessageTransfer<Vec<u8>, <<N as Node>::Clock as Clock>::Instant>,
     ) {
-        let handled_by_middleware = self.middleware.middleware.handle_message(node, &transfer);
+        let handled_by_middleware = self.middleware.handle_message(node, &transfer);
         if !handled_by_middleware {
-            self.handler.handle_message(&mut self.middleware, transfer);
+            self.handler.handle_message(node, transfer);
         }
     }
 
-    fn handle_request(
+    fn handle_request<N: Node>(
         &mut self,
         node: &mut N,
         token: ResponseToken,
@@ -295,22 +276,20 @@ where
     ) {
         let handled_by_middleware =
             self.middleware
-                .middleware
                 .handle_request(node, token.private_clone(), &transfer);
         if !handled_by_middleware {
-            self.handler
-                .handle_request(&mut self.middleware, token, transfer);
+            self.handler.handle_request(node, token, transfer);
         }
     }
 
-    fn handle_response(
+    fn handle_response<N: Node>(
         &mut self,
         node: &mut N,
         transfer: ServiceTransfer<Vec<u8>, <<N as Node>::Clock as Clock>::Instant>,
     ) {
-        let handled_by_middleware = self.middleware.middleware.handle_response(node, &transfer);
+        let handled_by_middleware = self.middleware.handle_response(node, &transfer);
         if !handled_by_middleware {
-            self.handler.handle_response(&mut self.middleware, transfer);
+            self.handler.handle_response(node, transfer);
         }
     }
 }
