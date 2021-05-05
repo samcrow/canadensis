@@ -193,8 +193,11 @@ struct BasicTransferHandler {
     unique_id: [u8; 16],
 }
 
-impl TransferHandler for BasicTransferHandler {
-    fn handle_message<N: Node>(
+impl<N> TransferHandler<N> for BasicTransferHandler
+where
+    N: Node<Clock = SystemClock>,
+{
+    fn handle_message(
         &mut self,
         _node: &mut N,
         _transfer: MessageTransfer<Vec<u8>, <N::Clock as Clock>::Instant>,
@@ -202,7 +205,7 @@ impl TransferHandler for BasicTransferHandler {
         // Not subscribed to anything
     }
 
-    fn handle_request<N: Node>(
+    fn handle_request(
         &mut self,
         node: &mut N,
         token: ResponseToken,
@@ -228,7 +231,7 @@ impl TransferHandler for BasicTransferHandler {
         }
     }
 
-    fn handle_response<N: Node>(
+    fn handle_response(
         &mut self,
         _node: &mut N,
         _transfer: ServiceTransfer<Vec<u8>, <N::Clock as Clock>::Instant>,

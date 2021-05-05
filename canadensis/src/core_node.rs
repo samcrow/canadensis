@@ -62,7 +62,7 @@ where
         transfer: Transfer<Vec<u8>, C::Instant>,
         handler: &mut H,
     ) where
-        H: TransferHandler,
+        H: TransferHandler<Self>,
     {
         match transfer.header {
             Header::Message(message_header) => {
@@ -130,7 +130,7 @@ where
         handler: &mut H,
     ) -> Result<(), OutOfMemoryError>
     where
-        H: TransferHandler,
+        H: TransferHandler<Self>,
     {
         match self.receiver.accept(frame)? {
             Some(transfer) => {

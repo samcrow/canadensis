@@ -13,7 +13,6 @@ mod core_node;
 mod hash;
 
 pub mod anonymous;
-pub mod middleware;
 mod publisher;
 mod requester;
 
@@ -22,7 +21,6 @@ pub use crate::core_node::CoreNode;
 use alloc::vec::Vec;
 use core::marker::PhantomData;
 
-use crate::middleware::{Middleware, MiddlewareAdapter};
 use canadensis_can::{Frame, OutOfMemoryError};
 use canadensis_core::time::{Clock, Instant};
 use canadensis_core::transfer::*;
@@ -42,40 +40,28 @@ pub struct ResponseToken {
     priority: Priority,
 }
 
-impl ResponseToken {
-    /// This is equivalent to `Clone::clone`, but cannot be used outside this crate.
-    fn private_clone(&self) -> ResponseToken {
-        ResponseToken {
-            service: self.service.clone(),
-            client: self.client.clone(),
-            transfer: self.transfer.clone(),
-            priority: self.priority.clone(),
-        }
-    }
-}
-
 /// Something that may be able to handle incoming transfers
-pub trait TransferHandler {
+pub trait TransferHandler<N: Node + ?Sized> {
     /// Potentially handles an incoming message transfer
-    fn handle_message<N: Node>(
+    fn handle_message(
         &mut self,
         node: &mut N,
-        transfer: MessageTransfer<Vec<u8>, <<N as Node>::Clock as Clock>::Instant>,
+        transfer: MessageTransfer<Vec<u8>, <N::Clock as Clock>::Instant>,
     );
 
     /// Potentially handles an incoming service request
-    fn handle_request<N: Node>(
+    fn handle_request(
         &mut self,
         node: &mut N,
         token: ResponseToken,
-        transfer: ServiceTransfer<Vec<u8>, <<N as Node>::Clock as Clock>::Instant>,
+        transfer: ServiceTransfer<Vec<u8>, <N::Clock as Clock>::Instant>,
     );
 
     /// Potentially handles an incoming service response
-    fn handle_response<N: Node>(
+    fn handle_response(
         &mut self,
         node: &mut N,
-        transfer: ServiceTransfer<Vec<u8>, <<N as Node>::Clock as Clock>::Instant>,
+        transfer: ServiceTransfer<Vec<u8>, <N::Clock as Clock>::Instant>,
     );
 }
 
@@ -85,24 +71,13 @@ pub trait Node {
     /// The queue of outgoing frames that this node uses
     type FrameQueue;
 
-    fn add_middleware<M>(self, middleware: M) -> MiddlewareAdapter<Self, M>
-    where
-        Self: Sized,
-        M: Middleware + Sized,
-    {
-        MiddlewareAdapter {
-            node: self,
-            middleware,
-        }
-    }
-
     fn accept_frame<H>(
         &mut self,
         frame: Frame<<Self::Clock as Clock>::Instant>,
         handler: &mut H,
     ) -> Result<(), OutOfMemoryError>
     where
-        H: TransferHandler;
+        H: TransferHandler<Self>;
 
     fn start_publishing<T>(
         &mut self,
