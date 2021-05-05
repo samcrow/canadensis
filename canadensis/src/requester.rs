@@ -1,4 +1,4 @@
-use crate::do_serialize;
+use crate::core_node::do_serialize;
 use canadensis_can::queue::FrameSink;
 use canadensis_can::{OutOfMemoryError, Transmitter};
 use canadensis_core::time::Instant;

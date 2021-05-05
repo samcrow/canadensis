@@ -14,9 +14,8 @@ use std::error::Error;
 use std::process;
 use std::time::Instant;
 
-use canadensis::Clock;
 use canadensis_can::{CanId, Frame, Receiver};
-use canadensis_core::time::{MicrosecondDuration64, Microseconds64};
+use canadensis_core::time::{Clock, MicrosecondDuration64, Microseconds64};
 use canadensis_data_types::uavcan::diagnostic::record::Record;
 use canadensis_data_types::uavcan::diagnostic::severity::Severity;
 use canadensis_encoding::{DataType, Deserialize, ReadCursor};

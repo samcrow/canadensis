@@ -53,6 +53,12 @@ pub trait Instant: Debug + Clone {
 
 /// A duration created from the difference between two instants
 pub trait Duration: PartialOrd + Debug + Clone + Add<Self, Output = Self> {
+    /// Creates a duration from a number of milliseconds
+    ///
+    /// This function returns None if this duration type cannot represent the provided number
+    /// of milliseconds.
+    fn from_millis(millis: u32) -> Option<Self>;
+
     /// Returns the number of whole seconds in this duration, rounded down
     fn as_secs(&self) -> u64;
     /// Returns the fractional part of this duration in nanoseconds
@@ -78,6 +84,11 @@ impl MicrosecondDuration32 {
 }
 
 impl Duration for MicrosecondDuration32 {
+    fn from_millis(millis: u32) -> Option<Self> {
+        let microseconds = millis.checked_mul(1000)?;
+        Some(MicrosecondDuration32(microseconds))
+    }
+
     fn as_secs(&self) -> u64 {
         u64::from(self.0 / 1_000_000)
     }
@@ -169,6 +180,12 @@ impl MicrosecondDuration48 {
 }
 
 impl Duration for MicrosecondDuration48 {
+    fn from_millis(millis: u32) -> Option<Self> {
+        let microseconds = u64::from(millis).checked_mul(1000)?;
+        let microseconds_48: U48 = microseconds.try_into().ok()?;
+        Some(MicrosecondDuration48(microseconds_48))
+    }
+
     fn as_secs(&self) -> u64 {
         u64::from(self.0 / 1_000_000)
     }
@@ -260,6 +277,11 @@ impl MicrosecondDuration64 {
 }
 
 impl Duration for MicrosecondDuration64 {
+    fn from_millis(millis: u32) -> Option<Self> {
+        let microseconds = u64::from(millis).checked_mul(1000)?;
+        Some(MicrosecondDuration64(microseconds))
+    }
+
     fn as_secs(&self) -> u64 {
         self.0 / 1_000_000
     }
@@ -328,3 +350,11 @@ impl Instant for Microseconds64 {
 }
 
 // End 64-bit duration/instant
+
+/// Something that can provide the current time
+pub trait Clock {
+    /// The type of instant that this clock produces
+    type Instant: Instant;
+    /// Returns the current time
+    fn now(&mut self) -> Self::Instant;
+}

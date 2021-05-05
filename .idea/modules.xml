@@ -9,6 +9,7 @@
       <module fileurl="file://$PROJECT_DIR$/canadensis_data_types/canadensis_data_types.iml" filepath="$PROJECT_DIR$/canadensis_data_types/canadensis_data_types.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_encoding/canadensis_encoding.iml" filepath="$PROJECT_DIR$/canadensis_encoding/canadensis_encoding.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_filter_config/canadensis_filter_config.iml" filepath="$PROJECT_DIR$/canadensis_filter_config/canadensis_filter_config.iml" />
+      <module fileurl="file://$PROJECT_DIR$/canadensis_linux/canadensis_linux.iml" filepath="$PROJECT_DIR$/canadensis_linux/canadensis_linux.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_node/canadensis_node.iml" filepath="$PROJECT_DIR$/canadensis_node/canadensis_node.iml" />
     </modules>
   </component>

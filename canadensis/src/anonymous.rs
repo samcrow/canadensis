@@ -4,7 +4,8 @@
 
 use core::marker::PhantomData;
 
-use crate::{do_serialize, Clock};
+use crate::core_node::do_serialize;
+use crate::Clock;
 use canadensis_can::queue::FrameSink;
 use canadensis_can::{Mtu, OutOfMemoryError, Transmitter};
 use canadensis_core::time::Instant;

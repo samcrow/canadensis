@@ -6,6 +6,7 @@ members = [
     "canadensis_core",
     "canadensis_data_types",
     "canadensis_filter_config",
+    "canadensis_linux",
     "canadensis_node",
     "canadensis_encoding"
 ]

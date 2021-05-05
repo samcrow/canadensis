@@ -83,8 +83,7 @@ impl<I> Frame<I> {
     /// Creates a frame
     ///
     /// # Panics
-    /// This function will panic if the length of data is greater than 8 (or 64 if the `can-fd`
-    /// feature is enabled).
+    /// This function will panic if the length of data is greater than FRAME_CAPACITY.
     pub fn new(timestamp: I, id: CanId, data: &[u8]) -> Self {
         Frame {
             timestamp,

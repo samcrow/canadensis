@@ -14,10 +14,10 @@ use std::time::{Duration, Instant};
 
 use socketcan::CANSocket;
 
-use canadensis::{Clock, ResponseToken, TransferHandler};
+use canadensis::{ResponseToken, TransferHandler};
 use canadensis_can::queue::{ArrayQueue, FrameSink};
 use canadensis_can::{CanId, Frame, Mtu};
-use canadensis_core::time::{MicrosecondDuration64, Microseconds64};
+use canadensis_core::time::{Clock, MicrosecondDuration64, Microseconds64};
 use canadensis_core::transfer::{MessageTransfer, ServiceTransfer};
 use canadensis_core::{NodeId, Priority};
 use canadensis_data_types::uavcan::node::get_info::{GetInfoRequest, GetInfoResponse};
@@ -85,14 +85,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         canadensis::Node::new(clock.clone(), node_id, Mtu::Can8, frame_queue);
 
     let heartbeat_token = uavcan
-        .start_publishing_topic(
+        .start_publishing(
             Heartbeat::SUBJECT,
             MicrosecondDuration64::new(1_000_000),
             Priority::Low,
         )
         .expect("Couldn't start publishing");
     let port_list_token = uavcan
-        .start_publishing_topic(
+        .start_publishing(
             List::SUBJECT,
             MicrosecondDuration64::new(1_000_000),
             Priority::Optional,
@@ -143,7 +143,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 vendor_specific_status_code: 0,
             };
             uavcan
-                .publish_to_topic(&heartbeat_token, &heartbeat)
+                .publish(&heartbeat_token, &heartbeat)
                 .expect("Out of memory");
 
             if run_time_seconds % u32::from(List::MAX_PUBLICATION_PERIOD) == 0 {
@@ -174,7 +174,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     servers,
                 };
                 uavcan
-                    .publish_to_topic(&port_list_token, &port_list)
+                    .publish(&port_list_token, &port_list)
                     .expect("Out of memory");
             }
         }
