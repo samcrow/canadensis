@@ -2,11 +2,11 @@
 
 pub mod u48;
 
+use crate::time::u48::U48;
 use core::cmp::Ordering;
-use core::fmt::{Debug, LowerHex};
-use core::ops::{Add, Shr};
-
-use num_traits::{Bounded, WrappingAdd, WrappingSub};
+use core::convert::TryInto;
+use core::fmt::Debug;
+use core::ops::Add;
 
 /// A moment in time relative to some point in the past
 ///
@@ -28,7 +28,7 @@ pub trait Instant: Debug + Clone {
     /// values.
     ///
     /// The Duration must also support adding a Duration and Instant to produce an Instant
-    type Duration: PartialOrd + Debug + Clone + Add<Self, Output = Self>;
+    type Duration: Duration + Add<Self, Output = Self>;
 
     /// Calculates the duration between other and self
     ///
@@ -51,72 +51,91 @@ pub trait Instant: Debug + Clone {
     fn overflow_safe_compare(&self, other: &Self) -> Ordering;
 }
 
-/// A duration, represented as an integer number of ticks
-#[derive(Default, Debug, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub struct PrimitiveDuration<I>(I);
+/// A duration created from the difference between two instants
+pub trait Duration: PartialOrd + Debug + Clone + Add<Self, Output = Self> {
+    /// Returns the number of whole seconds in this duration, rounded down
+    fn as_secs(&self) -> u64;
+    /// Returns the fractional part of this duration in nanoseconds
+    fn subsec_nanos(&self) -> u32;
+}
 
-impl<I> PrimitiveDuration<I>
-where
-    I: Clone,
-{
-    pub fn new(ticks: I) -> Self {
-        PrimitiveDuration(ticks)
+/// A duration represented as a 32-bit number of microseconds
+///
+/// This type can represent durations of up to about 1 hour.
+#[derive(Default, Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+pub struct MicrosecondDuration32(u32);
+
+impl MicrosecondDuration32 {
+    /// Creates a duration from a number of microseconds
+    pub fn new(microseconds: u32) -> Self {
+        MicrosecondDuration32(microseconds)
     }
 
-    pub fn ticks(&self) -> I {
-        self.0.clone()
+    /// Returns the number of microseconds this duration represents
+    pub fn as_microseconds(&self) -> u32 {
+        self.0
     }
 }
 
-/// An instant in time represented by an integer number of ticks
-///
-/// The tick interval is implementation-defined and not relevant for UAVCAN.
-///
-/// The integer type I can be a built-in integer type, or an integer type with a different number
-/// of bits.
-///
-/// The `Instant` implementation assumes that the clock overflows after reaching the maximum
-/// value of the type I.
-#[derive(Default, Debug, Clone, Eq, PartialEq)]
-pub struct PrimitiveInstant<I>(I);
-
-impl<I> PrimitiveInstant<I>
-where
-    I: Clone,
-{
-    pub fn new(ticks: I) -> Self {
-        PrimitiveInstant(ticks)
+impl Duration for MicrosecondDuration32 {
+    fn as_secs(&self) -> u64 {
+        u64::from(self.0 / 1_000_000)
     }
 
-    pub fn ticks(&self) -> I {
-        self.0.clone()
+    fn subsec_nanos(&self) -> u32 {
+        let microseconds = self.0 % 1_000_000;
+        microseconds * 1000
     }
 }
 
-impl<I> Instant for PrimitiveInstant<I>
-where
-    I: PartialOrd
-        + Bounded
-        + WrappingSub
-        + WrappingAdd
-        + Shr<u32, Output = I>
-        + Debug
-        + Clone
-        + LowerHex,
-{
-    type Duration = PrimitiveDuration<I>;
+impl Add for MicrosecondDuration32 {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        MicrosecondDuration32(self.0 + rhs.0)
+    }
+}
+
+impl Add<Microseconds32> for MicrosecondDuration32 {
+    type Output = Microseconds32;
+
+    fn add(self, rhs: Microseconds32) -> Self::Output {
+        Microseconds32(self.0 + rhs.0)
+    }
+}
+
+/// An instant represented as a 32-bit number of microseconds
+///
+/// This type overflows after about 1 hour.
+#[derive(Default, Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+pub struct Microseconds32(u32);
+
+impl Microseconds32 {
+    /// Creates an instant from a number of microseconds
+    pub fn new(microseconds: u32) -> Self {
+        Microseconds32(microseconds)
+    }
+
+    /// Returns the number of microseconds this instant represents
+    pub fn as_microseconds(&self) -> u32 {
+        self.0
+    }
+}
+
+impl Instant for Microseconds32 {
+    type Duration = MicrosecondDuration32;
 
     fn duration_since(&self, other: &Self) -> Self::Duration {
-        PrimitiveDuration(self.0.wrapping_sub(&other.0))
+        MicrosecondDuration32(self.0.wrapping_sub(other.0))
     }
 
     fn overflow_safe_compare(&self, other: &Self) -> Ordering {
         // https://www.rapitasystems.com/blog/what-happened-first-handling-timer-wraparound
-        let half_max = I::max_value() >> 1;
+        let half_max = u32::MAX / 2;
         if self.0 == other.0 {
             Ordering::Equal
         } else {
-            let subtract_result = other.0.wrapping_sub(&self.0);
+            let subtract_result = other.0.wrapping_sub(self.0);
             if subtract_result <= half_max {
                 Ordering::Less
             } else {
@@ -126,125 +145,186 @@ where
     }
 }
 
-fn add_duration_to_instant<I>(
-    lhs: &PrimitiveInstant<I>,
-    rhs: &PrimitiveDuration<I>,
-) -> PrimitiveInstant<I>
-where
-    I: WrappingAdd + Add<Output = I> + Clone,
-{
-    // Normal add, wrap on overflow
-    let wrapped = lhs.ticks().wrapping_add(&rhs.ticks());
-    PrimitiveInstant::new(wrapped)
-}
+// End 32-bit duration/instant
+// Begin 48-bit duration/instant
 
-impl<I> Add<&'_ PrimitiveDuration<I>> for &'_ PrimitiveInstant<I>
-where
-    I: WrappingAdd + Add<Output = I> + Clone,
-{
-    type Output = PrimitiveInstant<I>;
+/// A duration represented as a 48-bit number of microseconds
+///
+/// This type can represent durations of up to about 9 years.
+///
+/// It takes up 8 bytes of space (the same as a 64-bit duration).
+#[derive(Default, Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+pub struct MicrosecondDuration48(U48);
 
-    fn add(self, rhs: &PrimitiveDuration<I>) -> Self::Output {
-        add_duration_to_instant(self, rhs)
+impl MicrosecondDuration48 {
+    /// Creates a duration from a number of microseconds
+    pub fn new(microseconds: U48) -> Self {
+        MicrosecondDuration48(microseconds)
+    }
+
+    /// Returns the number of microseconds this duration represents
+    pub fn as_microseconds(&self) -> U48 {
+        self.0
     }
 }
 
-impl<I> Add<PrimitiveDuration<I>> for &'_ PrimitiveInstant<I>
-where
-    I: WrappingAdd + Add<Output = I> + Clone,
-{
-    type Output = PrimitiveInstant<I>;
+impl Duration for MicrosecondDuration48 {
+    fn as_secs(&self) -> u64 {
+        u64::from(self.0 / 1_000_000)
+    }
 
-    fn add(self, rhs: PrimitiveDuration<I>) -> Self::Output {
-        add_duration_to_instant(&self, &rhs)
+    fn subsec_nanos(&self) -> u32 {
+        let microseconds = self.0 % 1_000_000;
+        (microseconds * 1000).try_into().unwrap()
     }
 }
 
-impl<I> Add<&'_ PrimitiveDuration<I>> for PrimitiveInstant<I>
-where
-    I: WrappingAdd + Add<Output = I> + Clone,
-{
+impl Add for MicrosecondDuration48 {
     type Output = Self;
 
-    fn add(self, rhs: &PrimitiveDuration<I>) -> Self::Output {
-        add_duration_to_instant(&self, rhs)
+    fn add(self, rhs: Self) -> Self::Output {
+        MicrosecondDuration48(self.0 + rhs.0)
     }
 }
 
-impl<I> Add<PrimitiveDuration<I>> for PrimitiveInstant<I>
-where
-    I: WrappingAdd + Add<Output = I> + Clone,
-{
+impl Add<Microseconds48> for MicrosecondDuration48 {
+    type Output = Microseconds48;
+
+    fn add(self, rhs: Microseconds48) -> Self::Output {
+        Microseconds48(self.0 + rhs.0)
+    }
+}
+
+/// An instant represented as a 48-bit number of microseconds
+///
+/// This type overflows after about 9 years.
+///
+/// It takes up 8 bytes of space (the same as a 64-bit instant).
+#[derive(Default, Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+pub struct Microseconds48(U48);
+
+impl Microseconds48 {
+    /// Creates an instant from a number of microseconds
+    pub fn new(microseconds: U48) -> Self {
+        Microseconds48(microseconds)
+    }
+
+    /// Returns the number of microseconds this instant represents
+    pub fn as_microseconds(&self) -> U48 {
+        self.0
+    }
+}
+
+impl Instant for Microseconds48 {
+    type Duration = MicrosecondDuration48;
+
+    fn duration_since(&self, other: &Self) -> Self::Duration {
+        MicrosecondDuration48(self.0.wrapping_sub(other.0))
+    }
+
+    fn overflow_safe_compare(&self, other: &Self) -> Ordering {
+        // https://www.rapitasystems.com/blog/what-happened-first-handling-timer-wraparound
+        let half_max = U48::MAX / 2;
+        if self.0 == other.0 {
+            Ordering::Equal
+        } else {
+            let subtract_result = other.0.wrapping_sub(self.0);
+            if subtract_result <= half_max {
+                Ordering::Less
+            } else {
+                Ordering::Greater
+            }
+        }
+    }
+}
+
+// End 48-bit duration/instant
+// Begin 64-bit duration/instant
+
+/// A duration represented as a 64-bit number of microseconds
+///
+/// This type can represent durations of up to about five hundred thousand years.
+#[derive(Default, Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+pub struct MicrosecondDuration64(u64);
+
+impl MicrosecondDuration64 {
+    /// Creates a duration from a number of microseconds
+    pub fn new(microseconds: u64) -> Self {
+        MicrosecondDuration64(microseconds)
+    }
+
+    /// Returns the number of microseconds this duration represents
+    pub fn as_microseconds(&self) -> u64 {
+        self.0
+    }
+}
+
+impl Duration for MicrosecondDuration64 {
+    fn as_secs(&self) -> u64 {
+        self.0 / 1_000_000
+    }
+
+    fn subsec_nanos(&self) -> u32 {
+        let microseconds = self.0 % 1_000_000;
+        (microseconds * 1000) as u32
+    }
+}
+
+impl Add for MicrosecondDuration64 {
     type Output = Self;
 
-    fn add(self, rhs: PrimitiveDuration<I>) -> Self::Output {
-        add_duration_to_instant(&self, &rhs)
+    fn add(self, rhs: Self) -> Self::Output {
+        MicrosecondDuration64(self.0 + rhs.0)
     }
 }
 
-impl<I> Add<PrimitiveInstant<I>> for PrimitiveDuration<I>
-where
-    I: WrappingAdd + Add<Output = I> + Clone,
-{
-    type Output = PrimitiveInstant<I>;
+impl Add<Microseconds64> for MicrosecondDuration64 {
+    type Output = Microseconds64;
 
-    fn add(self, rhs: PrimitiveInstant<I>) -> Self::Output {
-        Add::add(rhs, self)
+    fn add(self, rhs: Microseconds64) -> Self::Output {
+        Microseconds64(self.0 + rhs.0)
     }
 }
 
-#[cfg(test)]
-mod test_u8 {
-    use super::{Instant, PrimitiveInstant};
-    use core::cmp::Ordering;
+/// An instant represented as a 64-bit number of microseconds
+///
+/// This type overflows after about five hundred thousand years.
+#[derive(Default, Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+pub struct Microseconds64(u64);
 
-    #[test]
-    fn instant_u8_compare() {
-        fn compare(ticks1: u8, ticks2: u8) -> Ordering {
-            PrimitiveInstant::new(ticks1).overflow_safe_compare(&PrimitiveInstant::new(ticks2))
+impl Microseconds64 {
+    /// Creates an instant from a number of microseconds
+    pub fn new(microseconds: u64) -> Self {
+        Microseconds64(microseconds)
+    }
+
+    /// Returns the number of microseconds this instant represents
+    pub fn as_microseconds(&self) -> u64 {
+        self.0
+    }
+}
+
+impl Instant for Microseconds64 {
+    type Duration = MicrosecondDuration64;
+
+    fn duration_since(&self, other: &Self) -> Self::Duration {
+        MicrosecondDuration64(self.0.wrapping_sub(other.0))
+    }
+
+    fn overflow_safe_compare(&self, other: &Self) -> Ordering {
+        // https://www.rapitasystems.com/blog/what-happened-first-handling-timer-wraparound
+        let half_max = u64::MAX / 2;
+        if self.0 == other.0 {
+            Ordering::Equal
+        } else {
+            let subtract_result = other.0.wrapping_sub(self.0);
+            if subtract_result <= half_max {
+                Ordering::Less
+            } else {
+                Ordering::Greater
+            }
         }
-
-        // Basic equality
-        assert_eq!(compare(0, 0), Ordering::Equal);
-        assert_eq!(compare(127, 127), Ordering::Equal);
-        assert_eq!(compare(255, 255), Ordering::Equal);
-
-        // With a difference of less than 128, comparison assumes that overflow
-        // hasn't happened and works normally
-        assert_eq!(compare(0, 10), Ordering::Less);
-        assert_eq!(compare(0, 126), Ordering::Less);
-        assert_eq!(compare(0, 127), Ordering::Less);
-        // When the difference reaches 128, comparison thinks that overflow has happened and the
-        // result is reversed.
-        // Example: instant(128 ticks) + duration(128 ticks) overflows to instant(0 ticks),
-        // which is later.
-        assert_eq!(compare(0, 128), Ordering::Greater);
-        assert_eq!(compare(0, 129), Ordering::Greater);
-        assert_eq!(compare(0, 130), Ordering::Greater);
-        assert_eq!(compare(0, 255), Ordering::Greater);
-    }
-
-    #[test]
-    fn duration_u8() {
-        fn duration(from: u8, to: u8) -> u8 {
-            PrimitiveInstant::new(to)
-                .duration_since(&PrimitiveInstant::new(from))
-                .ticks()
-        }
-
-        // Basics
-        assert_eq!(duration(0, 0), 0);
-        assert_eq!(duration(0, 1), 1);
-        assert_eq!(duration(0, 254), 254);
-        assert_eq!(duration(0, 255), 255);
-        assert_eq!(duration(254, 255), 1);
-        assert_eq!(duration(255, 255), 0);
-
-        // Overflow
-        assert_eq!(duration(255, 0), 1);
-        assert_eq!(duration(255, 1), 2);
-        assert_eq!(duration(254, 0), 2);
-        assert_eq!(duration(128, 127), 255);
-        assert_eq!(duration(254, 253), 255);
     }
 }
+
+// End 64-bit duration/instant

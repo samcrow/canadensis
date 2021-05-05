@@ -17,7 +17,7 @@ use socketcan::CANSocket;
 use canadensis::{Clock, ResponseToken, TransferHandler};
 use canadensis_can::queue::{ArrayQueue, FrameSink};
 use canadensis_can::{CanId, Frame, Mtu};
-use canadensis_core::time::{PrimitiveDuration, PrimitiveInstant};
+use canadensis_core::time::{MicrosecondDuration64, Microseconds64};
 use canadensis_core::transfer::{MessageTransfer, ServiceTransfer};
 use canadensis_core::{NodeId, Priority};
 use canadensis_data_types::uavcan::node::get_info::{GetInfoRequest, GetInfoResponse};
@@ -87,19 +87,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let heartbeat_token = uavcan
         .start_publishing_topic(
             Heartbeat::SUBJECT,
-            PrimitiveDuration::new(1_000_000),
+            MicrosecondDuration64::new(1_000_000),
             Priority::Low,
         )
         .expect("Couldn't start publishing");
     let port_list_token = uavcan
         .start_publishing_topic(
             List::SUBJECT,
-            PrimitiveDuration::new(1_000_000),
+            MicrosecondDuration64::new(1_000_000),
             Priority::Optional,
         )
         .expect("Couldn't start publishing");
     uavcan
-        .subscribe_request(GetInfoRequest::SERVICE, 0, PrimitiveDuration::new(0))
+        .subscribe_request(GetInfoRequest::SERVICE, 0, MicrosecondDuration64::new(0))
         .expect("Out of memory");
 
     let mut last_run_time_seconds = 0u64;
@@ -224,7 +224,7 @@ where
                 software_image_crc: None,
                 certificate_of_authenticity: heapless::Vec::new(),
             };
-            node.send_response(token, PrimitiveDuration::new(1_000_000), &response)
+            node.send_response(token, MicrosecondDuration64::new(1_000_000), &response)
                 .expect("Out of memory");
         }
     }
@@ -252,11 +252,11 @@ impl SystemClock {
 }
 
 impl Clock for SystemClock {
-    type Instant = PrimitiveInstant<u64>;
+    type Instant = Microseconds64;
 
     fn now(&mut self) -> Self::Instant {
         let since_start = Instant::now().duration_since(self.start_time);
         let microseconds = since_start.as_micros();
-        PrimitiveInstant::new(microseconds as u64)
+        Microseconds64::new(microseconds as u64)
     }
 }

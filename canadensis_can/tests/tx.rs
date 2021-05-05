@@ -9,15 +9,15 @@ use core::convert::TryFrom;
 
 use canadensis_can::queue::{ArrayQueue, FrameQueueSource};
 use canadensis_can::{CanId, Frame, Mtu, Transmitter};
-use canadensis_core::time::PrimitiveInstant;
+use canadensis_core::time::Microseconds32;
 use canadensis_core::transfer::*;
 use canadensis_core::{NodeId, Priority, ServiceId, SubjectId, TransferId};
 
-fn instant(ticks: u16) -> PrimitiveInstant<u16> {
-    PrimitiveInstant::new(ticks)
+fn instant(ticks: u32) -> Microseconds32 {
+    Microseconds32::new(ticks)
 }
 
-type TestQueue = ArrayQueue<PrimitiveInstant<u16>, 64>;
+type TestQueue = ArrayQueue<Microseconds32, 64>;
 
 #[test]
 fn test_heartbeat() {

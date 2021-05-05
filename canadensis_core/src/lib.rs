@@ -6,7 +6,6 @@
 
 extern crate hash32;
 extern crate hash32_derive;
-extern crate num_traits;
 
 pub mod time;
 pub mod transfer;

@@ -11,6 +11,5 @@ license = "MIT OR Apache-2.0"
 description = "A UAVCAN v1.0 implementation: Common definitions"
 
 [dependencies]
-num-traits = { version = "0.2.14", default-features = false }
 hash32 = "0.2.1"
 hash32-derive = "0.1.0"

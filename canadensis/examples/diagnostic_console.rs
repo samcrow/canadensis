@@ -16,7 +16,7 @@ use std::time::Instant;
 
 use canadensis::Clock;
 use canadensis_can::{CanId, Frame, Receiver};
-use canadensis_core::time::{PrimitiveDuration, PrimitiveInstant};
+use canadensis_core::time::{MicrosecondDuration64, Microseconds64};
 use canadensis_data_types::uavcan::diagnostic::record::Record;
 use canadensis_data_types::uavcan::diagnostic::severity::Severity;
 use canadensis_encoding::{DataType, Deserialize, ReadCursor};
@@ -34,7 +34,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .subscribe_message(
             Record::SUBJECT,
             Record::EXTENT_BYTES.unwrap() as usize,
-            PrimitiveDuration::new(1_000_000),
+            MicrosecondDuration64::new(1_000_000),
         )
         .unwrap();
 
@@ -93,11 +93,11 @@ impl SystemClock {
 }
 
 impl Clock for SystemClock {
-    type Instant = PrimitiveInstant<u64>;
+    type Instant = Microseconds64;
 
     fn now(&mut self) -> Self::Instant {
         let since_start = Instant::now().duration_since(self.start_time);
         let microseconds = since_start.as_micros();
-        PrimitiveInstant::new(microseconds as u64)
+        Microseconds64::new(microseconds as u64)
     }
 }

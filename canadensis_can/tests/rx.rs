@@ -8,17 +8,17 @@ extern crate canadensis_core;
 use core::convert::{TryFrom, TryInto};
 
 use canadensis_can::{CanId, Frame, OutOfMemoryError, Receiver};
-use canadensis_core::time::{Instant, PrimitiveDuration, PrimitiveInstant};
+use canadensis_core::time::{Instant, MicrosecondDuration32, Microseconds32};
 use canadensis_core::transfer::*;
 use canadensis_core::{NodeId, Priority, ServiceId, SubjectId};
 
-type TestInstant = PrimitiveInstant<u16>;
+type TestInstant = Microseconds32;
 type TestDuration = <TestInstant as Instant>::Duration;
 
-fn instant(ticks: u16) -> TestInstant {
+fn instant(ticks: u32) -> TestInstant {
     TestInstant::new(ticks)
 }
-fn duration(ticks: u16) -> TestDuration {
+fn duration(ticks: u32) -> TestDuration {
     TestDuration::new(ticks)
 }
 
@@ -143,7 +143,7 @@ fn test_node_info_response() -> Result<(), OutOfMemoryError> {
         0x00, // Certificate of authenticity length
     ];
 
-    let frames_and_times: [(&[u8], u16); 11] = [
+    let frames_and_times: [(&[u8], u32); 11] = [
         (&[0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0xa1], 100),
         (&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01], 102),
         (&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x21], 105),
@@ -196,7 +196,7 @@ fn test_node_info_response_timeout() -> Result<(), OutOfMemoryError> {
     let service = ServiceId::try_from(430).unwrap();
     rx.subscribe_response(service, 313 * 8, duration(100))?;
 
-    let frames_and_times: [(&[u8], u16); 11] = [
+    let frames_and_times: [(&[u8], u32); 11] = [
         (&[0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0xa1], 100),
         (&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01], 102),
         (&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x21], 105),
@@ -272,7 +272,7 @@ fn test_array() -> Result<(), OutOfMemoryError> {
 
     for (i, &frame_data) in frames.iter().enumerate() {
         let frame = Frame::new(
-            instant(i as u16),
+            instant(i as u32),
             0x1013373b.try_into().unwrap(),
             frame_data,
         );
@@ -293,10 +293,10 @@ fn test_array() -> Result<(), OutOfMemoryError> {
 #[test]
 fn test_multi_frame_anonymous() {
     // Multi-frame anonymous transfers must be ignored
-    let mut receiver = Receiver::<PrimitiveInstant<u16>>::new(NodeId::try_from(3).unwrap());
+    let mut receiver = Receiver::<Microseconds32>::new(NodeId::try_from(3).unwrap());
     let subject_id = SubjectId::try_from(10).unwrap();
     receiver
-        .subscribe_message(subject_id, 16, PrimitiveDuration::new(100))
+        .subscribe_message(subject_id, 16, MicrosecondDuration32::new(100))
         .unwrap();
     // A non-anonymous 2-frame transfer works
     let non_anonymous_id: CanId = 0b100_0_0_011_0000000001010_0_1000000_u32
@@ -315,6 +315,7 @@ fn test_multi_frame_anonymous() {
         ],
         &[0x8, /* CRC */ 0x47, 0x92, /* tail */ 0b010_00000],
     ];
+    // When the frames are not anonymous, the transfer gets received.
     let non_anonymous_transfer = Transfer {
         header: Header::Message(MessageHeader {
             timestamp: instant(1),
@@ -328,19 +329,11 @@ fn test_multi_frame_anonymous() {
 
     assert_eq!(
         Ok(None),
-        receiver.accept(Frame::new(
-            PrimitiveInstant::new(1),
-            non_anonymous_id,
-            frames[0]
-        ))
+        receiver.accept(Frame::new(TestInstant::new(1), non_anonymous_id, frames[0]))
     );
     assert_eq!(
         Ok(Some(non_anonymous_transfer)),
-        receiver.accept(Frame::new(
-            PrimitiveInstant::new(2),
-            non_anonymous_id,
-            frames[1]
-        ))
+        receiver.accept(Frame::new(TestInstant::new(2), non_anonymous_id, frames[1]))
     );
     // Now make it anonymous
     let anonymous_id: CanId = 0b100_0_1_011_0000000001010_0_1000000_u32
@@ -348,19 +341,11 @@ fn test_multi_frame_anonymous() {
         .unwrap();
     assert_eq!(
         Ok(None),
-        receiver.accept(Frame::new(
-            PrimitiveInstant::new(1),
-            anonymous_id,
-            frames[0]
-        ))
+        receiver.accept(Frame::new(TestInstant::new(1), anonymous_id, frames[0]))
     );
     assert_eq!(
         Ok(None),
-        receiver.accept(Frame::new(
-            PrimitiveInstant::new(2),
-            anonymous_id,
-            frames[1]
-        ))
+        receiver.accept(Frame::new(TestInstant::new(2), anonymous_id, frames[1]))
     );
 }
 

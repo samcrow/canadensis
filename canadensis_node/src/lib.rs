@@ -17,18 +17,18 @@ use canadensis_data_types::uavcan::node::mode::Mode;
 ///
 /// A `BasicNode` wraps a [`canadensis::Node`] and adds functionality to periodically send
 /// `uavcan.node.Heartbeat.1.0` messages.
-pub struct BasicNode<C, const P: usize, const R: usize>
+pub struct BasicNode<C, Q, const P: usize, const R: usize>
 where
     C: Clock,
 {
     /// The inner node
-    node: Node<C, P, R>,
+    node: Node<C, Q, P, R>,
     /// The heartbeat message that will be periodically sent
     heartbeat: Heartbeat,
     // TODO: Setup to do something every second
 }
 
-impl<C: Clock, const P: usize, const R: usize> BasicNode<C, P, R> {
+impl<C: Clock, Q, const P: usize, const R: usize> BasicNode<C, Q, P, R> {
     /// Sets the operating mode that will be reported in the heartbeat messages
     pub fn set_mode(&mut self, mode: Mode) {
         self.heartbeat.mode = mode;
