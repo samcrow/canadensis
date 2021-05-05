@@ -10,14 +10,15 @@ use std::convert::TryFrom;
 use std::env;
 use std::io;
 use std::iter::FromIterator;
-use std::time::{Duration, Instant};
+use std::time::Duration as StdDuration;
+use std::time::Instant as StdInstant;
 
 use socketcan::CANSocket;
 
-use canadensis::{ResponseToken, TransferHandler};
-use canadensis_can::queue::{ArrayQueue, FrameSink};
+use canadensis::{Node, ResponseToken, TransferHandler};
+use canadensis_can::queue::ArrayQueue;
 use canadensis_can::{CanId, Frame, Mtu};
-use canadensis_core::time::{Clock, MicrosecondDuration64, Microseconds64};
+use canadensis_core::time::{Clock, Duration, Instant, MicrosecondDuration64, Microseconds64};
 use canadensis_core::transfer::{MessageTransfer, ServiceTransfer};
 use canadensis_core::{NodeId, Priority};
 use canadensis_data_types::uavcan::node::get_info::{GetInfoRequest, GetInfoResponse};
@@ -71,8 +72,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     .expect("Node ID too large");
 
     let can = CANSocket::open(&can_interface).expect("Failed to open CAN interface");
-    can.set_read_timeout(Duration::from_millis(100))?;
-    can.set_write_timeout(Duration::from_millis(100))?;
+    can.set_read_timeout(StdDuration::from_millis(100))?;
+    can.set_write_timeout(StdDuration::from_millis(100))?;
 
     // Generate a random unique ID
     let unique_id: [u8; 16] = rand::random();
@@ -81,8 +82,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let frame_queue = ArrayQueue::<_, 64>::new();
 
-    let mut uavcan: canadensis::Node<_, _, 4, 4> =
-        canadensis::Node::new(clock.clone(), node_id, Mtu::Can8, frame_queue);
+    let mut uavcan: canadensis::CoreNode<_, _, 4, 4> =
+        canadensis::CoreNode::new(clock.clone(), node_id, Mtu::Can8, frame_queue);
 
     let heartbeat_token = uavcan
         .start_publishing(
@@ -104,7 +105,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut last_run_time_seconds = 0u64;
     loop {
-        let run_time = Instant::now().duration_since(clock.start_time);
+        let run_time = StdInstant::now().duration_since(clock.start_time);
         let run_time_seconds = run_time.as_secs();
         let new_second = run_time_seconds != last_run_time_seconds;
         last_run_time_seconds = run_time_seconds;
@@ -192,24 +193,20 @@ struct BasicTransferHandler {
     unique_id: [u8; 16],
 }
 
-impl<Q, const H: usize, const P: usize> TransferHandler<SystemClock, Q, H, P>
-    for BasicTransferHandler
-where
-    Q: FrameSink<<SystemClock as Clock>::Instant>,
-{
-    fn handle_message(
+impl TransferHandler for BasicTransferHandler {
+    fn handle_message<N: Node>(
         &mut self,
-        _node: &mut canadensis::Node<SystemClock, Q, H, P>,
-        _transfer: MessageTransfer<Vec<u8>, <SystemClock as Clock>::Instant>,
+        _node: &mut N,
+        _transfer: MessageTransfer<Vec<u8>, <N::Clock as Clock>::Instant>,
     ) {
         // Not subscribed to anything
     }
 
-    fn handle_request(
+    fn handle_request<N: Node>(
         &mut self,
-        node: &mut canadensis::Node<SystemClock, Q, H, P>,
+        node: &mut N,
         token: ResponseToken,
-        transfer: ServiceTransfer<Vec<u8>, <SystemClock as Clock>::Instant>,
+        transfer: ServiceTransfer<Vec<u8>, <N::Clock as Clock>::Instant>,
     ) {
         println!("Handling request {:?}", transfer);
         if transfer.header.service == GetInfoRequest::SERVICE {
@@ -224,15 +221,17 @@ where
                 software_image_crc: None,
                 certificate_of_authenticity: heapless::Vec::new(),
             };
-            node.send_response(token, MicrosecondDuration64::new(1_000_000), &response)
+            let timeout =
+                <<N::Clock as Clock>::Instant as Instant>::Duration::from_millis(1000).unwrap();
+            node.send_response(token, timeout, &response)
                 .expect("Out of memory");
         }
     }
 
-    fn handle_response(
+    fn handle_response<N: Node>(
         &mut self,
-        _node: &mut canadensis::Node<SystemClock, Q, H, P>,
-        _transfer: ServiceTransfer<Vec<u8>, <SystemClock as Clock>::Instant>,
+        _node: &mut N,
+        _transfer: ServiceTransfer<Vec<u8>, <N::Clock as Clock>::Instant>,
     ) {
         // Not subscribed to anything
     }
@@ -240,13 +239,13 @@ where
 
 #[derive(Debug, Clone)]
 struct SystemClock {
-    start_time: Instant,
+    start_time: StdInstant,
 }
 
 impl SystemClock {
     pub fn new() -> Self {
         SystemClock {
-            start_time: Instant::now(),
+            start_time: StdInstant::now(),
         }
     }
 }
@@ -255,7 +254,7 @@ impl Clock for SystemClock {
     type Instant = Microseconds64;
 
     fn now(&mut self) -> Self::Instant {
-        let since_start = Instant::now().duration_since(self.start_time);
+        let since_start = StdInstant::now().duration_since(self.start_time);
         let microseconds = since_start.as_micros();
         Microseconds64::new(microseconds as u64)
     }
