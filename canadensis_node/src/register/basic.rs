@@ -3,6 +3,7 @@
 use crate::register::{Register, WriteError};
 use canadensis_data_types::uavcan::register::value::Value;
 
+/// A register containing its name, value, and mutable/persistent flags
 pub struct SimpleRegister<T> {
     name: &'static str,
     mutable: bool,
@@ -11,6 +12,9 @@ pub struct SimpleRegister<T> {
 }
 
 impl<T> SimpleRegister<T> {
+    /// Creates a register initialized to the default value of type T
+    ///
+    /// The name should not be more than 256 bytes long.
     pub fn new(name: &'static str, mutable: bool, persistent: bool) -> Self
     where
         T: Default,
@@ -18,6 +22,9 @@ impl<T> SimpleRegister<T> {
         Self::with_value(name, mutable, persistent, T::default())
     }
 
+    /// Creates a register initialized to the default value of type T
+    ///
+    /// The name should not be more than 256 bytes long.
     pub fn with_value(name: &'static str, mutable: bool, persistent: bool, value: T) -> Self {
         SimpleRegister {
             name,
@@ -66,7 +73,7 @@ pub trait RegisterType {
     /// Writes the value of this register
     ///
     /// This function returns an error if the provided value does not have an appropriate type
-    /// for this register.
+    /// for this register. This function will not be called on a non-mutable register.
     ///
     /// If this function returns an error, the value of this register must be the same as before
     /// the call to write().

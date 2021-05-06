@@ -15,6 +15,8 @@ use canadensis_data_types::uavcan::register::value::Value;
 use canadensis_encoding::Deserialize;
 
 /// A block of registers that can be accessed externally through the uavcan.register interface
+///
+/// This trait is implemented for individual `Register`s and tuples of up to 32 `Register`s.
 pub trait RegisterBlock {
     /// Returns a reference to the register at the provided index
     ///
@@ -48,13 +50,14 @@ pub trait Register {
     /// Writes the value of this register
     ///
     /// This function returns an error if the provided value does not have an appropriate type
-    /// for this register.
+    /// for this register, or if this register is not mutable.
     ///
     /// If this function returns an error, the value of this register must be the same as before
     /// the call to write().
     fn write(&mut self, value: &Value) -> Result<(), WriteError>;
 }
 
+/// Errors that can occur when attempting to write a register
 pub enum WriteError {
     /// The type of the value was incorrect
     Type,
@@ -63,6 +66,15 @@ pub enum WriteError {
 }
 
 /// Handles access requests for registers
+///
+/// Basic steps:
+/// 1. Create a register block (this may be a tuple of `Register`s or a custom type that implements
+///    `RegisterBlock`)
+/// 2. Create a handler using `RegisterHandler::init`. Pass the register block and a node used to
+///    receive service requests
+/// 3. When calling `accept` on the node, pass the register handler as a transfer handler
+///    (or use some other method to pass incoming service requests to the register handler).
+///    This lets the register handler process requests and send responses.
 pub struct RegisterHandler<B> {
     block: B,
 }
@@ -71,6 +83,11 @@ impl<B> RegisterHandler<B>
 where
     B: RegisterBlock,
 {
+    /// Creates a register handler and starts listening for register list and register access
+    /// requests
+    ///
+    /// This function returns an error if the provided node does not have enough space to listen
+    /// for requests.
     pub fn init<N>(block: B, node: &mut N) -> Result<Self, OutOfMemoryError>
     where
         N: Node,
@@ -82,9 +99,15 @@ where
         Ok(RegisterHandler { block })
     }
 
+    /// Returns a reference to the register block
+    ///
+    /// This can be used to read the current values.
     pub fn block(&self) -> &B {
         &self.block
     }
+    /// Returns a mutable reference to the register block
+    ///
+    /// This can be used to write the register values.
     pub fn block_mut(&mut self) -> &mut B {
         &mut self.block
     }
