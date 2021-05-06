@@ -15,7 +15,7 @@ use socketcan::CANSocket;
 use canadensis::{CoreNode, Node, ResponseToken, TransferHandler};
 use canadensis_can::queue::{ArrayQueue, FrameQueueSource};
 use canadensis_can::Mtu;
-use canadensis_core::time::{Clock, Instant, Microseconds64};
+use canadensis_core::time::{Clock, Microseconds64};
 use canadensis_core::transfer::{MessageTransfer, ServiceTransfer};
 use canadensis_core::NodeId;
 use canadensis_data_types::uavcan::node::get_info::GetInfoResponse;
