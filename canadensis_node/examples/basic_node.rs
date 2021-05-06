@@ -66,6 +66,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )
     .expect("Node ID too large");
 
+    println!(
+        "Port list size: {} bytes",
+        std::mem::size_of::<canadensis_data_types::uavcan::node::port::list::List>()
+    );
+
     let can = CANSocket::open(&can_interface).expect("Failed to open CAN interface");
     can.set_read_timeout(Duration::from_millis(500))?;
     can.set_write_timeout(Duration::from_millis(500))?;
@@ -91,6 +96,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ArrayQueue::<Microseconds64, 1210>::new(),
     );
     let mut node = BasicNode::new(core_node, node_info).unwrap();
+
+    println!("Node size: {} bytes", std::mem::size_of_val(&node));
 
     loop {
         match can.receive() {
