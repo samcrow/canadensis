@@ -12,13 +12,13 @@ use std::time::Duration;
 
 use socketcan::CANSocket;
 
-use canadensis::Node;
+use canadensis::CoreNode;
 use canadensis_can::queue::ArrayQueue;
 use canadensis_can::Mtu;
 use canadensis_core::time::Microseconds64;
 use canadensis_core::NodeId;
 use canadensis_linux::{LinuxCan, SystemClock};
-use canadensis_node::BasicNode;
+use canadensis_node::MinimalNode;
 
 /// Runs a minimal UAVCAN node, sending Heartbeat messages (and doing nothing else)
 ///
@@ -64,13 +64,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut can = LinuxCan::new(can);
 
     // Create a node with capacity for 1 publisher and 0 requesters
-    let core_node = Node::<_, _, 1, 0>::new(
+    let core_node: CoreNode<_, _, 1, 0> = CoreNode::new(
         SystemClock::new(),
         node_id,
         Mtu::Can8,
         ArrayQueue::<Microseconds64, 1>::new(),
     );
-    let mut node = BasicNode::new(core_node).unwrap();
+    let mut node = MinimalNode::new(core_node).unwrap();
 
     loop {
         // Don't need to check for incoming frames because this node does not receive anything.

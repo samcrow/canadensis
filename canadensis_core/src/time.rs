@@ -358,3 +358,27 @@ pub trait Clock {
     /// Returns the current time
     fn now(&mut self) -> Self::Instant;
 }
+
+/// Creates a duration from a number of milliseconds
+///
+/// This is a convenient wrapper for T::from_millis() when T has a long-difficult-to-type name.
+///
+/// # Panics
+///
+/// This function panics of T's `from_millis` function returns `None`.
+pub fn milliseconds<T>(milliseconds: u32) -> T
+where
+    T: Duration,
+{
+    T::from_millis(milliseconds).expect("Invalid duration")
+}
+
+/// Creates a duration from a number of milliseconds
+///
+/// This is a convenient wrapper for T::from_millis() when T has a long-difficult-to-type name.
+pub fn try_milliseconds<T>(milliseconds: u32) -> Option<T>
+where
+    T: Duration,
+{
+    T::from_millis(milliseconds)
+}
