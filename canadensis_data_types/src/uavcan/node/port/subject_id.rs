@@ -3,7 +3,7 @@ use canadensis_encoding::{
 };
 
 /// uavcan.node.port.SubjectID version 1.0
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct SubjectId {
     // Really u13
     pub value: u16,

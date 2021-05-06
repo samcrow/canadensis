@@ -62,7 +62,7 @@ where
         transfer: Transfer<Vec<u8>, C::Instant>,
         handler: &mut H,
     ) where
-        H: TransferHandler<Self>,
+        H: TransferHandler<<Self as Node>::Instant>,
     {
         match transfer.header {
             Header::Message(message_header) => {
@@ -70,7 +70,7 @@ where
                     header: message_header,
                     payload: transfer.payload,
                 };
-                handler.handle_message(self, message_transfer);
+                handler.handle_message(self, &message_transfer);
             }
             Header::Request(service_header) => {
                 let token = ResponseToken {
@@ -83,14 +83,14 @@ where
                     header: service_header,
                     payload: transfer.payload,
                 };
-                handler.handle_request(self, token, service_transfer);
+                handler.handle_request(self, token, &service_transfer);
             }
             Header::Response(service_header) => {
                 let service_transfer = ServiceTransfer {
                     header: service_header,
                     payload: transfer.payload,
                 };
-                handler.handle_response(self, service_transfer);
+                handler.handle_response(self, &service_transfer);
             }
         }
     }
@@ -122,6 +122,7 @@ where
     Q: FrameSink<C::Instant>,
 {
     type Clock = C;
+    type Instant = <C as Clock>::Instant;
     type FrameQueue = Q;
 
     fn accept_frame<H>(
@@ -130,7 +131,7 @@ where
         handler: &mut H,
     ) -> Result<(), OutOfMemoryError>
     where
-        H: TransferHandler<Self>,
+        H: TransferHandler<Self::Instant>,
     {
         match self.receiver.accept(frame)? {
             Some(transfer) => {

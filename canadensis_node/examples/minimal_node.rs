@@ -45,7 +45,7 @@ use canadensis_node::MinimalNode;
 /// To subscribe and print out Heartbeat messages:
 /// `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" subscribe uavcan.node.Heartbeat.1.0`
 ///
-/// In the above two commands, 8 is the MTU of standard CAN and 42 is the node ID of the Yakut node.
+/// In the above command, 8 is the MTU of standard CAN and 42 is the node ID of the Yakut node.
 ///
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);

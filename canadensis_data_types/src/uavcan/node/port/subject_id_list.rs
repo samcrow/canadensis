@@ -21,7 +21,7 @@ impl Default for SubjectIdList {
 }
 
 impl SubjectIdList {
-    const CAPACITY: u16 = SubjectId::MAX + 1;
+    pub const CAPACITY: u16 = SubjectId::MAX + 1;
 }
 
 impl DataType for SubjectIdList {

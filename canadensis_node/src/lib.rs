@@ -11,4 +11,5 @@ extern crate heapless;
 
 mod basic;
 mod minimal;
+pub use crate::basic::BasicNode;
 pub use crate::minimal::MinimalNode;

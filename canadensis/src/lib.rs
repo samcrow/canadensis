@@ -28,7 +28,7 @@ use canadensis_core::{NodeId, Priority, ServiceId, SubjectId, TransferId};
 use canadensis_encoding::{Message, Request, Response, Serialize};
 
 /// A token from a request that is needed to send a response
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ResponseToken {
     /// ID of the service that this is a response for
     service: ServiceId,
@@ -41,33 +41,117 @@ pub struct ResponseToken {
 }
 
 /// Something that may be able to handle incoming transfers
-pub trait TransferHandler<N: Node + ?Sized> {
+pub trait TransferHandler<I: Instant> {
     /// Potentially handles an incoming message transfer
-    fn handle_message(
+    ///
+    /// This function returns true if the message was handled and should not be sent on to other
+    /// handlers.
+    fn handle_message<N: Node<Instant = I>>(
         &mut self,
         node: &mut N,
-        transfer: MessageTransfer<Vec<u8>, <N::Clock as Clock>::Instant>,
-    );
+        transfer: &MessageTransfer<Vec<u8>, I>,
+    ) -> bool;
 
     /// Potentially handles an incoming service request
-    fn handle_request(
+    ///
+    /// This function returns true if the request was handled and should not be sent on to other
+    /// handlers.
+    fn handle_request<N: Node<Instant = I>>(
         &mut self,
         node: &mut N,
         token: ResponseToken,
-        transfer: ServiceTransfer<Vec<u8>, <N::Clock as Clock>::Instant>,
-    );
+        transfer: &ServiceTransfer<Vec<u8>, I>,
+    ) -> bool;
 
     /// Potentially handles an incoming service response
-    fn handle_response(
+    ///
+    /// This function returns true if the response was handled and should not be sent on to other
+    /// handlers.
+    fn handle_response<N: Node<Instant = I>>(
         &mut self,
         node: &mut N,
-        transfer: ServiceTransfer<Vec<u8>, <N::Clock as Clock>::Instant>,
-    );
+        transfer: &ServiceTransfer<Vec<u8>, I>,
+    ) -> bool;
+
+    /// Chains another handler after this handler and returns the combined handler
+    ///
+    /// For each incoming transfer, this handler will be given the transfer before the next handler.
+    fn chain<H>(self, next: H) -> TransferHandlerChain<Self, H>
+    where
+        Self: Sized,
+    {
+        TransferHandlerChain::new(self, next)
+    }
+}
+
+/// Combines two transfer handlers
+pub struct TransferHandlerChain<H0, H1> {
+    handler0: H0,
+    handler1: H1,
+}
+
+impl<H0, H1> TransferHandlerChain<H0, H1> {
+    /// Creates a handler chain
+    ///
+    /// Each incoming transfer will be passed to handler 0 first. If handler 0 does not
+    /// handle the transfer, the transfer will be passed to handler 1.
+    pub fn new(handler0: H0, handler1: H1) -> Self {
+        TransferHandlerChain { handler0, handler1 }
+    }
+}
+
+impl<I, H0, H1> TransferHandler<I> for TransferHandlerChain<H0, H1>
+where
+    I: Instant,
+    H0: TransferHandler<I>,
+    H1: TransferHandler<I>,
+{
+    fn handle_message<N: Node<Instant = I>>(
+        &mut self,
+        node: &mut N,
+        transfer: &MessageTransfer<Vec<u8>, I>,
+    ) -> bool {
+        let handled = self.handler0.handle_message(node, transfer);
+        if handled {
+            true
+        } else {
+            self.handler1.handle_message(node, transfer)
+        }
+    }
+
+    fn handle_request<N: Node<Instant = I>>(
+        &mut self,
+        node: &mut N,
+        token: ResponseToken,
+        transfer: &ServiceTransfer<Vec<u8>, I>,
+    ) -> bool {
+        let handled = self.handler0.handle_request(node, token.clone(), transfer);
+        if handled {
+            true
+        } else {
+            self.handler1.handle_request(node, token, transfer)
+        }
+    }
+
+    fn handle_response<N: Node<Instant = I>>(
+        &mut self,
+        node: &mut N,
+        transfer: &ServiceTransfer<Vec<u8>, I>,
+    ) -> bool {
+        let handled = self.handler0.handle_response(node, transfer);
+        if handled {
+            true
+        } else {
+            self.handler1.handle_response(node, transfer)
+        }
+    }
 }
 
 pub trait Node {
     /// The clock that this node uses
-    type Clock: Clock;
+    type Clock: Clock<Instant = Self::Instant>;
+    /// The instant that this node's clock produces
+    type Instant: Instant;
     /// The queue of outgoing frames that this node uses
     type FrameQueue;
 
@@ -77,7 +161,7 @@ pub trait Node {
         handler: &mut H,
     ) -> Result<(), OutOfMemoryError>
     where
-        H: TransferHandler<Self>;
+        H: TransferHandler<Self::Instant>;
 
     fn start_publishing<T>(
         &mut self,
