@@ -8,7 +8,7 @@ use canadensis_can::{Frame, OutOfMemoryError};
 use canadensis_core::time::{milliseconds, Clock, Duration, Instant};
 use canadensis_core::transfer::{MessageTransfer, ServiceTransfer};
 use canadensis_core::{NodeId, Priority, ServiceId, SubjectId};
-use canadensis_data_types::bits::BitSet;
+use canadensis_data_types::bits::BitArray;
 use canadensis_data_types::uavcan::node::get_info::{GetInfoRequest, GetInfoResponse};
 use canadensis_data_types::uavcan::node::heartbeat::Heartbeat;
 use canadensis_data_types::uavcan::node::port::list::List;
@@ -316,7 +316,7 @@ fn insert_into_list(subject_list: &mut SubjectIdList, subject: SubjectId) {
                     Ok(_) => {}
                     Err(_) => {
                         // The list is full, need to switch to the mask representation
-                        let mut mask = BitSet::new(SubjectIdList::CAPACITY as usize);
+                        let mut mask = BitArray::new(SubjectIdList::CAPACITY as usize);
                         for port in list.iter() {
                             mask.set(port.value.into(), true);
                         }

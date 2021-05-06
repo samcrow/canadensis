@@ -25,6 +25,12 @@ pub trait Serialize: DataType {
     /// The provided cursor will allow writing at least the number of bits returned by the
     /// size_bits() function.
     fn serialize(&self, cursor: &mut WriteCursor<'_>);
+
+    /// A convenience function that creates a cursor around the provided bytes and calls serialize
+    fn serialize_to_bytes(&self, bytes: &mut [u8]) {
+        let mut cursor = WriteCursor::new(bytes);
+        self.serialize(&mut cursor);
+    }
 }
 
 /// Trait for types that can be deserialized from UAVCAN transfers
@@ -43,6 +49,15 @@ pub trait Deserialize: DataType {
     fn deserialize(cursor: &mut ReadCursor<'_>) -> Result<Self, DeserializeError>
     where
         Self: Sized;
+
+    /// A convenience function that creates a cursor around the provided bytes and calls deserialize
+    fn deserialize_from_bytes(bytes: &[u8]) -> Result<Self, DeserializeError>
+    where
+        Self: Sized,
+    {
+        let mut cursor = ReadCursor::new(bytes);
+        Self::deserialize(&mut cursor)
+    }
 }
 
 /// Marker for message data types

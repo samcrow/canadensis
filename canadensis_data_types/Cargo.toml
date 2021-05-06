@@ -9,6 +9,7 @@ description = "Hand-written definitions for some UAVCAN public regulated data ty
 
 [dependencies]
 heapless = "0.7.0"
+half = "1.7.1"
 
 [dependencies.canadensis_encoding]
 path = "../canadensis_encoding"

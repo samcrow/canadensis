@@ -47,7 +47,7 @@ where
                 .expect("Duration type can't represent 500 milliseconds");
 
         let heartbeat_token =
-            node.start_publishing(Heartbeat::SUBJECT, heartbeat_timeout, Priority::Low)?;
+            node.start_publishing(Heartbeat::SUBJECT, heartbeat_timeout, Priority::Nominal)?;
 
         Ok(MinimalNode {
             node,

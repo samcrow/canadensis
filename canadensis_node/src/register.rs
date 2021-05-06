@@ -1,0 +1,180 @@
+pub mod basic;
+mod block_impl;
+
+use alloc::vec::Vec;
+use core::str;
+
+use canadensis::{Node, ResponseToken, TransferHandler};
+use canadensis_can::OutOfMemoryError;
+use canadensis_core::time::{milliseconds, Instant};
+use canadensis_core::transfer::ServiceTransfer;
+use canadensis_data_types::uavcan::register::access::{AccessRequest, AccessResponse};
+use canadensis_data_types::uavcan::register::list::{ListRequest, ListResponse};
+use canadensis_data_types::uavcan::register::name::Name;
+use canadensis_data_types::uavcan::register::value::Value;
+use canadensis_encoding::Deserialize;
+
+/// A block of registers that can be accessed externally through the uavcan.register interface
+pub trait RegisterBlock {
+    /// Returns a reference to the register at the provided index
+    ///
+    /// Register indexes should start at 0 and not contain any gaps.
+    fn register_by_index(&self, index: usize) -> Option<&dyn Register>;
+    /// Returns a mutable reference to the register with the provided name
+    fn register_by_name_mut(&mut self, name: &str) -> Option<&mut dyn Register>;
+}
+
+/// A register that can be read and optionally written
+pub trait Register {
+    /// Returns the name of this register
+    ///
+    /// The name must not be more than 256 bytes long. Each register must have a distinct name.
+    fn name(&self) -> &str;
+
+    /// Returns true if this register is mutable
+    ///
+    /// Mutable registers can be written by other nodes.
+    fn is_mutable(&self) -> bool;
+
+    /// Returns true if this register is persistent
+    ///
+    /// Persistent registers are preserved when the node restarts.
+    fn is_persistent(&self) -> bool;
+
+    /// Reads this register and returns its value
+    ///
+    /// This function must not return `Value::Empty`.
+    fn read(&self) -> Value;
+    /// Writes the value of this register
+    ///
+    /// This function returns an error if the provided value does not have an appropriate type
+    /// for this register.
+    ///
+    /// If this function returns an error, the value of this register must be the same as before
+    /// the call to write().
+    fn write(&mut self, value: &Value) -> Result<(), WriteError>;
+}
+
+pub enum WriteError {
+    /// The type of the value was incorrect
+    Type,
+    /// This register is not mutable
+    Immutable,
+}
+
+/// Handles access requests for registers
+pub struct RegisterHandler<B> {
+    block: B,
+}
+
+impl<B> RegisterHandler<B>
+where
+    B: RegisterBlock,
+{
+    pub fn init<N>(block: B, node: &mut N) -> Result<Self, OutOfMemoryError>
+    where
+        N: Node,
+    {
+        // Subscribe to register access and list services
+        node.subscribe_request(AccessRequest::SERVICE, 515, milliseconds(1000))?;
+        node.subscribe_request(ListRequest::SERVICE, 2, milliseconds(0))?;
+
+        Ok(RegisterHandler { block })
+    }
+
+    pub fn block(&self) -> &B {
+        &self.block
+    }
+    pub fn block_mut(&mut self) -> &mut B {
+        &mut self.block
+    }
+
+    fn handle_access_request(&mut self, request: &AccessRequest) -> AccessResponse {
+        match str::from_utf8(&request.name.name) {
+            Ok(register_name) => {
+                if let Some(register) = self.block.register_by_name_mut(register_name) {
+                    register_handle_access(register, request)
+                } else {
+                    // Register doesn't exist, return empty
+                    AccessResponse::default()
+                }
+            }
+            Err(_) => {
+                // Invalid name, return empty
+                AccessResponse::default()
+            }
+        }
+    }
+
+    fn handle_list_request(&mut self, request: &ListRequest) -> ListResponse {
+        match self.block.register_by_index(request.index.into()) {
+            Some(register) => {
+                let name = register.name().as_bytes();
+                // Truncate to 256 bytes if necessary
+                let name = if name.len() <= 256 {
+                    name
+                } else {
+                    &name[..256]
+                };
+                ListResponse {
+                    name: Name {
+                        name: heapless::Vec::from_slice(name).expect("Incorrect name length"),
+                    },
+                }
+            }
+            None => {
+                // Empty name
+                ListResponse::default()
+            }
+        }
+    }
+}
+
+fn register_handle_access(register: &mut dyn Register, request: &AccessRequest) -> AccessResponse {
+    if !matches!(request.value, Value::Empty) {
+        // Write errors are reported by returning the unmodified register value.
+        let _ = register.write(&request.value);
+    }
+    // Now read the register and return its properties
+    AccessResponse {
+        timestamp: Default::default(),
+        mutable: register.is_mutable(),
+        persistent: register.is_persistent(),
+        value: register.read(),
+    }
+}
+
+impl<I, B> TransferHandler<I> for RegisterHandler<B>
+where
+    I: Instant,
+    B: RegisterBlock,
+{
+    fn handle_request<N: Node<Instant = I>>(
+        &mut self,
+        node: &mut N,
+        token: ResponseToken,
+        transfer: &ServiceTransfer<Vec<u8>, I>,
+    ) -> bool {
+        match transfer.header.service {
+            AccessRequest::SERVICE => {
+                if let Ok(request) = AccessRequest::deserialize_from_bytes(&transfer.payload) {
+                    let response = self.handle_access_request(&request);
+                    let _ = node.send_response(token, milliseconds(1000), &response);
+                    true
+                } else {
+                    false
+                }
+            }
+            ListRequest::SERVICE => {
+                if let Ok(request) = ListRequest::deserialize_from_bytes(&transfer.payload) {
+                    let response = self.handle_list_request(&request);
+                    let _ = node.send_response(token, milliseconds(1000), &response);
+                    true
+                } else {
+                    false
+                }
+            }
+            _ => false,
+        }
+    }
+}

@@ -1,4 +1,4 @@
-use crate::bits::BitSet;
+use crate::bits::BitArray;
 use crate::uavcan::node::port::service_id::ServiceId;
 use canadensis_encoding::{
     DataType, Deserialize, DeserializeError, Message, ReadCursor, Serialize, WriteCursor,
@@ -7,13 +7,13 @@ use canadensis_encoding::{
 /// uavcan.node.port.ServiceIDList version 0.1
 #[derive(Debug, Clone)]
 pub struct ServiceIdList {
-    pub mask: BitSet<{ (ServiceIdList::CAPACITY as usize + 7) / 8 }>,
+    pub mask: BitArray<{ (ServiceIdList::CAPACITY as usize + 7) / 8 }>,
 }
 
 impl Default for ServiceIdList {
     fn default() -> Self {
         ServiceIdList {
-            mask: BitSet::new(usize::from(ServiceIdList::CAPACITY)),
+            mask: BitArray::new(usize::from(ServiceIdList::CAPACITY)),
         }
     }
 }
@@ -59,7 +59,7 @@ impl Deserialize for ServiceIdList {
         Self: Sized,
     {
         Ok(ServiceIdList {
-            mask: BitSet::deserialize(usize::from(ServiceIdList::CAPACITY), cursor),
+            mask: BitArray::deserialize(usize::from(ServiceIdList::CAPACITY), cursor),
         })
     }
 }

@@ -46,32 +46,47 @@ pub trait TransferHandler<I: Instant> {
     ///
     /// This function returns true if the message was handled and should not be sent on to other
     /// handlers.
+    ///
+    /// The default implementation does nothing and returns false.
     fn handle_message<N: Node<Instant = I>>(
         &mut self,
         node: &mut N,
         transfer: &MessageTransfer<Vec<u8>, I>,
-    ) -> bool;
+    ) -> bool {
+        drop((node, transfer));
+        false
+    }
 
     /// Potentially handles an incoming service request
     ///
     /// This function returns true if the request was handled and should not be sent on to other
     /// handlers.
+    ///
+    /// The default implementation does nothing and returns false.
     fn handle_request<N: Node<Instant = I>>(
         &mut self,
         node: &mut N,
         token: ResponseToken,
         transfer: &ServiceTransfer<Vec<u8>, I>,
-    ) -> bool;
+    ) -> bool {
+        drop((node, token, transfer));
+        false
+    }
 
     /// Potentially handles an incoming service response
     ///
     /// This function returns true if the response was handled and should not be sent on to other
     /// handlers.
+    ///
+    /// The default implementation does nothing and returns false.
     fn handle_response<N: Node<Instant = I>>(
         &mut self,
         node: &mut N,
         transfer: &ServiceTransfer<Vec<u8>, I>,
-    ) -> bool;
+    ) -> bool {
+        drop((node, transfer));
+        false
+    }
 
     /// Chains another handler after this handler and returns the combined handler
     ///
@@ -79,6 +94,7 @@ pub trait TransferHandler<I: Instant> {
     fn chain<H>(self, next: H) -> TransferHandlerChain<Self, H>
     where
         Self: Sized,
+        H: TransferHandler<I>,
     {
         TransferHandlerChain::new(self, next)
     }

@@ -1,23 +1,28 @@
 use canadensis_encoding::{ReadCursor, WriteCursor};
 
-/// A set of bits in a format compatible with UAVCAN serialization
+/// An array of bits in a format compatible with UAVCAN serialization
 ///
 /// Because the const generics feature is incomplete, the integer generic parameter is a number
 /// of bytes (= 8 bits), not a number of bits. The functions still use bit indexes.
 #[derive(Debug, Clone)]
-pub struct BitSet<const BYTES: usize> {
+pub struct BitArray<const BYTES: usize> {
     bytes: [u8; BYTES],
     bit_length: usize,
 }
 
-impl<const BYTES: usize> BitSet<BYTES> {
+impl<const BYTES: usize> BitArray<BYTES> {
     /// Creates a bit set with all bits set to zero
     pub fn new(bit_length: usize) -> Self {
         assert!(bit_length <= BYTES * 8);
-        BitSet {
+        BitArray {
             bytes: [0; BYTES],
             bit_length,
         }
+    }
+
+    /// Returns the number of bits in this array
+    pub fn len(&self) -> usize {
+        self.bit_length
     }
 
     /// Returns the value of a bit at the provided bit index
@@ -40,9 +45,9 @@ impl<const BYTES: usize> BitSet<BYTES> {
         }
     }
 
-    /// Serializes this bit set
+    /// Serializes this bit set (not including the length)
     ///
-    /// Note: This doesn't implement DataType, Serialize, or Deserialize because it is not a
+    /// Note: This type doesn't implement DataType, Serialize, or Deserialize because it is not a
     /// composite type and has an alignment of only 1 bit.
     pub fn serialize(&self, cursor: &mut WriteCursor<'_>) {
         if self.bit_length == BYTES * 8 && cursor.is_aligned_to_8_bits() {
@@ -54,6 +59,8 @@ impl<const BYTES: usize> BitSet<BYTES> {
         }
     }
 
+    /// Deserializes this bit set (not including the length). self.bit_length must be set
+    /// before this function is called.
     pub fn deserialize_in_place(&mut self, cursor: &mut ReadCursor<'_>) {
         if self.bit_length % 8 == 0 && cursor.is_aligned_to_8_bits() {
             self.bytes.fill_with(|| cursor.read_aligned_u8());
@@ -65,7 +72,7 @@ impl<const BYTES: usize> BitSet<BYTES> {
     }
 
     pub fn deserialize(bit_length: usize, cursor: &mut ReadCursor<'_>) -> Self {
-        let mut set = BitSet::new(bit_length);
+        let mut set = BitArray::new(bit_length);
         set.deserialize_in_place(cursor);
         set
     }
@@ -76,5 +83,16 @@ impl<const BYTES: usize> BitSet<BYTES> {
         let byte = bit_index / 8;
         let bit_in_byte = (bit_index % 8) as u8;
         (byte, bit_in_byte)
+    }
+}
+
+impl<const BYTES: usize> PartialEq for BitArray<BYTES> {
+    fn eq(&self, other: &Self) -> bool {
+        if self.len() == other.len() {
+            // Take advantage of the invariant that any bits beyond self.bit_length are zero
+            self.bytes == other.bytes
+        } else {
+            false
+        }
     }
 }

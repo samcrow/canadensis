@@ -1,4 +1,4 @@
-use crate::bits::BitSet;
+use crate::bits::BitArray;
 use crate::uavcan::node::port::subject_id::SubjectId;
 use canadensis_encoding::{
     DataType, Deserialize, DeserializeError, Message, ReadCursor, Serialize, WriteCursor,
@@ -7,7 +7,7 @@ use canadensis_encoding::{
 /// uavcan.node.port.SubjectIDList version 0.1
 #[derive(Debug, Clone)]
 pub enum SubjectIdList {
-    Mask(BitSet<{ (SubjectIdList::CAPACITY as usize + 7) / 8 }>),
+    Mask(BitArray<{ (SubjectIdList::CAPACITY as usize + 7) / 8 }>),
     SparseList(heapless::Vec<SubjectId, 255>),
     /// Total means that all subject IDs are in use
     Total,
@@ -101,7 +101,7 @@ impl Deserialize for SubjectIdList {
     {
         let tag = cursor.read_aligned_u8();
         match tag {
-            0 => Ok(SubjectIdList::Mask(BitSet::deserialize(
+            0 => Ok(SubjectIdList::Mask(BitArray::deserialize(
                 usize::from(SubjectIdList::CAPACITY),
                 cursor,
             ))),
