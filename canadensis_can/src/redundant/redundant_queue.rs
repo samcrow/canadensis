@@ -174,7 +174,7 @@ where
         self.status1 = self.queue1.try_reserve(additional);
         // If one queue failed, it might be full because the underlying transport is broken.
         // This is successful if space was available in at least one queue.
-        self.status0.clone().or(self.status1.clone())
+        self.status0.clone().or_else(|_| self.status1.clone())
     }
 
     fn shrink_to_fit(&mut self) {

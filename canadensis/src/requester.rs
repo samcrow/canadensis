@@ -48,7 +48,7 @@ impl<I: Instant> Requester<I> {
         Q: FrameSink<I>,
     {
         // Part 1: Serialize
-        let deadline = self.timeout.clone() + now;
+        let deadline = self.timeout + now;
         do_serialize(payload, |payload_bytes| {
             // Part 2: Split into frames and send
             self.send_payload(payload_bytes, service, destination, deadline, transmitter)

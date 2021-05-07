@@ -51,10 +51,16 @@ where
         }
     }
 
+    /// Returns the number of frames in this queue
     pub fn len(&self) -> usize {
         self.length
     }
+    /// Returns true if this queue does not contain any frames
+    pub fn is_empty(&self) -> bool {
+        self.length == 0
+    }
 
+    /// Returns the maximum number of frames that this queue can hold
     pub fn capacity(&self) -> usize {
         N
     }
@@ -136,7 +142,7 @@ where
 
     fn pop_frame(&mut self) -> Option<Frame<I>> {
         if self.length != 0 {
-            let frame = mem::replace(&mut self.items[self.head], Frame::default());
+            let frame = mem::take(&mut self.items[self.head]);
             self.increment_head();
             self.length -= 1;
             Some(frame)
@@ -196,6 +202,15 @@ where
 
             Ok(())
         }
+    }
+}
+
+impl<I, const N: usize> Default for ArrayQueue<I, N>
+where
+    I: Default,
+{
+    fn default() -> Self {
+        Self::new()
     }
 }
 

@@ -42,3 +42,9 @@ impl TransferCrc {
         self.value
     }
 }
+
+impl Default for TransferCrc {
+    fn default() -> Self {
+        Self::new()
+    }
+}

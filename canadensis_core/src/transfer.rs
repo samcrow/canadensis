@@ -76,9 +76,9 @@ impl<I> Header<I> {
     /// Returns the priority of this header
     pub fn priority(&self) -> Priority {
         match self {
-            Header::Message(ref message_header) => message_header.priority.clone(),
+            Header::Message(ref message_header) => message_header.priority,
             Header::Request(ref service_header) | Header::Response(ref service_header) => {
-                service_header.priority.clone()
+                service_header.priority
             }
         }
     }
@@ -98,9 +98,9 @@ impl<I> Header<I> {
     /// Returns the source node ID of this transfer, or None if this is an anonymous message
     pub fn source(&self) -> Option<NodeId> {
         match self {
-            Header::Message(ref message_header) => message_header.source.clone(),
+            Header::Message(ref message_header) => message_header.source,
             Header::Request(ref service_header) | Header::Response(ref service_header) => {
-                Some(service_header.source.clone())
+                Some(service_header.source)
             }
         }
     }

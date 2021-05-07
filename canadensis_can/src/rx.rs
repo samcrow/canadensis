@@ -121,7 +121,7 @@ impl<I: Instant> Subscription<I> {
         tail: TailByte,
     ) -> Result<Option<Transfer<Vec<u8>, I>>, SubscriptionError> {
         let max_payload_length = self.payload_size_max;
-        let transfer_timeout = self.timeout.clone();
+        let transfer_timeout = self.timeout;
 
         let slot = &mut self.sessions[usize::from(source_node)];
         let session = match slot {
@@ -286,7 +286,7 @@ where
         // The header for the transfer has the same priority as the final frame,
         // but the timestamp of the first frame.
         let mut transfer_header = frame_header;
-        transfer_header.set_timestamp(self.transfer_timestamp.clone());
+        transfer_header.set_timestamp(self.transfer_timestamp);
 
         Ok(Some(Transfer {
             header: transfer_header,
@@ -454,7 +454,7 @@ impl<I: Instant> Receiver<I> {
     /// is valid.
     fn frame_sanity_check(frame: &Frame<I>) -> Option<(Header<I>, TailByte)> {
         // Frame must have a tail byte to be valid
-        let tail_byte = TailByte::parse(frame.data().last()?.clone());
+        let tail_byte = TailByte::parse(*frame.data().last()?);
 
         let header = parse_can_id(frame.id(), frame.timestamp(), tail_byte.transfer_id).ok()?;
 

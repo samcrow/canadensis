@@ -104,6 +104,6 @@ where
 
     /// Returns the time when this node was created
     pub(crate) fn start_time(&self) -> <N::Clock as Clock>::Instant {
-        self.start_time.clone()
+        self.start_time
     }
 }

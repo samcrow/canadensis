@@ -25,6 +25,10 @@ impl<const BYTES: usize> BitArray<BYTES> {
     pub fn len(&self) -> usize {
         self.bit_length
     }
+    /// Returns true if this array is empty
+    pub fn is_empty(&self) -> bool {
+        self.bit_length == 0
+    }
 
     /// Returns the value of a bit at the provided bit index
     pub fn get(&self, bit_index: usize) -> bool {

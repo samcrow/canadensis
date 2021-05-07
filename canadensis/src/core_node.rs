@@ -133,11 +133,8 @@ where
     where
         H: TransferHandler<Self::Instant>,
     {
-        match self.receiver.accept(frame)? {
-            Some(transfer) => {
-                self.handle_incoming_transfer(transfer, handler);
-            }
-            None => {}
+        if let Some(transfer) = self.receiver.accept(frame)? {
+            self.handle_incoming_transfer(transfer, handler)
         }
         Ok(())
     }
@@ -151,7 +148,7 @@ where
     where
         T: Message,
     {
-        let token = PublishToken(subject.clone(), PhantomData);
+        let token = PublishToken(subject, PhantomData);
         self.publishers
             .insert(subject, Publisher::new(self.node_id, timeout, priority))
             .map(|_| token)
@@ -186,7 +183,7 @@ where
         self.requesters
             .insert(
                 service,
-                Requester::new(self.node_id, receive_timeout.clone(), priority),
+                Requester::new(self.node_id, receive_timeout, priority),
             )
             .map_err(|_| CapacityError(()))?;
         match self

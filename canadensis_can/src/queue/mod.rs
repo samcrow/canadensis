@@ -26,6 +26,10 @@ pub trait FrameSink<I> {
 }
 
 /// A queue of outgoing frames that can be used to copy frames to a CAN controller driver
+///
+/// All queue implementations must order frames by ID, so that the frame with the lowest CAN ID
+/// is at the front. Frames with the same CAN ID must have first-in, first-out ordering.
+///
 pub trait FrameQueueSource<I> {
     /// Returns a reference to the frame at the front of the queue
     fn peek_frame(&self) -> Option<&Frame<I>>;

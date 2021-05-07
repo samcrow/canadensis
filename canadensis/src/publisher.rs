@@ -47,7 +47,7 @@ impl<I: Instant> Publisher<I> {
         I: Instant,
         Q: FrameSink<I>,
     {
-        let deadline = self.timeout.clone() + now;
+        let deadline = self.timeout + now;
         // Part 1: Serialize
         do_serialize(payload, |payload_bytes| {
             // Part 2: Split into frames and put frames in the queue

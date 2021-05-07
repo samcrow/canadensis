@@ -75,7 +75,7 @@ where
             return Err(AnonymousPublishError::Length);
         }
         // Part 1: Serialize
-        let deadline = self.timeout.clone() + now;
+        let deadline = self.timeout + now;
         do_serialize(payload, |payload_bytes| {
             self.send_payload(payload_bytes, deadline, transmitter)
         })?;
