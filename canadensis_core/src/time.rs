@@ -21,7 +21,7 @@ use core::ops::Add;
 /// when overflow has happened once. If overflow has happened more than once between two instants,
 /// the calculated duration will be too short.
 ///
-pub trait Instant: Debug + Clone {
+pub trait Instant: Debug + Copy + Clone {
     /// The duration between two instants
     ///
     /// This type must be able to represent the difference between the maximum and minimum instant
@@ -52,7 +52,7 @@ pub trait Instant: Debug + Clone {
 }
 
 /// A duration created from the difference between two instants
-pub trait Duration: PartialOrd + Debug + Clone + Add<Self, Output = Self> {
+pub trait Duration: PartialOrd + Debug + Default + Copy + Clone + Add<Self, Output = Self> {
     /// Creates a duration from a number of milliseconds
     ///
     /// This function returns None if this duration type cannot represent the provided number

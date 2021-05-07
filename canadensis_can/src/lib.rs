@@ -17,6 +17,7 @@ mod crc;
 mod data;
 mod error;
 pub mod queue;
+pub mod redundant;
 mod rx;
 mod tx;
 
