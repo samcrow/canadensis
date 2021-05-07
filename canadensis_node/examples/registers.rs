@@ -111,6 +111,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let mut node = BasicNode::new(core_node, node_info).unwrap();
 
+    // Define the registers that can be accessed
     let register_block = (
         SimpleRegister::with_value("uavcan.node.id", true, false, u16::MAX),
         SimpleRegister::<RegisterString>::new("uavcan.node.description", true, false),
