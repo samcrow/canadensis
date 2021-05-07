@@ -205,12 +205,15 @@ pub trait Node {
     where
         T: Request;
 
+    /// Sends a service request to another node
+    ///
+    /// On success, this function returns the transfer ID of the request.
     fn send_request<T>(
         &mut self,
         token: &ServiceToken<T>,
         payload: &T,
         destination: NodeId,
-    ) -> Result<(), OutOfMemoryError>
+    ) -> Result<TransferId, OutOfMemoryError>
     where
         T: Request + Serialize;
 

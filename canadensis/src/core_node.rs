@@ -10,7 +10,7 @@ use canadensis_core::time::{Clock, Instant};
 use canadensis_core::transfer::{
     Header, MessageTransfer, ServiceHeader, ServiceTransfer, Transfer,
 };
-use canadensis_core::{NodeId, Priority, ServiceId, SubjectId};
+use canadensis_core::{NodeId, Priority, ServiceId, SubjectId, TransferId};
 use canadensis_encoding::{Message, Request, Response, Serialize, WriteCursor};
 
 use crate::hash::TrivialIndexMap;
@@ -207,7 +207,7 @@ where
         token: &ServiceToken<T>,
         payload: &T,
         destination: NodeId,
-    ) -> Result<(), OutOfMemoryError>
+    ) -> Result<TransferId, OutOfMemoryError>
     where
         T: Request + Serialize,
     {
@@ -308,10 +308,10 @@ where
 const STACK_THRESHOLD: usize = 64;
 
 /// Serializes a payload into a buffer and passes the buffer to a closure
-pub(crate) fn do_serialize<T, F>(payload: &T, operation: F) -> Result<(), OutOfMemoryError>
+pub(crate) fn do_serialize<T, F, R>(payload: &T, operation: F) -> Result<R, OutOfMemoryError>
 where
     T: Serialize,
-    F: FnOnce(&[u8]) -> Result<(), OutOfMemoryError>,
+    F: FnOnce(&[u8]) -> Result<R, OutOfMemoryError>,
 {
     let payload_bytes = (payload.size_bits() + 7) / 8;
     if payload_bytes > STACK_THRESHOLD {

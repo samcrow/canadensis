@@ -42,7 +42,7 @@ impl<I: Instant> Requester<I> {
         payload: &T,
         destination: NodeId,
         transmitter: &mut Transmitter<Q>,
-    ) -> Result<(), OutOfMemoryError>
+    ) -> Result<TransferId, OutOfMemoryError>
     where
         T: Serialize,
         Q: FrameSink<I>,
@@ -62,7 +62,7 @@ impl<I: Instant> Requester<I> {
         destination: NodeId,
         deadline: I,
         transmitter: &mut Transmitter<Q>,
-    ) -> Result<(), OutOfMemoryError>
+    ) -> Result<TransferId, OutOfMemoryError>
     where
         Q: FrameSink<I>,
     {
@@ -80,20 +80,23 @@ impl<I: Instant> Requester<I> {
             payload,
         };
 
-        transmitter.push(transfer)
+        transmitter.push(transfer)?;
+        Ok(transfer_id)
     }
 }
 
+const NUM_TRANSFER_IDS: usize = (NodeId::MAX.to_u8() as usize) + 1;
+
 /// A map from destination node IDs to transfer IDs of the next transfer
 struct NextTransferIds {
-    ids: [TransferId; NodeId::MAX.to_u8() as usize],
+    ids: [TransferId; NUM_TRANSFER_IDS],
 }
 
 impl NextTransferIds {
     /// Creates a new transfer ID map with the default transfer ID for each node
     pub fn new() -> Self {
         NextTransferIds {
-            ids: [TransferId::default(); NodeId::MAX.to_u8() as usize],
+            ids: [TransferId::default(); NUM_TRANSFER_IDS],
         }
     }
     /// Returns the next transfer ID for the provided node, and increments the stored transfer

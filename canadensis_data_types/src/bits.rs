@@ -1,10 +1,11 @@
 use canadensis_encoding::{ReadCursor, WriteCursor};
+use core::fmt;
 
 /// An array of bits in a format compatible with UAVCAN serialization
 ///
 /// Because the const generics feature is incomplete, the integer generic parameter is a number
 /// of bytes (= 8 bits), not a number of bits. The functions still use bit indexes.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct BitArray<const BYTES: usize> {
     bytes: [u8; BYTES],
     bit_length: usize,
@@ -94,5 +95,15 @@ impl<const BYTES: usize> PartialEq for BitArray<BYTES> {
         } else {
             false
         }
+    }
+}
+
+impl<const BYTES: usize> fmt::Debug for BitArray<BYTES> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut list_debug = f.debug_list();
+        for i in 0..self.len() {
+            list_debug.entry(&self.get(i));
+        }
+        list_debug.finish()
     }
 }

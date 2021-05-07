@@ -7,7 +7,7 @@ use canadensis::{
 use canadensis_can::{Frame, OutOfMemoryError};
 use canadensis_core::time::{milliseconds, Clock, Duration, Instant};
 use canadensis_core::transfer::{MessageTransfer, ServiceTransfer};
-use canadensis_core::{NodeId, Priority, ServiceId, SubjectId};
+use canadensis_core::{NodeId, Priority, ServiceId, SubjectId, TransferId};
 use canadensis_data_types::bits::BitArray;
 use canadensis_data_types::uavcan::node::get_info::{GetInfoRequest, GetInfoResponse};
 use canadensis_data_types::uavcan::node::heartbeat::Heartbeat;
@@ -178,7 +178,7 @@ where
         token: &ServiceToken<T>,
         payload: &T,
         destination: NodeId,
-    ) -> Result<(), OutOfMemoryError>
+    ) -> Result<TransferId, OutOfMemoryError>
     where
         T: Request + Serialize,
     {
