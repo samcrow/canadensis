@@ -7,6 +7,119 @@ use crate::{Frame, OutOfMemoryError};
 /// return `Ok(())` if the operation succeeded on at least one of the queues.
 ///
 /// Double-redundant queue objects can be nested for use with triple-redundant transports.
+///
+/// # Examples
+///
+/// ## Double-redundant transports
+///
+/// ```
+/// # use canadensis_can::redundant::RedundantQueue;
+/// # use canadensis_can::queue::{FrameQueueSource, FrameSink, ArrayQueue};
+/// # use canadensis_core::time::Microseconds32;
+/// # use canadensis_can::Frame;
+/// # use std::convert::TryInto;
+/// let mut redundant_queue = RedundantQueue::new(
+///     // The () type would normally be something to store frame timestamps.
+///     ArrayQueue::<(), 4>::new(),
+///     ArrayQueue::<(), 4>::new()
+/// );
+/// // Put 4 frames into the queue. They will all appear on both outputs
+/// let test_frames = [
+///     Frame::new((), 3.try_into().unwrap(), &[]),
+///     Frame::new((), 4.try_into().unwrap(), &[]),
+///     Frame::new((), 5.try_into().unwrap(), &[]),
+///     Frame::new((), 6.try_into().unwrap(), &[]),
+/// ];
+/// redundant_queue.try_reserve(4).unwrap();
+/// redundant_queue.push_frame(test_frames[0].clone()).unwrap();
+/// redundant_queue.push_frame(test_frames[1].clone()).unwrap();
+/// redundant_queue.push_frame(test_frames[2].clone()).unwrap();
+/// redundant_queue.push_frame(test_frames[3].clone()).unwrap();
+///
+/// assert_eq!(test_frames[0], redundant_queue.queue_0_mut().pop_frame().unwrap());
+/// assert_eq!(test_frames[1], redundant_queue.queue_0_mut().pop_frame().unwrap());
+/// assert_eq!(test_frames[2], redundant_queue.queue_0_mut().pop_frame().unwrap());
+/// assert_eq!(test_frames[3], redundant_queue.queue_0_mut().pop_frame().unwrap());
+/// assert!(redundant_queue.queue_0_mut().pop_frame().is_none());
+///
+/// assert_eq!(test_frames[0], redundant_queue.queue_1_mut().pop_frame().unwrap());
+/// assert_eq!(test_frames[1], redundant_queue.queue_1_mut().pop_frame().unwrap());
+/// assert_eq!(test_frames[2], redundant_queue.queue_1_mut().pop_frame().unwrap());
+/// assert_eq!(test_frames[3], redundant_queue.queue_1_mut().pop_frame().unwrap());
+/// assert!(redundant_queue.queue_1_mut().pop_frame().is_none());
+///
+/// // Fill up the queues with 4 frames, then remove the from queue 1. Although queue 0 is full,
+/// // the reserve and push operations will still succeed because queue 1 has space.
+/// redundant_queue.try_reserve(4).unwrap();
+/// redundant_queue.push_frame(test_frames[0].clone()).unwrap();
+/// redundant_queue.push_frame(test_frames[1].clone()).unwrap();
+/// redundant_queue.push_frame(test_frames[2].clone()).unwrap();
+/// redundant_queue.push_frame(test_frames[3].clone()).unwrap();
+///
+/// assert_eq!(test_frames[0], redundant_queue.queue_1_mut().pop_frame().unwrap());
+/// assert_eq!(test_frames[1], redundant_queue.queue_1_mut().pop_frame().unwrap());
+/// assert_eq!(test_frames[2], redundant_queue.queue_1_mut().pop_frame().unwrap());
+/// assert_eq!(test_frames[3], redundant_queue.queue_1_mut().pop_frame().unwrap());
+/// assert!(redundant_queue.queue_1_mut().pop_frame().is_none());
+///
+/// // These operations succeed on queue 1.
+/// redundant_queue.try_reserve(4).unwrap();
+/// redundant_queue.push_frame(test_frames[0].clone()).unwrap();
+/// redundant_queue.push_frame(test_frames[1].clone()).unwrap();
+/// redundant_queue.push_frame(test_frames[2].clone()).unwrap();
+/// redundant_queue.push_frame(test_frames[3].clone()).unwrap();
+///
+/// ```
+///
+/// ### Triple-redundant transports
+///
+/// ```
+/// # use canadensis_can::redundant::RedundantQueue;
+/// # use canadensis_can::queue::{FrameQueueSource, FrameSink, ArrayQueue};
+/// # use canadensis_core::time::Microseconds32;
+/// # use canadensis_can::Frame;
+/// # use std::convert::TryInto;
+/// let mut redundant_queue = RedundantQueue::new(
+///     // The () type would normally be something to store frame timestamps.
+///     ArrayQueue::<(), 4>::new(),
+///     RedundantQueue::new(ArrayQueue::<(), 4>::new(), ArrayQueue::<(), 4>::new())
+/// );
+/// // Put 4 frames into the queue. They will all appear on all three outputs
+/// let test_frames = [
+///     Frame::new((), 3.try_into().unwrap(), &[]),
+///     Frame::new((), 4.try_into().unwrap(), &[]),
+///     Frame::new((), 5.try_into().unwrap(), &[]),
+///     Frame::new((), 6.try_into().unwrap(), &[]),
+/// ];
+/// redundant_queue.try_reserve(4).unwrap();
+/// redundant_queue.push_frame(test_frames[0].clone()).unwrap();
+/// redundant_queue.push_frame(test_frames[1].clone()).unwrap();
+/// redundant_queue.push_frame(test_frames[2].clone()).unwrap();
+/// redundant_queue.push_frame(test_frames[3].clone()).unwrap();
+///
+/// // Transport 0
+/// assert_eq!(test_frames[0], redundant_queue.queue_0_mut().pop_frame().unwrap());
+/// assert_eq!(test_frames[1], redundant_queue.queue_0_mut().pop_frame().unwrap());
+/// assert_eq!(test_frames[2], redundant_queue.queue_0_mut().pop_frame().unwrap());
+/// assert_eq!(test_frames[3], redundant_queue.queue_0_mut().pop_frame().unwrap());
+/// assert!(redundant_queue.queue_0_mut().pop_frame().is_none());
+///
+/// // Transport 1
+/// assert_eq!(test_frames[0], redundant_queue.queue_1_mut().queue_0_mut().pop_frame().unwrap());
+/// assert_eq!(test_frames[1], redundant_queue.queue_1_mut().queue_0_mut().pop_frame().unwrap());
+/// assert_eq!(test_frames[2], redundant_queue.queue_1_mut().queue_0_mut().pop_frame().unwrap());
+/// assert_eq!(test_frames[3], redundant_queue.queue_1_mut().queue_0_mut().pop_frame().unwrap());
+/// assert!(redundant_queue.queue_1_mut().queue_0_mut().pop_frame().is_none());
+///
+/// // Transport 2
+/// assert_eq!(test_frames[0], redundant_queue.queue_1_mut().queue_1_mut().pop_frame().unwrap());
+/// assert_eq!(test_frames[1], redundant_queue.queue_1_mut().queue_1_mut().pop_frame().unwrap());
+/// assert_eq!(test_frames[2], redundant_queue.queue_1_mut().queue_1_mut().pop_frame().unwrap());
+/// assert_eq!(test_frames[3], redundant_queue.queue_1_mut().queue_1_mut().pop_frame().unwrap());
+/// assert!(redundant_queue.queue_1_mut().queue_1_mut().pop_frame().is_none());
+///
+/// ```
+///
 pub struct RedundantQueue<Q0, Q1> {
     /// Inner queue 0
     queue0: Q0,
@@ -27,6 +140,24 @@ impl<Q0, Q1> RedundantQueue<Q0, Q1> {
             status0: Ok(()),
             status1: Ok(()),
         }
+    }
+
+    /// Returns a reference to the first enclosed queue
+    pub fn queue_0(&self) -> &Q0 {
+        &self.queue0
+    }
+    /// Returns a reference to the second enclosed queue
+    pub fn queue_1(&self) -> &Q1 {
+        &self.queue1
+    }
+
+    /// Returns a mutable reference to the first enclosed queue
+    pub fn queue_0_mut(&mut self) -> &mut Q0 {
+        &mut self.queue0
+    }
+    /// Returns a mutable reference to the second enclosed queue
+    pub fn queue_1_mut(&mut self) -> &mut Q1 {
+        &mut self.queue1
     }
 }
 

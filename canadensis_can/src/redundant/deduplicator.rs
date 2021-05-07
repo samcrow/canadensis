@@ -1,11 +1,22 @@
 use crate::Frame;
 use canadensis_core::time::Instant;
 
-/// Deduplicates frames
+/// Deduplicates incoming frames from multiple transports
 ///
 /// Type parameters:
 /// * `I`: The Instant type used for timing
 /// * `N`: The number of transports to handle (must not be 0)
+///
+/// # Behavior
+///
+/// This deduplicator accepts all frames from one active transport, and blocks frames from all
+/// other transports. This strategy is required for UAVCAN/CAN, where there are only 32 possible
+/// transfer ID values.
+///
+/// After a deduplicator is created, the first transport that receives a frame becomes active.
+/// That transport remains active until the time since its last received frame exceeds a timeout.
+/// After the timeout expires, the first transport that receives a frame becomes active. The newly
+/// active transport may be the same transport that was previously active, or a different one.
 ///
 /// For more explanation, see [the comments in pyuavcan](https://github.com/UAVCAN/pyuavcan/blob/87c27a978119d24ac77c9a7f2d6f289846ac96fd/pyuavcan/transport/redundant/__init__.py).
 ///
@@ -25,8 +36,6 @@ where
     I: Instant,
 {
     /// Creates a deduplicator
-    ///
-    /// The deduplicator will initially use transport 0.
     ///
     /// # Panics
     ///
