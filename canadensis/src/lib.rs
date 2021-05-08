@@ -264,13 +264,13 @@ pub trait Node {
 /// associated subject ID
 ///
 /// The type parameter `T` constrains the type of message sent.
-pub struct PublishToken<T>(SubjectId, PhantomData<*mut T>);
+pub struct PublishToken<T>(SubjectId, PhantomData<T>);
 
 /// A token returned from start_sending_requests that can be used to a request a service using the
 /// associated service ID
 ///
 /// The type parameter `T` constrains the type of request sent.
-pub struct ServiceToken<T>(ServiceId, PhantomData<*mut T>);
+pub struct ServiceToken<T>(ServiceId, PhantomData<T>);
 
 /// An error indicating that an operation ran out of space in a fixed-capacity data structure
 #[derive(Debug)]
