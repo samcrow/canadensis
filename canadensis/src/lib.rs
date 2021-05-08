@@ -8,6 +8,7 @@ extern crate heapless;
 extern crate canadensis_can;
 extern crate canadensis_core;
 extern crate canadensis_encoding;
+extern crate canadensis_filter_config;
 
 mod core_node;
 mod hash;
@@ -26,6 +27,7 @@ use canadensis_core::time::{Clock, Instant};
 use canadensis_core::transfer::*;
 use canadensis_core::{NodeId, Priority, ServiceId, SubjectId, TransferId};
 use canadensis_encoding::{Message, Request, Response, Serialize};
+use canadensis_filter_config::Filter;
 
 /// A token from a request that is needed to send a response
 #[derive(Debug, Clone)]
@@ -253,6 +255,9 @@ pub trait Node {
 
     /// Returns the identifier of this node
     fn node_id(&self) -> NodeId;
+
+    /// Returns a set of filters that accept the frames this node is subscribed to
+    fn frame_filters(&self) -> Result<Vec<Filter>, OutOfMemoryError>;
 }
 
 /// A token returned from start_publishing that can be used to a publish a transfer using the

@@ -105,6 +105,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         CoreNode::new(SystemClock::new(), node_id, Mtu::Can8, transmit_queue);
     let mut node = BasicNode::new(core_node, node_info).unwrap();
 
+    // Now that the node has subscribed to everything it wants, set up the frame acceptance filters
+    let frame_filters = node.frame_filters().unwrap();
+    println!("Filters: {:?}", frame_filters);
+    cans[0].set_filters(&frame_filters)?;
+    cans[1].set_filters(&frame_filters)?;
+
     loop {
         for (i, can) in cans.iter_mut().enumerate() {
             match can.receive() {

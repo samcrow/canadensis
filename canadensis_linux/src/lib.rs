@@ -4,9 +4,11 @@
 
 extern crate canadensis_can;
 extern crate canadensis_core;
+extern crate canadensis_filter_config;
 extern crate socketcan;
 
 use canadensis_core::time::{Clock, Instant, Microseconds64};
+use canadensis_filter_config::Filter;
 use socketcan::CANSocket;
 use std::cmp::Ordering;
 use std::convert::TryInto;
@@ -57,6 +59,19 @@ impl LinuxCan {
             socketcan::CANFrame::new(frame.id().into(), frame.data(), false, false)
                 .expect("Invalid frame format");
         self.socket.write_frame(&socketcan_frame)
+    }
+
+    /// Replaces any configured filters with one filter that accepts all frames
+    pub fn set_filter_accept_all(&mut self) -> io::Result<()> {
+        self.socket.filter_accept_all()
+    }
+    /// Sets zero or more filters to accept frames
+    pub fn set_filters(&mut self, filters: &[Filter]) -> io::Result<()> {
+        let socketcan_filters = filters
+            .iter()
+            .map(|filter| socketcan::CANFilter::new(filter.id(), filter.mask()).unwrap())
+            .collect::<Vec<_>>();
+        self.socket.set_filter(&socketcan_filters)
     }
 }
 

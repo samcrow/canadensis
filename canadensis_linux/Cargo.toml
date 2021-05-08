@@ -13,3 +13,5 @@ socketcan = "1.7.0"
 path = "../canadensis_can"
 [dependencies.canadensis_core]
 path = "../canadensis_core"
+[dependencies.canadensis_filter_config]
+path = "../canadensis_filter_config"

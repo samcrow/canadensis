@@ -15,6 +15,7 @@ use canadensis_data_types::uavcan::node::port::list::List;
 use canadensis_data_types::uavcan::node::port::subject_id;
 use canadensis_data_types::uavcan::node::port::subject_id_list::SubjectIdList;
 use canadensis_encoding::{Message, Request, Response, Serialize};
+use canadensis_filter_config::Filter;
 
 /// A node that provides all basic application-layer functionality
 ///
@@ -249,6 +250,10 @@ where
 
     fn node_id(&self) -> NodeId {
         self.node.node().node_id()
+    }
+
+    fn frame_filters(&self) -> Result<Vec<Filter>, OutOfMemoryError> {
+        self.node.node().frame_filters()
     }
 }
 

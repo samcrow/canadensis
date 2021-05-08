@@ -103,6 +103,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .subscribe_request(GetInfoRequest::SERVICE, 0, MicrosecondDuration64::new(0))
         .expect("Out of memory");
 
+    // Now that the node has subscribed to everything it wants, set up the frame acceptance filters
+    let frame_filters = uavcan.frame_filters().unwrap();
+    println!("Filters: {:?}", frame_filters);
+    can.set_filters(&frame_filters)?;
+
     let mut last_run_time_seconds = 0u64;
     loop {
         let run_time = StdInstant::now().duration_since(clock.start_time);

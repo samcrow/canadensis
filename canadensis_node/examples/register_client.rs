@@ -105,6 +105,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .unwrap();
 
+    // Now that the node has subscribed to everything it wants, set up the frame acceptance filters
+    let frame_filters = node.frame_filters().unwrap();
+    println!("Filters: {:?}", frame_filters);
+    can.set_filters(&frame_filters)?;
+
     // Send a register list request for the register at index 0
     node.send_request(
         &list_request_token,

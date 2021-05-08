@@ -24,6 +24,8 @@ path = "../canadensis_encoding"
 path = "../canadensis"
 [dependencies.canadensis_data_types]
 path = "../canadensis_data_types"
+[dependencies.canadensis_filter_config]
+path = "../canadensis_filter_config"
 
 [dev-dependencies]
 socketcan = "1.7.0"

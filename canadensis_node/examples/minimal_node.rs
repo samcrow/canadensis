@@ -12,7 +12,7 @@ use std::time::Duration;
 
 use socketcan::CANSocket;
 
-use canadensis::CoreNode;
+use canadensis::{CoreNode, Node};
 use canadensis_can::queue::ArrayQueue;
 use canadensis_can::Mtu;
 use canadensis_core::time::Microseconds64;
@@ -71,6 +71,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ArrayQueue::<Microseconds64, 1>::new(),
     );
     let mut node = MinimalNode::new(core_node).unwrap();
+
+    // Now that the node has subscribed to everything it wants, set up the frame acceptance filters
+    let frame_filters = node.node_mut().frame_filters().unwrap();
+    println!("Filters: {:?}", frame_filters);
+    can.set_filters(&frame_filters)?;
 
     loop {
         // Don't need to check for incoming frames because this node does not receive anything.

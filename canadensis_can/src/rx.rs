@@ -3,322 +3,22 @@
 //!
 
 mod buildup;
+mod session;
+mod subscription;
 
-use alloc::boxed::Box;
 use alloc::vec::Vec;
 use core::convert::{TryFrom, TryInto};
-use core::fmt;
 
-use fallible_collections::{FallibleBox, FallibleVec, TryReserveError};
+use fallible_collections::FallibleVec;
 
-use crate::crc::TransferCrc;
 use crate::data::{CanId, Frame};
 use crate::error::OutOfMemoryError;
-use crate::rx::buildup::{Buildup, BuildupError};
+use crate::rx::session::SessionError;
+use crate::rx::subscription::{Subscription, SubscriptionError};
 use canadensis_core::time::Instant;
 use canadensis_core::transfer::{Header, MessageHeader, ServiceHeader, Transfer};
 use canadensis_core::{NodeId, PortId, Priority, ServiceId, SubjectId, TransferId};
 use canadensis_filter_config::Filter;
-
-/// One session per node ID
-const RX_SESSIONS_PER_SUBSCRIPTION: usize = NodeId::MAX.to_u8() as usize + 1;
-
-/// Transfer subscription state. The application can register its interest in a particular kind of data exchanged
-/// over the bus by creating such subscription objects. Frames that carry data for which there is no active
-/// subscription will be silently dropped by the library.
-struct Subscription<I: Instant> {
-    /// A session for each node ID
-    sessions: [Option<Box<Session<I>>>; RX_SESSIONS_PER_SUBSCRIPTION],
-    /// Maximum time difference between the first and last frames in a transfer
-    timeout: I::Duration,
-    /// Maximum number of payload bytes, including 2 bytes for the CRC if necessary
-    payload_size_max: usize,
-    /// Subject or service ID that this subscription is about
-    port_id: PortId,
-}
-
-impl<I: Instant> fmt::Debug for Subscription<I> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Subscription")
-            .field("sessions", &DebugSessions(&self.sessions))
-            .field("transfer_id_timeout", &self.timeout)
-            .field("payload_size_max", &self.payload_size_max)
-            .field("port_id", &self.port_id)
-            .finish()
-    }
-}
-
-/// A debug adapter for the session list
-struct DebugSessions<'s, I>(&'s [Option<Box<Session<I>>>; RX_SESSIONS_PER_SUBSCRIPTION]);
-
-impl<I: Instant> fmt::Debug for DebugSessions<'_, I> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // Display as a set, showing only the non-empty entries
-        f.debug_set()
-            .entries(self.0.iter().flat_map(Option::as_deref))
-            .finish()
-    }
-}
-
-impl<I: Instant> Subscription<I> {
-    /// Creates a subscription
-    pub fn new(timeout: I::Duration, payload_size_max: usize, port_id: PortId) -> Self {
-        Subscription {
-            sessions: init_rx_sessions(),
-            timeout,
-            payload_size_max,
-            port_id,
-        }
-    }
-
-    /// Handles an incoming frame on this subscription's topic
-    pub fn accept(
-        &mut self,
-        frame: Frame<I>,
-        frame_header: Header<I>,
-        tail: TailByte,
-    ) -> Result<Option<Transfer<Vec<u8>, I>>, SubscriptionError> {
-        if let Some(source_node) = frame_header.source() {
-            self.accept_non_anonymous(frame, frame_header, source_node, tail)
-        } else {
-            self.accept_anonymous(frame, frame_header)
-        }
-    }
-
-    fn accept_non_anonymous(
-        &mut self,
-        frame: Frame<I>,
-        frame_header: Header<I>,
-        source_node: NodeId,
-        tail: TailByte,
-    ) -> Result<Option<Transfer<Vec<u8>, I>>, SubscriptionError> {
-        let max_payload_length = self.payload_size_max;
-
-        if tail.start && tail.end {
-            // Special case: Everything fits into one frame, so we don't need to allocate a session
-            if frame.data().len() > max_payload_length + 1 {
-                return Err(SubscriptionError::Session(SessionError::PayloadLength));
-            }
-            // Make a transfer from this frame (remove the tail byte)
-            let data_without_tail = &frame.data()[..frame.data().len() - 1];
-            let mut payload = Vec::new();
-            payload.try_extend_from_slice(data_without_tail)?;
-            let transfer = Transfer {
-                header: frame_header,
-                payload,
-            };
-            Ok(Some(transfer))
-        } else {
-            self.accept_with_session(frame, frame_header, source_node, tail)
-        }
-    }
-
-    fn accept_with_session(
-        &mut self,
-        frame: Frame<I>,
-        frame_header: Header<I>,
-        source_node: NodeId,
-        tail: TailByte,
-    ) -> Result<Option<Transfer<Vec<u8>, I>>, SubscriptionError> {
-        let max_payload_length = self.payload_size_max;
-        let transfer_timeout = self.timeout;
-
-        let slot = &mut self.sessions[usize::from(source_node)];
-        let session = match slot {
-            Some(session) => session,
-            None => {
-                // Check if this frame is appropriate for creating a new session
-                if !tail.start {
-                    // Not the start of a transfer, so it must be a fragment of some other transfer.
-                    return Err(SubscriptionError::NotStart);
-                }
-                // Create a new session
-                *slot = Some(FallibleBox::try_new(Session::new(
-                    frame_header.timestamp(),
-                    tail.transfer_id,
-                ))?);
-                slot.as_deref_mut().unwrap()
-            }
-        };
-
-        let accept_status = session.accept(
-            frame,
-            frame_header,
-            tail,
-            max_payload_length,
-            transfer_timeout,
-        );
-        match accept_status {
-            Ok(Some(transfer)) => {
-                // Transfer received, this session has served its purpose and can be deleted.
-                *slot = None;
-                Ok(Some(transfer))
-            }
-            Ok(None) => Ok(None),
-            Err(e) => {
-                // This is either out-of-memory or an unexpected frame that invalidates
-                // the session. Delete the session to free memory.
-                *slot = None;
-                Err(e.into())
-            }
-        }
-    }
-
-    fn accept_anonymous(
-        &mut self,
-        frame: Frame<I>,
-        frame_header: Header<I>,
-    ) -> Result<Option<Transfer<Vec<u8>, I>>, SubscriptionError> {
-        // An anonymous transfer is always a single frame and does not have a corresponding session.
-        // Just convert it into a transfer.
-        // Remove the tail byte
-        let data_without_tail = &frame.data()[..frame.data().len() - 1];
-
-        let mut transfer_data = Vec::new();
-        transfer_data.try_extend_from_slice(data_without_tail)?;
-
-        Ok(Some(Transfer {
-            header: frame_header,
-            payload: transfer_data,
-        }))
-    }
-}
-
-/// Errors that a subscription may encounter
-#[derive(Debug)]
-pub enum SubscriptionError {
-    /// Received a frame with no corresponding session, but its start bit was not set
-    NotStart,
-    /// An error within the session
-    Session(SessionError),
-    /// Memory allocation failed
-    Memory(OutOfMemoryError),
-}
-
-impl From<SessionError> for SubscriptionError {
-    fn from(inner: SessionError) -> Self {
-        SubscriptionError::Session(inner)
-    }
-}
-impl From<OutOfMemoryError> for SubscriptionError {
-    fn from(inner: OutOfMemoryError) -> Self {
-        SubscriptionError::Memory(inner)
-    }
-}
-impl From<TryReserveError> for SubscriptionError {
-    fn from(_inner: TryReserveError) -> Self {
-        SubscriptionError::Memory(OutOfMemoryError)
-    }
-}
-
-/// A receive session, associated with a particular port ID and source node
-#[derive(Debug)]
-struct Session<I> {
-    /// Timestamp of the first frame received in this transfer
-    transfer_timestamp: I,
-    /// Transfer reassembly
-    buildup: Buildup,
-}
-
-impl<I> Session<I>
-where
-    I: Instant,
-{
-    pub fn new(transfer_timestamp: I, transfer_id: TransferId) -> Self {
-        Session {
-            transfer_timestamp,
-            buildup: Buildup::new(transfer_id),
-        }
-    }
-
-    pub fn accept(
-        &mut self,
-        frame: Frame<I>,
-        frame_header: Header<I>,
-        tail: TailByte,
-        max_payload_length: usize,
-        transfer_timeout: I::Duration,
-    ) -> Result<Option<Transfer<Vec<u8>, I>>, SessionError> {
-        if tail.transfer_id != self.buildup.transfer_id() {
-            // This is a frame from some other transfer. Ignore it, but keep this session to receive
-            // possible later frames.
-            return Ok(None);
-        }
-        // Check if this frame will make the transfer exceed the maximum length
-        let new_payload_length = self.buildup.payload_length() + (frame.data().len() - 1);
-        if new_payload_length > max_payload_length {
-            return Err(SessionError::PayloadLength);
-        }
-        // Check if this frame is too late
-        let time_since_first_frame = frame.timestamp().duration_since(&self.transfer_timestamp);
-
-        if time_since_first_frame > transfer_timeout {
-            // Frame arrived too late. Give up on this session.
-            return Err(SessionError::Timeout);
-        }
-        // This frame looks OK. Do the reassembly.
-        match self.buildup.add(frame.data())? {
-            Some(transfer_data) => self.handle_transfer_data(transfer_data, frame_header),
-            None => {
-                // Reassembly still in progress
-                Ok(None)
-            }
-        }
-    }
-
-    fn handle_transfer_data(
-        &mut self,
-        mut transfer_data: Vec<u8>,
-        frame_header: Header<I>,
-    ) -> Result<Option<Transfer<Vec<u8>, I>>, SessionError> {
-        // Check CRC, if this transfer used more than one frame
-        if self.buildup.frames() > 1 {
-            let mut crc = TransferCrc::new();
-            crc.add_bytes(&transfer_data);
-            if crc.get() != 0 {
-                // Invalid CRC, drop transfer
-                return Err(SessionError::Crc);
-            }
-            // Remove the CRC bytes from the transfer data
-            transfer_data.truncate(transfer_data.len() - 2);
-        }
-
-        // The header for the transfer has the same priority as the final frame,
-        // but the timestamp of the first frame.
-        let mut transfer_header = frame_header;
-        transfer_header.set_timestamp(self.transfer_timestamp);
-
-        Ok(Some(Transfer {
-            header: transfer_header,
-            payload: transfer_data,
-        }))
-    }
-}
-
-#[derive(Debug)]
-pub enum SessionError {
-    /// A transfer CRC was invalid
-    Crc,
-    /// The payload was too long
-    PayloadLength,
-    /// The session timed out because a frame arrived too lage
-    Timeout,
-    /// Reassembly failed because of an unexpected frame
-    Buildup(BuildupError),
-    /// Memory allocation failed
-    Memory(OutOfMemoryError),
-}
-
-impl From<OutOfMemoryError> for SessionError {
-    fn from(inner: OutOfMemoryError) -> Self {
-        SessionError::Memory(inner)
-    }
-}
-impl From<BuildupError> for SessionError {
-    fn from(inner: BuildupError) -> Self {
-        SessionError::Buildup(inner)
-    }
-}
 
 /// Handles subscriptions and assembles incoming frames into transfers
 #[derive(Debug)]
@@ -364,6 +64,14 @@ impl<I: Instant> Receiver<I> {
             transfer_count: 0,
             error_count: 0,
         }
+    }
+
+    /// Updates the identifier of this node
+    ///
+    /// This can be used after a node ID is identified to make this receiver capable of handling
+    /// service transfers.
+    pub fn set_id(&mut self, id: Option<NodeId>) {
+        self.id = id;
     }
 
     /// Handles an incoming CAN or CAN FD frame
@@ -412,6 +120,7 @@ impl<I: Instant> Receiver<I> {
         self.accept_sane_frame(frame, frame_header, tail)
     }
 
+    /// Handles an incoming frame that has passed sanity checks and has a parsed header and tail byte
     fn accept_sane_frame(
         &mut self,
         frame: Frame<I>,
@@ -422,7 +131,7 @@ impl<I: Instant> Receiver<I> {
         let subscriptions = self.subscriptions_for_kind(kind);
         if let Some(subscription) = subscriptions
             .iter_mut()
-            .find(|subscription| subscription.port_id == frame_header.port_id())
+            .find(|subscription| subscription.port_id() == frame_header.port_id())
         {
             match subscription.accept(frame, frame_header, tail) {
                 Ok(Some(transfer)) => {
@@ -522,18 +231,25 @@ impl<I: Instant> Receiver<I> {
     ///
     /// If all transfers fit into one frame, the timeout has no meaning and may be zero.
     ///
+    /// This function returns an error if memory allocation fails or if this node is anonymous.
+    ///
     pub fn subscribe_request(
         &mut self,
         service: ServiceId,
         payload_size_max: usize,
         timeout: I::Duration,
-    ) -> Result<(), OutOfMemoryError> {
-        self.subscribe(
-            TransferKind::Request,
-            PortId::from(service),
-            payload_size_max,
-            timeout,
-        )
+    ) -> Result<(), ServiceSubscribeError> {
+        if self.id.is_some() {
+            self.subscribe(
+                TransferKind::Request,
+                PortId::from(service),
+                payload_size_max,
+                timeout,
+            )
+            .map_err(ServiceSubscribeError::Memory)
+        } else {
+            Err(ServiceSubscribeError::Anonymous)
+        }
     }
 
     /// Unsubscribes from requests for a service
@@ -556,18 +272,25 @@ impl<I: Instant> Receiver<I> {
     ///
     /// If all transfers fit into one frame, the timeout has no meaning and may be zero.
     ///
+    /// This function returns an error if memory allocation fails or if this node is anonymous.
+    ///
     pub fn subscribe_response(
         &mut self,
         service: ServiceId,
         payload_size_max: usize,
         timeout: I::Duration,
-    ) -> Result<(), OutOfMemoryError> {
-        self.subscribe(
-            TransferKind::Response,
-            PortId::from(service),
-            payload_size_max,
-            timeout,
-        )
+    ) -> Result<(), ServiceSubscribeError> {
+        if self.id.is_some() {
+            self.subscribe(
+                TransferKind::Response,
+                PortId::from(service),
+                payload_size_max,
+                timeout,
+            )
+            .map_err(ServiceSubscribeError::Memory)
+        } else {
+            Err(ServiceSubscribeError::Anonymous)
+        }
     }
     /// Unsubscribes from responses for a service
     pub fn unsubscribe_response(&mut self, service: ServiceId) {
@@ -598,7 +321,7 @@ impl<I: Instant> Receiver<I> {
     }
     fn unsubscribe(&mut self, kind: TransferKind, port_id: PortId) {
         let subscriptions = self.subscriptions_for_kind(kind);
-        subscriptions.retain(|sub| sub.port_id != port_id);
+        subscriptions.retain(|sub| sub.port_id() != port_id);
     }
 
     fn subscriptions_for_kind(&mut self, kind: TransferKind) -> &mut Vec<Subscription<I>> {
@@ -628,10 +351,42 @@ impl<I: Instant> Receiver<I> {
         self.error_count = self.error_count.wrapping_add(1)
     }
 
+    /// Deletes all sessions that have expired
     fn clean_expired_sessions(&mut self, now: I) {
         clean_sessions_from_subscriptions(&mut self.subscriptions_message, &now);
         clean_sessions_from_subscriptions(&mut self.subscriptions_request, &now);
         clean_sessions_from_subscriptions(&mut self.subscriptions_response, &now);
+    }
+
+    /// Returns a set of frame filters that accept only the transfers this receiver is subscribed
+    /// to
+    pub fn frame_filters(&self) -> Result<Vec<Filter>, OutOfMemoryError> {
+        let service_subscriptions = if self.id.is_some() {
+            self.subscriptions_request.len() + self.subscriptions_response.len()
+        } else {
+            // Node is anonymous and can't handle services
+            0
+        };
+        let total_subscriptions = self.subscriptions_message.len() + service_subscriptions;
+        let mut filters: Vec<Filter> = FallibleVec::try_with_capacity(total_subscriptions)?;
+
+        for subscription in &self.subscriptions_message {
+            let subject_id = SubjectId::try_from(subscription.port_id()).unwrap();
+            filters.push(subject_filter(subject_id))
+        }
+        if let Some(local_id) = self.id {
+            // Only non-anonymous nodes can handle requests and responses
+            for subscription in &self.subscriptions_request {
+                let service_id = ServiceId::try_from(subscription.port_id()).unwrap();
+                filters.push(request_filter(service_id, local_id));
+            }
+            for subscription in &self.subscriptions_response {
+                let service_id = ServiceId::try_from(subscription.port_id()).unwrap();
+                filters.push(response_filter(service_id, local_id));
+            }
+        }
+
+        Ok(filters)
     }
 }
 
@@ -640,10 +395,11 @@ fn clean_sessions_from_subscriptions<I: Instant>(
     now: &I,
 ) {
     for subscription in subscriptions {
-        for slot in subscription.sessions.iter_mut() {
+        let timeout = subscription.timeout();
+        for slot in subscription.sessions_mut().iter_mut() {
             if let Some(session) = slot.as_deref_mut() {
-                let time_since_first_frame = now.duration_since(&session.transfer_timestamp);
-                if time_since_first_frame > subscription.timeout {
+                let time_since_first_frame = now.duration_since(&session.transfer_timestamp());
+                if time_since_first_frame > timeout {
                     // This session has timed out, delete it.
                     *slot = None;
                 }
@@ -724,7 +480,7 @@ fn parse_can_id<I>(
 /// * Anonymous: any
 /// * Subject ID: matching the provided subject ID
 /// * Source node ID: any
-pub fn subject_filter(subject: SubjectId) -> Filter {
+fn subject_filter(subject: SubjectId) -> Filter {
     let m_id: u32 = 0b0_0000_0110_0000_0000_0000_0000_0000 | u32::from(subject) << 8;
     let mask: u32 = 0b0_0010_1001_1111_1111_1111_1000_0000;
     Filter::new(mask, m_id)
@@ -738,8 +494,8 @@ pub fn subject_filter(subject: SubjectId) -> Filter {
 /// * Service ID: matching the provided service ID
 /// * Destination: matching the provided node ID
 /// * Source: any
-pub fn request_filter(service: ServiceId, client: NodeId) -> Filter {
-    let dynamic_id_bits = u32::from(service) << 14 | u32::from(client) << 7;
+fn request_filter(service: ServiceId, destination: NodeId) -> Filter {
+    let dynamic_id_bits = u32::from(service) << 14 | u32::from(destination) << 7;
     let m_id: u32 = 0b0_0011_0000_0000_0000_0000_0000_0000 | dynamic_id_bits;
     let mask: u32 = 0b0_0011_1111_1111_1111_1111_1000_0000;
     Filter::new(mask, m_id)
@@ -753,26 +509,12 @@ pub fn request_filter(service: ServiceId, client: NodeId) -> Filter {
 /// * Service ID: matching the provided service ID
 /// * Destination: matching the provided node ID
 /// * Source: any
-pub fn response_filter(service: ServiceId, server: NodeId) -> Filter {
-    let dynamic_id_bits = u32::from(u16::from(service)) << 14 | u32::from(u8::from(server)) << 7;
+fn response_filter(service: ServiceId, destination: NodeId) -> Filter {
+    let dynamic_id_bits =
+        u32::from(u16::from(service)) << 14 | u32::from(u8::from(destination)) << 7;
     let m_id: u32 = 0b0_0010_0000_0000_0000_0000_0000_0000 | dynamic_id_bits;
     let mask: u32 = 0b0_0011_1111_1111_1111_1111_1000_0000;
     Filter::new(mask, m_id)
-}
-
-/// Returns 128 Nones
-fn init_rx_sessions<I>() -> [Option<Box<Session<I>>>; RX_SESSIONS_PER_SUBSCRIPTION] {
-    [
-        None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-        None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-        None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-        None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-        None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-        None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-        None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-        None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-        None, None, None, None, None, None, None, None,
-    ]
 }
 
 /// Basic extension trait for extracting bits from a CAN ID
@@ -804,6 +546,21 @@ impl GetBits for u8 {
 
     fn get_u16(self, offset: u32) -> u16 {
         u16::from(self.get_u8(offset))
+    }
+}
+
+/// Errors that can occur when subscribing to service requests or responses
+#[derive(Debug)]
+pub enum ServiceSubscribeError {
+    /// This node is anonymous (no node ID set), so it can't handle services
+    Anonymous,
+    /// Memory allocation failed
+    Memory(OutOfMemoryError),
+}
+
+impl From<OutOfMemoryError> for ServiceSubscribeError {
+    fn from(inner: OutOfMemoryError) -> Self {
+        ServiceSubscribeError::Memory(inner)
     }
 }
 
@@ -888,7 +645,7 @@ mod test {
     }
 }
 
-struct TailByte {
+pub(crate) struct TailByte {
     start: bool,
     end: bool,
     toggle: bool,

@@ -5,7 +5,7 @@ use core::marker::PhantomData;
 use fallible_collections::FallibleVec;
 
 use canadensis_can::queue::{FrameQueueSource, FrameSink};
-use canadensis_can::{Frame, Mtu, OutOfMemoryError, Receiver, Transmitter};
+use canadensis_can::{Frame, Mtu, OutOfMemoryError, Receiver, ServiceSubscribeError, Transmitter};
 use canadensis_core::time::{Clock, Instant};
 use canadensis_core::transfer::{
     Header, MessageTransfer, ServiceHeader, ServiceTransfer, Transfer,
@@ -20,6 +20,7 @@ use crate::{
     CapacityError, CapacityOrMemoryError, Node, PublishToken, ResponseToken, ServiceToken,
     TransferHandler,
 };
+use canadensis_filter_config::Filter;
 
 /// A high-level interface with UAVCAN node functionality
 ///
@@ -194,7 +195,11 @@ where
             Err(e) => {
                 // Clean up requester
                 self.requesters.remove(&service);
-                Err(e.into())
+                // Because a CoreNode can't be anonymous, the above function can't return an Anonymous error.
+                match e {
+                    ServiceSubscribeError::Memory(e) => Err(e.into()),
+                    ServiceSubscribeError::Anonymous => unreachable!("CoreNode is never anonymous"),
+                }
             }
         }
     }
@@ -237,8 +242,14 @@ where
         payload_size_max: usize,
         timeout: <C::Instant as Instant>::Duration,
     ) -> Result<(), OutOfMemoryError> {
-        self.receiver
-            .subscribe_request(service, payload_size_max, timeout)
+        let status = self
+            .receiver
+            .subscribe_request(service, payload_size_max, timeout);
+        // Because a CoreNode can't be anonymous, the above function can't return an Anonymous error.
+        status.map_err(|e| match e {
+            ServiceSubscribeError::Memory(e) => e,
+            ServiceSubscribeError::Anonymous => unreachable!("CoreNode is never anonymous"),
+        })
     }
 
     fn send_response<T>(
@@ -277,6 +288,10 @@ where
     /// Returns the identifier of this node
     fn node_id(&self) -> NodeId {
         self.node_id
+    }
+
+    fn frame_filters(&self) -> Result<Vec<Filter>, OutOfMemoryError> {
+        self.receiver.frame_filters()
     }
 }
 

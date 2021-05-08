@@ -25,5 +25,5 @@ pub use crate::data::*;
 pub use crate::error::*;
 
 pub use crate::crc::TransferCrc;
-pub use crate::rx::{request_filter, response_filter, subject_filter, Receiver};
+pub use crate::rx::{Receiver, ServiceSubscribeError};
 pub use crate::tx::Transmitter;

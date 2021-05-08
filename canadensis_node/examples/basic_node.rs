@@ -97,6 +97,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let mut node = BasicNode::new(core_node, node_info).unwrap();
 
+    // Now that the node has subscribed to everything it wants, set up the frame acceptance filters
+    let frame_filters = node.frame_filters().unwrap();
+    println!("Filters: {:?}", frame_filters);
+    can.set_filters(&frame_filters)?;
+
     println!("Node size: {} bytes", std::mem::size_of_val(&node));
 
     loop {

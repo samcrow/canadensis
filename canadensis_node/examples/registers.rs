@@ -118,6 +118,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let registers = RegisterHandler::init(register_block, &mut node).unwrap();
 
+    // Now that the node has subscribed to everything it wants, set up the frame acceptance filters
+    let frame_filters = node.frame_filters().unwrap();
+    println!("Filters: {:?}", frame_filters);
+    can.set_filters(&frame_filters)?;
+
     let mut handler = registers.chain(EmptyHandler);
 
     println!("Node size: {} bytes", std::mem::size_of_val(&node));

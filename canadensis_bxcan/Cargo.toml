@@ -15,3 +15,7 @@ nb = "1.0.0"
 path = "../canadensis_core"
 [dependencies.canadensis_can]
 path = "../canadensis_can"
+[dependencies.canadensis]
+path = "../canadensis"
+[dependencies.canadensis_filter_config]
+path = "../canadensis_filter_config"
