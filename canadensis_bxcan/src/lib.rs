@@ -151,7 +151,9 @@ where
         // Convert frame to BXCAN format
         let bxcan_frame = uavcan_frame_to_bxcan(&frame);
         let send_status = self.can.transmit_and_get_mailbox(&bxcan_frame);
-        rtt_target::rprintln!("Send: {:?}", send_status);
+        if !send_status.is_ok() {
+            rtt_target::rprintln!("Send: {:?}", send_status);
+        }
         match send_status {
             Ok((None, mailbox)) => {
                 // Store the deadline for the frame just submitted
