@@ -88,6 +88,7 @@ where
                 Ok(frame) => {
                     let now = self.node.clock_mut().now();
                     if let Ok(uavcan_frame) = bxcan_frame_to_uavcan(&frame, now) {
+                        rtt_target::rprintln!("Frame {:?}", uavcan_frame);
                         self.node.accept_frame(uavcan_frame, handler)?;
                     }
                 }
