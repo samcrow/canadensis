@@ -127,6 +127,11 @@ where
                 }
                 Ordering::Less => {
                     // Deadline passed, ignore frame
+                    rtt_target::rprintln!(
+                        "Dropping frame, ID {:?}, {} data bytes",
+                        frame.id(),
+                        frame.data().len()
+                    );
                     drop(frame);
                 }
             }
@@ -145,7 +150,9 @@ where
     ) -> nb::Result<(), Infallible> {
         // Convert frame to BXCAN format
         let bxcan_frame = uavcan_frame_to_bxcan(&frame);
-        match self.can.transmit_and_get_mailbox(&bxcan_frame) {
+        let send_status = self.can.transmit_and_get_mailbox(&bxcan_frame);
+        rtt_target::rprintln!("Send: {:?}", send_status);
+        match send_status {
             Ok((None, mailbox)) => {
                 // Store the deadline for the frame just submitted
                 let _ = self.deadlines.replace(mailbox, frame.timestamp());
