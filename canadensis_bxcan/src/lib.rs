@@ -36,6 +36,7 @@ where
     N::FrameQueue: FrameQueueSource<N::Instant>,
     C: Instance,
 {
+    /// Creates a node
     pub fn new(node: N, can: Can<C>) -> Self {
         BxCanNode {
             node,
@@ -73,6 +74,8 @@ where
         Ok(())
     }
 
+    /// Receives all incoming CAN frames from the CAN peripheral, converts them into transfers,
+    /// and passes all completed transfers to the provided handler
     pub fn receive_frames<H>(&mut self, handler: &mut H) -> Result<(), OutOfMemoryError>
     where
         H: TransferHandler<N::Instant>,
@@ -98,6 +101,12 @@ where
         Ok(())
     }
 
+    /// Sends frames from the outgoing frame queue onto the CAN bus
+    ///
+    /// This function also discards any frames that have not been transmitted by their deadlines.
+    ///
+    /// This function returns a WouldBlock error if frames are waiting to be transmitted
+    /// but no suitable transmit mailbox is open.
     pub fn send_frames(&mut self) -> nb::Result<(), Infallible> {
         let now = self.node.clock_mut().now();
         self.clean_expired_frames(now);
@@ -111,6 +120,7 @@ where
                         Ok(()) => {}
                         Err(nb::Error::Other(infallible)) => match infallible {},
                         Err(nb::Error::WouldBlock) => {
+                            // The self.send_frame call already put the frame back in the queue
                             return Err(nb::Error::WouldBlock);
                         }
                     }
@@ -125,6 +135,10 @@ where
         Ok(())
     }
 
+    /// Puts one frame in a transmit mailbox to be sent
+    ///
+    /// If all mailboxes are full with frames of equal or greater priority, this function returns
+    /// the frame to the outgoing frame queue and returns a WouldBlock error.
     fn send_frame(
         &mut self,
         frame: canadensis_can::Frame<N::Instant>,
