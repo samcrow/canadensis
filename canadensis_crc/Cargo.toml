@@ -1,0 +1,10 @@
+[package]
+name = "canadensis_crc"
+version = "0.1.0"
+authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
+edition = "2018"
+description = "Library for access to UAVCAN software image CRCs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
