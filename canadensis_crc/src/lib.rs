@@ -4,9 +4,10 @@
 //! # Steps (for ARM Cortex-M targets)
 //!
 //! * In the application, call the `get_crc` function
-//! * TODO: Modify the linker script
 //! * Compile the application, generating a .elf file
 //! * Run `canadensis_write_crc` on the .elf file to calculate and fill in the CRC
+//!     * Caution: Don't use `cargo build` or `cargo run` at this stage. It will overwrite the
+//!       binary and clear the CRC.
 //! * Load the .elf file onto the target microcontroller and run it as usual
 //!
 

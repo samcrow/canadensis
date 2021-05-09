@@ -42,6 +42,10 @@ Other parts are incomplete:
 * A basic presentation layer for CAN and CAN FD, which provides a relatively simple API (`canadensis`)
 * Basic application-layer node functions (`canadensis_node`)
 * Automatic filter configuration (`canadensis_filter_config`)
+* Adapter code for running on Linux with SocketCAN (`canadensis_linux`)
+* Adapter code for STM32 bxCAN peripherals (`canadensis_bxcan`)
+* Software image CRC access library (`canadensis_crc`)
+* Software image CRC calculation and writing tool (`canadensis_write_crc`)
 
 ## License
 
