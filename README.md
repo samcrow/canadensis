@@ -12,17 +12,11 @@ This is currently an independent project, not affiliated with the UAVCAN Consort
 
 This code is intended to conform to version 1.0-beta of the UAVCAN specification.
 
-Some parts of this code work:
-
-* Basic serialization and deserialization
-* Basic publishing, subscription, requesting, and responding
-* Automatic filter configuration (works in isolation, but not proven on real hardware)
-
-Other parts are incomplete:
+Most of the functionality works. Some parts are incomplete:
 
 * There are some tests, but there are probably several bugs in areas that have not been tested.
 * The design is not the best.
-* The amount of dynamic memory allocation can be reduced.
+* The amount of dynamic memory allocation can be reduced, or at least documented better.
 * No automatic generation of code from data structure description language (currently, all Rust data
   types and serialization/deserialization code must be hand-written)
 
