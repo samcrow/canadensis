@@ -53,8 +53,15 @@ pub trait Register {
     fn read(&self) -> Value;
     /// Writes the value of this register
     ///
+    /// This function may be used when loading a saved value from persistent storage. Therefore,
+    /// if this register is persistent but not mutable, this function must not return
+    /// `Err(WriteError::Immutable)`.
+    ///
+    /// Outside code must not call this function in response to a write request from another node
+    /// if this register is not mutable.
+    ///
     /// This function returns an error if the provided value does not have an appropriate type
-    /// for this register, or if this register is not mutable.
+    /// for this register.
     ///
     /// If this function returns an error, the value of this register must be the same as before
     /// the call to write().

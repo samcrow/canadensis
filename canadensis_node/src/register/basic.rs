@@ -56,11 +56,9 @@ where
     }
 
     fn write(&mut self, value: &Value) -> Result<(), WriteError> {
-        if self.mutable {
-            self.value.write(value)
-        } else {
-            Err(WriteError::Immutable)
-        }
+        // Ignore the mutable flag, because this may be used for initialization from persistent
+        // storage
+        self.value.write(value)
     }
 }
 
