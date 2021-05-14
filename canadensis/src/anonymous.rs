@@ -30,7 +30,7 @@ pub struct AnonymousPublisher<C: Clock, T> {
     /// Transport MTU (used to check that transfers are single-frame)
     mtu: Mtu,
     /// Message type phantom
-    message: PhantomData<*mut T>,
+    message: PhantomData<T>,
 }
 
 impl<C, T> AnonymousPublisher<C, T>
