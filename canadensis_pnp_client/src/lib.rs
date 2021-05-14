@@ -12,7 +12,7 @@ use canadensis_can::queue::{FrameQueueSource, FrameSink};
 use canadensis_can::{Frame, Mtu, OutOfMemoryError, Receiver, Transmitter};
 use canadensis_core::time::{milliseconds, Clock};
 use canadensis_core::{NodeId, Priority, SubjectId};
-use canadensis_data_types::uavcan::pnp::node_allocation_data_1_0::NodeAllocationData;
+use canadensis_data_types::uavcan::pnp::node_id_allocation_data_1_0::NodeIdAllocationData;
 use canadensis_encoding::{Deserialize, Message, Serialize};
 use core::convert::TryFrom;
 use core::marker::PhantomData;
@@ -103,12 +103,12 @@ pub trait AllocationMessage: Message + Serialize + Deserialize {
     fn node_id(&self) -> Option<NodeId>;
 }
 
-impl AllocationMessage for NodeAllocationData {
-    const SUBJECT: SubjectId = NodeAllocationData::SUBJECT;
+impl AllocationMessage for NodeIdAllocationData {
+    const SUBJECT: SubjectId = NodeIdAllocationData::SUBJECT;
 
     fn with_unique_id(id: &[u8; 16]) -> Self {
         let id_hash = crc_64we_48_bits(id);
-        NodeAllocationData {
+        NodeIdAllocationData {
             unique_id_hash: id_hash,
             allocated_node_id: None,
         }
