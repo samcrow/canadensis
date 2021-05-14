@@ -4,6 +4,7 @@ use crate::register::{Register, WriteError};
 use canadensis_data_types::uavcan::register::value::Value;
 
 /// A register containing its name, value, and mutable/persistent flags
+#[derive(Debug, Clone)]
 pub struct SimpleRegister<T> {
     name: &'static str,
     mutable: bool,
