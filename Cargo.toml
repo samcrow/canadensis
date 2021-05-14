@@ -9,6 +9,7 @@ members = [
     "canadensis_filter_config",
     "canadensis_linux",
     "canadensis_node",
+    "canadensis_pnp_client",
     "canadensis_encoding",
     "canadensis_write_crc"
 ]
