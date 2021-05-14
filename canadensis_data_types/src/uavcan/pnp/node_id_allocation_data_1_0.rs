@@ -5,24 +5,24 @@ use canadensis_encoding::{
 
 /// uavcan.pnp.NodeIDAllocationData 1.0
 #[derive(Debug, Clone, Default)]
-pub struct NodeAllocationData {
+pub struct NodeIdAllocationData {
     // Really 48 bits
     pub unique_id_hash: u64,
     pub allocated_node_id: Option<u16>,
 }
 
-impl NodeAllocationData {
+impl NodeIdAllocationData {
     pub const SUBJECT: SubjectId = SubjectId::from_truncating(8166);
 }
 
-impl Message for NodeAllocationData {}
+impl Message for NodeIdAllocationData {}
 
-impl DataType for NodeAllocationData {
+impl DataType for NodeIdAllocationData {
     // Sealed type
     const EXTENT_BYTES: Option<u32> = None;
 }
 
-impl Serialize for NodeAllocationData {
+impl Serialize for NodeIdAllocationData {
     fn size_bits(&self) -> usize {
         let node_id_bits = if self.allocated_node_id.is_some() {
             16
@@ -45,7 +45,7 @@ impl Serialize for NodeAllocationData {
     }
 }
 
-impl Deserialize for NodeAllocationData {
+impl Deserialize for NodeIdAllocationData {
     fn in_bit_length_set(bit_length: usize) -> bool {
         bit_length == 56 || bit_length == 72
     }
@@ -74,7 +74,7 @@ impl Deserialize for NodeAllocationData {
     where
         Self: Sized,
     {
-        let mut value = NodeAllocationData::default();
+        let mut value = NodeIdAllocationData::default();
         value.deserialize_in_place(cursor)?;
         Ok(value)
     }
