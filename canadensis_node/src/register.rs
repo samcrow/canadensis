@@ -69,6 +69,7 @@ pub trait Register {
 }
 
 /// Errors that can occur when attempting to write a register
+#[derive(Debug)]
 pub enum WriteError {
     /// The type of the value was incorrect
     Type,
