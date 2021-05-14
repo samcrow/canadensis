@@ -19,3 +19,5 @@ path = "../canadensis_can"
 path = "../canadensis"
 [dependencies.canadensis_filter_config]
 path = "../canadensis_filter_config"
+[dependencies.canadensis_pnp_client]
+path = "../canadensis_pnp_client"

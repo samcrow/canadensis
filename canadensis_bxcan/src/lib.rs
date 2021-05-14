@@ -7,7 +7,12 @@ extern crate canadensis;
 extern crate canadensis_can;
 extern crate canadensis_core;
 extern crate canadensis_filter_config;
+extern crate canadensis_pnp_client;
 extern crate nb;
+
+mod pnp;
+
+pub use crate::pnp::BxCanPnpClient;
 
 use bxcan::filter::{BankConfig, Mask32};
 use bxcan::{Can, ExtendedId, FilterOwner, Instance, Mailbox};

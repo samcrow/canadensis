@@ -23,3 +23,5 @@ path = "../canadensis_core"
 path = "../canadensis_data_types"
 [dependencies.canadensis_encoding]
 path = "../canadensis_encoding"
+[dependencies.canadensis_filter_config]
+path = "../canadensis_filter_config"
