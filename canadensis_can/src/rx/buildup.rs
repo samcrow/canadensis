@@ -68,7 +68,7 @@ impl Buildup {
 
         if tail.end {
             // End of transfer, return the transfer data
-            let data = mem::replace(&mut self.transfer, Vec::new());
+            let data = mem::take(&mut self.transfer);
             Ok(Some(data))
         } else {
             // Expect more frames
