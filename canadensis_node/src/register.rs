@@ -22,6 +22,10 @@ pub trait RegisterBlock {
     ///
     /// Register indexes should start at 0 and not contain any gaps.
     fn register_by_index(&self, index: usize) -> Option<&dyn Register>;
+    /// Returns a mutable reference to the register at the provided index
+    ///
+    /// Register indexes should start at 0 and not contain any gaps.
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register>;
     /// Returns a mutable reference to the register with the provided name
     fn register_by_name_mut(&mut self, name: &str) -> Option<&mut dyn Register>;
 }

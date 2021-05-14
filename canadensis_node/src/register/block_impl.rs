@@ -14,6 +14,14 @@ where
         }
     }
 
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        if index == 0 {
+            Some(self)
+        } else {
+            None
+        }
+    }
+
     fn register_by_name_mut(&mut self, name: &str) -> Option<&mut dyn Register> {
         if name == self.name() {
             Some(self)
@@ -33,6 +41,13 @@ where
         match index {
             0 => Some(&self.0),
             1 => Some(&self.1),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
             _ => None,
         }
     }
@@ -57,6 +72,14 @@ where
             0 => Some(&self.0),
             1 => Some(&self.1),
             2 => Some(&self.2),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
             _ => None,
         }
     }
@@ -85,6 +108,15 @@ where
             1 => Some(&self.1),
             2 => Some(&self.2),
             3 => Some(&self.3),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
             _ => None,
         }
     }
@@ -117,6 +149,16 @@ where
             2 => Some(&self.2),
             3 => Some(&self.3),
             4 => Some(&self.4),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
             _ => None,
         }
     }
@@ -153,6 +195,17 @@ where
             3 => Some(&self.3),
             4 => Some(&self.4),
             5 => Some(&self.5),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
             _ => None,
         }
     }
@@ -193,6 +246,18 @@ where
             4 => Some(&self.4),
             5 => Some(&self.5),
             6 => Some(&self.6),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
             _ => None,
         }
     }
@@ -237,6 +302,19 @@ where
             5 => Some(&self.5),
             6 => Some(&self.6),
             7 => Some(&self.7),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
+            7 => Some(&mut self.7),
             _ => None,
         }
     }
@@ -285,6 +363,20 @@ where
             6 => Some(&self.6),
             7 => Some(&self.7),
             8 => Some(&self.8),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
+            7 => Some(&mut self.7),
+            8 => Some(&mut self.8),
             _ => None,
         }
     }
@@ -338,6 +430,21 @@ where
             7 => Some(&self.7),
             8 => Some(&self.8),
             9 => Some(&self.9),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
+            7 => Some(&mut self.7),
+            8 => Some(&mut self.8),
+            9 => Some(&mut self.9),
             _ => None,
         }
     }
@@ -395,6 +502,22 @@ where
             8 => Some(&self.8),
             9 => Some(&self.9),
             10 => Some(&self.10),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
+            7 => Some(&mut self.7),
+            8 => Some(&mut self.8),
+            9 => Some(&mut self.9),
+            10 => Some(&mut self.10),
             _ => None,
         }
     }
@@ -456,6 +579,23 @@ where
             9 => Some(&self.9),
             10 => Some(&self.10),
             11 => Some(&self.11),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
+            7 => Some(&mut self.7),
+            8 => Some(&mut self.8),
+            9 => Some(&mut self.9),
+            10 => Some(&mut self.10),
+            11 => Some(&mut self.11),
             _ => None,
         }
     }
@@ -521,6 +661,24 @@ where
             10 => Some(&self.10),
             11 => Some(&self.11),
             12 => Some(&self.12),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
+            7 => Some(&mut self.7),
+            8 => Some(&mut self.8),
+            9 => Some(&mut self.9),
+            10 => Some(&mut self.10),
+            11 => Some(&mut self.11),
+            12 => Some(&mut self.12),
             _ => None,
         }
     }
@@ -590,6 +748,25 @@ where
             11 => Some(&self.11),
             12 => Some(&self.12),
             13 => Some(&self.13),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
+            7 => Some(&mut self.7),
+            8 => Some(&mut self.8),
+            9 => Some(&mut self.9),
+            10 => Some(&mut self.10),
+            11 => Some(&mut self.11),
+            12 => Some(&mut self.12),
+            13 => Some(&mut self.13),
             _ => None,
         }
     }
@@ -679,6 +856,26 @@ where
             12 => Some(&self.12),
             13 => Some(&self.13),
             14 => Some(&self.14),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
+            7 => Some(&mut self.7),
+            8 => Some(&mut self.8),
+            9 => Some(&mut self.9),
+            10 => Some(&mut self.10),
+            11 => Some(&mut self.11),
+            12 => Some(&mut self.12),
+            13 => Some(&mut self.13),
+            14 => Some(&mut self.14),
             _ => None,
         }
     }
@@ -773,6 +970,27 @@ where
             13 => Some(&self.13),
             14 => Some(&self.14),
             15 => Some(&self.15),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
+            7 => Some(&mut self.7),
+            8 => Some(&mut self.8),
+            9 => Some(&mut self.9),
+            10 => Some(&mut self.10),
+            11 => Some(&mut self.11),
+            12 => Some(&mut self.12),
+            13 => Some(&mut self.13),
+            14 => Some(&mut self.14),
+            15 => Some(&mut self.15),
             _ => None,
         }
     }
@@ -872,6 +1090,28 @@ where
             14 => Some(&self.14),
             15 => Some(&self.15),
             16 => Some(&self.16),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
+            7 => Some(&mut self.7),
+            8 => Some(&mut self.8),
+            9 => Some(&mut self.9),
+            10 => Some(&mut self.10),
+            11 => Some(&mut self.11),
+            12 => Some(&mut self.12),
+            13 => Some(&mut self.13),
+            14 => Some(&mut self.14),
+            15 => Some(&mut self.15),
+            16 => Some(&mut self.16),
             _ => None,
         }
     }
@@ -976,6 +1216,29 @@ where
             15 => Some(&self.15),
             16 => Some(&self.16),
             17 => Some(&self.17),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
+            7 => Some(&mut self.7),
+            8 => Some(&mut self.8),
+            9 => Some(&mut self.9),
+            10 => Some(&mut self.10),
+            11 => Some(&mut self.11),
+            12 => Some(&mut self.12),
+            13 => Some(&mut self.13),
+            14 => Some(&mut self.14),
+            15 => Some(&mut self.15),
+            16 => Some(&mut self.16),
+            17 => Some(&mut self.17),
             _ => None,
         }
     }
@@ -1086,6 +1349,30 @@ where
             16 => Some(&self.16),
             17 => Some(&self.17),
             18 => Some(&self.18),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
+            7 => Some(&mut self.7),
+            8 => Some(&mut self.8),
+            9 => Some(&mut self.9),
+            10 => Some(&mut self.10),
+            11 => Some(&mut self.11),
+            12 => Some(&mut self.12),
+            13 => Some(&mut self.13),
+            14 => Some(&mut self.14),
+            15 => Some(&mut self.15),
+            16 => Some(&mut self.16),
+            17 => Some(&mut self.17),
+            18 => Some(&mut self.18),
             _ => None,
         }
     }
@@ -1201,6 +1488,31 @@ where
             17 => Some(&self.17),
             18 => Some(&self.18),
             19 => Some(&self.19),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
+            7 => Some(&mut self.7),
+            8 => Some(&mut self.8),
+            9 => Some(&mut self.9),
+            10 => Some(&mut self.10),
+            11 => Some(&mut self.11),
+            12 => Some(&mut self.12),
+            13 => Some(&mut self.13),
+            14 => Some(&mut self.14),
+            15 => Some(&mut self.15),
+            16 => Some(&mut self.16),
+            17 => Some(&mut self.17),
+            18 => Some(&mut self.18),
+            19 => Some(&mut self.19),
             _ => None,
         }
     }
@@ -1342,6 +1654,32 @@ where
             18 => Some(&self.18),
             19 => Some(&self.19),
             20 => Some(&self.20),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
+            7 => Some(&mut self.7),
+            8 => Some(&mut self.8),
+            9 => Some(&mut self.9),
+            10 => Some(&mut self.10),
+            11 => Some(&mut self.11),
+            12 => Some(&mut self.12),
+            13 => Some(&mut self.13),
+            14 => Some(&mut self.14),
+            15 => Some(&mut self.15),
+            16 => Some(&mut self.16),
+            17 => Some(&mut self.17),
+            18 => Some(&mut self.18),
+            19 => Some(&mut self.19),
+            20 => Some(&mut self.20),
             _ => None,
         }
     }
@@ -1489,6 +1827,33 @@ where
             19 => Some(&self.19),
             20 => Some(&self.20),
             21 => Some(&self.21),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
+            7 => Some(&mut self.7),
+            8 => Some(&mut self.8),
+            9 => Some(&mut self.9),
+            10 => Some(&mut self.10),
+            11 => Some(&mut self.11),
+            12 => Some(&mut self.12),
+            13 => Some(&mut self.13),
+            14 => Some(&mut self.14),
+            15 => Some(&mut self.15),
+            16 => Some(&mut self.16),
+            17 => Some(&mut self.17),
+            18 => Some(&mut self.18),
+            19 => Some(&mut self.19),
+            20 => Some(&mut self.20),
+            21 => Some(&mut self.21),
             _ => None,
         }
     }
@@ -1642,6 +2007,34 @@ where
             20 => Some(&self.20),
             21 => Some(&self.21),
             22 => Some(&self.22),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
+            7 => Some(&mut self.7),
+            8 => Some(&mut self.8),
+            9 => Some(&mut self.9),
+            10 => Some(&mut self.10),
+            11 => Some(&mut self.11),
+            12 => Some(&mut self.12),
+            13 => Some(&mut self.13),
+            14 => Some(&mut self.14),
+            15 => Some(&mut self.15),
+            16 => Some(&mut self.16),
+            17 => Some(&mut self.17),
+            18 => Some(&mut self.18),
+            19 => Some(&mut self.19),
+            20 => Some(&mut self.20),
+            21 => Some(&mut self.21),
+            22 => Some(&mut self.22),
             _ => None,
         }
     }
@@ -1801,6 +2194,35 @@ where
             21 => Some(&self.21),
             22 => Some(&self.22),
             23 => Some(&self.23),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
+            7 => Some(&mut self.7),
+            8 => Some(&mut self.8),
+            9 => Some(&mut self.9),
+            10 => Some(&mut self.10),
+            11 => Some(&mut self.11),
+            12 => Some(&mut self.12),
+            13 => Some(&mut self.13),
+            14 => Some(&mut self.14),
+            15 => Some(&mut self.15),
+            16 => Some(&mut self.16),
+            17 => Some(&mut self.17),
+            18 => Some(&mut self.18),
+            19 => Some(&mut self.19),
+            20 => Some(&mut self.20),
+            21 => Some(&mut self.21),
+            22 => Some(&mut self.22),
+            23 => Some(&mut self.23),
             _ => None,
         }
     }
@@ -1966,6 +2388,36 @@ where
             22 => Some(&self.22),
             23 => Some(&self.23),
             24 => Some(&self.24),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
+            7 => Some(&mut self.7),
+            8 => Some(&mut self.8),
+            9 => Some(&mut self.9),
+            10 => Some(&mut self.10),
+            11 => Some(&mut self.11),
+            12 => Some(&mut self.12),
+            13 => Some(&mut self.13),
+            14 => Some(&mut self.14),
+            15 => Some(&mut self.15),
+            16 => Some(&mut self.16),
+            17 => Some(&mut self.17),
+            18 => Some(&mut self.18),
+            19 => Some(&mut self.19),
+            20 => Some(&mut self.20),
+            21 => Some(&mut self.21),
+            22 => Some(&mut self.22),
+            23 => Some(&mut self.23),
+            24 => Some(&mut self.24),
             _ => None,
         }
     }
@@ -2137,6 +2589,37 @@ where
             23 => Some(&self.23),
             24 => Some(&self.24),
             25 => Some(&self.25),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
+            7 => Some(&mut self.7),
+            8 => Some(&mut self.8),
+            9 => Some(&mut self.9),
+            10 => Some(&mut self.10),
+            11 => Some(&mut self.11),
+            12 => Some(&mut self.12),
+            13 => Some(&mut self.13),
+            14 => Some(&mut self.14),
+            15 => Some(&mut self.15),
+            16 => Some(&mut self.16),
+            17 => Some(&mut self.17),
+            18 => Some(&mut self.18),
+            19 => Some(&mut self.19),
+            20 => Some(&mut self.20),
+            21 => Some(&mut self.21),
+            22 => Some(&mut self.22),
+            23 => Some(&mut self.23),
+            24 => Some(&mut self.24),
+            25 => Some(&mut self.25),
             _ => None,
         }
     }
@@ -2314,6 +2797,38 @@ where
             24 => Some(&self.24),
             25 => Some(&self.25),
             26 => Some(&self.26),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
+            7 => Some(&mut self.7),
+            8 => Some(&mut self.8),
+            9 => Some(&mut self.9),
+            10 => Some(&mut self.10),
+            11 => Some(&mut self.11),
+            12 => Some(&mut self.12),
+            13 => Some(&mut self.13),
+            14 => Some(&mut self.14),
+            15 => Some(&mut self.15),
+            16 => Some(&mut self.16),
+            17 => Some(&mut self.17),
+            18 => Some(&mut self.18),
+            19 => Some(&mut self.19),
+            20 => Some(&mut self.20),
+            21 => Some(&mut self.21),
+            22 => Some(&mut self.22),
+            23 => Some(&mut self.23),
+            24 => Some(&mut self.24),
+            25 => Some(&mut self.25),
+            26 => Some(&mut self.26),
             _ => None,
         }
     }
@@ -2497,6 +3012,39 @@ where
             25 => Some(&self.25),
             26 => Some(&self.26),
             27 => Some(&self.27),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
+            7 => Some(&mut self.7),
+            8 => Some(&mut self.8),
+            9 => Some(&mut self.9),
+            10 => Some(&mut self.10),
+            11 => Some(&mut self.11),
+            12 => Some(&mut self.12),
+            13 => Some(&mut self.13),
+            14 => Some(&mut self.14),
+            15 => Some(&mut self.15),
+            16 => Some(&mut self.16),
+            17 => Some(&mut self.17),
+            18 => Some(&mut self.18),
+            19 => Some(&mut self.19),
+            20 => Some(&mut self.20),
+            21 => Some(&mut self.21),
+            22 => Some(&mut self.22),
+            23 => Some(&mut self.23),
+            24 => Some(&mut self.24),
+            25 => Some(&mut self.25),
+            26 => Some(&mut self.26),
+            27 => Some(&mut self.27),
             _ => None,
         }
     }
@@ -2686,6 +3234,40 @@ where
             26 => Some(&self.26),
             27 => Some(&self.27),
             28 => Some(&self.28),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
+            7 => Some(&mut self.7),
+            8 => Some(&mut self.8),
+            9 => Some(&mut self.9),
+            10 => Some(&mut self.10),
+            11 => Some(&mut self.11),
+            12 => Some(&mut self.12),
+            13 => Some(&mut self.13),
+            14 => Some(&mut self.14),
+            15 => Some(&mut self.15),
+            16 => Some(&mut self.16),
+            17 => Some(&mut self.17),
+            18 => Some(&mut self.18),
+            19 => Some(&mut self.19),
+            20 => Some(&mut self.20),
+            21 => Some(&mut self.21),
+            22 => Some(&mut self.22),
+            23 => Some(&mut self.23),
+            24 => Some(&mut self.24),
+            25 => Some(&mut self.25),
+            26 => Some(&mut self.26),
+            27 => Some(&mut self.27),
+            28 => Some(&mut self.28),
             _ => None,
         }
     }
@@ -2881,6 +3463,41 @@ where
             27 => Some(&self.27),
             28 => Some(&self.28),
             29 => Some(&self.29),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
+            7 => Some(&mut self.7),
+            8 => Some(&mut self.8),
+            9 => Some(&mut self.9),
+            10 => Some(&mut self.10),
+            11 => Some(&mut self.11),
+            12 => Some(&mut self.12),
+            13 => Some(&mut self.13),
+            14 => Some(&mut self.14),
+            15 => Some(&mut self.15),
+            16 => Some(&mut self.16),
+            17 => Some(&mut self.17),
+            18 => Some(&mut self.18),
+            19 => Some(&mut self.19),
+            20 => Some(&mut self.20),
+            21 => Some(&mut self.21),
+            22 => Some(&mut self.22),
+            23 => Some(&mut self.23),
+            24 => Some(&mut self.24),
+            25 => Some(&mut self.25),
+            26 => Some(&mut self.26),
+            27 => Some(&mut self.27),
+            28 => Some(&mut self.28),
+            29 => Some(&mut self.29),
             _ => None,
         }
     }
@@ -3082,6 +3699,42 @@ where
             28 => Some(&self.28),
             29 => Some(&self.29),
             30 => Some(&self.30),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
+            7 => Some(&mut self.7),
+            8 => Some(&mut self.8),
+            9 => Some(&mut self.9),
+            10 => Some(&mut self.10),
+            11 => Some(&mut self.11),
+            12 => Some(&mut self.12),
+            13 => Some(&mut self.13),
+            14 => Some(&mut self.14),
+            15 => Some(&mut self.15),
+            16 => Some(&mut self.16),
+            17 => Some(&mut self.17),
+            18 => Some(&mut self.18),
+            19 => Some(&mut self.19),
+            20 => Some(&mut self.20),
+            21 => Some(&mut self.21),
+            22 => Some(&mut self.22),
+            23 => Some(&mut self.23),
+            24 => Some(&mut self.24),
+            25 => Some(&mut self.25),
+            26 => Some(&mut self.26),
+            27 => Some(&mut self.27),
+            28 => Some(&mut self.28),
+            29 => Some(&mut self.29),
+            30 => Some(&mut self.30),
             _ => None,
         }
     }
@@ -3289,6 +3942,43 @@ where
             29 => Some(&self.29),
             30 => Some(&self.30),
             31 => Some(&self.31),
+            _ => None,
+        }
+    }
+    fn register_by_index_mut(&mut self, index: usize) -> Option<&mut dyn Register> {
+        match index {
+            0 => Some(&mut self.0),
+            1 => Some(&mut self.1),
+            2 => Some(&mut self.2),
+            3 => Some(&mut self.3),
+            4 => Some(&mut self.4),
+            5 => Some(&mut self.5),
+            6 => Some(&mut self.6),
+            7 => Some(&mut self.7),
+            8 => Some(&mut self.8),
+            9 => Some(&mut self.9),
+            10 => Some(&mut self.10),
+            11 => Some(&mut self.11),
+            12 => Some(&mut self.12),
+            13 => Some(&mut self.13),
+            14 => Some(&mut self.14),
+            15 => Some(&mut self.15),
+            16 => Some(&mut self.16),
+            17 => Some(&mut self.17),
+            18 => Some(&mut self.18),
+            19 => Some(&mut self.19),
+            20 => Some(&mut self.20),
+            21 => Some(&mut self.21),
+            22 => Some(&mut self.22),
+            23 => Some(&mut self.23),
+            24 => Some(&mut self.24),
+            25 => Some(&mut self.25),
+            26 => Some(&mut self.26),
+            27 => Some(&mut self.27),
+            28 => Some(&mut self.28),
+            29 => Some(&mut self.29),
+            30 => Some(&mut self.30),
+            31 => Some(&mut self.31),
             _ => None,
         }
     }
