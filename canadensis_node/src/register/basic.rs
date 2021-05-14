@@ -2,6 +2,7 @@
 
 use crate::register::{Register, WriteError};
 use canadensis_data_types::uavcan::register::value::Value;
+use core::convert::TryFrom;
 
 /// A register containing its name, value, and mutable/persistent flags
 #[derive(Debug, Clone)]
@@ -33,6 +34,19 @@ impl<T> SimpleRegister<T> {
             persistent,
             value,
         }
+    }
+
+    /// Returns a reference to the value of this register
+    pub fn value(&self) -> &T {
+        &self.value
+    }
+    /// Returns a mutable reference to the value of this register
+    pub fn value_mut(&mut self) -> &mut T {
+        &mut self.value
+    }
+    /// Sets the value of this register
+    pub fn set_value(&mut self, value: T) {
+        self.value = value;
     }
 }
 
@@ -112,6 +126,7 @@ register_integer!(i16, Integer16);
 register_integer!(i32, Integer32);
 register_integer!(i64, Integer64);
 
+/// A string value for a register
 #[derive(Debug, Clone, Default)]
 pub struct RegisterString(pub heapless::Vec<u8, 256>);
 
@@ -131,6 +146,28 @@ impl RegisterType for RegisterString {
     }
 }
 
+impl TryFrom<&[u8]> for RegisterString {
+    type Error = LengthError;
+
+    /// Creates a register string from a slice of bytes, or returns an error if the length of bytes
+    /// is greater than 256
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        let byte_vec = heapless::Vec::from_slice(value).map_err(|_| LengthError(()))?;
+        Ok(RegisterString(byte_vec))
+    }
+}
+
+impl TryFrom<&str> for RegisterString {
+    type Error = LengthError;
+
+    /// Creates a register string from a string slice, or returns an error if the number of bytes
+    /// in the string is greater than 256
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        RegisterString::try_from(value.as_bytes())
+    }
+}
+
+/// An unstructured byte array value for a register
 #[derive(Debug, Clone, Default)]
 pub struct Unstructured(pub heapless::Vec<u8, 256>);
 
@@ -149,3 +186,18 @@ impl RegisterType for Unstructured {
         }
     }
 }
+
+impl TryFrom<&[u8]> for Unstructured {
+    type Error = LengthError;
+
+    /// Creates an unstructured value from a slice of bytes, or returns an error if the length of
+    /// bytes is greater than 256
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        let byte_vec = heapless::Vec::from_slice(value).map_err(|_| LengthError(()))?;
+        Ok(Unstructured(byte_vec))
+    }
+}
+
+/// An error indicating that a provided value was too long
+#[derive(Debug)]
+pub struct LengthError(());
