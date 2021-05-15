@@ -49,9 +49,11 @@ where
     pub fn publish_request(&mut self) {
         let now = self.clock.now();
         let frame = self.client.assemble_request(now);
+        rtt_target::rprintln!("Sending {:?}", frame);
         let bxcan_frame = crate::uavcan_frame_to_bxcan(&frame);
         // Ignore errors. If there's a bus problem, we can't really do anything.
-        let _ = self.can.transmit(&bxcan_frame);
+        let status = self.can.transmit(&bxcan_frame);
+        rtt_target::rprintln!("Send status {:?}", status);
     }
 
     /// Handles and parses incoming CAN frames, and returns a node ID if one was received
