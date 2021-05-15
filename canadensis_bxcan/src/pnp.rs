@@ -29,6 +29,7 @@ where
             let mut filter_banks = can.modify_filters();
 
             let mut filters = client.frame_fiters()?;
+            rtt_target::rprintln!("Raw filters: {:?}", filters);
             let optimized_filters =
                 canadensis_filter_config::optimize(&mut filters, filter_banks.num_banks().into());
             filter_banks.clear();
