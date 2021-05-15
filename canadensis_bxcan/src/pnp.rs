@@ -63,6 +63,7 @@ where
                 Ok(frame) => {
                     let now = self.clock.now();
                     if let Ok(canadensis_frame) = crate::bxcan_frame_to_uavcan(&frame, now) {
+                        rtt_target::rprintln!("Handling frame {:?}", canadensis_frame);
                         if let Ok(Some(received_node_id)) = self.client.accept(canadensis_frame) {
                             break Some(received_node_id);
                         }
