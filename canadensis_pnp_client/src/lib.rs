@@ -42,7 +42,7 @@ where
     M: AllocationMessage,
 {
     pub fn new(mtu: Mtu, unique_id: [u8; 16]) -> Result<Self, OutOfMemoryError> {
-        let mut receiver = Receiver::new_anonymous();
+        let mut receiver = Receiver::new_anonymous(mtu);
         receiver.subscribe_message(M::SUBJECT, 9, milliseconds(1000))?;
 
         Ok(PnpClient {

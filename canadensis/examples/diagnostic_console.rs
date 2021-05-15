@@ -14,7 +14,7 @@ use std::error::Error;
 use std::process;
 use std::time::Instant;
 
-use canadensis_can::{CanId, Frame, Receiver};
+use canadensis_can::{CanId, Frame, Mtu, Receiver};
 use canadensis_core::time::{Clock, MicrosecondDuration64, Microseconds64};
 use canadensis_data_types::uavcan::diagnostic::record::Record;
 use canadensis_data_types::uavcan::diagnostic::severity::Severity;
@@ -28,7 +28,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let can = socketcan::CANSocket::open(&interface)?;
 
     let mut clock = SystemClock::new();
-    let mut receiver = Receiver::new_anonymous();
+    let mut receiver = Receiver::new_anonymous(Mtu::Can8);
     receiver
         .subscribe_message(
             Record::SUBJECT,

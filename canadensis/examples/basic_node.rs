@@ -19,7 +19,7 @@ use canadensis::{Node, ResponseToken, TransferHandler};
 use canadensis_can::queue::ArrayQueue;
 use canadensis_can::{CanId, Frame, Mtu};
 use canadensis_core::time::{Clock, Duration, Instant, MicrosecondDuration64, Microseconds64};
-use canadensis_core::transfer::{MessageTransfer, ServiceTransfer};
+use canadensis_core::transfer::ServiceTransfer;
 use canadensis_core::{NodeId, Priority};
 use canadensis_data_types::uavcan::node::get_info::{GetInfoRequest, GetInfoResponse};
 use canadensis_data_types::uavcan::node::health::Health;
@@ -102,11 +102,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     uavcan
         .subscribe_request(GetInfoRequest::SERVICE, 0, MicrosecondDuration64::new(0))
         .expect("Out of memory");
-
-    // Now that the node has subscribed to everything it wants, set up the frame acceptance filters
-    let frame_filters = uavcan.frame_filters().unwrap();
-    println!("Filters: {:?}", frame_filters);
-    can.set_filters(&frame_filters)?;
 
     let mut last_run_time_seconds = 0u64;
     loop {
@@ -198,24 +193,16 @@ struct BasicTransferHandler {
     unique_id: [u8; 16],
 }
 
-impl<N> TransferHandler<N> for BasicTransferHandler
-where
-    N: Node<Clock = SystemClock>,
-{
-    fn handle_message(
-        &mut self,
-        _node: &mut N,
-        _transfer: MessageTransfer<Vec<u8>, <N::Clock as Clock>::Instant>,
-    ) {
-        // Not subscribed to anything
-    }
-
-    fn handle_request(
+impl TransferHandler<Microseconds64> for BasicTransferHandler {
+    fn handle_request<N>(
         &mut self,
         node: &mut N,
         token: ResponseToken,
-        transfer: ServiceTransfer<Vec<u8>, <N::Clock as Clock>::Instant>,
-    ) {
+        transfer: &ServiceTransfer<Vec<u8>, <N::Clock as Clock>::Instant>,
+    ) -> bool
+    where
+        N: Node<Instant = Microseconds64>,
+    {
         println!("Handling request {:?}", transfer);
         if transfer.header.service == GetInfoRequest::SERVICE {
             // Send a node information response
@@ -233,15 +220,10 @@ where
                 <<N::Clock as Clock>::Instant as Instant>::Duration::from_millis(1000).unwrap();
             node.send_response(token, timeout, &response)
                 .expect("Out of memory");
+            true
+        } else {
+            false
         }
-    }
-
-    fn handle_response(
-        &mut self,
-        _node: &mut N,
-        _transfer: ServiceTransfer<Vec<u8>, <N::Clock as Clock>::Instant>,
-    ) {
-        // Not subscribed to anything
     }
 }
 

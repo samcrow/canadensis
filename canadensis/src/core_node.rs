@@ -51,7 +51,7 @@ where
         CoreNode {
             clock,
             transmitter: Transmitter::new(mtu, transmit_queue),
-            receiver: Receiver::new(node_id),
+            receiver: Receiver::new(node_id, mtu),
             node_id,
             publishers: TrivialIndexMap::new(),
             requesters: TrivialIndexMap::new(),
