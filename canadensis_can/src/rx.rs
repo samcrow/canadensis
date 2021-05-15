@@ -15,6 +15,7 @@ use crate::data::{CanId, Frame};
 use crate::error::OutOfMemoryError;
 use crate::rx::session::SessionError;
 use crate::rx::subscription::{Subscription, SubscriptionError};
+use crate::Mtu;
 use canadensis_core::time::Instant;
 use canadensis_core::transfer::{Header, MessageHeader, ServiceHeader, Transfer};
 use canadensis_core::{NodeId, PortId, Priority, ServiceId, SubjectId, TransferId};
@@ -31,6 +32,8 @@ pub struct Receiver<I: Instant> {
     subscriptions_request: Vec<Subscription<I>>,
     /// The ID of this node, or None if this node is anonymous
     id: Option<NodeId>,
+    /// MTU of the transport
+    mtu: Mtu,
     /// Number of transfers successfully received
     transfer_count: u64,
     /// Number of transfers that could not be received
@@ -44,23 +47,24 @@ impl<I: Instant> Receiver<I> {
     /// Creates a receiver
     ///
     /// id: The ID of this node. This is used to filter incoming service requests and responses.
-    pub fn new(id: NodeId) -> Self {
-        Self::new_inner(Some(id))
+    pub fn new(id: NodeId, mtu: Mtu) -> Self {
+        Self::new_inner(Some(id), mtu)
     }
 
     /// Creates an anonymous receiver
     ///
     /// An anonymous receiver cannot receive service requests or responses.
-    pub fn new_anonymous() -> Self {
-        Self::new_inner(None)
+    pub fn new_anonymous(mtu: Mtu) -> Self {
+        Self::new_inner(None, mtu)
     }
 
-    fn new_inner(id: Option<NodeId>) -> Self {
+    fn new_inner(id: Option<NodeId>, mtu: Mtu) -> Self {
         Receiver {
             subscriptions_message: Vec::new(),
             subscriptions_response: Vec::new(),
             subscriptions_request: Vec::new(),
             id,
+            mtu,
             transfer_count: 0,
             error_count: 0,
         }
@@ -98,7 +102,7 @@ impl<I: Instant> Receiver<I> {
             Some(data) => data,
             None => {
                 // Can't use this frame
-                #[cfg(test)]
+                #[cfg(any(test, feature = "std-debug"))]
                 std::eprintln!("Frame failed sanity checks, ignoring");
                 self.increment_error_count();
                 return Ok(None);
@@ -140,7 +144,7 @@ impl<I: Instant> Receiver<I> {
                 }
                 Ok(None) => Ok(None),
                 Err(e) => {
-                    #[cfg(test)]
+                    #[cfg(any(test, feature = "std-debug"))]
                     std::eprintln!("Receiver accept error {:?}", e);
                     self.increment_error_count();
                     match e {
@@ -172,7 +176,7 @@ impl<I: Instant> Receiver<I> {
             if message_header.source.is_none() {
                 // Anonymous message transfers must always fit into one frame
                 if !(tail_byte.toggle && tail_byte.start && tail_byte.end) {
-                    #[cfg(test)]
+                    #[cfg(any(test, feature = "std-debug"))]
                     std::eprintln!("Anonymous multi-frame transfer, ignoring");
                     return None;
                 }
@@ -308,7 +312,7 @@ impl<I: Instant> Receiver<I> {
         self.unsubscribe(kind, port_id);
 
         // Create new subscription
-        let new_subscription = Subscription::new(timeout, payload_size_max, port_id);
+        let new_subscription = Subscription::new(timeout, payload_size_max, port_id, self.mtu);
 
         // Add this subscription to the list for this transfer kind
         let subscriptions = self.subscriptions_for_kind(kind);

@@ -1,6 +1,6 @@
 use crate::rx::session::{Session, SessionError};
 use crate::rx::TailByte;
-use crate::{Frame, OutOfMemoryError};
+use crate::{Frame, Mtu, OutOfMemoryError};
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 use canadensis_core::time::Instant;
@@ -20,7 +20,7 @@ pub struct Subscription<I: Instant> {
     sessions: [Option<Box<Session<I>>>; RX_SESSIONS_PER_SUBSCRIPTION],
     /// Maximum time difference between the first and last frames in a transfer
     timeout: I::Duration,
-    /// Maximum number of payload bytes, including 2 bytes for the CRC if necessary
+    /// Maximum number of payload bytes, space for the padding and CRC if necessary
     payload_size_max: usize,
     /// Subject or service ID that this subscription is about
     port_id: PortId,
@@ -51,11 +51,14 @@ impl<I: Instant> fmt::Debug for DebugSessions<'_, I> {
 
 impl<I: Instant> Subscription<I> {
     /// Creates a subscription
-    pub fn new(timeout: I::Duration, payload_size_max: usize, port_id: PortId) -> Self {
+    ///
+    /// The `payload_size_max` value is the maximum number of payload bytes that can be received,
+    /// not including space for the padding and transfer CRC.
+    pub fn new(timeout: I::Duration, payload_size_max: usize, port_id: PortId, mtu: Mtu) -> Self {
         Subscription {
             sessions: init_rx_sessions(),
             timeout,
-            payload_size_max,
+            payload_size_max: add_padding_and_crc_space(payload_size_max, mtu),
             port_id,
         }
     }
@@ -227,4 +230,70 @@ fn init_rx_sessions<I>() -> [Option<Box<Session<I>>>; RX_SESSIONS_PER_SUBSCRIPTI
         None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
         None, None, None, None, None, None, None, None,
     ]
+}
+
+/// Adds space for padding and a transfer CRC to the maximum payload size (if required) and returns
+/// the new maximum payload size
+fn add_padding_and_crc_space(payload_size_max: usize, mtu: Mtu) -> usize {
+    let stats = crate::calculate_frame_stats(payload_size_max, mtu as usize);
+    let crc_space = if stats.frames > 1 { 2 } else { 0 };
+    payload_size_max + stats.last_frame_padding + crc_space
+}
+
+#[cfg(test)]
+mod test {
+    use super::add_padding_and_crc_space;
+    use crate::Mtu;
+
+    #[test]
+    fn space_classic_can() {
+        for size in 0..=7 {
+            assert_eq!(size, add_padding_and_crc_space(size, Mtu::Can8));
+        }
+        for size in 8..=1024 {
+            assert_eq!(size + 2, add_padding_and_crc_space(size, Mtu::Can8));
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "can-fd")]
+    fn space_can_fd() {
+        // One frame
+        for size in 0..=7 {
+            assert_eq!(size, add_padding_and_crc_space(size, Mtu::CanFd64));
+        }
+        for size in 8..=11 {
+            assert_eq!(11, add_padding_and_crc_space(size, Mtu::CanFd64));
+        }
+        for size in 12..=15 {
+            assert_eq!(15, add_padding_and_crc_space(size, Mtu::CanFd64));
+        }
+        for size in 16..=19 {
+            assert_eq!(19, add_padding_and_crc_space(size, Mtu::CanFd64));
+        }
+        for size in 20..=23 {
+            assert_eq!(23, add_padding_and_crc_space(size, Mtu::CanFd64));
+        }
+        for size in 24..=31 {
+            assert_eq!(31, add_padding_and_crc_space(size, Mtu::CanFd64));
+        }
+        for size in 32..=47 {
+            assert_eq!(47, add_padding_and_crc_space(size, Mtu::CanFd64));
+        }
+        for size in 48..=63 {
+            assert_eq!(63, add_padding_and_crc_space(size, Mtu::CanFd64));
+        }
+        // Two frames
+        // 63 payload bytes + 1 tail byte in frame 1
+        // 1..=5 payload bytes + 2 CRC bytes + 1 tail byte in frame 2
+        for size in 64..=68 {
+            assert_eq!(size + 2, add_padding_and_crc_space(size, Mtu::CanFd64));
+        }
+        // Two frames
+        // 63 payload bytes + 1 tail byte in frame 1
+        // 6..=9 payload bytes + padding + 2 CRC bytes + 1 tail byte = 12 bytes in frame 2
+        for size in 69..=72 {
+            assert_eq!(74, add_padding_and_crc_space(size, Mtu::CanFd64));
+        }
+    }
 }

@@ -7,7 +7,7 @@ extern crate canadensis_core;
 
 use core::convert::{TryFrom, TryInto};
 
-use canadensis_can::{CanId, Frame, OutOfMemoryError, Receiver};
+use canadensis_can::{CanId, Frame, Mtu, OutOfMemoryError, Receiver, ServiceSubscribeError};
 use canadensis_core::time::{Instant, MicrosecondDuration32, Microseconds32};
 use canadensis_core::transfer::*;
 use canadensis_core::{NodeId, Priority, ServiceId, SubjectId};
@@ -24,7 +24,7 @@ fn duration(ticks: u32) -> TestDuration {
 
 #[test]
 fn test_heartbeat() -> Result<(), OutOfMemoryError> {
-    let mut rx = Receiver::new(0.try_into().unwrap());
+    let mut rx = Receiver::new(0.try_into().unwrap(), Mtu::Can8);
 
     let heartbeat_subject = SubjectId::try_from(7509).unwrap();
     rx.subscribe_message(heartbeat_subject, 7, duration(0))?;
@@ -38,16 +38,6 @@ fn test_heartbeat() -> Result<(), OutOfMemoryError> {
         .expect("Didn't get a transfer");
 
     let expected = Transfer {
-        // timestamp: instant(42),
-        // header: TransferHeader {
-        //     source: 42.try_into().unwrap(),
-        //     priority: Priority::Nominal,
-        //     kind: TransferKindHeader::Message(MessageHeader {
-        //         anonymous: false,
-        //         subject: heartbeat_subject,
-        //     }),
-        // },
-        // transfer_id: 0.try_into().unwrap(),
         header: Header::Message(MessageHeader {
             timestamp: instant(42),
             transfer_id: 0.try_into().unwrap(),
@@ -64,10 +54,10 @@ fn test_heartbeat() -> Result<(), OutOfMemoryError> {
 #[test]
 #[cfg(feature = "can-fd")]
 fn test_string() -> Result<(), OutOfMemoryError> {
-    let mut rx = Receiver::new(0.try_into().unwrap());
+    let mut rx = Receiver::new(0.try_into().unwrap(), Mtu::Can8);
 
     let string_subject = SubjectId::try_from(4919).unwrap();
-    rx.subscribe_message(string_subject, 16, duration(0))?;
+    rx.subscribe_message(string_subject, 15, duration(0))?;
 
     let transfer = rx
         .accept(Frame::new(
@@ -92,8 +82,8 @@ fn test_string() -> Result<(), OutOfMemoryError> {
     Ok(())
 }
 #[test]
-fn test_node_info_request() -> Result<(), OutOfMemoryError> {
-    let mut rx = Receiver::new(42.try_into().unwrap());
+fn test_node_info_request() -> Result<(), ServiceSubscribeError> {
+    let mut rx = Receiver::new(42.try_into().unwrap(), Mtu::Can8);
 
     let service = ServiceId::try_from(430).unwrap();
     rx.subscribe_request(service, 0, duration(0))?;
@@ -122,11 +112,11 @@ fn test_node_info_request() -> Result<(), OutOfMemoryError> {
     Ok(())
 }
 #[test]
-fn test_node_info_response() -> Result<(), OutOfMemoryError> {
-    let mut rx = Receiver::new(123.try_into().unwrap());
+fn test_node_info_response() -> Result<(), ServiceSubscribeError> {
+    let mut rx = Receiver::new(123.try_into().unwrap(), Mtu::Can8);
 
     let service = ServiceId::try_from(430).unwrap();
-    rx.subscribe_response(service, 313 * 8, duration(100))?;
+    rx.subscribe_response(service, 69, duration(100))?;
 
     let payload: [u8; 69] = [
         0x01, 0x00, // Protocol version
@@ -190,11 +180,11 @@ fn test_node_info_response() -> Result<(), OutOfMemoryError> {
     Ok(())
 }
 #[test]
-fn test_node_info_response_timeout() -> Result<(), OutOfMemoryError> {
-    let mut rx = Receiver::new(123.try_into().unwrap());
+fn test_node_info_response_timeout() -> Result<(), ServiceSubscribeError> {
+    let mut rx = Receiver::new(123.try_into().unwrap(), Mtu::Can8);
 
     let service = ServiceId::try_from(430).unwrap();
-    rx.subscribe_response(service, 313 * 8, duration(100))?;
+    rx.subscribe_response(service, 69, duration(100))?;
 
     let frames_and_times: [(&[u8], u32); 11] = [
         (&[0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0xa1], 100),
@@ -226,11 +216,11 @@ fn test_node_info_response_timeout() -> Result<(), OutOfMemoryError> {
 }
 #[test]
 #[cfg(feature = "can-fd")]
-fn test_array() -> Result<(), OutOfMemoryError> {
-    let mut rx = Receiver::new(0.try_into().unwrap());
+fn test_array() -> Result<(), ServiceSubscribeError> {
+    let mut rx = Receiver::new(0.try_into().unwrap(), Mtu::CanFd64);
 
     let subject = SubjectId::try_from(4919).unwrap();
-    rx.subscribe_message(subject, 1024, duration(1))?;
+    rx.subscribe_message(subject, 94, duration(1))?;
 
     let expected = Transfer {
         header: Header::Message(MessageHeader {
@@ -293,10 +283,10 @@ fn test_array() -> Result<(), OutOfMemoryError> {
 #[test]
 fn test_multi_frame_anonymous() {
     // Multi-frame anonymous transfers must be ignored
-    let mut receiver = Receiver::<Microseconds32>::new(NodeId::try_from(3).unwrap());
+    let mut receiver = Receiver::<Microseconds32>::new(NodeId::try_from(3).unwrap(), Mtu::Can8);
     let subject_id = SubjectId::try_from(10).unwrap();
     receiver
-        .subscribe_message(subject_id, 16, MicrosecondDuration32::new(100))
+        .subscribe_message(subject_id, 8, MicrosecondDuration32::new(100))
         .unwrap();
     // A non-anonymous 2-frame transfer works
     let non_anonymous_id: CanId = 0b100_0_0_011_0000000001010_0_1000000_u32
@@ -349,9 +339,40 @@ fn test_multi_frame_anonymous() {
     );
 }
 
+/// Tests an anonymous receiver receiving a multi-frame non-anonymous transfer
+#[test]
+fn test_anonymous_receive_multi_frame() {
+    let mut rx: Receiver<TestInstant> = Receiver::new_anonymous(Mtu::Can8);
+    rx.subscribe_message(8166.try_into().unwrap(), 9, duration(1_000_000))
+        .unwrap();
+
+    let message_id = CanId::try_from(0x107fe67e).unwrap();
+    let frames = [
+        Frame::new(
+            instant(10),
+            message_id,
+            &[190, 159, 33, 213, 34, 64, 1, 174],
+        ),
+        Frame::new(instant(120), message_id, &[103, 0, 143, 70, 78]),
+    ];
+    let expected_transfer = Transfer {
+        header: Header::Message(MessageHeader {
+            timestamp: instant(10),
+            transfer_id: 14.try_into().unwrap(),
+            priority: Priority::Nominal,
+            subject: 8166.try_into().unwrap(),
+            source: Some(126.try_into().unwrap()),
+        }),
+        payload: vec![190, 159, 33, 213, 34, 64, 1, 103, 0],
+    };
+
+    assert_eq!(Ok(None), rx.accept(frames[0].clone()));
+    assert_eq!(Ok(Some(expected_transfer)), rx.accept(frames[1].clone()));
+}
+
 #[test]
 fn test_ignore_request_to_other_node() {
-    let mut rx = Receiver::new(43.try_into().unwrap());
+    let mut rx = Receiver::new(43.try_into().unwrap(), Mtu::Can8);
 
     let service = ServiceId::try_from(430).unwrap();
     rx.subscribe_request(service, 0, duration(0)).unwrap();
