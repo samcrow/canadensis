@@ -10,8 +10,6 @@ description = "Bridge between Canadensis and the BXCAN peripherals found in some
 [dependencies]
 bxcan = ">=0.4, <0.6"
 nb = "1.0.0"
-# For debugging only
-rtt-target = "0.3.1"
 
 [dependencies.canadensis_core]
 path = "../canadensis_core"

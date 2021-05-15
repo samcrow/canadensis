@@ -76,7 +76,6 @@ where
     /// This function returns the node ID if one was assigned.
     pub fn accept(&mut self, frame: Frame<C::Instant>) -> Result<Option<NodeId>, OutOfMemoryError> {
         if let Some(transfer_in) = self.receiver.accept(frame)? {
-            rtt_target::rprintln!("Received transfer {:?}", transfer_in);
             if let Ok(message) = M::deserialize_from_bytes(&transfer_in.payload) {
                 if message.matches_unique_id(&self.unique_id) {
                     if let Some(node_id) = message.node_id() {

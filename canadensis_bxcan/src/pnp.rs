@@ -29,7 +29,6 @@ where
             let mut filter_banks = can.modify_filters();
 
             let mut filters = client.frame_fiters()?;
-            rtt_target::rprintln!("Raw filters: {:?}", filters);
             let optimized_filters =
                 canadensis_filter_config::optimize(&mut filters, filter_banks.num_banks().into());
             filter_banks.clear();
@@ -63,7 +62,6 @@ where
                 Ok(frame) => {
                     let now = self.clock.now();
                     if let Ok(canadensis_frame) = crate::bxcan_frame_to_uavcan(&frame, now) {
-                        rtt_target::rprintln!("Handling frame {:?}", canadensis_frame);
                         if let Ok(Some(received_node_id)) = self.client.accept(canadensis_frame) {
                             break Some(received_node_id);
                         }
