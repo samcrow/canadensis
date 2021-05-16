@@ -14,6 +14,8 @@ use canadensis_data_types::uavcan::register::name::Name;
 use canadensis_data_types::uavcan::register::value::Value;
 use canadensis_encoding::Deserialize;
 
+pub use canadensis_derive_register_block::RegisterBlock;
+
 /// A block of registers that can be accessed externally through the uavcan.register interface
 ///
 /// This trait is implemented for individual `Register`s and tuples of up to 32 `Register`s.

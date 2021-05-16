@@ -6,6 +6,7 @@ members = [
     "canadensis_core",
     "canadensis_crc",
     "canadensis_data_types",
+    "canadensis_derive_register_block",
     "canadensis_filter_config",
     "canadensis_linux",
     "canadensis_node",

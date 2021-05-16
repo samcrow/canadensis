@@ -18,6 +18,8 @@ heapless = "0.7.0"
 path = "../canadensis_can"
 [dependencies.canadensis_core]
 path = "../canadensis_core"
+[dependencies.canadensis_derive_register_block]
+path = "../canadensis_derive_register_block"
 [dependencies.canadensis_encoding]
 path = "../canadensis_encoding"
 [dependencies.canadensis]
