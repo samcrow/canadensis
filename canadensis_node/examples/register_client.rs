@@ -69,7 +69,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     .expect("Node ID too large");
 
     let can = CANSocket::open(&can_interface).expect("Failed to open CAN interface");
-    can.set_read_timeout(Duration::from_millis(500))?;
+    can.set_read_timeout(Duration::from_millis(5))?;
     can.set_write_timeout(Duration::from_millis(500))?;
     let mut can = LinuxCan::new(can);
 
@@ -140,8 +140,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         };
 
         node.run_periodic_tasks().unwrap();
-        while let Some(frame_out) = node.frame_queue_mut().pop_frame() {
-            can.send(frame_out)?;
+        let queue_length = node.frame_queue().len();
+        if queue_length != 0 {
+            eprintln!("Sending {} frames from queue", queue_length);
+            while let Some(frame_out) = node.frame_queue_mut().pop_frame() {
+                can.send(frame_out)?;
+            }
         }
     }
 
@@ -187,6 +191,10 @@ impl TransferHandler<<SystemClock as Clock>::Instant> for RegisterHandler {
                                 self.all_registers_listed = true;
                                 self.check_if_done();
                             } else {
+                                eprintln!(
+                                    "Discovered register {}, sending read request",
+                                    register_name
+                                );
                                 // Record information about this register and send a request to
                                 // read its value
                                 let read_transfer_id = node
@@ -239,7 +247,8 @@ impl TransferHandler<<SystemClock as Clock>::Instant> for RegisterHandler {
                                 }
                                 RegisterState::Done(_) => false,
                             });
-                    if let Some((_name, state)) = register_entry {
+                    if let Some((name, state)) = register_entry {
+                        eprintln!("Got value for {}", name);
                         *state = RegisterState::Done(response.value);
                     } else {
                         println!(

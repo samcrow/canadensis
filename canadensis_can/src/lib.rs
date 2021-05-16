@@ -19,6 +19,23 @@ pub use crate::error::*;
 pub use crate::rx::{Receiver, ServiceSubscribeError};
 pub use crate::tx::Transmitter;
 
+/// Displays debug output using `std::eprintln!`, `rtt_target::rprintln!`, both, or neither,
+/// depending on the enabled features
+macro_rules! debugln {
+    ($fmt:expr) => {
+        #[cfg(feature = "std-debug")]
+        std::eprintln!($fmt);
+        #[cfg(feature = "rtt-debug")]
+        rtt_target::rprintln!($fmt)
+    };
+    ($fmt:expr, $($arg:tt)*) => {
+        #[cfg(feature = "std-debug")]
+        std::eprintln!($fmt, $($arg)*);
+        #[cfg(feature = "rtt-debug")]
+        rtt_target::rprintln!($fmt, $($arg)*)
+    };
+}
+
 mod crc;
 mod data;
 mod error;
