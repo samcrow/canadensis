@@ -241,7 +241,7 @@ fn uavcan_frame_to_bxcan<I>(frame: &canadensis_can::Frame<I>) -> bxcan::Frame {
 ///
 /// This function returns an error if the frame does not have an extended ID, has an ID with an
 /// invalid format, or does not have any data.
-fn bxcan_frame_to_uavcan<I>(
+pub fn bxcan_frame_to_uavcan<I>(
     frame: &bxcan::Frame,
     timestamp: I,
 ) -> Result<canadensis_can::Frame<I>, InvalidFrameFormat> {
@@ -258,5 +258,6 @@ fn bxcan_frame_to_uavcan<I>(
     ))
 }
 
+/// An error indicating that a frame did not have the correct format for use with UAVCAN
 #[derive(Debug)]
-struct InvalidFrameFormat;
+pub struct InvalidFrameFormat;
