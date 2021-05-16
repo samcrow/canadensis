@@ -58,7 +58,7 @@ impl LinuxCan {
         let socketcan_frame =
             socketcan::CANFrame::new(frame.id().into(), frame.data(), false, false)
                 .expect("Invalid frame format");
-        self.socket.write_frame(&socketcan_frame)
+        self.socket.write_frame_insist(&socketcan_frame)
     }
 
     /// Replaces any configured filters with one filter that accepts all frames

@@ -147,6 +147,7 @@ where
     }
 
     fn handle_list_request(&mut self, request: &ListRequest) -> ListResponse {
+        debugln!("Handling register list request, index {}", request.index);
         match self.block.register_by_index(request.index.into()) {
             Some(register) => {
                 let name = register.name().as_bytes();
