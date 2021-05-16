@@ -131,6 +131,7 @@ where
     fn handle_access_request(&mut self, request: &AccessRequest) -> AccessResponse {
         match str::from_utf8(&request.name.name) {
             Ok(register_name) => {
+                debugln!("Handling access request for {}", register_name);
                 if let Some(register) = self.block.register_by_name_mut(register_name) {
                     register_handle_access(register, request)
                 } else {
@@ -170,7 +171,7 @@ where
 }
 
 fn register_handle_access(register: &mut dyn Register, request: &AccessRequest) -> AccessResponse {
-    if !matches!(request.value, Value::Empty) {
+    if register.is_mutable() && !matches!(request.value, Value::Empty) {
         // Write errors are reported by returning the unmodified register value.
         let _ = register.write(&request.value);
     }
@@ -198,7 +199,10 @@ where
             AccessRequest::SERVICE => {
                 if let Ok(request) = AccessRequest::deserialize_from_bytes(&transfer.payload) {
                     let response = self.handle_access_request(&request);
-                    let _ = node.send_response(token, milliseconds(1000), &response);
+                    let status = node.send_response(token, milliseconds(1000), &response);
+                    if status.is_err() {
+                        debugln!("Out of memory when sending register access response");
+                    }
                     true
                 } else {
                     false
@@ -207,7 +211,10 @@ where
             ListRequest::SERVICE => {
                 if let Ok(request) = ListRequest::deserialize_from_bytes(&transfer.payload) {
                     let response = self.handle_list_request(&request);
-                    let _ = node.send_response(token, milliseconds(1000), &response);
+                    let status = node.send_response(token, milliseconds(1000), &response);
+                    if status.is_err() {
+                        debugln!("Out of memory when sending register list response");
+                    }
                     true
                 } else {
                     false
