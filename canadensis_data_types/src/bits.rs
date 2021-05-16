@@ -50,6 +50,15 @@ impl<const BYTES: usize> BitArray<BYTES> {
         }
     }
 
+    /// Sets all bits in this array to the specified value
+    pub fn fill(&mut self, value: bool) {
+        if value {
+            self.bytes.fill(0xff);
+        } else {
+            self.bytes.fill(0x00);
+        }
+    }
+
     /// Serializes this bit set (not including the length)
     ///
     /// Note: This type doesn't implement DataType, Serialize, or Deserialize because it is not a

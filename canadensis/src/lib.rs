@@ -165,6 +165,10 @@ where
     }
 }
 
+/// A UAVCAN node
+///
+/// A node has a node ID (it is not anonymous), a clock, a queue of outgoing frames waiting to be
+/// sent, and information about the subjects and services it is using.
 pub trait Node {
     /// The clock that this node uses
     type Clock: Clock<Instant = Self::Instant>;
@@ -173,6 +177,13 @@ pub trait Node {
     /// The queue of outgoing frames that this node uses
     type FrameQueue;
 
+    /// Handles an incoming frame
+    ///
+    /// If the frame completes a transfer, the transfer is passed to the provided handler.
+    ///
+    /// This function returns an error if memory for the received transfer could not be allocated.
+    /// Other types of errors, like an invalid frame format or an incorrect transfer CRC,
+    /// may cause transfers to be lost but are not reported as errors here.
     fn accept_frame<H>(
         &mut self,
         frame: Frame<<Self::Clock as Clock>::Instant>,
@@ -181,15 +192,30 @@ pub trait Node {
     where
         H: TransferHandler<Self::Instant>;
 
+    /// Starts publishing messages on subject
+    ///
+    /// The returned [`PublishToken`] can be used with the [`publish`](#tymethod.publish) function to
+    /// send a message.
+    ///
+    /// This function returns an error if memory for the publishing data could not be allocated,
+    /// or if the subject ID is already in use.
     fn start_publishing<T>(
         &mut self,
         subject: SubjectId,
         timeout: <<<Self as Node>::Clock as Clock>::Instant as Instant>::Duration,
         priority: Priority,
-    ) -> Result<PublishToken<T>, CapacityError>
+    ) -> Result<PublishToken<T>, StartSendError>
     where
         T: Message;
 
+    /// Stops publishing messages on a subject
+    fn stop_publishing<T>(&mut self, token: PublishToken<T>)
+    where
+        T: Message;
+
+    /// Publishes a message
+    ///
+    /// A token can be created by calling [`start_publishing`](#tymethod.start_publishing).
     fn publish<T>(&mut self, token: &PublishToken<T>, payload: &T) -> Result<(), OutOfMemoryError>
     where
         T: Message + Serialize;
@@ -197,13 +223,21 @@ pub trait Node {
     /// Sets up to send requests for a service
     ///
     /// This also subscribes to the corresponding responses.
+    ///
+    /// This function returns an error if memory could not be allocated,
+    /// or if the subject ID is already in use.
     fn start_sending_requests<T>(
         &mut self,
         service: ServiceId,
         receive_timeout: <<<Self as Node>::Clock as Clock>::Instant as Instant>::Duration,
         response_payload_size_max: usize,
         priority: Priority,
-    ) -> Result<ServiceToken<T>, CapacityOrMemoryError>
+    ) -> Result<ServiceToken<T>, StartSendError>
+    where
+        T: Request;
+
+    /// Stops sending requests for a service
+    fn stop_sending_requests<T>(&mut self, token: ServiceToken<T>)
     where
         T: Request;
 
@@ -219,6 +253,7 @@ pub trait Node {
     where
         T: Request + Serialize;
 
+    /// Subscribes to messages on a topic
     fn subscribe_message(
         &mut self,
         subject: SubjectId,
@@ -226,6 +261,7 @@ pub trait Node {
         timeout: <<<Self as Node>::Clock as Clock>::Instant as Instant>::Duration,
     ) -> Result<(), OutOfMemoryError>;
 
+    /// Subscribes to requests for a service
     fn subscribe_request(
         &mut self,
         service: ServiceId,
@@ -233,6 +269,11 @@ pub trait Node {
         timeout: <<<Self as Node>::Clock as Clock>::Instant as Instant>::Duration,
     ) -> Result<(), OutOfMemoryError>;
 
+    /// Responds to a service request
+    ///
+    /// This function requires a response token to match this response to its corresponding
+    /// request. The token is passed to a transfer handler along with a request, so that the handler
+    /// can send a response.
     fn send_response<T>(
         &mut self,
         token: ResponseToken,
@@ -260,35 +301,43 @@ pub trait Node {
     fn frame_filters(&self) -> Result<Vec<Filter>, OutOfMemoryError>;
 }
 
-/// A token returned from start_publishing that can be used to a publish a transfer using the
-/// associated subject ID
+/// A token returned from [`Node::start_publishing`](Node#tymethod.start_publishing) that can be
+/// used to a publish a transfer using the associated subject ID
 ///
 /// The type parameter `T` constrains the type of message sent.
 pub struct PublishToken<T>(SubjectId, PhantomData<T>);
 
-/// A token returned from start_sending_requests that can be used to a request a service using the
-/// associated service ID
+impl<T> PublishToken<T> {
+    /// Returns the subject ID that this token is used to publish on
+    pub fn subject_id(&self) -> SubjectId {
+        self.0
+    }
+}
+
+/// A token returned from [`Node::start_sending_requests`](Node#tymethod.start_sending_requests)
+/// that can be used to a request a service using the associated service ID
 ///
 /// The type parameter `T` constrains the type of request sent.
 pub struct ServiceToken<T>(ServiceId, PhantomData<T>);
 
-/// An error indicating that an operation ran out of space in a fixed-capacity data structure
-#[derive(Debug)]
-pub struct CapacityError(());
-
-#[derive(Debug)]
-pub enum CapacityOrMemoryError {
-    Capacity(CapacityError),
-    OutOfMemory(OutOfMemoryError),
-}
-
-impl From<CapacityError> for CapacityOrMemoryError {
-    fn from(inner: CapacityError) -> Self {
-        CapacityOrMemoryError::Capacity(inner)
+impl<T> ServiceToken<T> {
+    /// returns the service ID that this token is used to send requests on
+    pub fn service_id(&self) -> ServiceId {
+        self.0
     }
 }
-impl From<OutOfMemoryError> for CapacityOrMemoryError {
+
+/// Errors that may occur when starting to send messages or requests
+#[derive(Debug)]
+pub enum StartSendError {
+    /// Memory could not be allocated
+    Memory(OutOfMemoryError),
+    /// The provided subject ID or service ID is already in use
+    Duplicate,
+}
+
+impl From<OutOfMemoryError> for StartSendError {
     fn from(inner: OutOfMemoryError) -> Self {
-        CapacityOrMemoryError::OutOfMemory(inner)
+        StartSendError::Memory(inner)
     }
 }

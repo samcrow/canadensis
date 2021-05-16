@@ -1,8 +1,7 @@
 use crate::MinimalNode;
-use alloc::prelude::v1::Vec;
+use alloc::vec::Vec;
 use canadensis::{
-    CapacityError, CapacityOrMemoryError, Node, PublishToken, ResponseToken, ServiceToken,
-    TransferHandler,
+    Node, PublishToken, ResponseToken, ServiceToken, StartSendError, TransferHandler,
 };
 use canadensis_can::{Frame, OutOfMemoryError};
 use canadensis_core::time::{milliseconds, Clock, Duration, Instant};
@@ -40,7 +39,7 @@ impl<N> BasicNode<N>
 where
     N: Node,
 {
-    pub fn new(mut node: N, node_info: GetInfoResponse) -> Result<Self, CapacityOrMemoryError> {
+    pub fn new(mut node: N, node_info: GetInfoResponse) -> Result<Self, StartSendError> {
         // The MinimalNode takes care of heartbeats.
         // Do node info and port list here.
 
@@ -132,7 +131,7 @@ where
         subject: SubjectId,
         timeout: <<N::Clock as Clock>::Instant as Instant>::Duration,
         priority: Priority,
-    ) -> Result<PublishToken<T>, CapacityError>
+    ) -> Result<PublishToken<T>, StartSendError>
     where
         T: Message,
     {
@@ -143,6 +142,15 @@ where
         // Record that this port is in use
         insert_into_list(&mut self.port_list.publishers, subject);
         Ok(token)
+    }
+
+    fn stop_publishing<T>(&mut self, token: PublishToken<T>)
+    where
+        T: Message,
+    {
+        let subject = token.subject_id();
+        self.node.node_mut().stop_publishing(token);
+        remove_from_list(&mut self.port_list.publishers, subject);
     }
 
     fn publish<T>(&mut self, token: &PublishToken<T>, payload: &T) -> Result<(), OutOfMemoryError>
@@ -158,7 +166,7 @@ where
         receive_timeout: <<N::Clock as Clock>::Instant as Instant>::Duration,
         response_payload_size_max: usize,
         priority: Priority,
-    ) -> Result<ServiceToken<T>, CapacityOrMemoryError>
+    ) -> Result<ServiceToken<T>, StartSendError>
     where
         T: Request,
     {
@@ -172,6 +180,15 @@ where
         self.port_list.clients.mask.set(service.into(), true);
 
         Ok(token)
+    }
+
+    fn stop_sending_requests<T>(&mut self, token: ServiceToken<T>)
+    where
+        T: Request,
+    {
+        let service_id = token.service_id();
+        self.node.node_mut().stop_sending_requests(token);
+        self.port_list.clients.mask.set(service_id.into(), false);
     }
 
     fn send_request<T>(
@@ -332,6 +349,29 @@ fn insert_into_list(subject_list: &mut SubjectIdList, subject: SubjectId) {
                 }
             }
         }
-        SubjectIdList::Total => { /* Shouldn't happen, ignore */ }
+        SubjectIdList::Total => { /* All subject IDs in use, can't add */ }
     };
+}
+
+fn remove_from_list(subject_list: &mut SubjectIdList, subject: SubjectId) {
+    match subject_list {
+        SubjectIdList::Mask(mask) => {
+            mask.set(subject.into(), false);
+        }
+        SubjectIdList::SparseList(list) => {
+            if let Some(position) = list
+                .iter()
+                .position(|id_in_list| id_in_list.value == u16::from(subject))
+            {
+                list.swap_remove(position);
+            }
+        }
+        SubjectIdList::Total => {
+            // Convert from total into a mask with everything except subject set to 1
+            let mut mask = BitArray::new(SubjectIdList::CAPACITY.into());
+            mask.fill(true);
+            mask.set(subject.into(), false);
+            *subject_list = SubjectIdList::Mask(mask);
+        }
+    }
 }

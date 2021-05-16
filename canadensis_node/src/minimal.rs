@@ -1,4 +1,4 @@
-use canadensis::{CapacityError, Node, PublishToken};
+use canadensis::{Node, PublishToken, StartSendError};
 use canadensis_can::OutOfMemoryError;
 use canadensis_core::time::{Clock, Duration, Instant};
 use canadensis_core::Priority;
@@ -8,9 +8,9 @@ use canadensis_data_types::uavcan::node::mode::Mode;
 
 /// A node with the minimum required application-layer functionality
 ///
-/// A `BasicNode` wraps a [`canadensis::Node`] and adds functionality to periodically send
-/// `uavcan.node.Heartbeat.1.0` messages. This is the only application-layer function that
-/// is required for all nodes.
+/// A `BasicNode` wraps a [`canadensis::Node`] and adds functionality to send a
+/// `uavcan.node.Heartbeat.1.0` message every second. This is the only application-layer function
+/// that is required for all nodes.
 ///
 /// A BasicNode uses up one publisher slot in the enclosed Node.
 pub struct MinimalNode<N>
@@ -33,7 +33,7 @@ impl<N> MinimalNode<N>
 where
     N: Node,
 {
-    pub fn new(mut node: N) -> Result<Self, CapacityError> {
+    pub fn new(mut node: N) -> Result<Self, StartSendError> {
         // Default heartbeat settings
         let heartbeat = Heartbeat {
             uptime: 0,

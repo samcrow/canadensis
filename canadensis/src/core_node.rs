@@ -16,10 +16,7 @@ use canadensis_encoding::{Message, Request, Response, Serialize, WriteCursor};
 use crate::hash::TrivialIndexMap;
 use crate::publisher::Publisher;
 use crate::requester::Requester;
-use crate::{
-    CapacityError, CapacityOrMemoryError, Node, PublishToken, ResponseToken, ServiceToken,
-    TransferHandler,
-};
+use crate::{Node, PublishToken, ResponseToken, ServiceToken, StartSendError, TransferHandler};
 use canadensis_filter_config::Filter;
 
 /// A high-level interface with UAVCAN node functionality
@@ -145,15 +142,26 @@ where
         subject: SubjectId,
         timeout: <C::Instant as Instant>::Duration,
         priority: Priority,
-    ) -> Result<PublishToken<T>, CapacityError>
+    ) -> Result<PublishToken<T>, StartSendError>
     where
         T: Message,
     {
         let token = PublishToken(subject, PhantomData);
-        self.publishers
-            .insert(subject, Publisher::new(self.node_id, timeout, priority))
-            .map(|_| token)
-            .map_err(|_| CapacityError(()))
+        if self.publishers.contains_key(&subject) {
+            Err(StartSendError::Duplicate)
+        } else {
+            self.publishers
+                .insert(subject, Publisher::new(self.node_id, timeout, priority))
+                .map(|_| token)
+                .map_err(|_| StartSendError::Memory(OutOfMemoryError))
+        }
+    }
+
+    fn stop_publishing<T>(&mut self, token: PublishToken<T>)
+    where
+        T: Message,
+    {
+        self.publishers.remove(&token.0);
     }
 
     fn publish<T>(&mut self, token: &PublishToken<T>, payload: &T) -> Result<(), OutOfMemoryError>
@@ -176,32 +184,46 @@ where
         receive_timeout: <C::Instant as Instant>::Duration,
         response_payload_size_max: usize,
         priority: Priority,
-    ) -> Result<ServiceToken<T>, CapacityOrMemoryError>
+    ) -> Result<ServiceToken<T>, StartSendError>
     where
         T: Request,
     {
         let token = ServiceToken(service, PhantomData);
-        self.requesters
-            .insert(
+        if self.requesters.contains_key(&service) {
+            Err(StartSendError::Duplicate)
+        } else {
+            self.requesters
+                .insert(
+                    service,
+                    Requester::new(self.node_id, receive_timeout, priority),
+                )
+                .map_err(|_| StartSendError::Memory(OutOfMemoryError))?;
+            match self.receiver.subscribe_response(
                 service,
-                Requester::new(self.node_id, receive_timeout, priority),
-            )
-            .map_err(|_| CapacityError(()))?;
-        match self
-            .receiver
-            .subscribe_response(service, response_payload_size_max, receive_timeout)
-        {
-            Ok(()) => Ok(token),
-            Err(e) => {
-                // Clean up requester
-                self.requesters.remove(&service);
-                // Because a CoreNode can't be anonymous, the above function can't return an Anonymous error.
-                match e {
-                    ServiceSubscribeError::Memory(e) => Err(e.into()),
-                    ServiceSubscribeError::Anonymous => unreachable!("CoreNode is never anonymous"),
+                response_payload_size_max,
+                receive_timeout,
+            ) {
+                Ok(()) => Ok(token),
+                Err(e) => {
+                    // Clean up requester
+                    self.requesters.remove(&service);
+                    // Because a CoreNode can't be anonymous, the above function can't return an Anonymous error.
+                    match e {
+                        ServiceSubscribeError::Memory(e) => Err(e.into()),
+                        ServiceSubscribeError::Anonymous => {
+                            unreachable!("CoreNode is never anonymous")
+                        }
+                    }
                 }
             }
         }
+    }
+
+    fn stop_sending_requests<T>(&mut self, token: ServiceToken<T>)
+    where
+        T: Request,
+    {
+        self.requesters.remove(&token.0);
     }
 
     fn send_request<T>(
