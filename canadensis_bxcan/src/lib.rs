@@ -10,6 +10,18 @@ extern crate canadensis_filter_config;
 extern crate canadensis_pnp_client;
 extern crate nb;
 
+/// Forwards to rtt_target::rprintln if the rtt-debug feature is enabled
+#[cfg(feature = "rtt-debug")]
+macro_rules! debugln {
+    ($fmt:expr) => { rtt_target::rprintln!($fmt) };
+    ($fmt:expr, $($arg:tt)*) => { rtt_target::rprintln!($fmt, $($arg)*) };
+}
+#[cfg(not(feature = "rtt-debug"))]
+macro_rules! debugln {
+    ($fmt:expr) => {};
+    ($fmt:expr, $($arg:tt)*) => {};
+}
+
 mod pnp;
 
 pub use crate::pnp::BxCanPnpClient;
@@ -97,8 +109,7 @@ where
                     }
                 }
                 Err(nb::Error::Other(())) => {
-                    // The receive FIFO has overflowed and at least one frame has been lost.
-                    // What can we do?
+                    debugln!("CAN receive FIFO overflowed");
                 }
                 Err(nb::Error::WouldBlock) => break,
             }
