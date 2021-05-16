@@ -14,7 +14,3 @@ members = [
     "canadensis_encoding",
     "canadensis_write_crc"
 ]
-
-# Pending https://github.com/stm32-rs/bxcan/pull/29
-[patch.crates-io]
-bxcan = { git = "https://github.com/samcrow/bxcan.git", branch = "mailbox-number" }
