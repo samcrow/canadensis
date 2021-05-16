@@ -97,20 +97,22 @@ impl<B> RegisterHandler<B>
 where
     B: RegisterBlock,
 {
-    /// Creates a register handler and starts listening for register list and register access
-    /// requests
+    /// Creates a register handler
+    pub fn new(block: B) -> Self {
+        RegisterHandler { block }
+    }
+
+    /// Subscribes to register list and register access requests
     ///
     /// This function returns an error if the provided node does not have enough space to listen
     /// for requests.
-    pub fn init<N>(block: B, node: &mut N) -> Result<Self, OutOfMemoryError>
+    pub fn subscribe_requests<N>(node: &mut N) -> Result<(), OutOfMemoryError>
     where
         N: Node,
     {
-        // Subscribe to register access and list services
         node.subscribe_request(AccessRequest::SERVICE, 515, milliseconds(1000))?;
         node.subscribe_request(ListRequest::SERVICE, 2, milliseconds(0))?;
-
-        Ok(RegisterHandler { block })
+        Ok(())
     }
 
     /// Returns a reference to the register block
