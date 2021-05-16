@@ -109,6 +109,15 @@ where
     }
 }
 
+impl<I> Drop for Session<I> {
+    fn drop(&mut self) {
+        debugln!(
+            "Dropping session with transfer ID {:?}",
+            self.buildup.transfer_id()
+        );
+    }
+}
+
 #[derive(Debug)]
 pub enum SessionError {
     /// A transfer CRC was invalid
