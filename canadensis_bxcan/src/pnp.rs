@@ -10,9 +10,9 @@ pub struct BxCanPnpClient<C: Clock, M, I: Instance> {
     /// A clock used to get the current time
     clock: C,
     /// The CAN peripheral
-    can: Can<I>,
+    pub can: Can<I>,
     /// The node ID allocation client
-    client: PnpClient<C, M>,
+    pub client: PnpClient<C, M>,
 }
 
 impl<C, M, I> BxCanPnpClient<C, M, I>

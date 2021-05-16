@@ -109,6 +109,7 @@ where
     }
 
     /// Returns the transfer ID of this session
+    #[allow(dead_code)]
     pub fn transfer_id(&self) -> TransferId {
         self.buildup.transfer_id()
     }
