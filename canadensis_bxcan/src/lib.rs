@@ -245,7 +245,7 @@ where
     I: Clone,
 {
     /// Creates a deadline tracker with no deadlines
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         DeadlineTracker {
             deadlines: [None, None, None],
         }
