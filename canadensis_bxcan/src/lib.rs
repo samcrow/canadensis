@@ -235,7 +235,7 @@ where
 
 /// Keeps track of the deadline for each frame in a CAN transmit mailbox
 ///
-/// This struct does not have any public associated functions.
+/// This struct does not have any public associated functions except `new()`.
 pub struct DeadlineTracker<I> {
     deadlines: [Option<I>; 3],
 }
@@ -245,7 +245,7 @@ where
     I: Clone,
 {
     /// Creates a deadline tracker with no deadlines
-    pub(crate) fn new() -> Self {
+    pub const fn new() -> Self {
         DeadlineTracker {
             deadlines: [None, None, None],
         }
