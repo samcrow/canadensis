@@ -107,6 +107,11 @@ where
     pub fn transfer_timestamp(&self) -> I {
         self.transfer_timestamp
     }
+
+    /// Returns the transfer ID of this session
+    pub fn transfer_id(&self) -> TransferId {
+        self.buildup.transfer_id()
+    }
 }
 
 impl<I> Drop for Session<I> {
