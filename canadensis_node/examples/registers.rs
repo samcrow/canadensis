@@ -133,6 +133,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Node size: {} bytes", std::mem::size_of_val(&node));
 
+    let start_time = std::time::Instant::now();
+    let mut prev_seconds = 0;
     loop {
         match can.receive() {
             Ok(frame) => {
@@ -144,7 +146,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             },
         };
 
-        node.run_periodic_tasks().unwrap();
+        let seconds = std::time::Instant::now()
+            .duration_since(start_time)
+            .as_secs();
+        if seconds != prev_seconds {
+            prev_seconds = seconds;
+            node.run_per_second_tasks().unwrap();
+        }
+
         while let Some(frame_out) = node.frame_queue_mut().pop_frame() {
             can.send(frame_out)?;
         }

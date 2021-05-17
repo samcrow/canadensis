@@ -77,10 +77,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Filters: {:?}", frame_filters);
     can.set_filters(&frame_filters)?;
 
+    let start_time = std::time::Instant::now();
+    let mut prev_seconds = 0;
     loop {
         // Don't need to check for incoming frames because this node does not receive anything.
 
-        node.run_periodic_tasks().unwrap();
+        let seconds = std::time::Instant::now()
+            .duration_since(start_time)
+            .as_secs();
+        if seconds != prev_seconds {
+            prev_seconds = seconds;
+            node.run_per_second_tasks().unwrap();
+        }
+
         while let Some(frame_out) = node.node_mut().pop_frame() {
             can.send(frame_out)?;
         }

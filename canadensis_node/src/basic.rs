@@ -4,7 +4,7 @@ use canadensis::{
     Node, PublishToken, ResponseToken, ServiceToken, StartSendError, TransferHandler,
 };
 use canadensis_can::{Frame, OutOfMemoryError};
-use canadensis_core::time::{milliseconds, Clock, Duration, Instant};
+use canadensis_core::time::{milliseconds, Clock, Instant};
 use canadensis_core::transfer::{MessageTransfer, ServiceTransfer};
 use canadensis_core::{NodeId, Priority, ServiceId, SubjectId, TransferId};
 use canadensis_data_types::bits::BitArray;
@@ -30,9 +30,9 @@ where
 {
     node: MinimalNode<N>,
     port_list_token: PublishToken<List>,
-    last_port_list_seconds: u64,
     port_list: List,
     node_info: GetInfoResponse,
+    seconds_since_port_list_published: u8,
 }
 
 impl<N> BasicNode<N>
@@ -73,37 +73,21 @@ where
         Ok(BasicNode {
             node: minimal,
             port_list_token,
-            last_port_list_seconds: 0,
             port_list,
             node_info,
+            seconds_since_port_list_published: 0,
         })
     }
 
-    /// This function must be called once per second (or more frequently) to send heartbeat
-    /// messages
-    ///
-    /// Either `run_periodic_tasks` or `run_per_second_tasks` should be called, but not both.
-    pub fn run_periodic_tasks(&mut self) -> Result<(), OutOfMemoryError> {
-        let now = self.node.node_mut().clock_mut().now();
-        let since_start = now.duration_since(&self.node.start_time());
-        let seconds_since_start = since_start.as_secs();
-        if seconds_since_start >= self.last_port_list_seconds + 10 {
-            self.last_port_list_seconds = seconds_since_start;
-            self.run_per_second_tasks()?;
-        }
-
-        Ok(())
-    }
-
     /// This function must be called once per second to send heartbeat and port list messages
-    ///
-    /// Unlike [`run_periodic_tasks`](#method.run_periodic_tasks), this function does not check
-    /// if one second has passed since the last time it was called.
-    ///
-    /// Either `run_periodic_tasks` or `run_per_second_tasks` should be called, but not both.
     pub fn run_per_second_tasks(&mut self) -> Result<(), OutOfMemoryError> {
         self.node.run_per_second_tasks()?;
-        self.publish_port_list()?;
+        if self.seconds_since_port_list_published == 10 {
+            self.seconds_since_port_list_published = 1;
+            self.publish_port_list()?;
+        } else {
+            self.seconds_since_port_list_published += 1;
+        }
         Ok(())
     }
 

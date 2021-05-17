@@ -21,10 +21,6 @@ where
     node: N,
     /// The heartbeat message that will be periodically sent
     heartbeat: Heartbeat,
-    /// The time this node was created
-    start_time: <N::Clock as Clock>::Instant,
-    /// The whole seconds of the time when the heartbeat message was last sent
-    last_heartbeat_seconds: u32,
     /// The token used to publish heartbeat messages
     heartbeat_token: PublishToken<Heartbeat>,
 }
@@ -41,7 +37,6 @@ where
             mode: Mode::Operational,
             vendor_specific_status_code: 0,
         };
-        let start_time = node.clock_mut().now();
         let heartbeat_timeout =
             <<N::Clock as Clock>::Instant as Instant>::Duration::from_millis(500)
                 .expect("Duration type can't represent 500 milliseconds");
@@ -52,27 +47,8 @@ where
         Ok(MinimalNode {
             node,
             heartbeat,
-            last_heartbeat_seconds: 0,
-            start_time,
             heartbeat_token,
         })
-    }
-
-    /// This function must be called once per second (or more frequently) to send heartbeat
-    /// messages
-    ///
-    /// Either `run_periodic_tasks` or `run_per_second_tasks` should be called, but not both.
-    pub fn run_periodic_tasks(&mut self) -> Result<(), OutOfMemoryError> {
-        // Determine if a new heartbeat should be sent
-        let time_since_start = self.node.clock_mut().now().duration_since(&self.start_time);
-        let seconds_since_start = time_since_start.as_secs() as u32;
-        if seconds_since_start != self.last_heartbeat_seconds {
-            self.last_heartbeat_seconds = seconds_since_start;
-            self.run_per_second_tasks()
-        } else {
-            // Nothing to do right now
-            Ok(())
-        }
     }
 
     /// This function must be called once per second to send heartbeat messages
@@ -112,10 +88,5 @@ where
     /// Returns a mutable reference to the enclosed node
     pub fn node_mut(&mut self) -> &mut N {
         &mut self.node
-    }
-
-    /// Returns the time when this node was created
-    pub(crate) fn start_time(&self) -> <N::Clock as Clock>::Instant {
-        self.start_time
     }
 }
