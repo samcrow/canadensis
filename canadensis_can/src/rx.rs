@@ -102,7 +102,7 @@ impl<I: Instant> Receiver<I> {
             Some(data) => data,
             None => {
                 // Can't use this frame
-                debugln!("Frame failed sanity checks, ignoring");
+                log::debug!("Frame failed sanity checks, ignoring");
                 self.increment_error_count();
                 return Ok(None);
             }
@@ -143,7 +143,7 @@ impl<I: Instant> Receiver<I> {
                 }
                 Ok(None) => Ok(None),
                 Err(e) => {
-                    debugln!("Receiver accept error {:?}", e);
+                    log::info!("Receiver accept error {:?}", e);
                     self.increment_error_count();
                     match e {
                         SubscriptionError::Session(SessionError::Memory(e))
@@ -174,7 +174,7 @@ impl<I: Instant> Receiver<I> {
             if message_header.source.is_none() {
                 // Anonymous message transfers must always fit into one frame
                 if !(tail_byte.toggle && tail_byte.start && tail_byte.end) {
-                    debugln!("Anonymous multi-frame transfer, ignoring");
+                    log::debug!("Anonymous multi-frame transfer, ignoring");
                     return None;
                 }
             }

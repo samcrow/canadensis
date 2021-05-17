@@ -10,9 +10,7 @@ description = "Bridge between Canadensis and the BXCAN peripherals found in some
 [dependencies]
 bxcan = "0.5.1"
 nb = "1.0.0"
-[dependencies.rtt-target]
-version = "0.3.1"
-optional = true
+log = "0.4"
 
 [dependencies.canadensis_core]
 path = "../canadensis_core"
@@ -24,7 +22,3 @@ path = "../canadensis"
 path = "../canadensis_filter_config"
 [dependencies.canadensis_pnp_client]
 path = "../canadensis_pnp_client"
-
-[features]
-# Enables debug output using rtt-target
-rtt-debug = ["rtt-target"]

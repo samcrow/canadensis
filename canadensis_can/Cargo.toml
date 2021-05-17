@@ -13,10 +13,7 @@ description = "A UAVCAN v1.0 implementation: CAN and CAN FD transport layer"
 [dependencies]
 fallible_collections = "0.1.2"
 heapless = "0.7.0"
-
-[dependencies.rtt-target]
-version = "0.3.1"
-optional = true
+log = "0.4"
 
 # Local dependency, change before publishing
 [dependencies.canadensis_core]
@@ -29,7 +26,3 @@ path = "../canadensis_filter_config"
 [features]
 # The can-fd feature increases the maximum frame capacity and maximum MTU from 8 to 64 bytes
 can-fd = []
-# The std-debug feature requires the std library and enables debug output
-std-debug = []
-# The rtt-debug feature enables debug output using rtt-target
-rtt-debug = ["rtt-target"]

@@ -10,18 +10,7 @@ extern crate canadensis_encoding;
 extern crate canadensis_filter_config;
 extern crate fallible_collections;
 extern crate heapless;
-
-/// Forwards to rtt_target::rprintln if the rtt-debug feature is enabled
-#[cfg(feature = "rtt-debug")]
-macro_rules! debugln {
-    ($fmt:expr) => { rtt_target::rprintln!($fmt) };
-    ($fmt:expr, $($arg:tt)*) => { rtt_target::rprintln!($fmt, $($arg)*) };
-}
-#[cfg(not(feature = "rtt-debug"))]
-macro_rules! debugln {
-    ($fmt:expr) => {};
-    ($fmt:expr, $($arg:tt)*) => {};
-}
+extern crate log;
 
 mod basic;
 mod minimal;

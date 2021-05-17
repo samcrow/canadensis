@@ -18,7 +18,21 @@ pub use canadensis_derive_register_block::RegisterBlock;
 
 /// A block of registers that can be accessed externally through the uavcan.register interface
 ///
-/// This trait is implemented for individual `Register`s and tuples of up to 32 `Register`s.
+/// This trait is implemented for individual `Register`s and tuples of up to 32 `Register`s. It can
+/// also be derived for any struct whose fields all implement [`Register`].
+///
+/// # Examples
+///
+/// ```
+/// # use canadensis_node::register::basic::{SimpleRegister, RegisterString};
+/// # use canadensis_node::register::RegisterBlock;
+/// #[derive(RegisterBlock)]
+/// struct Registers {
+///     node_id: SimpleRegister<u16>,
+///     description: SimpleRegister<RegisterString>,
+/// }
+/// ```
+///
 pub trait RegisterBlock {
     /// Returns a reference to the register at the provided index
     ///
@@ -131,7 +145,7 @@ where
     fn handle_access_request(&mut self, request: &AccessRequest) -> AccessResponse {
         match str::from_utf8(&request.name.name) {
             Ok(register_name) => {
-                debugln!("Handling access request for {}", register_name);
+                log::debug!("Handling access request for {}", register_name);
                 if let Some(register) = self.block.register_by_name_mut(register_name) {
                     register_handle_access(register, request)
                 } else {
@@ -147,7 +161,7 @@ where
     }
 
     fn handle_list_request(&mut self, request: &ListRequest) -> ListResponse {
-        debugln!("Handling register list request, index {}", request.index);
+        log::debug!("Handling register list request, index {}", request.index);
         match self.block.register_by_index(request.index.into()) {
             Some(register) => {
                 let name = register.name().as_bytes();
@@ -202,7 +216,7 @@ where
                     let response = self.handle_access_request(&request);
                     let status = node.send_response(token, milliseconds(1000), &response);
                     if status.is_err() {
-                        debugln!("Out of memory when sending register access response");
+                        log::warn!("Out of memory when sending register access response");
                     }
                     true
                 } else {
@@ -214,7 +228,7 @@ where
                     let response = self.handle_list_request(&request);
                     let status = node.send_response(token, milliseconds(1000), &response);
                     if status.is_err() {
-                        debugln!("Out of memory when sending register list response");
+                        log::warn!("Out of memory when sending register list response");
                     }
                     true
                 } else {

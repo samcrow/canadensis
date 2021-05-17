@@ -43,13 +43,13 @@ where
         if tail.transfer_id != self.buildup.transfer_id() {
             // This is a frame from some other transfer. Ignore it, but keep this session to receive
             // possible later frames.
-            debugln!("Frame transfer ID does not match, ignoring");
+            log::info!("Frame transfer ID does not match, ignoring");
             return Ok(None);
         }
         // Check if this frame will make the transfer exceed the maximum length
         let new_payload_length = self.buildup.payload_length() + (frame.data().len() - 1);
         if new_payload_length > max_payload_length {
-            debugln!(
+            log::warn!(
                 "Payload too large ({} + {} > {}), ending session",
                 self.buildup.payload_length(),
                 frame.data().len() - 1,
@@ -62,7 +62,7 @@ where
 
         if time_since_first_frame > transfer_timeout {
             // Frame arrived too late. Give up on this session.
-            debugln!("Frame timeout expired, ending session");
+            log::info!("Frame timeout expired, ending session");
             return Err(SessionError::Timeout);
         }
         // This frame looks OK. Do the reassembly.
@@ -112,15 +112,6 @@ where
     #[allow(dead_code)]
     pub fn transfer_id(&self) -> TransferId {
         self.buildup.transfer_id()
-    }
-}
-
-impl<I> Drop for Session<I> {
-    fn drop(&mut self) {
-        debugln!(
-            "Dropping session with transfer ID {:?}",
-            self.buildup.transfer_id()
-        );
     }
 }
 

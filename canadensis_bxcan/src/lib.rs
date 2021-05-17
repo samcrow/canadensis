@@ -8,19 +8,8 @@ extern crate canadensis_can;
 extern crate canadensis_core;
 extern crate canadensis_filter_config;
 extern crate canadensis_pnp_client;
+extern crate log;
 extern crate nb;
-
-/// Forwards to rtt_target::rprintln if the rtt-debug feature is enabled
-#[cfg(feature = "rtt-debug")]
-macro_rules! debugln {
-    ($fmt:expr) => { rtt_target::rprintln!($fmt) };
-    ($fmt:expr, $($arg:tt)*) => { rtt_target::rprintln!($fmt, $($arg)*) };
-}
-#[cfg(not(feature = "rtt-debug"))]
-macro_rules! debugln {
-    ($fmt:expr) => {};
-    ($fmt:expr, $($arg:tt)*) => {};
-}
 
 pub mod pnp;
 
@@ -91,7 +80,7 @@ where
                     }
                 }
                 Err(nb::Error::Other(())) => {
-                    debugln!("CAN receive FIFO overflowed");
+                    log::warn!("CAN receive FIFO overflowed");
                 }
                 Err(nb::Error::WouldBlock) => break,
             }

@@ -22,7 +22,7 @@ use canadensis_data_types::uavcan::node::get_info::GetInfoResponse;
 use canadensis_data_types::uavcan::node::version::Version;
 use canadensis_linux::{LinuxCan, SystemClock};
 use canadensis_node::register::basic::{RegisterString, SimpleRegister};
-use canadensis_node::register::RegisterHandler;
+use canadensis_node::register::{RegisterBlock, RegisterHandler};
 use canadensis_node::BasicNode;
 use std::io::ErrorKind;
 
@@ -112,11 +112,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut node = BasicNode::new(core_node, node_info).unwrap();
 
     // Define the registers that can be accessed
-    let register_block = (
-        SimpleRegister::with_value("uavcan.node.id", true, false, u16::MAX),
-        SimpleRegister::<RegisterString>::new("uavcan.node.description", true, false),
-    );
-    let registers = RegisterHandler::init(register_block, &mut node).unwrap();
+    #[derive(RegisterBlock)]
+    struct Registers {
+        node_id: SimpleRegister<u16>,
+        description: SimpleRegister<RegisterString>,
+    }
+    let register_block = Registers {
+        node_id: SimpleRegister::with_value("uavcan.node.id", true, false, u16::MAX),
+        description: SimpleRegister::new("uavcan.node.description", true, false),
+    };
+    let registers = RegisterHandler::new(register_block);
+    RegisterHandler::<Registers>::subscribe_requests(&mut node).unwrap();
 
     // Now that the node has subscribed to everything it wants, set up the frame acceptance filters
     let frame_filters = node.frame_filters().unwrap();

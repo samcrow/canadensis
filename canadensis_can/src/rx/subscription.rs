@@ -118,7 +118,7 @@ impl<I: Instant> Subscription<I> {
         let slot = &mut self.sessions[usize::from(source_node)];
         let session = match slot {
             Some(session) => {
-                debugln!(
+                log::debug!(
                     "Using existing session with transfer ID {:?} for port {:?} (frame transfer ID {:?})",
                     session.transfer_id(),
                     self.port_id,
@@ -137,7 +137,7 @@ impl<I: Instant> Subscription<I> {
                     frame_header.timestamp(),
                     tail.transfer_id,
                 ))?);
-                debugln!(
+                log::debug!(
                     "Created new session for transfer ID {:?} on port {:?}",
                     tail.transfer_id,
                     self.port_id

@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 socketcan = "1.7.0"
+log = "0.4"
 
 [dependencies.canadensis_can]
 path = "../canadensis_can"
