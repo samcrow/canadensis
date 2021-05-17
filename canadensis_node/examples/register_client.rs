@@ -107,7 +107,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Now that the node has subscribed to everything it wants, set up the frame acceptance filters
     let frame_filters = node.frame_filters().unwrap();
-    println!("Filters: {:?}", frame_filters);
     can.set_filters(&frame_filters)?;
 
     // Send a register list request for the register at index 0
@@ -126,9 +125,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         access_token,
         all_registers_listed: false,
         done: false,
+        timeout: std::time::Instant::now() + std::time::Duration::from_secs(20),
     };
 
-    while !handler.done {
+    while !handler.done && handler.timeout > std::time::Instant::now() {
         match can.receive() {
             Ok(frame) => {
                 node.accept_frame(frame, &mut handler).unwrap();
@@ -140,23 +140,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         };
 
         node.run_periodic_tasks().unwrap();
-        let queue_length = node.frame_queue().len();
-        if queue_length != 0 {
-            eprintln!("Sending {} frames from queue", queue_length);
-            while let Some(frame_out) = node.frame_queue_mut().pop_frame() {
-                can.send(frame_out)?;
+        while let Some(frame_out) = node.frame_queue_mut().pop_frame() {
+            can.send(frame_out)?;
+        }
+    }
+    // Either finished or timed out
+    if handler.done {
+        // Print register information
+        for (name, state) in handler.registers {
+            if let RegisterState::Done(value) = state {
+                println!("{}: {:?}", name, DebugValue(&value));
             }
         }
-    }
-
-    // Print register information
-    for (name, state) in handler.registers {
-        if let RegisterState::Done(value) = state {
-            println!("{}: {:?}", name, value);
+        std::process::exit(0);
+    } else {
+        println!("Timed out, registers found:");
+        for (name, state) in handler.registers {
+            if let RegisterState::Done(value) = state {
+                println!("{}: {:?}", name, DebugValue(&value));
+            } else {
+                println!("{}: <unknown>", name);
+            }
         }
+        std::process::exit(1);
     }
-
-    Ok(())
 }
 
 struct RegisterHandler {
@@ -166,10 +173,16 @@ struct RegisterHandler {
     next_register_index: u16,
     /// Each known register and its value
     registers: BTreeMap<String, RegisterState>,
+    /// Token used to send register list requests
     list_request_token: ServiceToken<ListRequest>,
+    /// Token used to send register access request
     access_token: ServiceToken<AccessRequest>,
+    /// True if all register list responses have been received
     all_registers_listed: bool,
+    /// True if all register values are known
     done: bool,
+    /// The time when the read operation will time out
+    timeout: std::time::Instant,
 }
 
 impl TransferHandler<<SystemClock as Clock>::Instant> for RegisterHandler {
@@ -191,10 +204,6 @@ impl TransferHandler<<SystemClock as Clock>::Instant> for RegisterHandler {
                                 self.all_registers_listed = true;
                                 self.check_if_done();
                             } else {
-                                eprintln!(
-                                    "Discovered register {}, sending read request",
-                                    register_name
-                                );
                                 // Record information about this register and send a request to
                                 // read its value
                                 let read_transfer_id = node
@@ -247,11 +256,10 @@ impl TransferHandler<<SystemClock as Clock>::Instant> for RegisterHandler {
                                 }
                                 RegisterState::Done(_) => false,
                             });
-                    if let Some((name, state)) = register_entry {
-                        eprintln!("Got value for {}", name);
+                    if let Some((_name, state)) = register_entry {
                         *state = RegisterState::Done(response.value);
                     } else {
-                        println!(
+                        eprintln!(
                             "Couldn't find a corresponding register for transfer ID {:?}",
                             transfer.header.transfer_id
                         );
@@ -285,4 +293,43 @@ impl RegisterHandler {
 enum RegisterState {
     Waiting(TransferId),
     Done(Value),
+}
+
+struct DebugValue<'v>(&'v Value);
+
+impl std::fmt::Debug for DebugValue<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self.0 {
+            Value::Empty => f.debug_struct("Empty").finish(),
+            Value::String(bytes) => {
+                let string = String::from_utf8_lossy(&bytes);
+                f.debug_tuple("String").field(&string).finish()
+            }
+            Value::Unstructured(bytes) => f
+                .debug_tuple("Unstructured")
+                .field(&DebugHexBytes(&bytes))
+                .finish(),
+            Value::Bit(bits) => f.debug_tuple("Bit").field(&bits).finish(),
+            Value::Integer64(values) => f.debug_tuple("Integer64").field(&values).finish(),
+            Value::Integer32(values) => f.debug_tuple("Integer32").field(&values).finish(),
+            Value::Integer16(values) => f.debug_tuple("Integer16").field(&values).finish(),
+            Value::Integer8(values) => f.debug_tuple("Integer8").field(&values).finish(),
+            Value::Natural64(values) => f.debug_tuple("Natural64").field(&values).finish(),
+            Value::Natural32(values) => f.debug_tuple("Natural32").field(&values).finish(),
+            Value::Natural16(values) => f.debug_tuple("Natural16").field(&values).finish(),
+            Value::Natural8(values) => f.debug_tuple("Natural8").field(&values).finish(),
+            Value::Real64(value) => f.debug_tuple("Real64").field(value).finish(),
+            Value::Real32(value) => f.debug_tuple("Real32").field(value).finish(),
+            Value::Real16(value) => f.debug_tuple("Real16").field(value).finish(),
+        }
+    }
+}
+
+struct DebugHexBytes<'a>(&'a [u8]);
+impl std::fmt::Debug for DebugHexBytes<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_list()
+            .entries(self.0.iter().map(|byte| format!("{:#04x}", *byte)))
+            .finish()
+    }
 }
