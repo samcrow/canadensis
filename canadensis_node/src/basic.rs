@@ -81,17 +81,29 @@ where
 
     /// This function must be called once per second (or more frequently) to send heartbeat
     /// messages
+    ///
+    /// Either `run_periodic_tasks` or `run_per_second_tasks` should be called, but not both.
     pub fn run_periodic_tasks(&mut self) -> Result<(), OutOfMemoryError> {
-        self.node.run_periodic_tasks()?;
-
         let now = self.node.node_mut().clock_mut().now();
         let since_start = now.duration_since(&self.node.start_time());
         let seconds_since_start = since_start.as_secs();
         if seconds_since_start >= self.last_port_list_seconds + 10 {
             self.last_port_list_seconds = seconds_since_start;
-            self.publish_port_list()?;
+            self.run_per_second_tasks()?;
         }
 
+        Ok(())
+    }
+
+    /// This function must be called once per second to send heartbeat and port list messages
+    ///
+    /// Unlike [`run_periodic_tasks`](#method.run_periodic_tasks), this function does not check
+    /// if one second has passed since the last time it was called.
+    ///
+    /// Either `run_periodic_tasks` or `run_per_second_tasks` should be called, but not both.
+    pub fn run_per_second_tasks(&mut self) -> Result<(), OutOfMemoryError> {
+        self.node.run_per_second_tasks()?;
+        self.publish_port_list()?;
         Ok(())
     }
 

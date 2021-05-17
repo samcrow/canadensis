@@ -60,17 +60,29 @@ where
 
     /// This function must be called once per second (or more frequently) to send heartbeat
     /// messages
+    ///
+    /// Either `run_periodic_tasks` or `run_per_second_tasks` should be called, but not both.
     pub fn run_periodic_tasks(&mut self) -> Result<(), OutOfMemoryError> {
         // Determine if a new heartbeat should be sent
         let time_since_start = self.node.clock_mut().now().duration_since(&self.start_time);
         let seconds_since_start = time_since_start.as_secs() as u32;
         if seconds_since_start != self.last_heartbeat_seconds {
             self.last_heartbeat_seconds = seconds_since_start;
-            self.send_heartbeat()
+            self.run_per_second_tasks()
         } else {
             // Nothing to do right now
             Ok(())
         }
+    }
+
+    /// This function must be called once per second to send heartbeat messages
+    ///
+    /// Unlike [`run_periodic_tasks`](#method.run_periodic_tasks), this function does not check
+    /// if one second has passed since the last time it was called.
+    ///
+    /// Either `run_periodic_tasks` or `run_per_second_tasks` should be called, but not both.
+    pub fn run_per_second_tasks(&mut self) -> Result<(), OutOfMemoryError> {
+        self.send_heartbeat()
     }
 
     /// Publishes a heartbeat message
