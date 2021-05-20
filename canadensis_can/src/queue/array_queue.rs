@@ -152,12 +152,6 @@ where
     }
 
     fn return_frame(&mut self, frame: Frame<I>) -> Result<(), OutOfMemoryError> {
-        #[cfg(test)]
-        std::println!(
-            "return_frame() head = {}, length = {}",
-            self.head,
-            self.length,
-        );
         if self.length == N {
             Err(OutOfMemoryError)
         } else {
@@ -171,23 +165,8 @@ where
             // has a greater or equal CAN ID
             let mut inserted_index = self.head;
             let tail = self.head.wrapping_add(self.length - 1) % N;
-            #[cfg(test)]
-            std::println!("Incremented head {}, tail {}", self.head, tail);
             while inserted_index != tail {
                 let behind_inserted_index = inserted_index.wrapping_add(1) % N;
-                #[cfg(test)]
-                std::println!(
-                    "Returning: inserted index {}, behind inserted index {}",
-                    inserted_index,
-                    behind_inserted_index
-                );
-
-                #[cfg(test)]
-                std::println!(
-                    "Returned frame ID {:?}, behind inserted ID {:?}",
-                    inserted_frame_id,
-                    self.items[behind_inserted_index].id()
-                );
 
                 if self.items[behind_inserted_index].id() >= inserted_frame_id {
                     break;
@@ -233,7 +212,6 @@ mod test {
         {
             let frame = frame_with_id(1, 0);
             queue.push_frame(frame.clone()).unwrap();
-            dbg!(&queue);
             assert_eq!(queue.len(), 1);
             assert_eq!(queue.head, 0);
             assert_eq!(queue.items[0], frame);
@@ -242,7 +220,6 @@ mod test {
             // Add a second frame with the same ID, which should end up behind the first
             let frame = frame_with_id(1, 1);
             queue.push_frame(frame.clone()).unwrap();
-            dbg!(&queue);
             assert_eq!(queue.len(), 2);
             assert_eq!(queue.head, 0);
             assert_eq!(queue.items[0], frame_with_id(1, 0));

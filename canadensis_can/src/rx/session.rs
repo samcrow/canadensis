@@ -19,11 +19,19 @@ impl<I> Session<I>
 where
     I: Instant,
 {
-    pub fn new(transfer_timestamp: I, transfer_id: TransferId) -> Self {
-        Session {
+    /// Creates a new session
+    ///
+    /// This function attempts to allocate `max_payload_length` bytes of memory, which will be
+    /// used to assemble the received frames.
+    pub fn new(
+        transfer_timestamp: I,
+        transfer_id: TransferId,
+        max_payload_length: usize,
+    ) -> Result<Self, OutOfMemoryError> {
+        Ok(Session {
             transfer_timestamp,
-            buildup: Buildup::new(transfer_id),
-        }
+            buildup: Buildup::new(transfer_id, max_payload_length)?,
+        })
     }
 
     /// Accepts a frame associated with this session

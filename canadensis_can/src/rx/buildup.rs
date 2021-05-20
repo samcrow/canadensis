@@ -5,6 +5,7 @@ use canadensis_core::TransferId;
 use fallible_collections::{FallibleVec, TryReserveError};
 
 use super::TailByte;
+use crate::OutOfMemoryError;
 
 /// Reassembles frames into a transfer
 #[derive(Debug)]
@@ -22,14 +23,21 @@ pub struct Buildup {
 }
 
 impl Buildup {
-    pub fn new(transfer_id: TransferId) -> Self {
-        Buildup {
+    /// Creates a transfer reassembly object
+    ///
+    /// This function attempts to allocate enough memory to hold the largest possible payload.
+    /// It returns an error if memory allocation fails.
+    pub fn new(
+        transfer_id: TransferId,
+        max_payload_length: usize,
+    ) -> Result<Self, OutOfMemoryError> {
+        Ok(Buildup {
             transfer_id,
             frames: 0,
             expect_start: true,
             expect_toggle: true,
-            transfer: Vec::new(),
-        }
+            transfer: FallibleVec::try_with_capacity(max_payload_length)?,
+        })
     }
 
     /// Handles an incoming frame for this transfer
@@ -113,7 +121,7 @@ mod test {
     fn test_buildup_heartbeat() {
         // Heartbeat example from specification section 4.2.3
         for transfer_id in 0u8..=31 {
-            let mut buildup = Buildup::new(TransferId::try_from(transfer_id).unwrap());
+            let mut buildup = Buildup::new(TransferId::try_from(transfer_id).unwrap(), 7).unwrap();
             let payload = make_heartbeat_payload(u32::from(transfer_id));
 
             // A frame with 7 bytes of payload and a tail byte with first 1, last 1,
@@ -157,7 +165,7 @@ mod test {
             ];
             let frame = make_frame(&payload, transfer_id);
 
-            let mut buildup = Buildup::new(TransferId::try_from(transfer_id).unwrap());
+            let mut buildup = Buildup::new(TransferId::try_from(transfer_id).unwrap(), 16).unwrap();
 
             // Put in the payload bytes
             assert_eq!(Some(payload.to_vec()), buildup.add(&frame).unwrap());
@@ -177,7 +185,7 @@ mod test {
 
     #[test]
     fn test_node_info_request() {
-        let mut buildup = Buildup::new(TransferId::try_from(1).unwrap());
+        let mut buildup = Buildup::new(TransferId::try_from(1).unwrap(), 0).unwrap();
         assert_eq!(Some(Vec::new()), buildup.add(&[0xe1]).unwrap());
     }
 
@@ -214,7 +222,7 @@ mod test {
             &[0xe7, 0x61],
         ];
 
-        let mut buildup = Buildup::new(TransferId::try_from(1).unwrap());
+        let mut buildup = Buildup::new(TransferId::try_from(1).unwrap(), 71).unwrap();
 
         for (i, frame) in frames.iter().enumerate() {
             if i != frames.len() - 1 {
@@ -257,7 +265,7 @@ mod test {
                 0x00, 0x00, 0x00, 0xc0, 0x48, 0x40,
             ],
         ];
-        let mut buildup = Buildup::new(TransferId::try_from(0).unwrap());
+        let mut buildup = Buildup::new(TransferId::try_from(0).unwrap(), 63 + 47).unwrap();
 
         for (i, frame) in frames.iter().enumerate() {
             if i != frames.len() - 1 {

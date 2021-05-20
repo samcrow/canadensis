@@ -136,7 +136,8 @@ impl<I: Instant> Subscription<I> {
                 *slot = Some(FallibleBox::try_new(Session::new(
                     frame_header.timestamp(),
                     tail.transfer_id,
-                ))?);
+                    self.payload_size_max,
+                )?)?);
                 log::debug!(
                     "Created new session for transfer ID {:?} on port {:?}",
                     tail.transfer_id,

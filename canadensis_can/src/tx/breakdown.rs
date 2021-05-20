@@ -93,6 +93,7 @@ fn make_tail_byte(start: bool, end: bool, toggle: bool, transfer_id: TransferId)
 #[cfg(test)]
 mod test {
     use super::*;
+    use alloc::vec::Vec;
     use core::convert::TryFrom;
 
     #[test]
