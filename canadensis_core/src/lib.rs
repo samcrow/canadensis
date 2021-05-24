@@ -13,6 +13,7 @@ pub mod transfer;
 use core::convert::TryFrom;
 use core::fmt;
 use core::ops::RangeInclusive;
+use core::str::FromStr;
 use hash32_derive::Hash32;
 
 /// An error indicating that an unacceptable integer was provided to a TryFrom implementation
@@ -61,6 +62,15 @@ impl From<SubjectId> for usize {
     #[inline]
     fn from(id: SubjectId) -> Self {
         id.0 as usize
+    }
+}
+
+impl FromStr for SubjectId {
+    type Err = InvalidValue;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let value: u16 = s.parse().map_err(|_| InvalidValue)?;
+        SubjectId::try_from(value)
     }
 }
 
