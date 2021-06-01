@@ -25,9 +25,9 @@ pub enum Value {
     Natural16(heapless::Vec<u16, 128>),
     Natural8(heapless::Vec<u8, 256>),
 
-    Real64(f64),
-    Real32(f32),
-    Real16(f16),
+    Real64(heapless::Vec<f64, 32>),
+    Real32(heapless::Vec<f32, 64>),
+    Real16(heapless::Vec<f16, 128>),
 }
 
 impl Default for Value {
@@ -60,9 +60,9 @@ impl Serialize for Value {
             Value::Natural16(values) => 8 + 16 * values.len(),
             // Integer8 and Natural8 need a 16-bit length because they can contain 256 values
             Value::Natural8(values) => 16 + 8 * values.len(),
-            Value::Real64(_) => 64,
-            Value::Real32(_) => 32,
-            Value::Real16(_) => 16,
+            Value::Real64(values) => 8 + 64 * values.len(),
+            Value::Real32(values) => 8 + 32 * values.len(),
+            Value::Real16(values) => 8 + 16 * values.len(),
         };
         tag_bits + variant_bits
     }
@@ -144,17 +144,26 @@ impl Serialize for Value {
                     cursor.write_aligned_u8(*value);
                 }
             }
-            Value::Real64(value) => {
+            Value::Real64(values) => {
                 cursor.write_aligned_u8(12);
-                cursor.write_f64(*value)
+                cursor.write_aligned_u8(values.len() as u8);
+                for value in values {
+                    cursor.write_f64(*value)
+                }
             }
-            Value::Real32(value) => {
+            Value::Real32(values) => {
                 cursor.write_aligned_u8(13);
-                cursor.write_f32(*value)
+                cursor.write_aligned_u8(values.len() as u8);
+                for value in values {
+                    cursor.write_f32(*value)
+                }
             }
-            Value::Real16(value) => {
+            Value::Real16(values) => {
                 cursor.write_aligned_u8(14);
-                cursor.write_f16(*value)
+                cursor.write_aligned_u8(values.len() as u8);
+                for value in values {
+                    cursor.write_f16(*value)
+                }
             }
         }
     }
@@ -312,15 +321,42 @@ impl Deserialize for Value {
             }
             12 => {
                 // Real64
-                *self = Value::Real64(cursor.read_f64());
+                let length = cursor.read_aligned_u8();
+                let mut values = heapless::Vec::new();
+                if usize::from(length) <= values.capacity() {
+                    for _ in 0..length {
+                        values.push(cursor.read_f64()).unwrap();
+                    }
+                    *self = Value::Real64(values);
+                } else {
+                    return Err(DeserializeError::ArrayLength);
+                }
             }
             13 => {
                 // Real32
-                *self = Value::Real32(cursor.read_f32());
+                let length = cursor.read_aligned_u8();
+                let mut values = heapless::Vec::new();
+                if usize::from(length) <= values.capacity() {
+                    for _ in 0..length {
+                        values.push(cursor.read_f32()).unwrap();
+                    }
+                    *self = Value::Real32(values);
+                } else {
+                    return Err(DeserializeError::ArrayLength);
+                }
             }
             14 => {
                 // Real16
-                *self = Value::Real16(cursor.read_f16());
+                let length = cursor.read_aligned_u8();
+                let mut values = heapless::Vec::new();
+                if usize::from(length) <= values.capacity() {
+                    for _ in 0..length {
+                        values.push(cursor.read_f16()).unwrap();
+                    }
+                    *self = Value::Real16(values);
+                } else {
+                    return Err(DeserializeError::ArrayLength);
+                }
             }
             _ => return Err(DeserializeError::UnionTag),
         }

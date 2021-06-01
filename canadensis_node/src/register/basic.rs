@@ -95,7 +95,7 @@ pub trait RegisterType {
 }
 
 /// Implements RegisterType for an integer
-macro_rules! register_integer {
+macro_rules! register_primitive {
     ($type:ty, $variant:ident) => {
         impl RegisterType for $type {
             fn read(&self) -> Value {
@@ -118,62 +118,17 @@ macro_rules! register_integer {
     };
 }
 
-register_integer!(u8, Natural8);
-register_integer!(u16, Natural16);
-register_integer!(u32, Natural32);
-register_integer!(u64, Natural64);
-register_integer!(i8, Integer8);
-register_integer!(i16, Integer16);
-register_integer!(i32, Integer32);
-register_integer!(i64, Integer64);
-
-impl RegisterType for f16 {
-    fn read(&self) -> Value {
-        Value::Real16(*self)
-    }
-
-    fn write(&mut self, value: &Value) -> Result<(), WriteError> {
-        match value {
-            Value::Real16(inner) => {
-                *self = *inner;
-                Ok(())
-            }
-            _ => Err(WriteError::Type),
-        }
-    }
-}
-
-impl RegisterType for f32 {
-    fn read(&self) -> Value {
-        Value::Real32(*self)
-    }
-
-    fn write(&mut self, value: &Value) -> Result<(), WriteError> {
-        match value {
-            Value::Real32(inner) => {
-                *self = *inner;
-                Ok(())
-            }
-            _ => Err(WriteError::Type),
-        }
-    }
-}
-
-impl RegisterType for f64 {
-    fn read(&self) -> Value {
-        Value::Real64(*self)
-    }
-
-    fn write(&mut self, value: &Value) -> Result<(), WriteError> {
-        match value {
-            Value::Real64(inner) => {
-                *self = *inner;
-                Ok(())
-            }
-            _ => Err(WriteError::Type),
-        }
-    }
-}
+register_primitive!(u8, Natural8);
+register_primitive!(u16, Natural16);
+register_primitive!(u32, Natural32);
+register_primitive!(u64, Natural64);
+register_primitive!(i8, Integer8);
+register_primitive!(i16, Integer16);
+register_primitive!(i32, Integer32);
+register_primitive!(i64, Integer64);
+register_primitive!(f16, Real16);
+register_primitive!(f32, Real32);
+register_primitive!(f64, Real64);
 
 /// A string value for a register
 #[derive(Debug, Clone, Default)]
