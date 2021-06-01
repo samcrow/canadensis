@@ -9,7 +9,9 @@ use canadensis_core::transfer::{MessageTransfer, ServiceTransfer};
 use canadensis_core::{NodeId, Priority, ServiceId, SubjectId, TransferId};
 use canadensis_data_types::bits::BitArray;
 use canadensis_data_types::uavcan::node::get_info::{GetInfoRequest, GetInfoResponse};
+use canadensis_data_types::uavcan::node::health::Health;
 use canadensis_data_types::uavcan::node::heartbeat::Heartbeat;
+use canadensis_data_types::uavcan::node::mode::Mode;
 use canadensis_data_types::uavcan::node::port::list::List;
 use canadensis_data_types::uavcan::node::port::subject_id;
 use canadensis_data_types::uavcan::node::port::subject_id_list::SubjectIdList;
@@ -95,6 +97,19 @@ where
         self.node
             .node_mut()
             .publish(&self.port_list_token, &self.port_list)
+    }
+
+    /// Sets the operating mode that will be reported in the heartbeat messages
+    pub fn set_mode(&mut self, mode: Mode) {
+        self.node.set_mode(mode);
+    }
+    /// Sets the health status that will be reported in the heartbeat messages
+    pub fn set_health(&mut self, health: Health) {
+        self.node.set_health(health);
+    }
+    /// Sets the vendor-specific status code that will be reported in the heartbeat messages
+    pub fn set_status_code(&mut self, status: u8) {
+        self.node.set_status_code(status);
     }
 }
 
