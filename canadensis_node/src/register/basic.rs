@@ -3,6 +3,7 @@
 use crate::register::{Register, WriteError};
 use canadensis_data_types::uavcan::register::value::Value;
 use core::convert::TryFrom;
+use half::f16;
 
 /// A register containing its name, value, and mutable/persistent flags
 #[derive(Debug, Clone)]
@@ -125,6 +126,54 @@ register_integer!(i8, Integer8);
 register_integer!(i16, Integer16);
 register_integer!(i32, Integer32);
 register_integer!(i64, Integer64);
+
+impl RegisterType for f16 {
+    fn read(&self) -> Value {
+        Value::Real16(*self)
+    }
+
+    fn write(&mut self, value: &Value) -> Result<(), WriteError> {
+        match value {
+            Value::Real16(inner) => {
+                *self = *inner;
+                Ok(())
+            }
+            _ => Err(WriteError::Type),
+        }
+    }
+}
+
+impl RegisterType for f32 {
+    fn read(&self) -> Value {
+        Value::Real32(*self)
+    }
+
+    fn write(&mut self, value: &Value) -> Result<(), WriteError> {
+        match value {
+            Value::Real32(inner) => {
+                *self = *inner;
+                Ok(())
+            }
+            _ => Err(WriteError::Type),
+        }
+    }
+}
+
+impl RegisterType for f64 {
+    fn read(&self) -> Value {
+        Value::Real64(*self)
+    }
+
+    fn write(&mut self, value: &Value) -> Result<(), WriteError> {
+        match value {
+            Value::Real64(inner) => {
+                *self = *inner;
+                Ok(())
+            }
+            _ => Err(WriteError::Type),
+        }
+    }
+}
 
 /// A string value for a register
 #[derive(Debug, Clone, Default)]

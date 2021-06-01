@@ -9,6 +9,7 @@ extern crate canadensis_derive_register_block;
 extern crate canadensis_encoding;
 extern crate canadensis_filter_config;
 extern crate fallible_collections;
+extern crate half;
 extern crate heapless;
 extern crate log;
 
