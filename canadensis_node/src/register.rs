@@ -1,3 +1,7 @@
+//!
+//! Node configuration registers that can be accessed from other nodes
+//!
+
 pub mod basic;
 mod block_impl;
 
@@ -31,6 +35,15 @@ pub use canadensis_derive_register_block::RegisterBlock;
 ///     node_id: SimpleRegister<u16>,
 ///     description: SimpleRegister<RegisterString>,
 /// }
+///
+/// impl Default for Registers {
+///     fn default() -> Self {
+///         Registers {
+///             node_id: SimpleRegister::with_value("uavcan.node.id", true, true, 65535),
+///             description: SimpleRegister::new("uavcan.node.description", true, true),
+///         }
+///     }
+/// }
 /// ```
 ///
 pub trait RegisterBlock {
@@ -46,6 +59,19 @@ pub trait RegisterBlock {
     fn register_by_name_mut(&mut self, name: &str) -> Option<&mut dyn Register>;
 }
 
+/// Information about how a register can be accessed
+#[derive(Debug, Clone)]
+pub struct Access {
+    /// If this register is mutable
+    ///
+    /// Mutable registers can be written by other nodes.
+    pub mutable: bool,
+    /// If this register is persistent
+    ///
+    /// Persistent registers are preserved when the node restarts.
+    pub persistent: bool,
+}
+
 /// A register that can be read and optionally written
 pub trait Register {
     /// Returns the name of this register
@@ -53,15 +79,8 @@ pub trait Register {
     /// The name must not be more than 256 bytes long. Each register must have a distinct name.
     fn name(&self) -> &str;
 
-    /// Returns true if this register is mutable
-    ///
-    /// Mutable registers can be written by other nodes.
-    fn is_mutable(&self) -> bool;
-
-    /// Returns true if this register is persistent
-    ///
-    /// Persistent registers are preserved when the node restarts.
-    fn is_persistent(&self) -> bool;
+    /// Returns information about how this register can be accessed
+    fn access(&self) -> Access;
 
     /// Reads this register and returns its value
     ///
@@ -69,9 +88,8 @@ pub trait Register {
     fn read(&self) -> Value;
     /// Writes the value of this register
     ///
-    /// This function may be used when loading a saved value from persistent storage. Therefore,
-    /// if this register is persistent but not mutable, this function must not return
-    /// `Err(WriteError::Immutable)`.
+    /// This function may be used on a register that is both persistent and mutable to load its
+    /// value from persistent storage.
     ///
     /// Outside code must not call this function in response to a write request from another node
     /// if this register is not mutable.
@@ -81,16 +99,19 @@ pub trait Register {
     ///
     /// If this function returns an error, the value of this register must be the same as before
     /// the call to write().
+    ///
+    /// # Panics
+    ///
+    /// This function may panic if `self.access()` returned a value with `mutable` set to false.
+    ///
     fn write(&mut self, value: &Value) -> Result<(), WriteError>;
 }
 
 /// Errors that can occur when attempting to write a register
 #[derive(Debug)]
 pub enum WriteError {
-    /// The type of the value was incorrect
+    /// The type of the value, or the number of values in an array, was incorrect
     Type,
-    /// This register is not mutable
-    Immutable,
 }
 
 /// Handles access requests for registers
@@ -186,15 +207,16 @@ where
 }
 
 fn register_handle_access(register: &mut dyn Register, request: &AccessRequest) -> AccessResponse {
-    if register.is_mutable() && !matches!(request.value, Value::Empty) {
+    let access = register.access();
+    if access.mutable && !matches!(request.value, Value::Empty) {
         // Write errors are reported by returning the unmodified register value.
         let _ = register.write(&request.value);
     }
     // Now read the register and return its properties
     AccessResponse {
         timestamp: Default::default(),
-        mutable: register.is_mutable(),
-        persistent: register.is_persistent(),
+        mutable: access.mutable,
+        persistent: access.persistent,
         value: register.read(),
     }
 }

@@ -1,6 +1,6 @@
 //! Basic register types
 
-use crate::register::{Register, WriteError};
+use crate::register::{Access, Register, WriteError};
 use canadensis_data_types::uavcan::register::value::Value;
 use core::convert::TryFrom;
 use half::f16;
@@ -9,8 +9,7 @@ use half::f16;
 #[derive(Debug, Clone)]
 pub struct SimpleRegister<T> {
     name: &'static str,
-    mutable: bool,
-    persistent: bool,
+    access: Access,
     value: T,
 }
 
@@ -31,8 +30,10 @@ impl<T> SimpleRegister<T> {
     pub fn with_value(name: &'static str, mutable: bool, persistent: bool, value: T) -> Self {
         SimpleRegister {
             name,
-            mutable,
-            persistent,
+            access: Access {
+                mutable,
+                persistent,
+            },
             value,
         }
     }
@@ -59,12 +60,8 @@ where
         self.name
     }
 
-    fn is_mutable(&self) -> bool {
-        self.mutable
-    }
-
-    fn is_persistent(&self) -> bool {
-        self.persistent
+    fn access(&self) -> Access {
+        self.access.clone()
     }
 
     fn read(&self) -> Value {
@@ -129,6 +126,61 @@ register_primitive!(i64, Integer64);
 register_primitive!(f16, Real16);
 register_primitive!(f32, Real32);
 register_primitive!(f64, Real64);
+
+macro_rules! register_primitive_array {
+    ($type:ty, $variant:ident) => {
+        impl<const N: usize> RegisterType for [$type; N] {
+            /// Reads the value of an array register
+            ///
+            /// If this array is longer than the maximum capacity of the corresponding `Value` variant,
+            /// the returned value will be truncated.
+            fn read(&self) -> Value {
+                let mut value_vec = heapless::Vec::new();
+                if N <= value_vec.capacity() {
+                    value_vec
+                        .extend_from_slice(&*self)
+                        .expect("Incorrect length calculation");
+                } else {
+                    // Truncate to the maximum allowed size
+                    value_vec
+                        .extend_from_slice(&self[..value_vec.capacity()])
+                        .expect("Incorrect length calculation");
+                }
+                Value::$variant(value_vec)
+            }
+
+            /// Writes an array register
+            ///
+            /// This function returns an error if the length of the provided `Value` is not equal to
+            /// the length of this array.
+            fn write(&mut self, value: &Value) -> Result<(), WriteError> {
+                match value {
+                    Value::$variant(values) => {
+                        if values.len() == N {
+                            self.copy_from_slice(&values);
+                            Ok(())
+                        } else {
+                            Err(WriteError::Type)
+                        }
+                    }
+                    _ => Err(WriteError::Type),
+                }
+            }
+        }
+    };
+}
+
+register_primitive_array!(u8, Natural8);
+register_primitive_array!(u16, Natural16);
+register_primitive_array!(u32, Natural32);
+register_primitive_array!(u64, Natural64);
+register_primitive_array!(i8, Integer8);
+register_primitive_array!(i16, Integer16);
+register_primitive_array!(i32, Integer32);
+register_primitive_array!(i64, Integer64);
+register_primitive_array!(f16, Real16);
+register_primitive_array!(f32, Real32);
+register_primitive_array!(f64, Real64);
 
 /// A string value for a register
 #[derive(Debug, Clone, Default)]
@@ -205,3 +257,50 @@ impl TryFrom<&[u8]> for Unstructured {
 /// An error indicating that a provided value was too long
 #[derive(Debug)]
 pub struct LengthError(());
+
+/// A non-mutable, persistent register that holds a fixed string value
+///
+/// This is useful for registers that provide information and cannot be changed.
+#[derive(Debug)]
+pub struct FixedStringRegister {
+    /// Register name, not empty, 256 bytes or shorter
+    name: &'static str,
+    /// Register value, 256 bytes or shorter
+    value: &'static str,
+}
+
+impl FixedStringRegister {
+    /// Creates a register
+    ///
+    /// This function returns None if name is empty or if either parameter is longer than 256 bytes.
+    pub fn new(name: &'static str, value: &'static str) -> Option<Self> {
+        if !name.is_empty() && name.len() <= 256 && value.len() <= 256 {
+            Some(FixedStringRegister { name, value })
+        } else {
+            None
+        }
+    }
+}
+
+impl Register for FixedStringRegister {
+    fn name(&self) -> &str {
+        self.name
+    }
+
+    fn access(&self) -> Access {
+        Access {
+            mutable: false,
+            persistent: true,
+        }
+    }
+
+    fn read(&self) -> Value {
+        Value::String(
+            heapless::Vec::from_slice(self.value.as_bytes()).expect("Register value too long"),
+        )
+    }
+
+    fn write(&mut self, _value: &Value) -> Result<(), WriteError> {
+        unimplemented!("A FixedStringRegister cannot be written")
+    }
+}
