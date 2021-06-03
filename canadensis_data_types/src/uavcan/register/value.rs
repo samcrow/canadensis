@@ -217,7 +217,7 @@ impl Deserialize for Value {
                 let mut bytes = heapless::Vec::new();
                 if usize::from(length) <= bytes.capacity() {
                     for _ in 0..length {
-                        bytes.push(cursor.read_aligned_u8()).unwrap();
+                        bytes.push(cursor.read_aligned_u8()).ok().unwrap();
                     }
                     if tag == 1 {
                         *self = Value::String(bytes);
@@ -244,7 +244,7 @@ impl Deserialize for Value {
                 let mut values = heapless::Vec::new();
                 if usize::from(length) <= values.capacity() {
                     for _ in 0..length {
-                        values.push(cursor.read_aligned_u64() as i64).unwrap();
+                        values.push(cursor.read_aligned_u64() as i64).ok().unwrap();
                     }
                     *self = Value::Integer64(values);
                 } else {
@@ -257,7 +257,7 @@ impl Deserialize for Value {
                 let mut values = heapless::Vec::new();
                 if usize::from(length) <= values.capacity() {
                     for _ in 0..length {
-                        values.push(cursor.read_aligned_u32() as i32).unwrap();
+                        values.push(cursor.read_aligned_u32() as i32).ok().unwrap();
                     }
                     *self = Value::Integer32(values);
                 } else {
@@ -270,7 +270,7 @@ impl Deserialize for Value {
                 let mut values = heapless::Vec::new();
                 if usize::from(length) <= values.capacity() {
                     for _ in 0..length {
-                        values.push(cursor.read_aligned_u16() as i16).unwrap();
+                        values.push(cursor.read_aligned_u16() as i16).ok().unwrap();
                     }
                     *self = Value::Integer16(values);
                 } else {
@@ -283,7 +283,7 @@ impl Deserialize for Value {
                 let mut values = heapless::Vec::new();
                 if usize::from(length) <= values.capacity() {
                     for _ in 0..length {
-                        values.push(cursor.read_aligned_u8() as i8).unwrap();
+                        values.push(cursor.read_aligned_u8() as i8).ok().unwrap();
                     }
                     *self = Value::Integer8(values);
                 } else {
@@ -296,7 +296,7 @@ impl Deserialize for Value {
                 let mut values = heapless::Vec::new();
                 if usize::from(length) <= values.capacity() {
                     for _ in 0..length {
-                        values.push(cursor.read_aligned_u64()).unwrap();
+                        values.push(cursor.read_aligned_u64()).ok().unwrap();
                     }
                     *self = Value::Natural64(values);
                 } else {
@@ -309,7 +309,7 @@ impl Deserialize for Value {
                 let mut values = heapless::Vec::new();
                 if usize::from(length) <= values.capacity() {
                     for _ in 0..length {
-                        values.push(cursor.read_aligned_u32()).unwrap();
+                        values.push(cursor.read_aligned_u32()).ok().unwrap();
                     }
                     *self = Value::Natural32(values);
                 } else {
@@ -322,7 +322,7 @@ impl Deserialize for Value {
                 let mut values = heapless::Vec::new();
                 if usize::from(length) <= values.capacity() {
                     for _ in 0..length {
-                        values.push(cursor.read_aligned_u16()).unwrap();
+                        values.push(cursor.read_aligned_u16()).ok().unwrap();
                     }
                     *self = Value::Natural16(values);
                 } else {
@@ -335,7 +335,7 @@ impl Deserialize for Value {
                 let mut values = heapless::Vec::new();
                 if usize::from(length) <= values.capacity() {
                     for _ in 0..length {
-                        values.push(cursor.read_aligned_u8()).unwrap();
+                        values.push(cursor.read_aligned_u8()).ok().unwrap();
                     }
                     *self = Value::Natural8(values);
                 } else {
@@ -348,7 +348,7 @@ impl Deserialize for Value {
                 let mut values = heapless::Vec::new();
                 if usize::from(length) <= values.capacity() {
                     for _ in 0..length {
-                        values.push(cursor.read_f64()).unwrap();
+                        values.push(cursor.read_f64()).ok().unwrap();
                     }
                     *self = Value::Real64(values);
                 } else {
@@ -361,7 +361,7 @@ impl Deserialize for Value {
                 let mut values = heapless::Vec::new();
                 if usize::from(length) <= values.capacity() {
                     for _ in 0..length {
-                        values.push(cursor.read_f32()).unwrap();
+                        values.push(cursor.read_f32()).ok().unwrap();
                     }
                     *self = Value::Real32(values);
                 } else {
@@ -374,7 +374,7 @@ impl Deserialize for Value {
                 let mut values = heapless::Vec::new();
                 if usize::from(length) <= values.capacity() {
                     for _ in 0..length {
-                        values.push(cursor.read_f16()).unwrap();
+                        values.push(cursor.read_f16()).ok().unwrap();
                     }
                     *self = Value::Real16(values);
                 } else {
