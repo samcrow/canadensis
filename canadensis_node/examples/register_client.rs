@@ -49,7 +49,6 @@ use std::io::ErrorKind;
 /// ```
 /// register_client [SocketCAN interface name] [Local node ID] [Target node ID]
 /// ```
-///
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);
     let can_interface = args.next().expect("Expected CAN interface name");

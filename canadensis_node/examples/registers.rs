@@ -68,7 +68,6 @@ use std::io::ErrorKind;
 /// `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" call [Node ID of registers node] uavcan.register.Access.1.0 "{ name: { name: \"uavcan.node.description\" }, value: { string: { value: \"We're no strangers to love\nYou know the rules and so do I\nA full commitment's what I'm thinking of\nYou wouldn't get this from any other guy\nI just wanna tell you how I'm feeling\nGotta make you understand\nNever gonna give you up\nNever gonna let you down\nNev\" }  }  }"`
 ///
 /// In the above two commands, 8 is the MTU of standard CAN and 42 is the node ID of the Yakut node.
-///
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);
     let can_interface = args.next().expect("Expected CAN interface name");

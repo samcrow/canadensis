@@ -25,7 +25,6 @@ use canadensis_filter_config::Filter;
 /// * Sending a `uavcan.node.Heartbeat` every second
 /// * Responding to `uavcan.node.GetInfo` requests
 /// * Sending a `uavcan.node.port.List` message every 10 seconds
-///
 pub struct BasicNode<N>
 where
     N: Node,

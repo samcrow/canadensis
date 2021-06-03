@@ -75,6 +75,130 @@ where
     }
 }
 
+/// A register with a validation function that can reject invalid write operations
+///
+/// Each write operation is checked with the validator. If the validator returns false, the value
+/// of the register does not change.
+///
+/// # Examples
+///
+/// ```
+/// # use canadensis_data_types::uavcan::register::value::Value;
+/// # use canadensis_node::register::basic::ValidatedRegister;
+/// # use canadensis_node::register::Register;
+/// fn is_finite_float(value: &f32) -> bool {
+///     !(value.is_infinite() || value.is_nan())
+/// }
+/// let mut finite_float_register =
+///     ValidatedRegister::new("test.float", true, true, is_finite_float);
+/// assert!(finite_float_register
+///     .write(&Value::Real32(heapless::Vec::from_slice(&[37.0]).unwrap()))
+///     .is_ok());
+/// assert!(finite_float_register
+///     .write(&Value::Real32(
+///         heapless::Vec::from_slice(&[f32::INFINITY]).unwrap()
+///     ))
+///     .is_err());
+/// assert!(finite_float_register
+///     .write(&Value::Real32(
+///         heapless::Vec::from_slice(&[f32::NEG_INFINITY]).unwrap()
+///     ))
+///     .is_err());
+/// assert!(finite_float_register
+///     .write(&Value::Real32(
+///         heapless::Vec::from_slice(&[f32::NAN]).unwrap()
+///     ))
+///     .is_err());
+/// ```
+pub struct ValidatedRegister<T, V = fn(&T) -> bool> {
+    name: &'static str,
+    access: Access,
+    value: T,
+    validator: V,
+}
+
+impl<T, V> ValidatedRegister<T, V>
+where
+    T: Default,
+{
+    /// Creates a register containing the default value of type T
+    ///
+    /// The validator should consider `T::default()` to be valid.
+    pub fn new(name: &'static str, mutable: bool, persistent: bool, validator: V) -> Self {
+        Self::with_value(name, mutable, persistent, T::default(), validator)
+    }
+}
+
+impl<T, V> ValidatedRegister<T, V> {
+    /// Creates a register with the provided initial value
+    ///
+    /// The validator should consider the provided value to be valid
+    pub fn with_value(
+        name: &'static str,
+        mutable: bool,
+        persistent: bool,
+        value: T,
+        validator: V,
+    ) -> Self {
+        ValidatedRegister {
+            name,
+            access: Access {
+                mutable,
+                persistent,
+            },
+            value,
+            validator,
+        }
+    }
+}
+
+impl<T, V> Register for ValidatedRegister<T, V>
+where
+    T: RegisterType + Clone,
+    V: Validator<T>,
+{
+    fn name(&self) -> &str {
+        self.name
+    }
+
+    fn access(&self) -> Access {
+        self.access.clone()
+    }
+
+    fn read(&self) -> Value {
+        self.value.read()
+    }
+
+    fn write(&mut self, value: &Value) -> Result<(), WriteError> {
+        let mut new_value = self.value.clone();
+        new_value.write(value)?;
+        if self.validator.accept(&new_value) {
+            self.value = new_value;
+            Ok(())
+        } else {
+            Err(WriteError::Type)
+        }
+    }
+}
+
+/// A validator that can accept or reject a new register value
+///
+/// This trait is implemented for all function pointers and `FnMut`/`Fn` closures that accept
+/// an `&T` and return a `bool`.
+pub trait Validator<T> {
+    /// Returns true if the value is valid and should be stored, or false to reject the value
+    fn accept(&mut self, value: &T) -> bool;
+}
+
+impl<F, T> Validator<T> for F
+where
+    F: FnMut(&T) -> bool,
+{
+    fn accept(&mut self, value: &T) -> bool {
+        self(value)
+    }
+}
+
 /// A type that can be stored in a register
 pub trait RegisterType {
     /// Reads this register and returns its value

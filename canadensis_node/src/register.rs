@@ -1,6 +1,5 @@
 //!
 //! Node configuration registers that can be accessed from other nodes
-//!
 
 pub mod basic;
 mod block_impl;
@@ -45,7 +44,6 @@ pub use canadensis_derive_register_block::RegisterBlock;
 ///     }
 /// }
 /// ```
-///
 pub trait RegisterBlock {
     /// Returns a reference to the register at the provided index
     ///
@@ -103,7 +101,6 @@ pub trait Register {
     /// # Panics
     ///
     /// This function may panic if `self.access()` returned a value with `mutable` set to false.
-    ///
     fn write(&mut self, value: &Value) -> Result<(), WriteError>;
 }
 
