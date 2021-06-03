@@ -62,13 +62,14 @@ where
     /// Creates an outgoing node ID allocation message and returns it encoded into one CAN frame
     pub fn assemble_request(&mut self, now: C::Instant) -> Frame<C::Instant> {
         let message = M::with_unique_id(&self.unique_id);
-        self.publisher
-            .send(&message, now, &mut self.transmitter)
-            .expect("Can't fit message into one frame");
-        self.transmitter
-            .frame_queue_mut()
-            .pop_frame()
-            .expect("Transfer did not produce a frame")
+        let publish_status = self.publisher.send(&message, now, &mut self.transmitter);
+        if publish_status.is_err() {
+            panic!("Can't fit message into one frame");
+        }
+        match self.transmitter.frame_queue_mut().pop_frame() {
+            Some(frame) => frame,
+            None => panic!("Didn't get a frame"),
+        }
     }
 
     /// Handles an incoming frame and checks if it provides an ID for this node
