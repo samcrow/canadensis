@@ -110,6 +110,7 @@ where
 ///     ))
 ///     .is_err());
 /// ```
+#[derive(Debug)]
 pub struct ValidatedRegister<T, V = fn(&T) -> bool> {
     name: &'static str,
     access: Access,
