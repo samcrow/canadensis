@@ -110,12 +110,24 @@ where
 ///     ))
 ///     .is_err());
 /// ```
-#[derive(Debug)]
 pub struct ValidatedRegister<T, V = fn(&T) -> bool> {
     name: &'static str,
     access: Access,
     value: T,
     validator: V,
+}
+
+impl<T, V> core::fmt::Debug for ValidatedRegister<T, V>
+where
+    T: core::fmt::Debug,
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("ValidatedRegister")
+            .field("name", &self.name)
+            .field("access", &self.access)
+            .field("value", &self.value)
+            .finish()
+    }
 }
 
 impl<T, V> ValidatedRegister<T, V>
