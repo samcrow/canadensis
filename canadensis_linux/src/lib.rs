@@ -70,7 +70,7 @@ impl LinuxCan {
 }
 
 /// A clock that uses the operating system's clock
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct SystemClock {
     start_time: std::time::Instant,
 }

@@ -5,7 +5,7 @@ use canadensis_encoding::{
 };
 
 /// uavcan.node.ExecuteCommand version 1.0 request
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct ExecuteCommandRequest {
     pub command: Command,
     pub parameter: heapless::Vec<u8, { Path::MAX_LENGTH as usize }>,
@@ -24,7 +24,7 @@ impl Default for ExecuteCommandRequest {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Command {
     Restart,
     PowerOff,
@@ -116,7 +116,7 @@ impl Deserialize for ExecuteCommandRequest {
 }
 
 /// uavcan.node.ExecuteCommand version 1.0 response
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct ExecuteCommandResponse {
     pub status: Status,
 }
@@ -125,7 +125,7 @@ impl ExecuteCommandResponse {
     pub const SERVICE: ServiceId = ServiceId::from_truncating(435);
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Status {
     Success,
     Failure,

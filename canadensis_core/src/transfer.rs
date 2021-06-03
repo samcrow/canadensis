@@ -5,7 +5,7 @@
 use crate::{NodeId, PortId, Priority, ServiceId, SubjectId, TransferId};
 
 /// The header of a message transfer
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
+#[derive(PartialOrd, PartialEq, Clone)]
 pub struct MessageHeader<I> {
     /// For RX transfers: the time when the first frame was received
     /// For TX transfers: the transmission deadline for all frames
@@ -22,7 +22,7 @@ pub struct MessageHeader<I> {
 }
 
 /// The header of a service transfer
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
+#[derive(PartialOrd, PartialEq, Clone)]
 pub struct ServiceHeader<I> {
     /// For RX transfers: the time when the first frame was received
     /// For TX transfers: the transmission deadline for all frames
@@ -41,7 +41,7 @@ pub struct ServiceHeader<I> {
 }
 
 /// Header fields for a message, request, or response
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
+#[derive(PartialOrd, PartialEq, Clone)]
 pub enum Header<I> {
     Message(MessageHeader<I>),
     Request(ServiceHeader<I>),
@@ -126,7 +126,7 @@ impl<I> Header<I> {
 }
 
 /// A UAVCAN transfer (either incoming or outgoing)
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
+#[derive(PartialOrd, PartialEq, Clone)]
 pub struct Transfer<P, I> {
     /// The transfer header
     pub header: Header<I>,
@@ -137,7 +137,7 @@ pub struct Transfer<P, I> {
 }
 
 /// A type of transfer that is always a message transfer
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
+#[derive(PartialOrd, PartialEq, Clone)]
 pub struct MessageTransfer<P, I> {
     /// The transfer header
     pub header: MessageHeader<I>,
@@ -148,7 +148,7 @@ pub struct MessageTransfer<P, I> {
 }
 
 /// A type of transfer that is always a service request or response
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
+#[derive(PartialOrd, PartialEq, Clone)]
 pub struct ServiceTransfer<P, I> {
     /// The transfer header
     pub header: ServiceHeader<I>,

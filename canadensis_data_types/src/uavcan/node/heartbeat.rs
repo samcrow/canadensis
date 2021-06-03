@@ -6,7 +6,7 @@ use canadensis_encoding::{
 };
 
 /// uavcan.node.Heartbeat version 1.0
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct Heartbeat {
     pub uptime: u32,
     pub health: Health,

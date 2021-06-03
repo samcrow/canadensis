@@ -22,7 +22,7 @@ use canadensis_core::{NodeId, PortId, Priority, ServiceId, SubjectId, TransferId
 use canadensis_filter_config::Filter;
 
 /// Handles subscriptions and assembles incoming frames into transfers
-#[derive(Debug)]
+
 pub struct Receiver<I: Instant> {
     /// Subscriptions for messages
     subscriptions_message: Vec<Subscription<I>>,
@@ -406,7 +406,6 @@ fn clean_sessions_from_subscriptions<I: Instant>(
     }
 }
 
-#[derive(Debug)]
 pub enum CanIdParseError {
     /// Reserved bit 23 was set
     Bit23Set,
@@ -548,7 +547,7 @@ impl GetBits for u8 {
 }
 
 /// Errors that can occur when subscribing to service requests or responses
-#[derive(Debug)]
+
 pub enum ServiceSubscribeError {
     /// This node is anonymous (no node ID set), so it can't handle services
     Anonymous,
@@ -662,7 +661,7 @@ impl TailByte {
 }
 
 /// Types of transfers
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone)]
 enum TransferKind {
     Message,
     Request,

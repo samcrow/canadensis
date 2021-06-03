@@ -6,7 +6,7 @@ use canadensis_encoding::{
 };
 
 /// uavcan.diagnostic.Record version 1.1
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct Record {
     pub timestamp: SynchronizedTimestamp,
     pub severity: Severity,

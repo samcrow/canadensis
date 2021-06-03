@@ -281,7 +281,7 @@ pub fn bxcan_frame_to_uavcan<I>(
 }
 
 /// An error indicating that a frame did not have the correct format for use with UAVCAN
-#[derive(Debug)]
+
 pub struct InvalidFrameFormat;
 
 /// Optimizes the provided list and applies filters to a CAN peripheral

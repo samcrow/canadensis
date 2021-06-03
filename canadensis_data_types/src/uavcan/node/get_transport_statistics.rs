@@ -5,7 +5,7 @@ use canadensis_encoding::{
 };
 
 /// uavcan.node.GetTransportStatistics version 0.1 request
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct GetTransportStatisticsRequest;
 
 impl GetTransportStatisticsRequest {
@@ -52,7 +52,7 @@ impl Deserialize for GetTransportStatisticsRequest {
 }
 
 /// uavcan.node.GetTransportStatistics version 0.1 response
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct GetTransportStatisticsResponse {
     pub transfer_statistics: IoStatistics,
     pub network_interface_statistics: heapless::Vec<
@@ -103,9 +103,12 @@ impl Deserialize for GetTransportStatisticsResponse {
         let length_read = cursor.read_aligned_u8();
         if length_read <= GetTransportStatisticsResponse::MAX_NETWORK_INTERFACES {
             for _ in 0..length_read {
-                self.network_interface_statistics
-                    .push(cursor.read_composite()?)
-                    .expect("Array too long");
+                let status = self
+                    .network_interface_statistics
+                    .push(cursor.read_composite()?);
+                if status.is_err() {
+                    panic!("Array too long");
+                }
             }
             Ok(())
         } else {

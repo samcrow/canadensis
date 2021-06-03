@@ -8,7 +8,7 @@ use super::TailByte;
 use crate::OutOfMemoryError;
 
 /// Reassembles frames into a transfer
-#[derive(Debug)]
+
 pub struct Buildup {
     /// Transfer ID of expected frames
     transfer_id: TransferId,
@@ -99,7 +99,6 @@ impl Buildup {
     }
 }
 
-#[derive(Debug)]
 pub enum BuildupError {
     OutOfMemory(TryReserveError),
     InvalidStart,

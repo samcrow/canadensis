@@ -3,7 +3,7 @@ use canadensis_encoding::{
 };
 
 /// uavcan.time.SynchronizedTimestamp version 1.0
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct SynchronizedTimestamp {
     // Really 56 bits
     pub microsecond: u64,

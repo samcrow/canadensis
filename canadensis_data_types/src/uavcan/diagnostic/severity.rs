@@ -3,7 +3,7 @@ use canadensis_encoding::{
 };
 
 /// uavcan.diagnostic.Severity version 1.0
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Severity {
     Trace = 0,
     Debug = 1,

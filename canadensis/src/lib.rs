@@ -30,7 +30,7 @@ use canadensis_encoding::{Message, Request, Response, Serialize};
 use canadensis_filter_config::Filter;
 
 /// A token from a request that is needed to send a response
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct ResponseToken {
     /// ID of the service that this is a response for
     service: ServiceId,
@@ -328,6 +328,7 @@ impl<T> ServiceToken<T> {
 }
 
 /// Errors that may occur when starting to send messages or requests
+
 #[derive(Debug)]
 pub enum StartSendError {
     /// Memory could not be allocated

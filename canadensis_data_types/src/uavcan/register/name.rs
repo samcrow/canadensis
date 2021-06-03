@@ -3,7 +3,7 @@ use canadensis_encoding::{
 };
 
 /// uavcan.register.Name version 1.0
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct Name {
     pub name: heapless::Vec<u8, 255>,
 }

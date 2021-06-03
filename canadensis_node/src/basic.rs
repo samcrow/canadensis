@@ -58,16 +58,18 @@ where
             .set(GetInfoRequest::SERVICE.into(), true);
         port_list.publishers = SubjectIdList::SparseList({
             let mut published_topics = heapless::Vec::new();
-            published_topics
-                .push(subject_id::SubjectId {
-                    value: Heartbeat::SUBJECT.into(),
-                })
-                .unwrap();
-            published_topics
-                .push(subject_id::SubjectId {
-                    value: List::SUBJECT.into(),
-                })
-                .unwrap();
+            let status = published_topics.push(subject_id::SubjectId {
+                value: Heartbeat::SUBJECT.into(),
+            });
+            if status.is_err() {
+                panic!("Topic list capacity too low")
+            }
+            let status = published_topics.push(subject_id::SubjectId {
+                value: List::SUBJECT.into(),
+            });
+            if status.is_err() {
+                panic!("Topic list capacity too low")
+            }
             published_topics
         });
 

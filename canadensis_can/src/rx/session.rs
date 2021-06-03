@@ -7,7 +7,7 @@ use canadensis_core::transfer::{Header, Transfer};
 use canadensis_core::TransferId;
 
 /// A receive session, associated with a particular port ID and source node
-#[derive(Debug)]
+
 pub struct Session<I> {
     /// Timestamp of the first frame received in this transfer
     transfer_timestamp: I,
@@ -115,7 +115,6 @@ where
     }
 }
 
-#[derive(Debug)]
 pub enum SessionError {
     /// A transfer CRC was invalid
     Crc,

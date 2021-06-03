@@ -3,7 +3,7 @@ use canadensis_encoding::{
 };
 
 /// uavcan.file.Path version 2.0
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct Path {
     path: heapless::Vec<u8, { Path::MAX_LENGTH as usize }>,
 }

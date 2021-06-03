@@ -227,7 +227,7 @@ impl TransferHandler<Microseconds64> for BasicTransferHandler {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 struct SystemClock {
     start_time: StdInstant,
 }

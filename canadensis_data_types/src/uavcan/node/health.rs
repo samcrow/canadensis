@@ -3,7 +3,7 @@ use canadensis_encoding::{
 };
 
 /// uavcan.node.Health version 1.0
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Health {
     Nominal = 0,
     Advisory = 1,

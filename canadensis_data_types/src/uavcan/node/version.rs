@@ -3,7 +3,7 @@ use canadensis_encoding::{
 };
 
 /// uavcan.node.Version version 1.0
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct Version {
     pub major: u8,
     pub minor: u8,

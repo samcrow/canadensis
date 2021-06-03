@@ -5,7 +5,7 @@ use canadensis_encoding::{
 };
 
 /// uavcan.node.port.ID version 1.0
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Id {
     Subject(SubjectId),
     Service(ServiceId),

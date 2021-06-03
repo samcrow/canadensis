@@ -3,7 +3,7 @@ use canadensis_encoding::{
 };
 
 /// uavcan.node.IOStatistics version 0.1
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct IoStatistics {
     // Really u40
     pub num_emitted: u64,

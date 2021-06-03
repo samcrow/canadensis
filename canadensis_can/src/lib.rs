@@ -66,7 +66,7 @@ fn calculate_frame_stats(payload_length: usize, mtu: usize) -> FrameStats {
 }
 
 /// Information about how to fit a transfer payload into frames
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Eq, PartialEq)]
 struct FrameStats {
     /// The total number of frames
     pub frames: usize,

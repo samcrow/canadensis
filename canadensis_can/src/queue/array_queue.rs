@@ -7,7 +7,6 @@ use core::ptr;
 ///
 /// `N` is the maximum number of frames that the queue can hold. This should be at least as large
 /// as the number of frames required for the largest outgoing transfer that will be sent.
-#[derive(Debug)]
 pub struct ArrayQueue<I, const N: usize> {
     /// The frames in this queue
     ///

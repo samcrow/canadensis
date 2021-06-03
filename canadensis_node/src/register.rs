@@ -58,7 +58,7 @@ pub trait RegisterBlock {
 }
 
 /// Information about how a register can be accessed
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Access {
     /// If this register is mutable
     ///
@@ -105,7 +105,7 @@ pub trait Register {
 }
 
 /// Errors that can occur when attempting to write a register
-#[derive(Debug)]
+
 pub enum WriteError {
     /// The type of the value, or the number of values in an array, was incorrect
     Type,

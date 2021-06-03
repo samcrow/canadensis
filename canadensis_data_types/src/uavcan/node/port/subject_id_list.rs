@@ -5,7 +5,7 @@ use canadensis_encoding::{
 };
 
 /// uavcan.node.port.SubjectIDList version 0.1
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum SubjectIdList {
     Mask(BitArray<{ (SubjectIdList::CAPACITY as usize + 7) / 8 }>),
     SparseList(heapless::Vec<SubjectId, 255>),
@@ -109,7 +109,10 @@ impl Deserialize for SubjectIdList {
                 let length = cursor.read_aligned_u8();
                 let mut ids = heapless::Vec::new();
                 for _ in 0..length {
-                    ids.push(cursor.read_composite()?).unwrap();
+                    let status = ids.push(cursor.read_composite()?);
+                    if status.is_err() {
+                        panic!("Array too long");
+                    }
                 }
                 Ok(SubjectIdList::SparseList(ids))
             }

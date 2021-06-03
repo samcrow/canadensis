@@ -7,7 +7,7 @@ use canadensis_encoding::{
 };
 
 /// uavcan.register.Access version 1.0 request
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct AccessRequest {
     pub name: Name,
     pub value: Value,
@@ -60,7 +60,7 @@ impl Deserialize for AccessRequest {
 }
 
 /// uavcan.register.Access version 1.0 response
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct AccessResponse {
     pub timestamp: SynchronizedTimestamp,
     pub mutable: bool,

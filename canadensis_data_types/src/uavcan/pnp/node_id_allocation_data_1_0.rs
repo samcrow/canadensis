@@ -4,7 +4,7 @@ use canadensis_encoding::{
 };
 
 /// uavcan.pnp.NodeIDAllocationData 1.0
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct NodeIdAllocationData {
     // Really 48 bits
     pub unique_id_hash: u64,

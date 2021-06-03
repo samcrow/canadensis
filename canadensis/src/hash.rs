@@ -6,7 +6,7 @@ pub type TrivialIndexMap<K, V, const N: usize> =
     IndexMap<K, V, BuildHasherDefault<TrivialHasher>, N>;
 
 /// A very simple hasher that only performs well on keys that are smaller than 32 bits
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct TrivialHasher(u32);
 
 impl Hasher for TrivialHasher {

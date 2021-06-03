@@ -6,7 +6,6 @@ use alloc::vec::Vec;
 use canadensis_core::time::Instant;
 use canadensis_core::transfer::{Header, Transfer};
 use canadensis_core::{NodeId, PortId};
-use core::fmt;
 use fallible_collections::{FallibleBox, FallibleVec, TryReserveError};
 
 /// One session per node ID
@@ -24,29 +23,6 @@ pub struct Subscription<I: Instant> {
     payload_size_max: usize,
     /// Subject or service ID that this subscription is about
     port_id: PortId,
-}
-
-impl<I: Instant> fmt::Debug for Subscription<I> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Subscription")
-            .field("sessions", &DebugSessions(&self.sessions))
-            .field("transfer_id_timeout", &self.timeout)
-            .field("payload_size_max", &self.payload_size_max)
-            .field("port_id", &self.port_id)
-            .finish()
-    }
-}
-
-/// A debug adapter for the session list
-struct DebugSessions<'s, I>(&'s [Option<Box<Session<I>>>; RX_SESSIONS_PER_SUBSCRIPTION]);
-
-impl<I: Instant> fmt::Debug for DebugSessions<'_, I> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // Display as a set, showing only the non-empty entries
-        f.debug_set()
-            .entries(self.0.iter().flat_map(Option::as_deref))
-            .finish()
-    }
 }
 
 impl<I: Instant> Subscription<I> {
@@ -192,7 +168,7 @@ impl<I: Instant> Subscription<I> {
 }
 
 /// Errors that a subscription may encounter
-#[derive(Debug)]
+
 pub enum SubscriptionError {
     /// Received a frame with no corresponding session, but its start bit was not set
     NotStart,

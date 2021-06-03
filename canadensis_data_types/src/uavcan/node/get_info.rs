@@ -5,7 +5,7 @@ use canadensis_encoding::{
 };
 
 /// uavcan.node.GetInfo version 1.0 request
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct GetInfoRequest {}
 
 impl GetInfoRequest {
@@ -50,7 +50,7 @@ impl Deserialize for GetInfoRequest {
 }
 
 /// uavcan.node.GetInfo version 1.0 response
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct GetInfoResponse {
     pub protocol_version: Version,
     pub hardware_version: Version,

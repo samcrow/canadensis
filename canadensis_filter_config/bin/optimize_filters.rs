@@ -68,7 +68,6 @@ fn get_args() -> Result<Args, Box<dyn Error>> {
     })
 }
 
-#[derive(Debug)]
 struct UsageError;
 
 impl std::fmt::Display for UsageError {
@@ -79,7 +78,6 @@ impl std::fmt::Display for UsageError {
 
 impl Error for UsageError {}
 
-#[derive(Debug)]
 struct CanIdError;
 
 impl std::fmt::Display for CanIdError {
@@ -104,7 +102,6 @@ fn parse_hex_with_prefix(input: &str) -> Result<u32, Box<dyn Error>> {
     Ok(number)
 }
 
-#[derive(Debug)]
 struct NumberFormatError;
 
 impl std::fmt::Display for NumberFormatError {

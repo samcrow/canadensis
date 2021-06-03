@@ -5,7 +5,7 @@ use canadensis_encoding::{
 };
 
 /// uavcan.node.port.List version 0.1
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct List {
     pub publishers: SubjectIdList,
     pub subscribers: SubjectIdList,

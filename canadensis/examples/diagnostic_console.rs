@@ -78,7 +78,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 struct SystemClock {
     start_time: Instant,
 }

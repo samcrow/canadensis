@@ -3,7 +3,7 @@ use canadensis_encoding::{
 };
 
 /// uavcan.node.Mode version 1.0
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Mode {
     Operational,
     Initialization,

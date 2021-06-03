@@ -24,7 +24,7 @@ pub struct InvalidValue;
 const VALID_SUBJECT_IDS: RangeInclusive<u16> = 0..=8191;
 
 /// Subject ID, in range 0..=8191
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Hash32)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Hash32)]
 pub struct SubjectId(u16);
 
 impl SubjectId {
@@ -77,7 +77,7 @@ impl FromStr for SubjectId {
 const VALID_SERVICE_IDS: RangeInclusive<u16> = 0..=511;
 
 /// Service ID, in range 0..=511
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Hash32)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Hash32)]
 pub struct ServiceId(u16);
 
 impl ServiceId {
@@ -294,7 +294,7 @@ impl Default for TransferId {
 }
 
 /// Transfer priority level mnemonics per the recommendations given in the UAVCAN Specification
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub enum Priority {
     Exceptional = 0,
     Immediate = 1,

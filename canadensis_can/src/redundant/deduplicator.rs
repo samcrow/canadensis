@@ -20,7 +20,7 @@ use canadensis_core::time::Instant;
 ///
 /// For more explanation, see [the comments in pyuavcan](https://github.com/UAVCAN/pyuavcan/blob/87c27a978119d24ac77c9a7f2d6f289846ac96fd/pyuavcan/transport/redundant/__init__.py).
 ///
-#[derive(Debug)]
+
 pub struct Deduplicator<I: Instant, const N: usize> {
     /// The state for each transport
     states: [TransportState<I>; N],
@@ -84,7 +84,7 @@ where
 }
 
 /// Information about a transport
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone)]
 struct TransportState<I> {
     last_frame_time: Option<I>,
 }

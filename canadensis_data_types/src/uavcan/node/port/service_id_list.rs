@@ -5,7 +5,7 @@ use canadensis_encoding::{
 };
 
 /// uavcan.node.port.ServiceIDList version 0.1
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct ServiceIdList {
     pub mask: BitArray<{ (ServiceIdList::CAPACITY as usize + 7) / 8 }>,
 }

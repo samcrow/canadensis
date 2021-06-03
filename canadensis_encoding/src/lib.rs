@@ -69,7 +69,7 @@ pub trait Response {}
 
 /// Errors that can occur when deserializing
 #[non_exhaustive]
-#[derive(Debug)]
+
 pub enum DeserializeError {
     /// A variable-length array length field was greater than the maximum allowed length
     ArrayLength,

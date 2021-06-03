@@ -5,7 +5,7 @@ use canadensis_encoding::{
 };
 
 /// uavcan.register.List 1.0 request
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct ListRequest {
     pub index: u16,
 }
@@ -55,7 +55,7 @@ impl Deserialize for ListRequest {
 }
 
 /// uavcan.register.List version 1.0 response
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct ListResponse {
     pub name: Name,
 }

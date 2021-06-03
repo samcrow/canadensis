@@ -3,7 +3,7 @@ use canadensis_encoding::{
 };
 
 /// uavcan.node.port.ServiceID version 1.0
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct ServiceId {
     // Really u9
     pub value: u16,

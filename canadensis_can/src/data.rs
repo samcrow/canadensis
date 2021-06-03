@@ -40,7 +40,7 @@ impl From<CanId> for u32 {
 }
 
 /// Allowed maximum transmission unit (MTU) values
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub enum Mtu {
     /// 8 bytes, for standard CAN
     Can8 = 8,
@@ -67,7 +67,7 @@ pub const FRAME_CAPACITY: usize = 8;
 ///
 /// RTR/Error frames are not used and therefore not modeled here.
 /// CAN frames with 11-bit ID are not used by UAVCAN/CAN and so they are not supported by the library.
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Clone, PartialEq, Default)]
 pub struct Frame<I> {
     /// For RX frames: reception timestamp.
     /// For TX frames: transmission deadline.

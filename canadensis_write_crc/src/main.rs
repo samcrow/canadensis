@@ -103,7 +103,6 @@ fn find_symbol_file_offset(in_object: &File, name: &str) -> Result<u64, StringEr
     Err(StringError(format!("Symbol {} not found", name)))
 }
 
-#[derive(Debug)]
 struct StringError(String);
 
 impl std::fmt::Display for StringError {
