@@ -2,12 +2,13 @@ use crate::bits::BitArray;
 use canadensis_encoding::{
     DataType, Deserialize, DeserializeError, Message, ReadCursor, Serialize, WriteCursor,
 };
+use core::fmt;
 use half::f16;
 
 /// uavcan.register.Value 1.0
 ///
 /// This type is hand-written to avoid having to hand-write a separate type for each variant.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(PartialEq, Clone)]
 pub enum Value {
     Empty,
     String(heapless::Vec<u8, 256>),
@@ -28,6 +29,28 @@ pub enum Value {
     Real64(heapless::Vec<f64, 32>),
     Real32(heapless::Vec<f32, 64>),
     Real16(heapless::Vec<f16, 128>),
+}
+
+impl fmt::Debug for Value {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Value::Empty => f.debug_tuple("Empty").finish(),
+            Value::String(_) => f.debug_tuple("String").finish(),
+            Value::Unstructured(_) => f.debug_tuple("Unstructured").finish(),
+            Value::Bit(_) => f.debug_tuple("Bit").finish(),
+            Value::Integer64(_) => f.debug_tuple("Integer64").finish(),
+            Value::Integer32(_) => f.debug_tuple("Integer32").finish(),
+            Value::Integer16(_) => f.debug_tuple("Integer16").finish(),
+            Value::Integer8(_) => f.debug_tuple("Integer8").finish(),
+            Value::Natural64(_) => f.debug_tuple("Natural64").finish(),
+            Value::Natural32(_) => f.debug_tuple("Natural32").finish(),
+            Value::Natural16(_) => f.debug_tuple("Natural16").finish(),
+            Value::Natural8(_) => f.debug_tuple("Natural8").finish(),
+            Value::Real64(_) => f.debug_tuple("Real64").finish(),
+            Value::Real32(_) => f.debug_tuple("Real32").finish(),
+            Value::Real16(_) => f.debug_tuple("Real16").finish(),
+        }
+    }
 }
 
 impl Default for Value {
