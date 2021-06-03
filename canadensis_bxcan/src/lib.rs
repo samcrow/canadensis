@@ -180,8 +180,11 @@ where
             let removed_frame_deadline = deadlines
                 .replace(mailbox, frame.timestamp())
                 .expect("Bug: removed a frame from the mailbox, but no deadline");
-            let removed_frame = bxcan_frame_to_uavcan(&removed_frame, removed_frame_deadline)
-                .expect("Bug: Replaced frame has invalid format");
+            let removed_frame = match bxcan_frame_to_uavcan(&removed_frame, removed_frame_deadline)
+            {
+                Ok(frame) => frame,
+                Err(_) => panic!("Bug: Replaced frame has invalid format"),
+            };
             // Put the removed frame back in the queue to be transmitted later
             // This may return an error if it runs out of memory, but there's nothing we can
             // do about that.
