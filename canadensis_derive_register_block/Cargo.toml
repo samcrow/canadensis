@@ -12,8 +12,7 @@ proc-macro = true
 [dependencies]
 quote = "1"
 proc-macro2 = "1.0"
-# extra-traits feature is for debugging only
-syn = { version = "1.0", features = ["derive", "extra-traits"] }
+syn = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies.canadensis_node]
 path = "../canadensis_node"

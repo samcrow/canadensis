@@ -8,7 +8,6 @@ extern crate canadensis_can;
 extern crate canadensis_core;
 extern crate canadensis_filter_config;
 extern crate canadensis_pnp_client;
-extern crate log;
 extern crate nb;
 
 pub mod pnp;
@@ -79,9 +78,7 @@ where
                         self.node.accept_frame(uavcan_frame, handler)?;
                     }
                 }
-                Err(nb::Error::Other(())) => {
-                    log::warn!("CAN receive FIFO overflowed");
-                }
+                Err(nb::Error::Other(())) => {}
                 Err(nb::Error::WouldBlock) => break,
             }
         }

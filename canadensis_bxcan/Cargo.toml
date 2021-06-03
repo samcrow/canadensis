@@ -10,7 +10,6 @@ description = "Bridge between Canadensis and the BXCAN peripherals found in some
 [dependencies]
 bxcan = "0.5.1"
 nb = "1.0.0"
-log = "0.4"
 
 [dependencies.canadensis_core]
 path = "../canadensis_core"

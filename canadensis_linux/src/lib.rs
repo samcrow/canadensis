@@ -5,7 +5,6 @@
 extern crate canadensis_can;
 extern crate canadensis_core;
 extern crate canadensis_filter_config;
-extern crate log;
 extern crate socketcan;
 
 use canadensis_core::time::{Clock, Instant, Microseconds64};
@@ -40,11 +39,6 @@ impl LinuxCan {
                     socketcan_frame.data(),
                 );
                 return Ok(uavcan_frame);
-            } else {
-                log::warn!(
-                    "Ignoring a frame {} bytes long, which is too large",
-                    socketcan_frame.data().len()
-                );
             }
         }
     }
@@ -53,7 +47,6 @@ impl LinuxCan {
     pub fn send(&mut self, frame: canadensis_can::Frame<Microseconds64>) -> io::Result<()> {
         // Drop this frame if its deadline has passed
         if frame.timestamp().overflow_safe_compare(&self.clock.now()) == Ordering::Less {
-            log::warn!("Dropping frame that has missed its deadline");
             return Ok(());
         }
         let socketcan_frame =

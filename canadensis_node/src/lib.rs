@@ -11,7 +11,6 @@ extern crate canadensis_filter_config;
 extern crate fallible_collections;
 extern crate half;
 extern crate heapless;
-extern crate log;
 
 mod basic;
 mod minimal;

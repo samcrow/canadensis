@@ -117,15 +117,7 @@ impl<I: Instant> Subscription<I> {
 
         let slot = &mut self.sessions[usize::from(source_node)];
         let session = match slot {
-            Some(session) => {
-                log::debug!(
-                    "Using existing session with transfer ID {:?} for port {:?} (frame transfer ID {:?})",
-                    session.transfer_id(),
-                    self.port_id,
-                    tail.transfer_id,
-                );
-                session
-            }
+            Some(session) => session,
             None => {
                 // Check if this frame is appropriate for creating a new session
                 if !tail.start {
@@ -138,11 +130,6 @@ impl<I: Instant> Subscription<I> {
                     tail.transfer_id,
                     self.payload_size_max,
                 )?)?);
-                log::debug!(
-                    "Created new session for transfer ID {:?} on port {:?}",
-                    tail.transfer_id,
-                    self.port_id
-                );
                 slot.as_deref_mut().unwrap()
             }
         };
