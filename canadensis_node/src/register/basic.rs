@@ -197,7 +197,9 @@ where
 
     fn write(&mut self, value: &Value) -> Result<(), WriteError> {
         let mut new_value = self.value.clone();
+        rtt_target::rprintln!("Writing {:?}", value);
         new_value.write(value)?;
+        rtt_target::rprintln!("Value accepted, validating");
         if self.validator.accept(&new_value) {
             self.value = new_value;
             Ok(())
@@ -310,10 +312,18 @@ macro_rules! register_primitive_array {
                             self.copy_from_slice(&values);
                             Ok(())
                         } else {
+                            rtt_target::rprintln!(
+                                "Incorrect length {}, expected {}",
+                                values.len(),
+                                N
+                            );
                             Err(WriteError::Type)
                         }
                     }
-                    _ => Err(WriteError::Type),
+                    _ => {
+                        rtt_target::rprintln!("Incorrect variant");
+                        Err(WriteError::Type)
+                    }
                 }
             }
         }
