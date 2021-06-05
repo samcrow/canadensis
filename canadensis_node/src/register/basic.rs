@@ -163,6 +163,19 @@ impl<T, V> ValidatedRegister<T, V> {
             validator,
         }
     }
+
+    /// Returns a reference to the value of this register
+    pub fn value(&self) -> &T {
+        &self.value
+    }
+    /// Returns a mutable reference to the value of this register
+    pub fn value_mut(&mut self) -> &mut T {
+        &mut self.value
+    }
+    /// Sets the value of this register
+    pub fn set_value(&mut self, value: T) {
+        self.value = value;
+    }
 }
 
 impl<T, V> Register for ValidatedRegister<T, V>
