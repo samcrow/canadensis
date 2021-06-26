@@ -2,7 +2,6 @@
 //! Node configuration registers that can be accessed from other nodes
 
 pub mod basic;
-mod block_impl;
 
 use alloc::vec::Vec;
 use core::str;
