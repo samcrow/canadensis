@@ -10,17 +10,40 @@ extern crate canadensis_core;
 extern crate canadensis_encoding;
 extern crate canadensis_filter_config;
 
+// Re-exports from other crates
+pub mod can {
+    /// Re-exports the `canadensis_can` crate
+    pub use canadensis_can::*;
+}
+pub mod core {
+    /// Re-exports the `canadensis_core` crate
+    pub use canadensis_core::*;
+}
+pub mod encoding {
+    /// Re-exports the `canadensis_encoding` crate
+    pub use canadensis_encoding::*;
+}
+pub mod filter {
+    /// Re-exports the `canadensis_filter_config` crate
+    pub use canadensis_filter_config::*;
+}
+
 mod core_node;
 mod hash;
 
 pub mod anonymous;
+mod basic;
+mod minimal;
 mod publisher;
+pub mod register;
 mod requester;
 
+pub use crate::basic::BasicNode;
 pub use crate::core_node::CoreNode;
+pub use crate::minimal::MinimalNode;
 
+use ::core::marker::PhantomData;
 use alloc::vec::Vec;
-use core::marker::PhantomData;
 
 use canadensis_can::{Frame, OutOfMemoryError};
 use canadensis_core::time::{Clock, Instant};

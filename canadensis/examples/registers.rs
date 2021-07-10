@@ -9,22 +9,23 @@ use std::time::Duration;
 
 use socketcan::CANSocket;
 
-use canadensis::BasicNode;
-use canadensis::{CoreNode, Node, ResponseToken, TransferHandler};
-use canadensis_can::queue::{ArrayQueue, FrameQueueSource};
-use canadensis_can::Mtu;
-use canadensis_core::time::{Instant, Microseconds64};
-use canadensis_core::transfer::{MessageTransfer, ServiceTransfer};
-use canadensis_core::NodeId;
+use canadensis::can::queue::{ArrayQueue, FrameQueueSource};
+use canadensis::can::Mtu;
+use canadensis::core::time::{Clock, Microseconds64};
+use canadensis::core::transfer::{MessageTransfer, ServiceTransfer};
+use canadensis::core::NodeId;
+use canadensis::register::basic::{RegisterString, SimpleRegister};
+use canadensis::register::{RegisterBlock, RegisterHandler};
+use canadensis::{BasicNode, CoreNode, Node, ResponseToken, TransferHandler};
 use canadensis_data_types::uavcan::node::get_info::GetInfoResponse;
 use canadensis_data_types::uavcan::node::version::Version;
 use canadensis_linux::{LinuxCan, SystemClock};
 use std::io::ErrorKind;
 
-/// Runs a basic UAVCAN node that sends Heartbeat messages, responds to node information requests,
-/// and sends port list messages
+/// Runs a UAVCAN node that sends Heartbeat messages, responds to node information requests,
+/// sends port list messages, and allows access to some registers
 ///
-/// Usage: `basic_node [SocketCAN interface name] [Node ID]`
+/// Usage: `registers [SocketCAN interface name] [Node ID]`
 ///
 /// # Testing
 ///
@@ -39,7 +40,7 @@ use std::io::ErrorKind;
 /// ## Start the node
 ///
 /// ```
-/// basic_node vcan0 [node ID]
+/// registers vcan0 [node ID]
 /// ```
 ///
 /// ## Interact with the node using Yakut
@@ -48,7 +49,19 @@ use std::io::ErrorKind;
 /// `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" subscribe uavcan.node.Heartbeat.1.0`
 ///
 /// To send a NodeInfo request:
-/// `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" call [Node ID of basic_node] uavcan.node.GetInfo.1.0 {}`
+/// `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" call [Node ID of registers node] uavcan.node.GetInfo.1.0 {}`
+///
+/// To get the name of register 0:
+/// `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" call [Node ID of registers node] uavcan.register.List.1.0 "{ index: 0 }"`
+///
+/// To read the node ID register:
+/// `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" call [Node ID of registers node] uavcan.register.Access.1.0 "{ name: { name: \"uavcan.node.id\" } }"`
+///
+/// To write the node ID register:
+/// `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" call [Node ID of registers node] uavcan.register.Access.1.0 "{ name: { name: \"uavcan.node.id\" }, value: { natural16: { value: [value to write] }  }  }"`
+///
+/// To write a 256-character-long node description:
+/// `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" call [Node ID of registers node] uavcan.register.Access.1.0 "{ name: { name: \"uavcan.node.description\" }, value: { string: { value: \"We're no strangers to love\nYou know the rules and so do I\nA full commitment's what I'm thinking of\nYou wouldn't get this from any other guy\nI just wanna tell you how I'm feeling\nGotta make you understand\nNever gonna give you up\nNever gonna let you down\nNev\" }  }  }"`
 ///
 /// In the above two commands, 8 is the MTU of standard CAN and 42 is the node ID of the Yakut node.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -79,7 +92,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         software_version: Version { major: 0, minor: 1 },
         software_vcs_revision_id: 0,
         unique_id: rand::random(),
-        name: heapless::Vec::from_slice(b"org.samcrow.basic_node").unwrap(),
+        name: heapless::Vec::from_slice(b"org.samcrow.register_node").unwrap(),
         software_image_crc: None,
         certificate_of_authenticity: Default::default(),
     };
@@ -93,10 +106,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let mut node = BasicNode::new(core_node, node_info).unwrap();
 
+    // Define the registers that can be accessed
+    #[derive(RegisterBlock)]
+    struct Registers {
+        node_id: SimpleRegister<u16>,
+        description: SimpleRegister<RegisterString>,
+    }
+    let register_block = Registers {
+        node_id: SimpleRegister::with_value("uavcan.node.id", true, false, u16::MAX),
+        description: SimpleRegister::new("uavcan.node.description", true, false),
+    };
+    let registers = RegisterHandler::new(register_block);
+    RegisterHandler::<Registers>::subscribe_requests(&mut node).unwrap();
+
     // Now that the node has subscribed to everything it wants, set up the frame acceptance filters
     let frame_filters = node.frame_filters().unwrap();
     println!("Filters: {:?}", frame_filters);
     can.set_filters(&frame_filters)?;
+
+    let mut handler = registers.chain(EmptyHandler);
 
     println!("Node size: {} bytes", std::mem::size_of_val(&node));
 
@@ -105,7 +133,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     loop {
         match can.receive() {
             Ok(frame) => {
-                node.accept_frame(frame, &mut EmptyHandler).unwrap();
+                node.accept_frame(frame, &mut handler).unwrap();
             }
             Err(e) => match e.kind() {
                 ErrorKind::WouldBlock => {}
@@ -129,10 +157,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 struct EmptyHandler;
 
-impl<I: Instant> TransferHandler<I> for EmptyHandler {
-    fn handle_message<N>(&mut self, _node: &mut N, transfer: &MessageTransfer<Vec<u8>, I>) -> bool
+impl TransferHandler<<SystemClock as Clock>::Instant> for EmptyHandler {
+    fn handle_message<N>(
+        &mut self,
+        _node: &mut N,
+        transfer: &MessageTransfer<Vec<u8>, <SystemClock as Clock>::Instant>,
+    ) -> bool
     where
-        N: Node<Instant = I>,
+        N: Node<Instant = <SystemClock as Clock>::Instant>,
     {
         println!("Got message {:?}", transfer);
         false
@@ -142,18 +174,22 @@ impl<I: Instant> TransferHandler<I> for EmptyHandler {
         &mut self,
         _node: &mut N,
         _token: ResponseToken,
-        transfer: &ServiceTransfer<Vec<u8>, I>,
+        transfer: &ServiceTransfer<Vec<u8>, <SystemClock as Clock>::Instant>,
     ) -> bool
     where
-        N: Node<Instant = I>,
+        N: Node<Instant = <SystemClock as Clock>::Instant>,
     {
         println!("Got request {:?}", transfer);
         false
     }
 
-    fn handle_response<N>(&mut self, _node: &mut N, transfer: &ServiceTransfer<Vec<u8>, I>) -> bool
+    fn handle_response<N>(
+        &mut self,
+        _node: &mut N,
+        transfer: &ServiceTransfer<Vec<u8>, <SystemClock as Clock>::Instant>,
+    ) -> bool
     where
-        N: Node<Instant = I>,
+        N: Node<Instant = <SystemClock as Clock>::Instant>,
     {
         println!("Got response {:?}", transfer);
         false
