@@ -1,8 +1,8 @@
+extern crate canadensis;
 extern crate canadensis_derive_register_block;
-extern crate canadensis_node;
 
+use canadensis::register::basic::SimpleRegister;
 use canadensis_derive_register_block::RegisterBlock;
-use canadensis_node::register::basic::SimpleRegister;
 
 #[derive(RegisterBlock)]
 struct Empty;
