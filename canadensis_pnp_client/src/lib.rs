@@ -10,21 +10,18 @@
 extern crate alloc;
 
 extern crate canadensis;
-extern crate canadensis_can;
-extern crate canadensis_core;
 extern crate canadensis_data_types;
-extern crate canadensis_encoding;
 extern crate canadensis_filter_config;
 extern crate crc_any;
 
 use alloc::vec::Vec;
 use canadensis::anonymous::AnonymousPublisher;
-use canadensis_can::queue::{FrameQueueSource, FrameSink};
-use canadensis_can::{Frame, Mtu, OutOfMemoryError, Receiver, Transmitter};
-use canadensis_core::time::{milliseconds, Clock};
-use canadensis_core::{NodeId, Priority, SubjectId};
+use canadensis::can::queue::{FrameQueueSource, FrameSink};
+use canadensis::can::{Frame, Mtu, OutOfMemoryError, Receiver, Transmitter};
+use canadensis::core::time::{milliseconds, Clock};
+use canadensis::core::{NodeId, Priority, SubjectId};
+use canadensis::encoding::{Deserialize, Message, Serialize};
 use canadensis_data_types::uavcan::pnp::node_id_allocation_data_1_0::NodeIdAllocationData;
-use canadensis_encoding::{Deserialize, Message, Serialize};
 use canadensis_filter_config::Filter;
 use core::convert::TryFrom;
 use core::marker::PhantomData;

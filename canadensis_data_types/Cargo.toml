@@ -12,7 +12,9 @@ heapless = "0.7.0"
 half = "1.7.1"
 
 [dependencies.canadensis_encoding]
+version = "0.1.0"
 path = "../canadensis_encoding"
 [dependencies.canadensis_core]
+version = "0.1.0"
 path = "../canadensis_core"
 
