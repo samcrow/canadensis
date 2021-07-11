@@ -5,10 +5,9 @@ authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
 edition = "2018"
 keywords = ["embedded", "uavcan", "uav", "can"]
 categories = ["embedded", "no-std"]
-documentation = "https://docs.rs/canadensis"
 repository = "https://github.com/samcrow/canadensis"
 license = "MIT OR Apache-2.0"
-description = "A UAVCAN v1.0 implementation: Node types and re-exports from other canadensis crates"
+description = "A UAVCAN v1 implementation: Node types and re-exports from other canadensis crates"
 
 [dependencies]
 fallible_collections = "0.4.0"

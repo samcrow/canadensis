@@ -3,6 +3,10 @@ name = "canadensis_data_types"
 version = "0.1.0"
 authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
 edition = "2018"
+keywords = ["embedded", "uavcan", "uav", "can"]
+categories = ["embedded", "no-std"]
+repository = "https://github.com/samcrow/canadensis"
+license = "MIT OR Apache-2.0"
 description = "Hand-written definitions for some UAVCAN public regulated data types"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

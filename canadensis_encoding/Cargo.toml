@@ -5,10 +5,9 @@ authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
 edition = "2018"
 keywords = ["embedded", "uavcan", "uav", "can"]
 categories = ["embedded", "no-std"]
-documentation = "https://docs.rs/canadensis_encoding"
 repository = "https://github.com/samcrow/canadensis"
 license = "MIT OR Apache-2.0"
-description = "A UAVCAN v1.0 implementation: Transfer encoding and decoding"
+description = "A UAVCAN v1 implementation: Transfer encoding and decoding"
 
 [dependencies]
 half = "1.7.1"

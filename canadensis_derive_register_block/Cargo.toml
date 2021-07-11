@@ -3,7 +3,9 @@ name = "canadensis_derive_register_block"
 version = "0.1.0"
 authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
 description = "Derive macro for `canadensis::register::RegisterBlock`"
-keywords = ["template", "proc_macro", "procmacro"]
+keywords = ["template", "proc_macro", "procmacro", "uavcan"]
+repository = "https://github.com/samcrow/canadensis"
+license = "MIT OR Apache-2.0"
 edition = "2018"
 
 [lib]

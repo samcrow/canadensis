@@ -5,7 +5,6 @@ authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
 edition = "2018"
 keywords = ["embedded", "uavcan", "uav", "can"]
 categories = ["embedded", "no-std"]
-documentation = "https://docs.rs/canadensis_core"
 repository = "https://github.com/samcrow/canadensis"
 license = "MIT OR Apache-2.0"
 description = "A UAVCAN v1.0 implementation: Common definitions"
