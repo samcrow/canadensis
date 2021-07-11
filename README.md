@@ -8,6 +8,21 @@ spacecraft, robots, and cars."
 
 This is currently an independent project, not affiliated with the UAVCAN Consortium.
 
+## Published crates
+
+Crate | Description
+------|------------
+[`canadensis`](https://crates.io/crates/canadensis) ([documentation](https://docs.rs/canadensis)) | The main library with all core functionality
+[`canadensis_bxcan`](https://crates.io/crates/canadensis_bxcan) ([documentation](https://docs.rs/canadensis_bxcan)) | Compatibility for bxCAN embedded CAN controllers
+[`canadensis_crc`](https://crates.io/crates/canadensis_crc) ([documentation](https://docs.rs/canadensis_crc)) | Access to the software image CRC
+[`canadensis_data_types`](https://crates.io/crates/canadensis_data_types) ([documentation](https://docs.rs/canadensis_data_types)) | Some Rust types corresponding to the [UAVCAN public regulated data types](https://github.com/UAVCAN/public_regulated_data_types)
+[`canadensis_linux`](https://crates.io/crates/canadensis_linux) ([documentation](https://docs.rs/canadensis_linux)) | Compatibility for Linux SocketCAN interfaces
+[`canadensis_pnp_client`](https://crates.io/crates/canadensis_pnp_client) ([documentation](https://docs.rs/canadensis_pnp_client)) | A client library for plug-and-play node ID allocation
+[`canadensis_write_crc`](https://crates.io/crates/canadensis_write_crc) ([documentation](https://docs.rs/canadensis_write_crc)) | A tool to calculate and write the CRC of a software image for use with `canadensis_crc`
+
+Other crates (`canadensis_can`, `canadensis_core`, `canadensis_derive_register_block`, `canadensis_encoding`, and
+`canadensis_filter_config`) are re-exported from `canadensis`, so you normally will not need to depend on them directly.
+
 ## Status
 
 This code is intended to conform to version 1.0-beta of the UAVCAN specification.
