@@ -105,7 +105,9 @@ impl<'b> ReadCursor<'b> {
             shift_bits += 8;
         }
         // Write any remaining bits that don't fill up a byte
-        value |= u64::from(self.read_up_to_u8(bits % 8)) << shift_bits;
+        if bits != 64 {
+            value |= u64::from(self.read_up_to_u8(bits % 8)) << shift_bits;
+        }
         value
     }
 
@@ -394,7 +396,7 @@ impl ReadCursor<'_> {
     /// Reads a 16-bit unsigned integer
     #[inline]
     pub fn read_u16(&mut self) -> u16 {
-        self.read_up_to_u16(16)
+        self.read_up_to_u32(16) as u16
     }
     /// Reads a 17-bit unsigned integer
     #[inline]
@@ -474,7 +476,7 @@ impl ReadCursor<'_> {
     /// Reads a 32-bit unsigned integer
     #[inline]
     pub fn read_u32(&mut self) -> u32 {
-        self.read_up_to_u32(32)
+        self.read_up_to_u64(32) as u32
     }
     /// Reads a 33-bit unsigned integer
     #[inline]
@@ -958,5 +960,61 @@ impl ReadCursor<'_> {
     #[inline]
     pub fn skip_64(&mut self) {
         self.advance_bits(64)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn u8_one() {
+        let bytes = [0xABu8];
+        let mut cursor = ReadCursor::new(&bytes);
+        assert_eq!(cursor.read_u8(), 0xAB);
+    }
+
+    #[test]
+    fn u16_one() {
+        let bytes = [0xCDu8, 0xAB];
+        let mut cursor = ReadCursor::new(&bytes);
+        assert_eq!(cursor.read_u16(), 0xABCD);
+    }
+
+    #[test]
+    fn u32_one() {
+        let bytes = [0xD4u8, 0xC3, 0xB2, 0xA1];
+        let mut cursor = ReadCursor::new(&bytes);
+        assert_eq!(cursor.read_u32(), 0xA1B2C3D4);
+    }
+
+    #[test]
+    fn u64_one() {
+        let bytes = [0x67u8, 0x45, 0x23, 0x01,
+                                0xD4, 0xC3, 0xB2, 0xA1];
+        let mut cursor = ReadCursor::new(&bytes);
+        assert_eq!(cursor.read_u64(), 0xA1B2C3D401234567);
+    }
+
+    #[test]
+    fn f16_one() {
+        let bytes = [0xCDu8, 0xAB];
+        let mut cursor = ReadCursor::new(&bytes);
+        assert_eq!(cursor.read_f16(), f16::from_bits(0xABCD));
+    }
+
+    #[test]
+    fn f32_one() {
+        let bytes = [0xD4u8, 0xC3, 0xB2, 0xA1];
+        let mut cursor = ReadCursor::new(&bytes);
+        assert_eq!(cursor.read_f32(), f32::from_bits(0xA1B2C3D4));
+    }
+
+    #[test]
+    fn f64_one() {
+        let bytes = [0x67u8, 0x45, 0x23, 0x01,
+                                0xD4, 0xC3, 0xB2, 0xA1];
+        let mut cursor = ReadCursor::new(&bytes);
+        assert_eq!(cursor.read_f64(), f64::from_bits(0xA1B2C3D401234567));
     }
 }
