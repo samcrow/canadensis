@@ -20,6 +20,7 @@ version = "0.1.0"
 path = "../canadensis_core"
 
 [dependencies.canadensis_filter_config]
+version = "0.1.0"
 path = "../canadensis_filter_config"
 
 [features]

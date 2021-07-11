@@ -54,3 +54,8 @@ rand = "0.7.3"
 [dev-dependencies.canadensis_linux]
 version = "0.1.0"
 path = "../canadensis_linux"
+
+
+[features]
+# The can-fd feature increases the maximum frame capacity and maximum MTU from 8 to 64 bytes
+can-fd = ["canadensis_can/can-fd"]
