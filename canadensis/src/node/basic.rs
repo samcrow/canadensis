@@ -1,4 +1,4 @@
-use crate::MinimalNode;
+use crate::node::MinimalNode;
 use crate::{Node, PublishToken, ResponseToken, ServiceToken, StartSendError, TransferHandler};
 use alloc::vec::Vec;
 use canadensis_can::{Frame, OutOfMemoryError};
@@ -23,6 +23,10 @@ use canadensis_filter_config::Filter;
 /// * Sending a `uavcan.node.Heartbeat` every second
 /// * Responding to `uavcan.node.GetInfo` requests
 /// * Sending a `uavcan.node.port.List` message every 10 seconds
+///
+/// A BasicNode uses up two publisher slots in the underlying node.
+///
+/// The underlying node type `N` is usually a [`CoreNode`](crate::node::CoreNode).
 pub struct BasicNode<N>
 where
     N: Node,
@@ -38,6 +42,10 @@ impl<N> BasicNode<N>
 where
     N: Node,
 {
+    /// Creates a new basic node
+    ///
+    /// * `node`: The underlying node (this is usually a [`CoreNode`](crate::node::CoreNode))
+    /// * `node_info`: The information that should be returned when handling node information requests
     pub fn new(mut node: N, node_info: GetInfoResponse) -> Result<Self, StartSendError> {
         // The MinimalNode takes care of heartbeats.
         // Do node info and port list here.

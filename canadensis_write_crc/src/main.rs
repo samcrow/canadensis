@@ -1,3 +1,15 @@
+//!
+//! # Canadensis CRC writer
+//!
+//! This application modifies an ELF binary file that uses the `canadensis_crc` library. It
+//! calculates the CRC of the binary and writes the CRC value so that the `canadensis_crc`
+//! functions will return the correct value.
+//!
+//! ## Usage
+//!
+//! `canadensis_write_crc file-path`
+//!
+
 extern crate object;
 
 use object::read::{File, Object};

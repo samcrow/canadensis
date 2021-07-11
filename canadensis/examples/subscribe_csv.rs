@@ -2,7 +2,7 @@
 //! An anonymous node that monitors for uavcan.si.unit.electric_current.Scalar.1.0 messages and
 //! prints them in CSV format
 //!
-//! Usage: diagnostic_console CAN-interface-name subject-ID
+//! Usage: subscribe_csv CAN-interface-name subject-ID
 //!
 
 extern crate canadensis;
@@ -15,10 +15,10 @@ use std::error::Error;
 use std::process;
 use std::time::Instant;
 
-use canadensis_can::{CanId, Frame, Mtu, Receiver};
-use canadensis_core::time::{Clock, MicrosecondDuration64, Microseconds64};
-use canadensis_core::SubjectId;
-use canadensis_encoding::{DataType, Deserialize, DeserializeError, Message, ReadCursor};
+use canadensis::can::{CanId, Frame, Mtu, Receiver};
+use canadensis::core::time::{Clock, MicrosecondDuration64, Microseconds64};
+use canadensis::core::SubjectId;
+use canadensis::encoding::{DataType, Deserialize, DeserializeError, Message, ReadCursor};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut args = env::args().skip(1);

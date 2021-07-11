@@ -13,7 +13,8 @@ use canadensis::can::queue::ArrayQueue;
 use canadensis::can::Mtu;
 use canadensis::core::time::Microseconds64;
 use canadensis::core::NodeId;
-use canadensis::{CoreNode, MinimalNode, Node};
+use canadensis::node::{CoreNode, MinimalNode};
+use canadensis::Node;
 use canadensis_linux::{LinuxCan, SystemClock};
 
 /// Runs a minimal UAVCAN node, sending Heartbeat messages (and doing nothing else)

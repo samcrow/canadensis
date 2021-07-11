@@ -1,4 +1,9 @@
+//!
+//! # UAVCAN data type serialization and deserialization
+//!
+
 #![cfg_attr(not(test), no_std)]
+#![deny(missing_docs)]
 
 extern crate half;
 

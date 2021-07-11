@@ -1,8 +1,5 @@
 use alloc::vec::Vec;
-use core::iter;
 use core::marker::PhantomData;
-
-use fallible_collections::FallibleVec;
 
 use canadensis_can::queue::{FrameQueueSource, FrameSink};
 use canadensis_can::{Frame, Mtu, OutOfMemoryError, Receiver, ServiceSubscribeError, Transmitter};
@@ -11,15 +8,16 @@ use canadensis_core::transfer::{
     Header, MessageTransfer, ServiceHeader, ServiceTransfer, Transfer,
 };
 use canadensis_core::{NodeId, Priority, ServiceId, SubjectId, TransferId};
-use canadensis_encoding::{Message, Request, Response, Serialize, WriteCursor};
+use canadensis_encoding::{Message, Request, Response, Serialize};
+use canadensis_filter_config::Filter;
 
 use crate::hash::TrivialIndexMap;
 use crate::publisher::Publisher;
 use crate::requester::Requester;
+use crate::serialize::do_serialize;
 use crate::{Node, PublishToken, ResponseToken, ServiceToken, StartSendError, TransferHandler};
-use canadensis_filter_config::Filter;
 
-/// A high-level interface with UAVCAN node functionality
+/// Basic UAVCAN node functionality
 ///
 /// Type parameters:
 /// * `C`: The clock used to get the current time
@@ -44,6 +42,12 @@ where
     C: Clock,
     Q: FrameSink<C::Instant>,
 {
+    /// Creates a node
+    ///
+    /// * `clock`: A clock to use for frame deadlines and timeouts
+    /// * `node_id`: The ID of this node
+    /// * `mtu`: The maximum transmission unit size to use when sending CAN frames
+    /// * `transmit_queue`: A queue to hold outgoing frames
     pub fn new(clock: C, node_id: NodeId, mtu: Mtu, transmit_queue: Q) -> Self {
         CoreNode {
             clock,
@@ -335,28 +339,5 @@ where
     /// Returns an outgoing frame to the queue so that it can be transmitted later
     pub fn return_frame(&mut self, frame: Frame<C::Instant>) -> Result<(), OutOfMemoryError> {
         self.transmitter.frame_queue_mut().return_frame(frame)
-    }
-}
-
-/// Payloads above this size (in bytes) will use a dynamically allocated buffer
-const STACK_THRESHOLD: usize = 64;
-
-/// Serializes a payload into a buffer and passes the buffer to a closure
-pub(crate) fn do_serialize<T, F, R>(payload: &T, operation: F) -> Result<R, OutOfMemoryError>
-where
-    T: Serialize,
-    F: FnOnce(&[u8]) -> Result<R, OutOfMemoryError>,
-{
-    let payload_bytes = (payload.size_bits() + 7) / 8;
-    if payload_bytes > STACK_THRESHOLD {
-        let mut bytes: Vec<u8> = FallibleVec::try_with_capacity(payload_bytes)?;
-        bytes.extend(iter::repeat(0).take(payload_bytes));
-        payload.serialize(&mut WriteCursor::new(&mut bytes));
-        operation(&bytes)
-    } else {
-        let mut bytes = [0u8; STACK_THRESHOLD];
-        let bytes = &mut bytes[..payload_bytes];
-        payload.serialize(&mut WriteCursor::new(bytes));
-        operation(bytes)
     }
 }

@@ -2,6 +2,8 @@
 //! Utilities for running UAVCAN nodes on Linux using the SocketCAN interface
 //!
 
+#![deny(missing_docs)]
+
 extern crate canadensis_can;
 extern crate canadensis_core;
 extern crate canadensis_filter_config;
@@ -22,6 +24,7 @@ pub struct LinuxCan {
 }
 
 impl LinuxCan {
+    /// Creates a Linux CAN adapter around a SocketCAN socket
     pub fn new(socket: CANSocket) -> Self {
         LinuxCan {
             socket,
@@ -83,6 +86,7 @@ pub struct SystemClock {
 }
 
 impl SystemClock {
+    /// Creates a new system clock
     pub fn new() -> Self {
         SystemClock {
             start_time: std::time::Instant::now(),

@@ -1,4 +1,5 @@
 #![cfg_attr(not(test), no_std)]
+#![deny(missing_docs)]
 
 //!
 //! This library provides types used by other canadensis crates.
@@ -294,6 +295,7 @@ impl Default for TransferId {
 }
 
 /// Transfer priority level mnemonics per the recommendations given in the UAVCAN Specification
+#[allow(missing_docs)]
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub enum Priority {
     Exceptional = 0,

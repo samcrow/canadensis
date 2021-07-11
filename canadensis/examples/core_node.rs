@@ -15,12 +15,12 @@ use std::time::Instant as StdInstant;
 
 use socketcan::CANSocket;
 
+use canadensis::can::queue::ArrayQueue;
+use canadensis::can::{CanId, Frame, Mtu};
+use canadensis::core::time::{Clock, Duration, Instant, MicrosecondDuration64, Microseconds64};
+use canadensis::core::transfer::ServiceTransfer;
+use canadensis::core::{NodeId, Priority};
 use canadensis::{Node, ResponseToken, TransferHandler};
-use canadensis_can::queue::ArrayQueue;
-use canadensis_can::{CanId, Frame, Mtu};
-use canadensis_core::time::{Clock, Duration, Instant, MicrosecondDuration64, Microseconds64};
-use canadensis_core::transfer::ServiceTransfer;
-use canadensis_core::{NodeId, Priority};
 use canadensis_data_types::uavcan::node::get_info::{GetInfoRequest, GetInfoResponse};
 use canadensis_data_types::uavcan::node::health::Health;
 use canadensis_data_types::uavcan::node::heartbeat::Heartbeat;
@@ -82,8 +82,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let frame_queue = ArrayQueue::<_, 64>::new();
 
-    let mut uavcan: canadensis::CoreNode<_, _, 4, 4> =
-        canadensis::CoreNode::new(clock.clone(), node_id, Mtu::Can8, frame_queue);
+    let mut uavcan: canadensis::node::CoreNode<_, _, 4, 4> =
+        canadensis::node::CoreNode::new(clock.clone(), node_id, Mtu::Can8, frame_queue);
 
     let heartbeat_token = uavcan
         .start_publishing(

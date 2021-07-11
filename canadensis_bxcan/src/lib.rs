@@ -1,11 +1,17 @@
 #![no_std]
+#![deny(missing_docs)]
+
+//!
+//! # Canadensis compatibility for bxCAN CAN controllers
+//!
+//! This library provides various utilities that make it easier to use `canadensis` with the
+//! bxCAN CAN controllers found on many STM32 microcontrollers.
+//!
 
 extern crate alloc;
 
 extern crate bxcan;
 extern crate canadensis;
-extern crate canadensis_can;
-extern crate canadensis_core;
 extern crate canadensis_filter_config;
 extern crate canadensis_pnp_client;
 extern crate log;
@@ -15,10 +21,10 @@ pub mod pnp;
 
 use bxcan::filter::{BankConfig, Mask32};
 use bxcan::{Can, ExtendedId, FilterOwner, Instance, Mailbox};
+use canadensis::can::queue::FrameQueueSource;
+use canadensis::can::OutOfMemoryError;
+use canadensis::core::time::{Clock, Instant};
 use canadensis::{Node, TransferHandler};
-use canadensis_can::queue::FrameQueueSource;
-use canadensis_can::OutOfMemoryError;
-use canadensis_core::time::{Clock, Instant};
 use canadensis_filter_config::{optimize, Filter};
 use core::cmp::Ordering;
 use core::convert::{Infallible, TryFrom};
@@ -29,7 +35,9 @@ where
     N: Node,
     C: Instance,
 {
+    /// The UAVCAN node
     pub node: N,
+    /// The bxCAN peripheral
     pub can: Can<C>,
     deadlines: DeadlineTracker<N::Instant>,
 }
@@ -162,7 +170,7 @@ fn send_frame<N, C>(
     node: &mut N,
     can: &mut Can<C>,
     deadlines: &mut DeadlineTracker<N::Instant>,
-    frame: canadensis_can::Frame<N::Instant>,
+    frame: canadensis::can::Frame<N::Instant>,
 ) -> nb::Result<(), Infallible>
 where
     N: Node,
@@ -256,7 +264,7 @@ where
 /// # Panics
 ///
 /// This function panics if the provided frame has more than 8 bytes of data.
-pub fn uavcan_frame_to_bxcan<I>(frame: &canadensis_can::Frame<I>) -> bxcan::Frame {
+pub fn uavcan_frame_to_bxcan<I>(frame: &canadensis::can::Frame<I>) -> bxcan::Frame {
     let bxcan_id = bxcan::ExtendedId::new(frame.id().into()).unwrap();
     let bxcan_data = bxcan::Data::new(frame.data()).expect("Frame data more than 8 bytes");
     bxcan::Frame::new_data(bxcan_id, bxcan_data)
@@ -269,14 +277,14 @@ pub fn uavcan_frame_to_bxcan<I>(frame: &canadensis_can::Frame<I>) -> bxcan::Fram
 pub fn bxcan_frame_to_uavcan<I>(
     frame: &bxcan::Frame,
     timestamp: I,
-) -> Result<canadensis_can::Frame<I>, InvalidFrameFormat> {
+) -> Result<canadensis::can::Frame<I>, InvalidFrameFormat> {
     let id_bits = match frame.id() {
         bxcan::Id::Extended(extended_id) => extended_id.as_raw(),
         bxcan::Id::Standard(_) => return Err(InvalidFrameFormat),
     };
-    let uavcan_id = canadensis_can::CanId::try_from(id_bits).map_err(|_| InvalidFrameFormat)?;
+    let uavcan_id = canadensis::can::CanId::try_from(id_bits).map_err(|_| InvalidFrameFormat)?;
     let uavcan_data = frame.data().ok_or(InvalidFrameFormat)?;
-    Ok(canadensis_can::Frame::new(
+    Ok(canadensis::can::Frame::new(
         timestamp,
         uavcan_id,
         uavcan_data.as_ref(),

@@ -43,8 +43,11 @@ pub struct ServiceHeader<I> {
 /// Header fields for a message, request, or response
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Header<I> {
+    /// A message header
     Message(MessageHeader<I>),
+    /// A service request header
     Request(ServiceHeader<I>),
+    /// A service response header
     Response(ServiceHeader<I>),
 }
 

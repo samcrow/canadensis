@@ -19,11 +19,13 @@ impl U48 {
     /// The maximum 48-bit integer value
     pub const MAX: U48 = U48(U48_MASK);
 
+    /// Adds two integers, wrapping on overflow
     pub fn wrapping_add(&self, rhs: Self) -> Self {
         let inner_sum = self.0.wrapping_add(rhs.0);
         U48(inner_sum & U48_MASK)
     }
 
+    /// Subtracts two integers, wrapping on underflow
     pub fn wrapping_sub(&self, rhs: Self) -> Self {
         let inner_difference = self.0.wrapping_sub(rhs.0);
         U48(inner_difference & U48_MASK)

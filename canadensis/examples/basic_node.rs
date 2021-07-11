@@ -9,13 +9,13 @@ use std::time::Duration;
 
 use socketcan::CANSocket;
 
-use canadensis::BasicNode;
-use canadensis::{CoreNode, Node, ResponseToken, TransferHandler};
-use canadensis_can::queue::{ArrayQueue, FrameQueueSource};
-use canadensis_can::Mtu;
-use canadensis_core::time::{Instant, Microseconds64};
-use canadensis_core::transfer::{MessageTransfer, ServiceTransfer};
-use canadensis_core::NodeId;
+use canadensis::can::queue::{ArrayQueue, FrameQueueSource};
+use canadensis::can::Mtu;
+use canadensis::core::time::{Instant, Microseconds64};
+use canadensis::core::transfer::{MessageTransfer, ServiceTransfer};
+use canadensis::core::NodeId;
+use canadensis::node::{BasicNode, CoreNode};
+use canadensis::{Node, ResponseToken, TransferHandler};
 use canadensis_data_types::uavcan::node::get_info::GetInfoResponse;
 use canadensis_data_types::uavcan::node::version::Version;
 use canadensis_linux::{LinuxCan, SystemClock};

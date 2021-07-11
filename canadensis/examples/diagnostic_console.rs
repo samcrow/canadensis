@@ -14,11 +14,11 @@ use std::error::Error;
 use std::process;
 use std::time::Instant;
 
-use canadensis_can::{CanId, Frame, Mtu, Receiver};
-use canadensis_core::time::{Clock, MicrosecondDuration64, Microseconds64};
+use canadensis::can::{CanId, Frame, Mtu, Receiver};
+use canadensis::core::time::{Clock, MicrosecondDuration64, Microseconds64};
+use canadensis::encoding::{DataType, Deserialize, ReadCursor};
 use canadensis_data_types::uavcan::diagnostic::record::Record;
 use canadensis_data_types::uavcan::diagnostic::severity::Severity;
-use canadensis_encoding::{DataType, Deserialize, ReadCursor};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let interface = env::args().skip(1).next().unwrap_or_else(|| {

@@ -1,6 +1,4 @@
 extern crate canadensis;
-extern crate canadensis_can;
-extern crate canadensis_core;
 extern crate canadensis_linux;
 extern crate rand;
 extern crate socketcan;
@@ -18,7 +16,8 @@ use canadensis::can::Mtu;
 use canadensis::core::time::{milliseconds, Instant, Microseconds64};
 use canadensis::core::transfer::{MessageTransfer, ServiceTransfer};
 use canadensis::core::NodeId;
-use canadensis::{BasicNode, CoreNode, Node, ResponseToken, TransferHandler};
+use canadensis::node::{BasicNode, CoreNode};
+use canadensis::{Node, ResponseToken, TransferHandler};
 use canadensis_data_types::uavcan::node::get_info::GetInfoResponse;
 use canadensis_data_types::uavcan::node::version::Version;
 use canadensis_linux::{LinuxCan, SystemClock};

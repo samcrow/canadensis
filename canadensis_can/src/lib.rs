@@ -1,4 +1,5 @@
 #![no_std]
+#![deny(missing_docs)]
 
 //!
 //! # CAN and CAN FD transport for UAVCAN v1.0
@@ -30,8 +31,11 @@ mod tx;
 
 use core::cmp;
 
-/// Calculates the number of padding bytes to add to a payload so that all frames will have valid
-/// length values for CAN FD
+/// Calculates the number of frames required and the number of padding bytes to add to a payload so
+/// that all frames will have valid length values for CAN FD
+///
+/// * `payload_length`: The number of bytes of payload
+/// * `mtu`: The maximum size of a frame
 fn calculate_frame_stats(payload_length: usize, mtu: usize) -> FrameStats {
     assert!(mtu <= 64, "MTU too large for CAN FD");
     assert!(mtu > 1, "MTU too small");

@@ -42,6 +42,7 @@
 //! 3. Apply the resulting filters to the CAN hardware
 
 #![no_std]
+#![deny(missing_docs)]
 
 /// Mask of allowed extended CAN IDs
 const EXTENDED_ID_MASK: u32 = 0x1fff_ffff;

@@ -12,6 +12,7 @@
 //!
 
 #![no_std]
+#![deny(missing_docs)]
 
 use core::ptr;
 
@@ -26,6 +27,7 @@ static CANADENSIS_CRC: u64 = 0;
 #[no_mangle]
 static CANADENSIS_CRC_VALID: u8 = 0;
 
+/// Returns the CRC of the compiled image, if one has been set
 pub fn get_crc() -> Option<u64> {
     // If these are not volatile reads, the compiler will optimize them away and the symbols
     // will be missing from the binary.

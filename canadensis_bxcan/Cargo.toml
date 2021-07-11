@@ -12,13 +12,12 @@ bxcan = "0.5.1"
 nb = "1.0.0"
 log = "0.4"
 
-[dependencies.canadensis_core]
-path = "../canadensis_core"
-[dependencies.canadensis_can]
-path = "../canadensis_can"
 [dependencies.canadensis]
+version = "0.1.0"
 path = "../canadensis"
 [dependencies.canadensis_filter_config]
+version = "0.1.0"
 path = "../canadensis_filter_config"
 [dependencies.canadensis_pnp_client]
+version = "0.1.0"
 path = "../canadensis_pnp_client"

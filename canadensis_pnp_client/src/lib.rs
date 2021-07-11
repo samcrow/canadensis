@@ -1,4 +1,11 @@
+//!
+//! # Canadensis plug-and-play client
+//!
+//! This library implements the UAVCAN plug-and-play node ID allocation protocol.
+//!
+
 #![no_std]
+#![deny(missing_docs)]
 
 extern crate alloc;
 
@@ -41,6 +48,10 @@ where
     C: Clock,
     M: AllocationMessage,
 {
+    /// Creates a new plug-and-play client
+    ///
+    /// * `mtu`: The maximum transmission unit size to use when sending frames
+    /// * `unique_id`: The unique ID of this node
     pub fn new(mtu: Mtu, unique_id: [u8; 16]) -> Result<Self, OutOfMemoryError> {
         let mut receiver = Receiver::new_anonymous(mtu);
         receiver.subscribe_message(M::SUBJECT, 9, milliseconds(1000))?;

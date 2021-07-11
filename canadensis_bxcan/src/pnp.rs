@@ -1,7 +1,11 @@
+//!
+//! Plug-and-play node ID allocation
+//!
+
 use bxcan::{Can, FilterOwner, Instance};
-use canadensis_can::{Mtu, OutOfMemoryError};
-use canadensis_core::time::Clock;
-use canadensis_core::NodeId;
+use canadensis::can::{Mtu, OutOfMemoryError};
+use canadensis::core::time::Clock;
+use canadensis::core::NodeId;
 use canadensis_pnp_client::{AllocationMessage, PnpClient};
 use core::convert::Infallible;
 

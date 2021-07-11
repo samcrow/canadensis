@@ -1,4 +1,12 @@
 #![no_std]
+#![deny(missing_docs)]
+
+//!
+//! # Canadensis: An implementation of UAVCAN v1
+//!
+//! This library (`canadensis`) provides all the basic UAVCAN functionality, with some re-exports
+//! from other canadensis crates.
+//!
 
 extern crate alloc;
 extern crate fallible_collections;
@@ -12,35 +20,30 @@ extern crate canadensis_filter_config;
 
 // Re-exports from other crates
 pub mod can {
-    /// Re-exports the `canadensis_can` crate
+    //! CAN bus and UAVCAN/CAN types
     pub use canadensis_can::*;
 }
 pub mod core {
-    /// Re-exports the `canadensis_core` crate
+    //! Basic UAVCAN types
     pub use canadensis_core::*;
 }
 pub mod encoding {
-    /// Re-exports the `canadensis_encoding` crate
+    //! Data type serialization and deserialization
     pub use canadensis_encoding::*;
 }
 pub mod filter {
-    /// Re-exports the `canadensis_filter_config` crate
+    //! Automatic CAN receive filter configuration
     pub use canadensis_filter_config::*;
 }
 
-mod core_node;
 mod hash;
 
 pub mod anonymous;
-mod basic;
-mod minimal;
+pub mod node;
 mod publisher;
 pub mod register;
 mod requester;
-
-pub use crate::basic::BasicNode;
-pub use crate::core_node::CoreNode;
-pub use crate::minimal::MinimalNode;
+mod serialize;
 
 use ::core::marker::PhantomData;
 use alloc::vec::Vec;
@@ -313,8 +316,10 @@ pub trait Node {
     /// Returns a mutable reference to the enclosed clock
     fn clock_mut(&mut self) -> &mut Self::Clock;
 
+    /// Returns a reference to this node's queue of outgoing frames
     fn frame_queue(&self) -> &Self::FrameQueue;
 
+    /// Returns a mutable reference to this node's queue of outgoing frames
     fn frame_queue_mut(&mut self) -> &mut Self::FrameQueue;
 
     /// Returns the identifier of this node

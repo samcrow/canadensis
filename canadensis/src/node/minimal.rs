@@ -8,11 +8,13 @@ use canadensis_data_types::uavcan::node::mode::Mode;
 
 /// A node with the minimum required application-layer functionality
 ///
-/// A `BasicNode` wraps a [`canadensis::Node`] and adds functionality to send a
+/// A `BasicNode` wraps a [`Node`](crate::Node) and adds functionality to send a
 /// `uavcan.node.Heartbeat.1.0` message every second. This is the only application-layer function
 /// that is required for all nodes.
 ///
-/// A BasicNode uses up one publisher slot in the enclosed Node.
+/// A BasicNode uses up one publisher slot in the underlying Node.
+///
+/// The underlying node type `N` is usually a [`CoreNode`](crate::node::CoreNode).
 pub struct MinimalNode<N>
 where
     N: Node,
@@ -29,6 +31,9 @@ impl<N> MinimalNode<N>
 where
     N: Node,
 {
+    /// Creates a new minimal node
+    ///
+    /// * `node`: The underlying node (this is usually a [`CoreNode`](crate::node::CoreNode))
     pub fn new(mut node: N) -> Result<Self, StartSendError> {
         // Default heartbeat settings
         let heartbeat = Heartbeat {
