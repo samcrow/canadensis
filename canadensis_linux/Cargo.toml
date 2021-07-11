@@ -6,6 +6,7 @@ edition = "2018"
 keywords = ["uavcan", "uav", "can"]
 repository = "https://github.com/samcrow/canadensis"
 license = "MIT OR Apache-2.0"
+description = "Linux SocketCAN compatibility for canadensis (UAVCAN)"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
