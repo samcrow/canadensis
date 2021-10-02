@@ -4,6 +4,7 @@ use canadensis_encoding::{
     DataType, Deserialize, DeserializeError, ReadCursor, Serialize, WriteCursor,
 };
 
+#[derive(Debug, PartialEq)]
 struct Inner {
     a: bool,
     b: bool,
@@ -17,6 +18,7 @@ impl DataType for Inner {
     const EXTENT_BYTES: Option<u32> = None;
 }
 
+#[derive(Debug, PartialEq)]
 struct Outer {
     // Really 13 bits
     a: u16,
@@ -41,7 +43,7 @@ impl Serialize for Inner {
 
     fn serialize(&self, cursor: &mut WriteCursor<'_>) {
         cursor.write_bool(self.a);
-        cursor.write_bool(self.a);
+        cursor.write_bool(self.b);
         cursor.write_bool(self.c);
         cursor.write_u5(self.d);
     }
@@ -130,4 +132,34 @@ impl Deserialize for Outer {
     }
 }
 
-// TODO: Write actual tests
+#[test]
+fn round_trip_1() {
+    let value = Outer {
+        a: 0x1621,
+        inner: Inner {
+            a: false,
+            b: true,
+            c: true,
+            d: 0x19,
+        },
+        b: 0x137ab90ceda,
+    };
+
+    #[rustfmt::skip]
+    let expected_bytes: [u8; 9] = [
+        // value.a and 3 bits of padding
+        0x21, 0x16,
+        // value.inner
+        0b11001_110,
+        // value.b and 7 bits of padding
+        0xda, 0xce, 0x90, 0xab, 0x37, 0x01,
+    ];
+
+    let mut actual_bytes = [0u8; 9];
+    value.serialize_to_bytes(&mut actual_bytes);
+
+    assert_eq!(expected_bytes, actual_bytes);
+
+    let deserialized = Outer::deserialize_from_bytes(&actual_bytes).unwrap();
+    assert_eq!(value, deserialized);
+}
