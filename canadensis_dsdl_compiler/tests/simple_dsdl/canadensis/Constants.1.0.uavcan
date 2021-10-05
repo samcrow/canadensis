@@ -1,0 +1,25 @@
+uint8 A = 37
+uint16 B = 9 / 2 * 4
+uint16 C = A * B
+
+bool D = C == 666
+bool E = "yay" == "yay"
+@assert ' ' == 0x20
+@assert ' ' == 0o40
+@assert 1/3 == 1 || "aaa" == "aaa"
+
+@assert {1, 2} < {1, 2, 3}
+@assert {1} < {1, 2}
+@assert {1} <= {1}
+
+@print {1, 2}.count
+@print {1, 2}.min
+@print {1, 2}.max
+
+@print {{1, 2}, {1, 2, 3}}.max
+
+@print {'a', 'b', 'c'}.max
+
+@assert "oh,\u0020hi\U0000000aMark" == 'oh, hi\nMark'
+
+@print "oh,\u0020hi\U0000000aMark"

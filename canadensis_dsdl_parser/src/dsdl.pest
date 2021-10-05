@@ -1,0 +1,180 @@
+definition  = _{ SOI ~ line ~ (end_of_line ~ line)* ~ EOI } // An empty file is a valid definition. Trailing end-of-line is optional.
+line        = _{ statement? ~ ws? ~ comment? }    // An empty line is a valid line.
+comment     = _{ "#" ~ (!("\r" | "\n") ~ ANY)* }  // ~r"#[^\r\n]*" (silent rule)
+end_of_line = _{ "\r"? ~ "\n" }                 // Optional CR, then LF
+ws  = _{ (" " | "\t")+ }               // White space (silent rule)
+
+// identifier = ~r"[a-zA-Z_][a-zA-Z0-9_]*"
+identifier = { ('a'..'z' | 'A'..'Z' | "_") ~ ('a'..'z' | 'A'..'Z' | '0'..'9' | "_")* }
+
+// ==================================================== Statements ====================================================
+
+statement = _{statement_directive
+          | statement_service_response_marker
+          | statement_attribute}
+
+statement_attribute = _{statement_constant
+                    | statement_field
+                    | statement_padding_field}
+
+// The spec says "The data type of a constant attribute shall be of the primitive type category (section 3.4)."
+statement_constant      = {type_primitive ~ ws ~ identifier ~ ws? ~ "=" ~ ws? ~ expression}
+statement_field         = {dtype ~ ws ~ identifier}
+statement_padding_field = {type_void ~ ""}  // The trailing empty symbol is to prevent the node from being optimized away.
+
+statement_service_response_marker = {"---" ~ "~"*} //~r"---+"  // Separates request/response, specifies that the definition is a service.
+
+statement_directive = {statement_directive_with_expression
+                    | statement_directive_without_expression}
+statement_directive_with_expression    = {"@" ~ identifier ~ ws ~ expression}  // The expression type shall match the directive.
+statement_directive_without_expression = {"@" ~ identifier}
+
+// ==================================================== Data types ====================================================
+
+dtype = {type_array
+     | type_scalar}
+
+type_array = {type_array_variable_inclusive
+           | type_array_variable_exclusive
+           | type_array_fixed}
+
+type_array_variable_inclusive = {type_scalar ~ ws? ~ "[" ~ ws? ~ "<=" ~ ws? ~ expression ~ ws? ~ "]"}  // Expression shall yield integer.
+type_array_variable_exclusive = {type_scalar ~ ws? ~ "[" ~ ws? ~ "<"  ~ ws? ~ expression ~ ws? ~ "]"}
+type_array_fixed              = {type_scalar ~ ws? ~ "[" ~ ws? ~              expression ~ ws? ~ "]"}
+
+type_scalar = {type_versioned
+            | type_primitive
+            | type_void}
+
+type_versioned         = {identifier ~ ("." ~ identifier)* ~ "." ~ type_version_specifier}
+type_version_specifier = {literal_integer_decimal ~ "." ~ literal_integer_decimal}
+
+type_primitive = {type_primitive_truncated
+               | type_primitive_saturated}
+
+type_primitive_truncated =  {"truncated" ~ ws ~ type_primitive_name}
+type_primitive_saturated = { ("saturated" ~ ws)? ~ type_primitive_name  }   // Defaults to this.
+
+type_primitive_name = {type_primitive_name_boolean
+                    | type_primitive_name_unsigned_integer
+                    | type_primitive_name_signed_integer
+                    | type_primitive_name_floating_point}
+
+type_primitive_name_boolean          = {"bool"}
+type_primitive_name_unsigned_integer = {"uint" ~ type_bit_length_suffix}
+type_primitive_name_signed_integer   = {"int" ~ type_bit_length_suffix}
+type_primitive_name_floating_point   = {"float" ~ type_bit_length_suffix}
+
+type_void = {"void" ~ type_bit_length_suffix}
+
+type_bit_length_suffix = { '1'..'9' ~ ('0'..'9')* } //~r"[1-9]\d*"
+
+// ==================================================== Expressions ====================================================
+
+expression = { ex_logical }    // Aliased for clarity.
+
+expression_list = { (expression ~ (ws? ~ "," ~ ws? ~ expression)*)? }    // May be empty.
+
+expression_parenthesized = { "(" ~ ws? ~ expression ~ ws? ~ ")" }         // Used for managing precedence.
+
+expression_atom = { expression_parenthesized                  // Ordering matters.
+                | dtype
+                | literal
+                | identifier }
+
+// Operators. The precedence relations are expressed in the rules; the order here is from lower to higher.
+// Operators that share common prefix (e.g. < and <=) are arranged so that the longest form is specified first.
+ex_logical        = { ex_logical_not ~  (ws? ~ op2_log ~ ws? ~ ex_logical_not)* }
+ex_logical_not    = _{op1_form_log_not | ex_comparison}
+ex_comparison     = {ex_bitwise     ~  (ws? ~ op2_cmp ~ ws? ~ ex_bitwise)*}
+ex_bitwise        = {ex_additive     ~ (ws? ~ op2_bit ~ ws? ~ ex_additive)*}
+ex_additive       = {ex_multiplicative ~ (ws? ~ op2_add ~ ws? ~ ex_multiplicative)*}
+ex_multiplicative = {ex_inversion   ~  (ws? ~ op2_mul ~ ws? ~ ex_inversion)* }
+ex_inversion      = _{op1_form_inv_pos | op1_form_inv_neg | ex_exponential}
+ex_exponential    = {ex_attribute   ~   (ws? ~ op2_exp ~ ws? ~ ex_inversion)?}     // Right recursion
+ex_attribute      = {expression_atom ~ (ws? ~ op2_attrib ~ ws? ~ identifier)*}
+
+// Unary operator forms are moved into separate rules for ease of parsing.
+op1_form_log_not = {"!" ~ ws? ~ ex_logical_not }   // Right recursion
+op1_form_inv_pos = {"+" ~ ws? ~ ex_exponential}
+op1_form_inv_neg = {"-" ~ ws? ~ ex_exponential}
+
+// Logical operators; defined for booleans.
+op2_log = { op2_log_or | op2_log_and }
+op2_log_or  = { "||" }
+op2_log_and =  { "&&" }
+
+// Comparison operators.
+op2_cmp = { op2_cmp_equ | op2_cmp_geq | op2_cmp_leq | op2_cmp_neq | op2_cmp_lss | op2_cmp_grt }  // Ordering is important.
+op2_cmp_equ = {"=="}
+op2_cmp_neq = {"!="}
+op2_cmp_leq = {"<="}
+op2_cmp_geq = {">="}
+op2_cmp_lss = {"<"}
+op2_cmp_grt = {">"}
+
+// Bitwise integer manipulation operators.
+op2_bit = {op2_bit_or | op2_bit_xor | op2_bit_and}
+op2_bit_or  = {"|"}
+op2_bit_xor = {"^"}
+op2_bit_and = {"&"}
+
+// Additive operators.
+op2_add = {op2_add_add | op2_add_sub}
+op2_add_add = {"+"}
+op2_add_sub = {"-"}
+
+// Multiplicative operators.
+op2_mul = {op2_mul_mul | op2_mul_div | op2_mul_mod}  // Ordering is important.
+op2_mul_mul = {"*"}
+op2_mul_div = {"/"}
+op2_mul_mod = {"%"}
+
+// Exponential operators.
+op2_exp = {op2_exp_pow}
+op2_exp_pow = {"**"}
+
+// The most tightly bound binary operator - attribute reference.
+op2_attrib = {"."}
+
+// ===================================================== Literals =====================================================
+
+literal = { literal_set           // Ordering is important to avoid ambiguities.
+        | literal_real
+        | literal_integer
+        | literal_string
+        | literal_boolean }
+
+// Set.
+literal_set = {"{" ~ ws? ~ expression_list ~ ws? ~ "}"}
+
+// Integer.
+literal_integer = {literal_integer_binary
+                | literal_integer_octal
+                | literal_integer_hexadecimal
+                | literal_integer_decimal}
+literal_integer_binary      = { "0" ~ ("b" | "B") ~ ("_"? ~ ("0" | "1"))+ } //~r"0[bB](_?(0|1))+"
+literal_integer_octal       = { "0" ~ ("o" | "O") ~ ("_"? ~ '0'..'7')+ } //~r"0[oO](_?[0-7])+"
+literal_integer_hexadecimal = { "0" ~ ("x" | "X") ~ ("_"? ~ ('0'..'9' | 'a'..'f' | 'A'..'F'))+ } //~r"0[xX](_?[0-9a-fA-F])+"
+literal_integer_decimal     = { ("0" ~ ("_"? ~ "0")*)+ | '1'..'9' ~ ("_"? ~ '0'..'9')* } //~r"(0(_?0)*)+|([1-9](_?[0-9])*)"
+
+// Real. Exponent notation is defined first to avoid ambiguities.
+literal_real = {literal_real_exponent_notation
+             | literal_real_point_notation}
+literal_real_exponent_notation = {(literal_real_point_notation | literal_real_digits) ~ literal_real_exponent}
+literal_real_point_notation    = {(literal_real_digits? ~ literal_real_fraction) | (literal_real_digits ~ ".")}
+literal_real_fraction          = {"." ~ literal_real_digits}
+literal_real_exponent          = { ("e" | "E") ~ ("+" | "-")? ~ literal_real_digits } //~r"[eE][+-]?" literal_real_digits
+literal_real_digits            = { '0'..'9' ~ ("_"? ~ '0'..'9')* } //~r"[0-9](_?[0-9])*"
+
+// String.
+literal_string = { literal_string_single_quoted
+               | literal_string_double_quoted}
+literal_string_single_quoted = { "'" ~  (!("'" | "\\")  ~ ANY)* ~ ( "\\" ~ (!("\r" | "\n") ~ ANY) ~ (!("'" | "\\") ~ ANY)* )* ~ "'"  } //~r"'[^'\\]*(\\[^\r\n][^'\\]*)*'"
+literal_string_double_quoted = { "\"" ~ (!("\"" | "\\") ~ ANY)* ~ ( "\\" ~ (!("\r" | "\n") ~ ANY) ~ (!("\"" | "\\")~ ANY)* )* ~ "\"" } //~r'"[^"\\]*(\\[^\r\n][^"\\]*)*"'
+
+// Boolean.
+literal_boolean = {literal_boolean_true
+                | literal_boolean_false}
+literal_boolean_true  = {"true"}
+literal_boolean_false = {"false"}

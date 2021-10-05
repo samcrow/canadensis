@@ -1,0 +1,10 @@
+[package]
+name = "canadensis_bit_length_set"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+num-integer = "0.1.44"
+itertools = "0.10.1"
