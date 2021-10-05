@@ -388,7 +388,7 @@ fn parse_literal(literal: Pair<'_, Rule>) -> Result<Literal<'_>, Error<Rule>> {
             let expression_list = literal.into_inner().next().unwrap();
             let expressions = expression_list
                 .into_inner()
-                .map(|expr| parse_expression(expr))
+                .map(parse_expression)
                 .collect::<Result<_, _>>()?;
             LiteralType::Set(expressions)
         }
@@ -436,7 +436,7 @@ fn parse_real_exponent_notation(literal: Pair<'_, Rule>) -> Result<BigRational, 
         _ => unreachable!("Unexpected rule in first child of literal_real_exponent_notation"),
     };
 
-    let exp_sign = exp.as_str().chars().skip(1).next().expect("No sign");
+    let exp_sign = exp.as_str().chars().nth(1).expect("No sign");
     let exp_value = parse_decimal_digits(exp.into_inner().next().unwrap())?;
     let exp_value = if exp_sign == '-' {
         -exp_value

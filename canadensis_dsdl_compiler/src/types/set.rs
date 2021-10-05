@@ -125,7 +125,7 @@ impl Set {
                 _ => return None,
             }
         }
-        as_ints.sort();
+        as_ints.sort_unstable();
         Some(as_ints)
     }
 
@@ -290,7 +290,7 @@ impl FromIterator<Value> for Result<Set, SetTypeError> {
                 set.insert(first)
                     .expect("set started empty and accepts any value");
 
-                while let Some(item) = iter.next() {
+                for item in iter {
                     set.insert(item)?;
                 }
 

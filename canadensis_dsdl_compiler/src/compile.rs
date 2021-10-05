@@ -510,11 +510,7 @@ impl FileState {
             }
             // Add a field to a struct
             State::MessageStruct(StructState::Collecting(mut fields), length) => {
-                if fields
-                    .iter()
-                    .find(|existing| existing.name() == Some(&name))
-                    .is_some()
-                {
+                if fields.iter().any(|existing| existing.name() == Some(&name)) {
                     return Err(span_error!(span, "A field named {} already exists", name));
                 }
 
