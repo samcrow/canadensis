@@ -9,7 +9,7 @@ use crate::types::directive::evaluate_directive;
 use crate::types::expression::convert_type;
 use crate::types::{array_length_bits, PrimitiveType, ResolvedType};
 use canadensis_bit_length_set::BitLengthSet;
-use canadensis_dsdl_parser::{make_error, Identifier, Span, Statement};
+use canadensis_dsdl_parser::{Identifier, Span, Statement};
 use itertools::Itertools;
 use once_cell::sync::Lazy;
 use std::collections::btree_map::Entry;
@@ -131,11 +131,10 @@ impl<'p> CompileContext<'p> {
                 *state = Some(State::ResponseUnion(m, UnionState::Collecting(vec![])));
                 Ok(())
             }
-            _ => Err(make_error(
-                "A @union directive is not allowed after the first composite type attribute",
+            _ => Err(span_error!(
                 span,
-            )
-            .into()),
+                "A @union directive is not allowed after the first composite type attribute",
+            )),
         }
     }
     /// Handles an @extent directive
@@ -159,9 +158,10 @@ impl<'p> CompileContext<'p> {
         // * Can't appear in the response section
         // * Can't be after a field
         if self.current_file.deprecated {
-            return Err(
-                make_error("@deprecated is not allowed more than once per file", span).into(),
-            );
+            return Err(span_error!(
+                span,
+                "@deprecated is not allowed more than once per file"
+            ));
         }
         match self.current_file.state.as_ref().expect("No state") {
             State::Message => {
@@ -173,27 +173,24 @@ impl<'p> CompileContext<'p> {
                     self.current_file.deprecated = true;
                     Ok(())
                 } else {
-                    Err(make_error(
-                        "@deprecated is not allowed after a composite type attribute definition",
+                    Err(span_error!(
                         span,
-                    )
-                    .into())
+                        "@deprecated is not allowed after a composite type attribute definition",
+                    ))
                 }
             }
             State::MessageStruct(StructState::Collecting(_), _)
             | State::MessageStruct(StructState::End(_, _), _)
             | State::MessageUnion(UnionState::UsedOffset(_, _))
-            | State::MessageUnion(UnionState::End(_, _, _)) => Err(make_error(
-                "@deprecated is not allowed after a composite type attribute definition",
+            | State::MessageUnion(UnionState::End(_, _, _)) => Err(span_error!(
                 span,
-            )
-            .into()),
+                "@deprecated is not allowed after a composite type attribute definition",
+            )),
             State::Response(_) | State::ResponseUnion(_, _) | State::ResponseStruct(_, _, _) => {
-                Err(make_error(
-                    "@deprecated is not allowed in the response section of a service type",
+                Err(span_error!(
                     span,
-                )
-                .into())
+                    "@deprecated is not allowed in the response section of a service type",
+                ))
             }
         }
     }
@@ -249,14 +246,11 @@ impl PersistentContext {
                 }
                 Statement::Constant { ty, name, value } => {
                     if state.constants.contains_key(name.name) {
-                        return Err(make_error(
-                            format!(
-                                "A constant attribute named {} has already been defined",
-                                name.name
-                            ),
+                        return Err(span_error!(
                             name.span,
-                        )
-                        .into());
+                            "A constant attribute named {} has already been defined",
+                            name.name
+                        ));
                     } else {
                         let name_str = name.name;
                         let new_constant =
@@ -418,14 +412,16 @@ impl FileState {
             State::Message
             | State::MessageStruct(StructState::Collecting(_), _)
             | State::MessageUnion(UnionState::Collecting(_))
-            | State::MessageUnion(UnionState::UsedOffset(_, _)) => Err(make_error(
-                "Expected @sealed or @extent before the end of the request type",
+            | State::MessageUnion(UnionState::UsedOffset(_, _)) => Err(span_error!(
                 span,
-            )
-            .into()),
+                "Expected @sealed or @extent before the end of the request type"
+            )),
             // If already in a response, can't have another ---
             State::Response(_) | State::ResponseUnion(_, _) | State::ResponseStruct(_, _, _) => {
-                Err(make_error("Unexpected extra service response marker", span).into())
+                Err(span_error!(
+                    span,
+                    "Unexpected extra service response marker"
+                ))
             }
         }
     }
@@ -466,11 +462,12 @@ impl FileState {
                 Ok(())
             }
             State::MessageStruct(StructState::End(_, _), _)
-            | State::ResponseStruct(_, StructState::End(_, _), _) => {
-                Err(make_error("Padding is not allowed after @sealed or @extent", span).into())
-            }
+            | State::ResponseStruct(_, StructState::End(_, _), _) => Err(span_error!(
+                span,
+                "Padding is not allowed after @sealed or @extent"
+            )),
             State::MessageUnion(_) | State::ResponseUnion(_, _) => {
-                Err(make_error("Padding is not allowed in a union", span).into())
+                Err(span_error!(span, "Padding is not allowed in a union"))
             }
         }
     }
@@ -518,9 +515,7 @@ impl FileState {
                     .find(|existing| existing.name() == Some(&name))
                     .is_some()
                 {
-                    return Err(
-                        make_error(format!("A field named {} already exists", name), span).into(),
-                    );
+                    return Err(span_error!(span, "A field named {} already exists", name));
                 }
 
                 fields.push(Field::data(ty, name));
@@ -552,20 +547,18 @@ impl FileState {
             }
             // Past end of union
             State::MessageUnion(UnionState::UsedOffset(_, _))
-            | State::ResponseUnion(_, UnionState::UsedOffset(_, _)) => Err(make_error(
-                "Composite type attribute definition not allowed in union after use of _offset_",
+            | State::ResponseUnion(_, UnionState::UsedOffset(_, _)) => Err(span_error!(
                 span,
-            )
-            .into()),
+                "Composite type attribute definition not allowed in union after use of _offset_"
+            )),
             // After @sealed or @extent
             State::MessageStruct(StructState::End(_, _), _)
             | State::ResponseStruct(_, StructState::End(_, _), _)
             | State::MessageUnion(UnionState::End(_, _, _))
-            | State::ResponseUnion(_, UnionState::End(_, _, _)) => Err(make_error(
-                "Composite type attribute definition not allowed after @sealed or @extent",
+            | State::ResponseUnion(_, UnionState::End(_, _, _)) => Err(span_error!(
                 span,
-            )
-            .into()),
+                "Composite type attribute definition not allowed after @sealed or @extent"
+            )),
         }
     }
 
@@ -632,9 +625,10 @@ impl FileState {
             | State::Response(_)
             | State::ResponseStruct(_, StructState::Collecting(_), _)
             | State::ResponseUnion(_, UnionState::Collecting(_))
-            | State::ResponseUnion(_, UnionState::UsedOffset(_, _)) => {
-                Err(make_error("Expected @extent or @sealed before end of file", eof_span).into())
-            }
+            | State::ResponseUnion(_, UnionState::UsedOffset(_, _)) => Err(span_error!(
+                eof_span,
+                "Expected @extent or @sealed before end of file"
+            )),
         }
     }
 }
@@ -694,11 +688,7 @@ fn apply_sealed_or_extent(
         State::MessageStruct(StructState::End(_, _), _)
         | State::MessageUnion(UnionState::End(_, _, _))
         | State::ResponseStruct(_, StructState::End(_, _), _)
-        | State::ResponseUnion(_, UnionState::End(_, _, _)) => Err(make_error(
-            "An @extent or @sealed directive is not allowed after another @extent or @sealed directive",
-            span,
-        )
-            .into()),
+        | State::ResponseUnion(_, UnionState::End(_, _, _)) => Err(span_error!(span, "An @extent or @sealed directive is not allowed after another @extent or @sealed directive")),
         // Struct, no fields yet
         State::Message => {
             *state = Some(State::MessageStruct(StructState::End(
@@ -741,7 +731,7 @@ fn apply_sealed_or_extent(
                 )));
                 Ok(())
             } else {
-                Err(make_error("Need at least two union variants before @extent or @sealed", span).into())
+                Err(span_error!(span, "Need at least two union variants before @extent or @sealed"))
             }
         }
          State::MessageUnion(UnionState::UsedOffset(fields, length)) => {
@@ -753,7 +743,7 @@ fn apply_sealed_or_extent(
                 )));
                 Ok(())
             } else {
-                Err(make_error("Need at least two union variants before @extent or @sealed", span).into())
+                Err(span_error!(span, "Need at least two union variants before @extent or @sealed"))
             }
         }
         // Response union
@@ -767,7 +757,7 @@ fn apply_sealed_or_extent(
                 )));
                 Ok(())
             } else {
-                Err(make_error("Need at least two union variants before @extent or @sealed", span).into())
+                Err(span_error!(span, "Need at least two union variants before @extent or @sealed"))
             }
         }
         State::ResponseUnion(req, UnionState::UsedOffset(fields, length)) => {
@@ -779,7 +769,7 @@ fn apply_sealed_or_extent(
                 )));
                 Ok(())
             } else {
-                Err(make_error("Need at least two union variants before @extent or @sealed", span).into())
+                Err(span_error!(span, "Need at least two union variants before @extent or @sealed"))
             }
         }
     }

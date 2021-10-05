@@ -13,7 +13,7 @@ use crate::types::set::Set;
 use crate::types::string::StringValue;
 use crate::TypeKey;
 use canadensis_bit_length_set::BitLengthSet;
-use canadensis_dsdl_parser::{make_error, CastMode, Span};
+use canadensis_dsdl_parser::{CastMode, Span};
 use num_rational::BigRational;
 use std::convert::TryInto;
 
@@ -228,7 +228,7 @@ impl ScalarType {
                         inner: Box::new(message.clone()),
                     }),
                     DsdlKind::Service { .. } => {
-                        Err(make_error("Can't refer to a service type", span).into())
+                        Err(span_error!(span, "Can't refer to a service type"))
                     }
                 }
             }
@@ -249,7 +249,7 @@ impl ScalarType {
                 match &referenced_type.kind {
                     DsdlKind::Message { message, .. } => Ok(message.bit_length.clone()),
                     DsdlKind::Service { .. } => {
-                        Err(make_error("Can't refer to a service type", span).into())
+                        Err(span_error!(span, "Can't refer to a service type"))
                     }
                 }
             }

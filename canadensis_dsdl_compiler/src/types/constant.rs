@@ -5,7 +5,7 @@ use crate::error::Error;
 use crate::types::keywords::is_reserved_keyword;
 use crate::types::{evaluate_expression, PrimitiveType, Value};
 use canadensis_dsdl_parser::num_bigint::BigInt;
-use canadensis_dsdl_parser::{make_error, Expression, Identifier, Span};
+use canadensis_dsdl_parser::{Expression, Identifier, Span};
 use half::f16;
 use num_traits::ToPrimitive;
 use std::ops::{Deref, Range};
@@ -32,9 +32,11 @@ impl Constant {
         let ty: PrimitiveType = ty.into();
         let value_span = value.span.clone();
         if is_reserved_keyword(name.name) {
-            return Err(
-                make_error(format!("Use of reserved keyword {}", name.name), name.span).into(),
-            );
+            return Err(span_error!(
+                name.span,
+                "Use of reserved keyword {}",
+                name.name
+            ));
         }
         let value = evaluate_expression(cx, value)?;
         check_type_compatibility(&ty, &value, value_span)?;
@@ -54,7 +56,7 @@ fn check_type_compatibility(
     declared: &PrimitiveType,
     value: &Value,
     value_span: Span<'_>,
-) -> Result<(), canadensis_dsdl_parser::Error> {
+) -> Result<(), Error> {
     match (declared, value) {
         // bool = bool
         (PrimitiveType::Boolean, Value::Boolean(_)) => Ok(()),
@@ -63,13 +65,11 @@ fn check_type_compatibility(
             if string.implicit_int().is_some() {
                 Ok(())
             } else {
-                Err(make_error(
-                    format!(
-                        "String {:?} cannot be assigned to a constant of type {}",
-                        string.deref(),
-                        declared
-                    ),
+                Err(span_error!(
                     value_span,
+                    "String {:?} cannot be assigned to a constant of type {}",
+                    string.deref(),
+                    declared
                 ))
             }
         }
@@ -80,21 +80,18 @@ fn check_type_compatibility(
                 if signed_int_bounds(*bits).contains(value) {
                     Ok(())
                 } else {
-                    Err(make_error(
-                        format!(
-                            "Integer {} cannot be assigned to a {} constant because it is too large",
-                            value,declared
-                        ),
+                    Err(span_error!(
                         value_span,
+                        "Integer {} cannot be assigned to a {} constant because it is too large",
+                        value,
+                        declared
                     ))
                 }
             } else {
-                Err(make_error(
-                    format!(
-                        "Non-integer {} cannot be assigned to an integer constant",
-                        value
-                    ),
+                Err(span_error!(
                     value_span,
+                    "Non-integer {} cannot be assigned to an integer constant",
+                    value
                 ))
             }
         }
@@ -105,21 +102,16 @@ fn check_type_compatibility(
                 if unsigned_int_bounds(*bits).contains(value) {
                     Ok(())
                 } else {
-                    Err(make_error(
-                        format!(
-                            "Integer {} cannot be assigned to a {} constant because it is too large or negative",
-                            value,declared
-                        ),
-                        value_span,
+                    Err(span_error!(value_span,
+                        "Integer {} cannot be assigned to a {} constant because it is too large or negative",
+                        value,declared
                     ))
                 }
             } else {
-                Err(make_error(
-                    format!(
-                        "Non-integer {} cannot be assigned to an integer constant",
-                        value
-                    ),
+                Err(span_error!(
                     value_span,
+                    "Non-integer {} cannot be assigned to an integer constant",
+                    value
                 ))
             }
         }
@@ -127,51 +119,37 @@ fn check_type_compatibility(
         (PrimitiveType::Float16 { .. }, Value::Rational(value)) => {
             match value.to_f32().map(f16::from_f32) {
                 Some(float_value) if float_value.is_finite() => Ok(()),
-                _ =>  Err(make_error(
-                    format!(
+                _ =>  Err(span_error!(value_span,
                         "Rational {} cannot be assigned to floating-point constant because it is too large",
                         value
-                    ),
-                    value_span,
                 )),
             }
         }
         // float32 = rational that fits into a float32
-        (PrimitiveType::Float32 { .. }, Value::Rational(value)) => {
-            match value.to_f32() {
-                Some(float_value) if float_value.is_finite() => Ok(()),
-                _ =>  Err(make_error(
-                    format!(
-                        "Value {} cannot be assigned to a floating-point constant because it is too large",
-                        value
-                    ),
-                    value_span,
-                )),
-            }
-        }
-        // float64 = rational that fits into a float64
-        (PrimitiveType::Float64 { .. }, Value::Rational(value)) => {
-            match value.to_f64() {
-                Some(float_value) if float_value.is_finite() => Ok(()),
-                _ =>  Err(make_error(
-                    format!(
-                        "Value {} cannot be assigned to a floating-point constant because it is too large",
-                        value
-                    ),
-                    value_span,
-                )),
-            }
-        }
-        // Any other combination is not allowed
-        (declared, actual) => {
-             Err(make_error(
-                format!(
-                    "Declared type {} of constant is not compatible with value of type {}",
-                    declared, actual
-                ),
+        (PrimitiveType::Float32 { .. }, Value::Rational(value)) => match value.to_f32() {
+            Some(float_value) if float_value.is_finite() => Ok(()),
+            _ => Err(span_error!(
                 value_span,
-            ))
-        }
+                "Value {} cannot be assigned to a floating-point constant because it is too large",
+                value
+            )),
+        },
+        // float64 = rational that fits into a float64
+        (PrimitiveType::Float64 { .. }, Value::Rational(value)) => match value.to_f64() {
+            Some(float_value) if float_value.is_finite() => Ok(()),
+            _ => Err(span_error!(
+                value_span,
+                "Value {} cannot be assigned to a floating-point constant because it is too large",
+                value
+            )),
+        },
+        // Any other combination is not allowed
+        (declared, actual) => Err(span_error!(
+            value_span,
+            "Declared type {} of constant is not compatible with value of type {}",
+            declared,
+            actual
+        )),
     }
 }
 

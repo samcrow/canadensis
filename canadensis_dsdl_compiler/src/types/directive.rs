@@ -2,7 +2,7 @@ use crate::compile::CompileContext;
 use crate::error::Error;
 use crate::types::expression::evaluate_expression;
 use crate::types::Value;
-use canadensis_dsdl_parser::{make_error, Expression, Identifier};
+use canadensis_dsdl_parser::{Expression, Identifier};
 use num_traits::{Signed, ToPrimitive};
 
 pub(crate) fn evaluate_directive(
@@ -15,11 +15,10 @@ pub(crate) fn evaluate_directive(
             if expression.is_none() {
                 cx.handle_union(name.span)
             } else {
-                Err(make_error(
-                    "union directive must not have an associated expression",
+                Err(span_error!(
                     name.span,
-                )
-                .into())
+                    "union directive must not have an associated expression"
+                ))
             }
         }
         "extent" => match expression {
@@ -35,62 +34,54 @@ pub(crate) fn evaluate_directive(
                                     if value % 8 == 0 {
                                         cx.handle_extent(name.span, value)
                                     } else {
-                                        Err(make_error(
-                                            format!(
-                                                "Extent value {} is not a multiple of 8 bits",
-                                                value
-                                            ),
+                                        Err(span_error!(
                                             expression_span,
-                                        )
-                                        .into())
+                                            "Extent value {} is not a multiple of 8 bits",
+                                            value
+                                        ))
                                     }
                                 }
-                                None => Err(make_error(
-                                    format!(
-                                        "Extent value {} is too large to fit into 64 bits",
-                                        value
-                                    ),
+                                None => Err(span_error!(
                                     expression_span,
-                                )
-                                .into()),
+                                    "Extent value {} is too large to fit into 64 bits",
+                                    value
+                                )),
                             }
                         } else {
-                            Err(make_error(
-                                format!("Extent value {} is negative or not an integer", value),
+                            Err(span_error!(
                                 expression_span,
-                            )
-                            .into())
+                                "Extent value {} is negative or not an integer",
+                                value
+                            ))
                         }
                     }
-                    other => Err(make_error(
-                        format!("Extent value is a {} (expected a rational)", other.ty()),
+                    other => Err(span_error!(
                         expression_span,
-                    )
-                    .into()),
+                        "Extent value is a {} (expected a rational)",
+                        other.ty()
+                    )),
                 }
             }
-            None => Err(make_error("Extent directive must have a value", name.span).into()),
+            None => Err(span_error!(name.span, "Extent directive must have a value")),
         },
         "sealed" => {
             if expression.is_none() {
                 cx.handle_sealed(name.span)
             } else {
-                Err(make_error(
-                    "sealed directive must not have an associated expression",
+                Err(span_error!(
                     name.span,
-                )
-                .into())
+                    "sealed directive must not have an associated expression"
+                ))
             }
         }
         "deprecated" => {
             if expression.is_none() {
                 cx.handle_deprecated(name.span)
             } else {
-                Err(make_error(
-                    "deprecated directive must not have an associated expression",
+                Err(span_error!(
                     name.span,
-                )
-                .into())
+                    "deprecated directive must not have an associated expression"
+                ))
             }
         }
         "assert" => match expression {
@@ -98,15 +89,15 @@ pub(crate) fn evaluate_directive(
                 let expr_span = expr.span.clone();
                 match evaluate_expression(cx, expr)? {
                     Value::Boolean(true) => Ok(()),
-                    Value::Boolean(false) => Err(make_error("Assertion failed", expr_span).into()),
-                    other => Err(make_error(
-                        format!("Assert expression evaluated to non-boolean value {}", other),
+                    Value::Boolean(false) => Err(span_error!(expr_span, "Assertion failed")),
+                    other => Err(span_error!(
                         expr_span,
-                    )
-                    .into()),
+                        "Assert expression evaluated to non-boolean value {}",
+                        other
+                    )),
                 }
             }
-            None => Err(make_error("Assert directive has no expression", name.span).into()),
+            None => Err(span_error!(name.span, "Assert directive has no expression")),
         },
         "print" => {
             if let Some(expr) = expression {
@@ -119,6 +110,10 @@ pub(crate) fn evaluate_directive(
                 Ok(())
             }
         }
-        _ => Err(make_error(format!("Unrecognized directive {}", name.name), name.span).into()),
+        _ => Err(span_error!(
+            name.span,
+            "Unrecognized directive {}",
+            name.name
+        )),
     }
 }
