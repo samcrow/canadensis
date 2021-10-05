@@ -6,15 +6,18 @@ use std::process;
 
 fn main() {
     if let Err(e) = run() {
-        eprintln!("{}", e);
-        if let Some(mut source) = e.source() {
-            eprintln!("Caused by: {}", source);
-            while let Some(new_source) = source.source() {
-                source = new_source;
-                eprintln!("Caused by: {}", source);
-            }
-        }
+        print_error(e);
         process::exit(-1);
+    }
+}
+
+fn print_error<E>(error: E)
+where
+    E: std::error::Error,
+{
+    eprintln!("{}", error);
+    if let Some(source) = error.source() {
+        print_error(source);
     }
 }
 

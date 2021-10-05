@@ -23,3 +23,7 @@ bool E = "yay" == "yay"
 @assert "oh,\u0020hi\U0000000aMark" == 'oh, hi\nMark'
 
 @print "oh,\u0020hi\U0000000aMark"
+
+@assert "j" + 3 == 109
+
+@sealed

@@ -1,0 +1,9 @@
+@union
+
+uint8 a
+uint16 b
+
+# This use of _offset_ is allowed both before and after the @sealed
+@assert _offset_ == {24}
+@sealed
+@assert _offset_ == {24}

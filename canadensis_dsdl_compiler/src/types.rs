@@ -1,25 +1,21 @@
 pub mod constant;
-mod expression;
+pub mod directive;
+pub mod expression;
 pub mod keywords;
 mod set;
 mod string;
 
 use crate::compile::CompileContext;
+use crate::compiled::{DsdlKind, Extent};
 use crate::package::Error;
 use crate::types::expression::evaluate_expression;
 use crate::types::set::Set;
 use crate::types::string::StringValue;
 use crate::TypeKey;
-use canadensis_dsdl_parser::num_bigint::BigInt;
-use canadensis_dsdl_parser::Expression;
-use canadensis_dsdl_parser::{make_error, CastMode, Identifier};
+use canadensis_bit_length_set::BitLengthSet;
+use canadensis_dsdl_parser::{make_error, CastMode, Span};
 use num_rational::BigRational;
-use std::collections::BTreeMap;
-
-pub struct Definition {
-    /// Values of the constants in this definition
-    pub constants: BTreeMap<String, Value>,
-}
+use std::convert::TryInto;
 
 /// A DSDL expression value
 #[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq)]
@@ -53,13 +49,123 @@ pub enum Type {
     Scalar(ScalarType),
     FixedArray {
         inner: ScalarType,
-        len: BigInt,
+        len: usize,
     },
     VariableArray {
         inner: ScalarType,
         /// Maximum length of the array, inclusive
-        max_len: BigInt,
+        max_len: usize,
     },
+}
+
+impl Type {
+    /// Returns a bit length set representing the possible lengths of this type
+    pub(crate) fn bit_length_set(
+        &self,
+        cx: &mut CompileContext<'_>,
+        span: Span<'_>,
+    ) -> Result<BitLengthSet, Error> {
+        match self {
+            Type::Scalar(scalar) => scalar.bit_length_set(cx, span),
+            Type::FixedArray { inner, len } => {
+                let element_length = inner.bit_length_set(cx, span)?;
+                Ok(element_length.repeat(*len))
+            }
+            Type::VariableArray { inner, max_len } => {
+                let element_length = inner.bit_length_set(cx, span)?;
+                Ok(element_length.repeat_range(..=*max_len))
+            }
+        }
+    }
+
+    /// Returns the required alignment of this type
+    pub(crate) fn alignment(&self) -> usize {
+        match self {
+            Type::Scalar(scalar) => scalar.alignment(),
+            // The alignment of an array equals the alignment of its element type
+            Type::FixedArray { inner, .. } | Type::VariableArray { inner, .. } => inner.alignment(),
+        }
+    }
+
+    /// Returns the delimiter header or length field, if any, that this type requires
+    pub(crate) fn implicit_field(
+        &self,
+        cx: &mut CompileContext<'_>,
+        span: Span<'_>,
+    ) -> Result<Option<ImplicitField>, Error> {
+        match self {
+            Type::Scalar(scalar) => scalar.implicit_field(cx, span),
+            Type::FixedArray { .. } => Ok(None),
+            Type::VariableArray { max_len, .. } => {
+                let length_bits = array_length_bits(*max_len);
+                Ok(Some(ImplicitField::ArrayLength {
+                    bits: length_bits
+                        .try_into()
+                        .expect("Implicit length field length too large for u8"),
+                }))
+            }
+        }
+    }
+}
+
+/// Returns the number of bits needed for the array size field to store up to max_items values
+/// (inclusive) in a variable-length array, or max_items variants of a union
+pub(crate) fn array_length_bits(max_items: usize) -> u32 {
+    round_up_length(bit_length(max_items))
+}
+
+fn bit_length(value: usize) -> u32 {
+    usize::BITS - value.leading_zeros()
+}
+fn round_up_length(value: u32) -> u32 {
+    std::cmp::max(value, 8).next_power_of_two()
+}
+
+#[cfg(test)]
+mod test {
+    use super::{bit_length, round_up_length};
+    fn length_bits(max_length: usize) -> u32 {
+        round_up_length(bit_length(max_length))
+    }
+
+    #[test]
+    fn test_array_size_length() {
+        assert_eq!(8, length_bits(0));
+        assert_eq!(8, length_bits(1));
+        assert_eq!(8, length_bits(2));
+        // ...
+        assert_eq!(8, length_bits(254));
+        assert_eq!(8, length_bits(255));
+        assert_eq!(16, length_bits(256));
+        assert_eq!(16, length_bits(257));
+        // ...
+        assert_eq!(16, length_bits(65535));
+        assert_eq!(32, length_bits(65536));
+        assert_eq!(32, length_bits(65537));
+    }
+}
+
+/// An implicit field that may be inserted before another field
+pub(crate) enum ImplicitField {
+    /// A u32 header for an enclosed delimited type
+    DelimiterHeader,
+    /// An unsigned integer length for a variable-length array
+    ArrayLength { bits: u8 },
+}
+
+impl From<ImplicitField> for PrimitiveType {
+    fn from(implicit: ImplicitField) -> Self {
+        match implicit {
+            ImplicitField::DelimiterHeader => PrimitiveType::UInt {
+                bits: 32,
+                mode: CastMode::Saturated,
+            },
+            ImplicitField::ArrayLength { bits } => PrimitiveType::UInt {
+                bits,
+                mode: CastMode::Saturated,
+            },
+        }
+    }
 }
 
 impl From<canadensis_dsdl_parser::ScalarType<'_>> for ScalarType {
@@ -107,6 +213,62 @@ pub enum ScalarType {
     Void { bits: u8 },
 }
 
+impl ScalarType {
+    /// Returns a bit length set representing the possible lengths of this type
+    fn bit_length_set(
+        &self,
+        cx: &mut CompileContext<'_>,
+        span: Span<'_>,
+    ) -> Result<BitLengthSet, Error> {
+        match self {
+            ScalarType::Versioned(key) => {
+                let referenced_type = cx.get_by_key(key)?;
+                match &referenced_type.kind {
+                    DsdlKind::Message { message, .. } => Ok(message.bit_length.clone()),
+                    DsdlKind::Service { .. } => {
+                        Err(make_error("Can't refer to a service type", span).into())
+                    }
+                }
+            }
+            ScalarType::Primitive(primitive) => Ok(BitLengthSet::single(primitive.bit_length())),
+            ScalarType::Void { bits } => Ok(BitLengthSet::single(usize::from(*bits))),
+        }
+    }
+    /// Returns the required alignment of this type
+    pub(crate) fn alignment(&self) -> usize {
+        match self {
+            // Versioned implies a composite type and 8-bit alignment
+            ScalarType::Versioned(_) => 8,
+            // Primitive and void types have 1-bit alignment
+            ScalarType::Primitive(_) => 1,
+            ScalarType::Void { .. } => 1,
+        }
+    }
+
+    /// Returns the delimiter header or length field, if any, that this type requires
+    pub(crate) fn implicit_field(
+        &self,
+        cx: &mut CompileContext<'_>,
+        span: Span<'_>,
+    ) -> Result<Option<ImplicitField>, Error> {
+        match self {
+            ScalarType::Versioned(key) => {
+                let inner = cx.get_by_key(key)?;
+                match &inner.kind {
+                    DsdlKind::Message { message, .. } => match message.extent {
+                        Extent::Sealed => Ok(None),
+                        Extent::Delimited(_) => Ok(Some(ImplicitField::DelimiterHeader)),
+                    },
+                    DsdlKind::Service { .. } => {
+                        Err(make_error("Can't refer to a service type", span).into())
+                    }
+                }
+            }
+            ScalarType::Primitive(_) | ScalarType::Void { .. } => Ok(None),
+        }
+    }
+}
+
 /// A primitive type
 #[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub enum PrimitiveType {
@@ -135,6 +297,22 @@ impl PrimitiveType {
             PrimitiveType::Float32 { mode } => mode.clone(),
             PrimitiveType::Float64 { mode } => mode.clone(),
         }
+    }
+
+    pub fn bit_length(&self) -> usize {
+        match self {
+            PrimitiveType::Boolean => 1,
+            PrimitiveType::Int { bits } => usize::from(*bits),
+            PrimitiveType::UInt { bits, .. } => usize::from(*bits),
+            PrimitiveType::Float16 { .. } => 16,
+            PrimitiveType::Float32 { .. } => 32,
+            PrimitiveType::Float64 { .. } => 64,
+        }
+    }
+
+    pub fn alignment(&self) -> usize {
+        // All primitive types have alignment 1
+        1
     }
 }
 
@@ -249,45 +427,5 @@ mod fmt_impl {
                 ScalarType::Void { bits } => write!(f, "void{}", bits),
             }
         }
-    }
-}
-
-pub(crate) fn evaluate_directive(
-    cx: &mut CompileContext,
-    name: Identifier<'_>,
-    expression: Option<Expression<'_>>,
-) -> Result<(), Error> {
-    match name.name {
-        "union" => todo!(),
-        "extent" => todo!(),
-        "sealed" => todo!(),
-        "deprecated" => todo!(),
-        "assert" => match expression {
-            Some(expr) => {
-                let expr_span = expr.span.clone();
-                match evaluate_expression(cx, expr)? {
-                    Value::Boolean(true) => Ok(()),
-                    Value::Boolean(false) => Err(make_error("Assert failed", expr_span).into()),
-                    other => Err(make_error(
-                        format!("Assert expression evaluated to non-boolean value {}", other),
-                        expr_span,
-                    )
-                    .into()),
-                }
-            }
-            None => Err(make_error("Assert directive has no expression", name.span).into()),
-        },
-        "print" => {
-            if let Some(expr) = expression {
-                let value = evaluate_expression(cx, expr)?;
-                // TODO: Should this be printed in some other way?
-                println!("{}", value);
-                Ok(())
-            } else {
-                // Print with no expression has no effect (perhaps it should print a new line)
-                Ok(())
-            }
-        }
-        _ => Err(make_error(format!("Unrecognized directive {}", name.name), name.span).into()),
     }
 }

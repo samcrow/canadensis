@@ -55,9 +55,17 @@ impl TypeKey {
         }
     }
 
-    /// Returns the path and name of this type, without the version
-    fn type_full_name(&self) -> &TypeFullName {
+    /// Returns true if this key and another are exactly equal, including the cases of letters
+    pub fn case_sensitive_equal(&self, other: &TypeKey) -> bool {
+        (&self.name, &self.version) == (&other.name, &other.version)
+    }
+    /// Returns the type name
+    pub fn name(&self) -> &TypeFullName {
         &self.name
+    }
+    /// Returns the type version
+    pub fn version(&self) -> &TypeVersion {
+        &self.version
     }
 }
 
@@ -96,6 +104,15 @@ impl TypeFullName {
                 .collect(),
             name: self.name.to_lowercase(),
         }
+    }
+
+    /// Returns the path to the package containing the type
+    pub fn path(&self) -> &[String] {
+        &self.path
+    }
+    /// Returns the type name
+    pub fn name(&self) -> &str {
+        &self.name
     }
 }
 

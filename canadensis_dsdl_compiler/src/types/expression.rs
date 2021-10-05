@@ -6,7 +6,6 @@ use crate::package::Error;
 use crate::types::set::{Set, SetTypeError};
 use crate::types::string::StringValue;
 use crate::types::{ExprType, ScalarType, Type, Value};
-use canadensis_dsdl_parser::num_bigint::BigInt;
 use canadensis_dsdl_parser::{
     make_error, Expression, ExpressionAtom, ExpressionType, Literal, LiteralType, Span,
 };
@@ -14,7 +13,7 @@ use num_rational::BigRational;
 use num_traits::{FromPrimitive, Pow, Signed, ToPrimitive};
 
 pub(crate) fn evaluate_expression(
-    cx: &mut CompileContext,
+    cx: &mut CompileContext<'_>,
     expression: Expression<'_>,
 ) -> Result<Value, Error> {
     let span = expression.span;
@@ -83,14 +82,9 @@ pub(crate) fn evaluate_expression(
         }
         ExpressionType::Attribute(lhs, rhs) => {
             let lhs = evaluate_expression(cx, *lhs)?;
-            println!("Evaluating attribute {} of {:?}", rhs, lhs);
             match lhs {
                 Value::Set(lhs) => evaluate_set_attr(lhs, rhs, span),
                 Value::Type(ty) => evaluate_type_attr(cx, ty, rhs, span),
-                Value::Identifier(id) => match &*id {
-                    "_offset_" => todo!("Offset not yet implemented"),
-                    _ => Err(make_error(format!("Unrecognized identifier {}", id), span).into()),
-                },
                 _ => Err(make_error(format!("{} has no attribute {}", lhs.ty(), rhs), span).into()),
             }
         }
@@ -316,7 +310,7 @@ pub(crate) fn evaluate_expression(
 }
 
 fn evaluate_atom(
-    cx: &mut CompileContext,
+    cx: &mut CompileContext<'_>,
     atom: ExpressionAtom,
     span: Span<'_>,
 ) -> Result<Value, Error> {
@@ -342,10 +336,30 @@ fn evaluate_atom(
         // This is where we try to replace an identifier with is value
         ExpressionAtom::Identifier(identifier) => {
             println!("Evaluating identifier atom {}", identifier);
-            // This can only be a constant
-            match cx.constants().get(identifier) {
-                Some(constant) => Ok(constant.value().clone()),
-                None => Err(make_error(format!("Constant {} not found", identifier), span).into()),
+            match identifier {
+                // Magic variables
+                "_offset_" => {
+                    // TODO: Extend the bit length set into Value to make things faster
+                    let bit_length = cx.bit_length_set().expand();
+                    // Convert into Value
+                    let set_of_values = bit_length
+                        .into_iter()
+                        .map(|length| Value::Rational(BigRational::from_integer(length.into())))
+                        .collect::<Result<_, _>>()
+                        .unwrap();
+                    Ok(Value::Set(set_of_values))
+                }
+                _ => {
+                    // Try constants
+                    match cx.constants().get(identifier) {
+                        Some(constant) => Ok(constant.value().clone()),
+                        None => Err(make_error(
+                            format!("Identifier {} not found", identifier),
+                            span,
+                        )
+                        .into()),
+                    }
+                }
             }
         }
     }
@@ -406,49 +420,72 @@ fn make_set_min_max_gt_undefined_error(
 }
 
 fn evaluate_type_attr(
-    cx: &mut CompileContext,
+    cx: &mut CompileContext<'_>,
     ty: Type,
     rhs: &str,
     span: Span<'_>,
 ) -> Result<Value, Error> {
-    match ty {
-        Type::Scalar(ty) => {
-            match ty {
-                ScalarType::Versioned(ty) => {
-                    // Recursion!
-                    // Look up the type that this refers to and check its properties
-                    let ty_compiled = cx.get_by_key(&ty)?;
+    // The _bit_length_ special attribute is not part of the specification (v1.0-beta),
+    // but pyuavcan implements it and some of the public regulated data types use it.
+    match rhs {
+        "_bit_length_" => {
+            // TODO: Push bit length set ... something ... optimizaion
+            let bit_length = ty.bit_length_set(cx, span)?.expand();
+            Ok(Value::Set(
+                bit_length
+                    .into_iter()
+                    .map(|length| Value::Rational(BigRational::from_integer(length.into())))
+                    .collect::<Result<Set, _>>()
+                    .unwrap(),
+            ))
+        }
+        _ => match ty {
+            Type::Scalar(ty) => {
+                match ty {
+                    ScalarType::Versioned(ty) => {
+                        // Recursion!
+                        // Look up the type that this refers to and check its properties
+                        let ty_compiled = cx.get_by_key(&ty)?;
 
-                    match &ty_compiled.kind {
-                        DsdlKind::Message { constants, .. } => {
-                            // Look up the constant
-                            match constants.get(rhs) {
-                                Some(constant) => Ok(constant.value().clone()),
-                                None => Err(make_error(
-                                    format!("Type {} has no attribute {}", ty, rhs),
+                        match &ty_compiled.kind {
+                            DsdlKind::Message { constants, .. } => {
+                                // Look up the constant
+                                match constants.get(rhs) {
+                                    Some(constant) => Ok(constant.value().clone()),
+                                    None => Err(make_error(
+                                        format!("Type {} has no attribute {}", ty, rhs),
+                                        span,
+                                    )
+                                    .into()),
+                                }
+                            }
+                            DsdlKind::Service { .. } => {
+                                // A service type can't be named
+                                Err(make_error(
+                                    format!(
+                                        "Type {} has no attributes because it is a service",
+                                        ty
+                                    ),
                                     span,
                                 )
-                                .into()),
+                                .into())
                             }
                         }
-                        DsdlKind::Service { .. } => {
-                            // A service type can't be named
-                            Err(make_error(
-                                format!("Type {} has no attributes because it is a service", ty),
-                                span,
-                            )
-                            .into())
-                        }
                     }
+                    _ => Err(
+                        make_error(format!("Type {} has no attribute {}", ty, rhs), span).into(),
+                    ),
                 }
-                _ => Err(make_error(format!("Type {} has no attribute {}", ty, rhs), span).into()),
             }
-        }
-        _ => Err(make_error(format!("Type {} has no attribute {}", ty, rhs), span).into()),
+            _ => Err(make_error(format!("Type {} has no attribute {}", ty, rhs), span).into()),
+        },
     }
 }
 
-fn evaluate_array_length(cx: &mut CompileContext, length: Expression<'_>) -> Result<BigInt, Error> {
+fn evaluate_array_length(
+    cx: &mut CompileContext<'_>,
+    length: Expression<'_>,
+) -> Result<usize, Error> {
     let length_span = length.span.clone();
     match evaluate_expression(cx, length)? {
         Value::Rational(rational) => {
@@ -461,7 +498,15 @@ fn evaluate_array_length(cx: &mut CompileContext, length: Expression<'_>) -> Res
                     )
                     .into());
                 } else {
-                    Ok(length)
+                    // Convert to usize
+                    match length.to_usize() {
+                        Some(length) => Ok(length),
+                        None => Err(make_error(
+                            format!("Compiler limitation: Array length {} is too large", length),
+                            length_span,
+                        )
+                        .into()),
+                    }
                 }
             } else {
                 return Err(make_error(
@@ -828,8 +873,8 @@ fn make_set_error(e: SetTypeError, span: Span<'_>) -> Error {
 }
 
 /// Converts an AST type into a compiler type
-fn convert_type(
-    cx: &mut CompileContext,
+pub(crate) fn convert_type(
+    cx: &mut CompileContext<'_>,
     ty: canadensis_dsdl_parser::Type<'_>,
 ) -> Result<Type, Error> {
     match ty {
@@ -854,7 +899,7 @@ fn convert_type(
                 canadensis_dsdl_parser::ArrayLength::Exclusive(length) => {
                     let length_span = length.span.clone();
                     let length = evaluate_array_length(cx, length)?;
-                    if length.is_positive() {
+                    if length > 0 {
                         // Convert to inclusive length by subtracting 1
                         Ok(Type::VariableArray {
                             inner: element,

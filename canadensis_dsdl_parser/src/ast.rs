@@ -21,6 +21,7 @@ pub(crate) fn parse_to_ast(
     statements: Pairs<'_, Rule>,
 ) -> Result<Definition<'_>, pest::error::Error<Rule>> {
     let mut ast_statements: Vec<Statement> = Vec::new();
+    let mut eof_span = None;
 
     for statement in statements {
         match statement.as_rule() {
@@ -28,7 +29,7 @@ pub(crate) fn parse_to_ast(
                 ast_statements.push(parse_directive(statement)?);
             }
             Rule::statement_service_response_marker => {
-                ast_statements.push(Statement::ServiceResponseMarker);
+                ast_statements.push(Statement::ServiceResponseMarker(statement.as_span()));
             }
             Rule::statement_constant => {
                 ast_statements.push(parse_constant(statement)?);
@@ -39,12 +40,15 @@ pub(crate) fn parse_to_ast(
             Rule::statement_padding_field => {
                 ast_statements.push(parse_padding_field(statement)?);
             }
-            Rule::EOI => {}
+            Rule::EOI => {
+                eof_span = Some(statement.as_span());
+            }
             other => unreachable!("Unexpected statement rule {:?}", other),
         }
     }
     Ok(Definition {
         statements: ast_statements,
+        eof_span: eof_span.expect("Didn't get an EOI at the end"),
     })
 }
 
@@ -115,7 +119,10 @@ fn parse_padding_field(field: Pair<'_, Rule>) -> Result<Statement<'_>, pest::err
     let bit_length_suffix = void.into_inner().next().unwrap();
     let bits = parse_bit_length_suffix(&bit_length_suffix)?;
     if (1..=64).contains(&bits) {
-        Ok(Statement::PaddingField { bits })
+        Ok(Statement::PaddingField {
+            bits,
+            span: field_span,
+        })
     } else {
         Err(error(
             "Padding length must be between 1 and 64 bits inclusive".to_owned(),

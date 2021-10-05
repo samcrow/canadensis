@@ -24,7 +24,7 @@ pub struct Constant {
 impl Constant {
     /// Evaluates an expression from a declaration
     pub(crate) fn evaluate(
-        cx: &mut CompileContext,
+        cx: &mut CompileContext<'_>,
         ty: canadensis_dsdl_parser::PrimitiveType,
         name: Identifier,
         value: Expression,

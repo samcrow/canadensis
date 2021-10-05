@@ -26,6 +26,7 @@ pub enum DsdlKind {
 /// A DSDL message, request, or response
 #[derive(Debug)]
 pub struct Message {
+    pub deprecated: bool,
     pub extent: Extent,
     pub kind: MessageKind,
     pub bit_length: BitLengthSet,
@@ -37,7 +38,7 @@ pub enum Extent {
     /// Sealed type
     Sealed,
     /// Delimited type with a fixed extent
-    Extent(u32),
+    Delimited(u64),
 }
 
 #[derive(Debug)]

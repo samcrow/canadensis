@@ -222,9 +222,9 @@ pub enum Statement<'i> {
         span: Span<'i>,
     },
     /// A void padding field, like `void6`
-    PaddingField { bits: u8 },
+    PaddingField { bits: u8, span: Span<'i> },
     /// The `---` marker that separates the request and response fields in a service type
-    ServiceResponseMarker,
+    ServiceResponseMarker(Span<'i>),
 }
 
 /// The top-level abstract syntax tree of a DSDL file
@@ -232,4 +232,6 @@ pub enum Statement<'i> {
 pub struct Definition<'i> {
     /// The statements in the file
     pub statements: Vec<Statement<'i>>,
+    /// A span representing the end of the file
+    pub eof_span: Span<'i>,
 }
