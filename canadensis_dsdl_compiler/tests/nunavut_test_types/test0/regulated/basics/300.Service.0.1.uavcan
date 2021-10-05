@@ -1,0 +1,5 @@
+float64 HALF = 0.5
+@extent 3 * 8
+---
+float16 ONE_TENTH = 0.1
+@sealed

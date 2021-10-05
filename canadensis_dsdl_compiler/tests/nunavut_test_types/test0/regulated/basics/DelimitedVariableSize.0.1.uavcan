@@ -1,0 +1,5 @@
+@union
+truncated float16 f16
+truncated float32 f32
+truncated float64 f64
+@extent 8 + 64

@@ -1,0 +1,30 @@
+void1
+bool boolean
+int10[4] i10_4                                  # One of those will be aligned at the byte boundary.
+@assert _offset_ == {42}
+float16[<=2] f16_le2
+@assert _offset_ == {50, 66, 82}
+bool[3] unaligned_bitpacked_3
+@assert _offset_ == {53, 69, 85}
+uavcan.primitive.Empty.1.0 sealed               # Restores byte alignment due to dynamic padding.
+@assert _offset_ == {56, 72, 88}
+uint8[<3] bytes_lt3
+@assert _offset_ % 8 == {0}
+int8[3] bytes_3
+truncated uint2[<=4] u2_le4                     # Truncated! Saturation code should not be emitted.
+@assert _offset_ % 8 != {0}
+DelimitedFixedSize.0.1[<=2] delimited_fix_le2   # Single-pass serialization, DH is constant.
+@assert _offset_ % 8 == {0}
+uint16[2] u16_2
+bool[3] aligned_bitpacked_3
+@assert _offset_ % 8 != {0}
+bool[<3] unaligned_bitpacked_lt3
+DelimitedVariableSize.0.1[2] delimited_var_2    # Two-pass serialization, DH is unknown until runtime.
+@assert _offset_ % 8 == {0}
+bool[<=3] aligned_bitpacked_le3                 # Dynamic final padding inserted after this field.
+@sealed
+# Constants:
+float64 CONSTANT_MINUS_THREE        = -3.0
+uint8   CONSTANT_ZEE                = 'Z'
+int64   CONSTANT_MINUS_MAX_OFFSET   = -_offset_.max
+bool    CONSTANT_TRUTH              = CONSTANT_MINUS_THREE < 0

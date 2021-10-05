@@ -1,0 +1,47 @@
+# Aligned unsigned integers
+uint64[2] a_u64
+uint32[2] a_u32
+uint16[2] a_u16
+uint8[2]  a_u8
+uint7[2]  a_u7
+
+# Non-aligned unsigned integers
+uint64[2] n_u64
+uint32[2] n_u32
+uint16[2] n_u16
+uint8[2]  n_u8
+uint7[2]  n_u7
+
+uavcan.primitive.Empty.1.0 restore_alignment_1_
+
+# Aligned signed integers
+int64[2] a_i64
+int32[2] a_i32
+int16[2] a_i16
+int8[2]  a_i8
+int7[2]  a_i7
+
+# Non-aligned signed integers
+int64[2] n_i64
+int32[2] n_i32
+int16[2] n_i16
+int8[2]  n_i8
+int7[2]  n_i7
+
+uavcan.primitive.Empty.1.0 restore_alignment_2_
+
+# Aligned floats
+float64[2] a_f64
+float32[2] a_f32
+float16[2] a_f16
+
+# Aligned and unaligned booleans
+bool[2] a_bool
+bool[2] n_bool
+
+# Non-aligned floats
+float64[2] n_f64
+float32[2] n_f32
+float16[2] n_f16
+
+@sealed

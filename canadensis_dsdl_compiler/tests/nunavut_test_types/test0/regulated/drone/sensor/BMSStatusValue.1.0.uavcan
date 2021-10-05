@@ -1,0 +1,33 @@
+#
+# This is a test dummy and not the real type.
+#
+uint8 status
+
+uint8 STATUS_ASK_PARS       = 1
+# There is a change in the extra parameters so these should be asked
+
+uint8 STATUS_TEMP_ERROR     = 2
+# Battery temperature limit failure, the temperature is either too high or too low
+
+uint8 STATUS_OVERLOAD       = 4
+# Safe operating area violation, the controller should look at drawing less current
+
+uint8 STATUS_BAD_BATTERY    = 8
+# This battery should not be used anymore (e.g. low SoH)
+
+uint8 STATUS_NEED_SERVICE   = 16
+# This battery requires maintenance (e.g. balancing, full recharge)
+
+uint8 STATUS_BMS_ERROR      = 32
+# Battery management system/controller error, smart battery interface error
+
+uint8 STATUS_OPTIONAL1      = 64
+# To be applied to another status
+
+uint8 STATUS_OPTIONAL2      = 128
+# To be applied to another status
+
+uint8 STATUS_UNKNOWN        = 255
+# When the status is unknown
+
+@sealed

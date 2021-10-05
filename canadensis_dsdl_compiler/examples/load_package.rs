@@ -1,5 +1,6 @@
 extern crate canadensis_dsdl_compiler;
-use canadensis_dsdl_compiler::package::{Error, Package};
+use canadensis_dsdl_compiler::error::Error;
+use canadensis_dsdl_compiler::package::Package;
 use std::env;
 use std::process;
 
@@ -21,10 +22,12 @@ where
 }
 
 fn run() -> Result<(), Error> {
-    let path = env::args_os().skip(1).next().expect("No path provided");
+    let paths = env::args_os().skip(1);
 
     let mut package = Package::new();
-    package.add_files(path)?;
+    for path in paths {
+        package.add_files(path)?;
+    }
 
     let output = package.compile()?;
     // println!("{:#?}", output);

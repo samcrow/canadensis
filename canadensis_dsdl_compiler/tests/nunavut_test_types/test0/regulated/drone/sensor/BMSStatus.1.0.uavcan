@@ -1,0 +1,19 @@
+#
+# This is a test dummy and not the real type.
+#
+float16 temperature         # Battery temperature
+float16 voltage             # Battery pack voltage
+float16 current             # Last measured current
+float16 energy_consumed     # Consumed power since boot
+uint8 battery_id            # Unique identifier of the battery
+uint7 state_of_charge       # Percentage of the full charge [0..100]
+
+bool output_status
+# 0 = battery output disabled (no voltage)
+# 1 = battery output enabled (can provide voltage)
+
+regulated.drone.sensor.BMSStatusValue.1.0 status  # Status bitmask
+
+@assert _offset_ % 8 == {0}
+
+@sealed

@@ -1,0 +1,52 @@
+#
+# This is a test dummy and not the real type.
+#
+
+uint8[<32] model_name
+# Model name is a human-readable string that normally should include the
+# vendor name and model name
+
+uint32 model_instance_id
+# Model instance ID must be unique within the same battery model name. Set
+# to zero if not applicable
+
+float16 cell_voltage
+# All the individual measured cell voltages [V]
+
+float16 cell_full_voltage
+# Voltage when the cell is considered full [V]
+
+float16 discharge_rating_cont
+# The rating of the battery, >1 min cont [A]
+
+float16 discharge_rating_burst
+# The rating of a (5s) burst of the battery [A]
+
+float16 charge_rating_nom
+# The charge rating of the battery [A]
+
+float16 charge_rating_fast
+# The fast-charge rating of the battery (can be set to nominal, manufacturers
+# might limit number of fast charges) [A]
+
+float16 term_curr
+# Termination current for chargers [A]
+
+float16 design_capacity
+# The capacity according the manufacturer [Ah]
+
+float16 remaining_capacity
+# The capacity currently in the battery [Ah]
+
+uint16 n_charges
+# The number of charges that have been done with the BMS
+
+uint8 cell_count
+# The total number of cells in the battery
+
+regulated.drone.sensor.BatteryChemistry.1.0 chemistry
+# Battery chemistry
+
+@assert _offset_ % 8 == {0}
+
+@sealed

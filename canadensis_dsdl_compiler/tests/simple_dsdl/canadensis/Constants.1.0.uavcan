@@ -26,4 +26,13 @@ bool E = "yay" == "yay"
 
 @assert "j" + 3 == 109
 
+@assert float16._bit_length_ == {16}
+@assert float32._bit_length_ == {32}
+@assert float64._bit_length_ == {64}
+
+@assert int9[7]._bit_length_ == {63}
+@assert int9[<=7]._bit_length_ == {0, 9, 18, 27, 36, 45, 54, 63}
+
+@assert {35, "d", 122} == {35, 100, 122}
+
 @sealed

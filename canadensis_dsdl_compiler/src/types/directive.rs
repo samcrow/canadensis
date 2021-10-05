@@ -27,7 +27,7 @@ pub(crate) fn evaluate_directive(
                 match evaluate_expression(cx, expression)? {
                     Value::Rational(value) => {
                         if value.is_integer() && !value.is_negative() {
-                            let value = value.denom();
+                            let value = value.numer();
                             // Try to fit into a u64
                             match value.to_u64() {
                                 Some(value) => {
