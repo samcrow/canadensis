@@ -1,4 +1,5 @@
 use crate::types::{ExprType, Value};
+use num_rational::BigRational;
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
 use std::iter::FromIterator;
@@ -141,10 +142,21 @@ impl Set {
                 self.0.insert(value);
                 Ok(())
             } else {
-                Err(SetTypeError {
-                    left: ty,
-                    right: value.ty(),
-                })
+                // Check if the value is a string that can be implicitly converted into an integer
+                match value {
+                    Value::String(value)
+                        if value.implicit_int().is_some() && ty == ExprType::Rational =>
+                    {
+                        self.0.insert(Value::Rational(BigRational::from_integer(
+                            value.implicit_int().unwrap().into(),
+                        )));
+                        Ok(())
+                    }
+                    _ => Err(SetTypeError {
+                        left: ty,
+                        right: value.ty(),
+                    }),
+                }
             }
         } else {
             self.0.insert(value);
@@ -347,6 +359,7 @@ mod fmt_impl {
 mod test {
     use super::Set;
     use crate::types::Value;
+    use num_rational::BigRational;
     use std::iter;
 
     #[test]
@@ -358,5 +371,27 @@ mod test {
         let mut expected = Set::new();
         expected.insert(Value::Boolean(true)).unwrap();
         assert_eq!(Ok(expected), iter::once(Value::Boolean(true)).collect())
+    }
+    #[test]
+    fn test_from_iter_rational_and_convert_string() {
+        let mut expected = Set::new();
+        expected
+            .insert(Value::Rational(BigRational::from_integer(3.into())))
+            .unwrap();
+        // 0x20 is the numerical value of ASCII space
+        expected
+            .insert(Value::Rational(BigRational::from_integer(0x20.into())))
+            .unwrap();
+
+        assert_eq!(
+            Ok(expected),
+            [
+                Value::Rational(BigRational::from_integer(3.into())),
+                Value::String(" ".to_owned().into())
+            ]
+            .iter()
+            .cloned()
+            .collect()
+        );
     }
 }

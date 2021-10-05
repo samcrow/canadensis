@@ -1,7 +1,7 @@
 //! Information about constants
 
 use crate::compile::CompileContext;
-use crate::package::Error;
+use crate::error::Error;
 use crate::types::keywords::is_reserved_keyword;
 use crate::types::{evaluate_expression, PrimitiveType, Value};
 use canadensis_dsdl_parser::num_bigint::BigInt;

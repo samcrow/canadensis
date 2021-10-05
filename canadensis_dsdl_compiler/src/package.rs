@@ -1,18 +1,17 @@
 use crate::compiled::CompiledDsdl;
+use crate::error::Error;
 use crate::type_key::{TypeFullName, TypeKey};
 use crate::types::keywords::{is_reserved_keyword, is_valid_identifier};
 use canadensis_dsdl_parser::TypeVersion;
 use regex::Regex;
 use std::collections::btree_map::Entry;
 use std::collections::BTreeMap;
-use std::io;
 use std::path::{Path, PathBuf};
-use thiserror::Error;
 use walkdir::{DirEntry, WalkDir};
 
 /// The maximum length of a type name in characters, including the package name and .s but not
 /// including the version
-const TYPE_NAME_LENGTH_MAX: usize = 255;
+pub const TYPE_NAME_LENGTH_MAX: usize = 255;
 
 /// A package of zero or more data structure definitions read from files
 #[derive(Debug)]
@@ -182,6 +181,11 @@ fn info_from_path(root: &Path, file_path: &Path) -> Result<(TypeKey, FileNameInf
         });
     }
 
+    // Check version
+    if name_info.version.major == 0 && name_info.version.minor == 0 {
+        return Err(Error::VersionZero(file_path.into()));
+    }
+
     let full_name = TypeFullName::new(path_components, name_info.name.clone());
 
     if full_name.len() > TYPE_NAME_LENGTH_MAX {
@@ -259,53 +263,4 @@ mod test {
             parse_file_name("DataType1.3.7.uavcan")
         );
     }
-}
-
-#[derive(Error, Debug)]
-pub enum Error {
-    #[error("Failed to find DSDL files under {}", .root.display())]
-    WalkDir {
-        root: PathBuf,
-        #[source]
-        inner: walkdir::Error,
-    },
-    #[error("Failed to read DSDL file {}", .path.display())]
-    FileRead {
-        path: PathBuf,
-        #[source]
-        inner: io::Error,
-    },
-    #[error("Path {0} could not be converted into UTF-8")]
-    PathUtf8(PathBuf),
-    #[error("File {0} has an invalid name")]
-    FileName(PathBuf),
-    #[error("Type name or path to {path} uses reserved keyword {keyword}")]
-    NameKeyword { path: PathBuf, keyword: String },
-    #[error("Type name or path component {component:?} in {} is not a valid identifier")]
-    NameInvalidIdentifier { path: PathBuf, component: String },
-    #[error(
-        "Type name {name} (from {path}) is too long. The maximum allowed length is {}",
-        TYPE_NAME_LENGTH_MAX
-    )]
-    TypeNameLength { path: PathBuf, name: String },
-    #[error("DSDL file {} is located in the root directory. It must be in a namespace subdirectory.", .0.display())]
-    FileNotInPackage(PathBuf),
-    #[error("Can't add a type named {old}: another type with a conflicting name {new} has already been added")]
-    DuplicateKey { old: TypeKey, new: TypeKey },
-    /// An error triggered by a particular file
-    ///
-    /// Because files are compiled recursively, this may contain any other error type caused by
-    /// another file.
-    #[error("Error processing file {}", .path.display())]
-    CompileFile {
-        path: PathBuf,
-        #[source]
-        inner: Box<Error>,
-    },
-    #[error("{0}")]
-    Compile(#[from] canadensis_dsdl_parser::Error),
-    #[error("Type {0} not found")]
-    UnknownType(TypeKey),
-    #[error("Input/output error")]
-    Io(#[from] io::Error),
 }

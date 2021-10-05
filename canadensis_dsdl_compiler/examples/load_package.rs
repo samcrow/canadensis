@@ -1,7 +1,6 @@
 extern crate canadensis_dsdl_compiler;
 use canadensis_dsdl_compiler::package::{Error, Package};
 use std::env;
-use std::error::Error as _;
 use std::process;
 
 fn main() {
@@ -28,7 +27,7 @@ fn run() -> Result<(), Error> {
     package.add_files(path)?;
 
     let output = package.compile()?;
-    println!("{:#?}", output);
+    // println!("{:#?}", output);
 
     Ok(())
 }

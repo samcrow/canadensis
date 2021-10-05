@@ -1,10 +1,13 @@
-use crate::compiled::{CompiledDsdl, DsdlKind, Extent, Field, Message, MessageKind, Struct, Union};
-use crate::package::{DsdlFile, Error};
+use crate::compiled::{
+    CompiledDsdl, DsdlKind, Extent, Field, Message, MessageKind, Struct, Union, Variant,
+};
+use crate::error::Error;
+use crate::package::DsdlFile;
 use crate::type_key::{TypeFullName, TypeKey};
 use crate::types::constant::Constant;
 use crate::types::directive::evaluate_directive;
 use crate::types::expression::convert_type;
-use crate::types::{array_length_bits, PrimitiveType, Type};
+use crate::types::{array_length_bits, PrimitiveType, ResolvedType};
 use canadensis_bit_length_set::BitLengthSet;
 use canadensis_dsdl_parser::{make_error, Identifier, Span, Statement};
 use itertools::Itertools;
@@ -18,6 +21,8 @@ use std::path::PathBuf;
 
 /// The minimum number of variants in a union
 const UNION_MIN_VARIANTS: usize = 2;
+/// Alignment of a composite type, in bits
+const COMPOSITE_ALIGNMENT: usize = 8;
 
 pub(crate) fn compile(
     files: BTreeMap<TypeKey, DsdlFile>,
@@ -223,7 +228,6 @@ impl PersistentContext {
 
     fn compile_one(&mut self, key: &TypeKey, input: DsdlFile) -> Result<CompiledDsdl, Error> {
         let input_path: PathBuf = input.path().into();
-        println!("Compiling {} from {}", key, input.path().display());
         self.compile_one_inner(key, input)
             .map_err(|e| Error::CompileFile {
                 path: input_path,
@@ -257,40 +261,29 @@ impl PersistentContext {
                         let name_str = name.name;
                         let new_constant =
                             Constant::evaluate(&mut ctx(self, &mut state), ty, name, value)?;
-                        println!(
-                            "Calculated constant {} = {}",
-                            name_str,
-                            new_constant.value()
-                        );
                         state.constants.insert(name_str.to_owned(), new_constant);
                     }
                 }
                 Statement::Field { ty, name, span } => {
                     let ty = convert_type(&mut ctx(self, &mut state), ty)?;
+                    let ty = ty.resolve(&mut ctx(self, &mut state), span.clone())?;
                     let ty_alignment = ty.alignment();
-                    let ty_length = ty.bit_length_set(&mut ctx(self, &mut state), span.clone())?;
-                    println!(
-                        "{} has length {:?}, alignment {}",
-                        ty,
-                        ty_length.expand(),
-                        ty_alignment
-                    );
+                    let ty_length = ty.size();
 
                     // Calculate the total length and alignment for the implicit length or delimiter
                     // header (if any) and the field type
-                    let (total_length, total_alignment) =
-                        match ty.implicit_field(&mut ctx(self, &mut state), span.clone())? {
-                            Some(implicit_length) => {
-                                let implicit_type = PrimitiveType::from(implicit_length);
-                                let implicit_bit_length =
-                                    BitLengthSet::single(implicit_type.bit_length());
-                                (
-                                    ty_length.concatenate([implicit_bit_length]),
-                                    std::cmp::max(ty_alignment, implicit_type.alignment()),
-                                )
-                            }
-                            None => (ty_length, ty_alignment),
-                        };
+                    let (total_length, total_alignment) = match ty.implicit_field() {
+                        Some(implicit_length) => {
+                            let implicit_type = PrimitiveType::from(implicit_length);
+                            let implicit_bit_length =
+                                BitLengthSet::single(implicit_type.bit_length());
+                            (
+                                ty_length.concatenate([implicit_bit_length]),
+                                std::cmp::max(ty_alignment, implicit_type.alignment()),
+                            )
+                        }
+                        None => (ty_length, ty_alignment),
+                    };
 
                     state.add_field(ty, name, total_length, total_alignment, span)?;
                 }
@@ -484,17 +477,14 @@ impl FileState {
 
     fn add_field(
         &mut self,
-        ty: Type,
+        ty: ResolvedType,
         name: Identifier,
         total_length: BitLengthSet,
         total_alignment: usize,
         span: Span<'_>,
     ) -> Result<(), Error> {
-        // TODO: Check for an existing field with the same name
-        let new_field = Field::Data {
-            ty,
-            name: name.name.to_owned(),
-        };
+        // TODO: Check for an existing field/variant with the same name
+        let name = name.name.to_owned();
         let update_struct_length = |length: BitLengthSet| {
             length
                 .pad_to_alignment(total_alignment)
@@ -506,7 +496,7 @@ impl FileState {
             // No fields, enter struct mode and add the first one
             State::Message => {
                 self.state = Some(State::MessageStruct(
-                    StructState::Collecting(vec![new_field]),
+                    StructState::Collecting(vec![Field::data(ty, name)]),
                     // Initial bit length matches the first field
                     update_struct_length(BitLengthSet::single(0)),
                 ));
@@ -515,7 +505,7 @@ impl FileState {
             State::Response(req) => {
                 self.state = Some(State::ResponseStruct(
                     req,
-                    StructState::Collecting(vec![new_field]),
+                    StructState::Collecting(vec![Field::data(ty, name)]),
                     // Initial bit length matches the first field
                     update_struct_length(BitLengthSet::single(0)),
                 ));
@@ -523,7 +513,17 @@ impl FileState {
             }
             // Add a field to a struct
             State::MessageStruct(StructState::Collecting(mut fields), length) => {
-                fields.push(new_field);
+                if fields
+                    .iter()
+                    .find(|existing| existing.name() == Some(&name))
+                    .is_some()
+                {
+                    return Err(
+                        make_error(format!("A field named {} already exists", name), span).into(),
+                    );
+                }
+
+                fields.push(Field::data(ty, name));
                 self.state = Some(State::MessageStruct(
                     StructState::Collecting(fields),
                     update_struct_length(length),
@@ -531,7 +531,7 @@ impl FileState {
                 Ok(())
             }
             State::ResponseStruct(req, StructState::Collecting(mut fields), length) => {
-                fields.push(new_field);
+                fields.push(Field::data(ty, name));
                 self.state = Some(State::ResponseStruct(
                     req,
                     StructState::Collecting(fields),
@@ -541,12 +541,12 @@ impl FileState {
             }
             // Add a variant to a union
             State::MessageUnion(UnionState::Collecting(mut variants)) => {
-                variants.push(new_field);
+                variants.push(Variant::new(ty, name));
                 self.state = Some(State::MessageUnion(UnionState::Collecting(variants)));
                 Ok(())
             }
             State::ResponseUnion(req, UnionState::Collecting(mut variants)) => {
-                variants.push(new_field);
+                variants.push(Variant::new(ty, name));
                 self.state = Some(State::ResponseUnion(req, UnionState::Collecting(variants)));
                 Ok(())
             }
@@ -576,7 +576,7 @@ impl FileState {
                     deprecated: self.deprecated,
                     extent,
                     kind: MessageKind::Struct(Struct { fields }),
-                    bit_length: length,
+                    bit_length: length.pad_to_alignment(COMPOSITE_ALIGNMENT),
                 };
                 Ok(CompiledDsdl {
                     fixed_port_id,
@@ -591,7 +591,7 @@ impl FileState {
                     deprecated: self.deprecated,
                     extent,
                     kind: MessageKind::Struct(Struct { fields }),
-                    bit_length: length,
+                    bit_length: length.pad_to_alignment(COMPOSITE_ALIGNMENT),
                 };
                 Ok(CompiledDsdl {
                     fixed_port_id,
@@ -603,7 +603,7 @@ impl FileState {
                     deprecated: self.deprecated,
                     extent,
                     kind: MessageKind::Union(Union { variants }),
-                    bit_length: length,
+                    bit_length: length.pad_to_alignment(COMPOSITE_ALIGNMENT),
                 };
                 Ok(CompiledDsdl {
                     fixed_port_id,
@@ -618,7 +618,7 @@ impl FileState {
                     deprecated: self.deprecated,
                     extent,
                     kind: MessageKind::Union(Union { variants }),
-                    bit_length: length,
+                    bit_length: length.pad_to_alignment(COMPOSITE_ALIGNMENT),
                 };
                 Ok(CompiledDsdl {
                     fixed_port_id,
@@ -674,13 +674,13 @@ enum StructState {
 #[derive(Debug)]
 enum UnionState {
     /// Collecting variants (may not have any variants yet)
-    Collecting(Vec<Field>),
+    Collecting(Vec<Variant>),
     /// Got a use of _offset_, which can't be followed by any
     /// more fields
-    UsedOffset(Vec<Field>, BitLengthSet),
+    UsedOffset(Vec<Variant>, BitLengthSet),
     /// Got an @extent or @sealed, which can't be followed by any
     /// more fields
-    End(Vec<Field>, Extent, BitLengthSet),
+    End(Vec<Variant>, Extent, BitLengthSet),
 }
 
 /// Applies state transitions and checks errors to handle a @sealed or @extent directive
@@ -787,12 +787,18 @@ fn apply_sealed_or_extent(
 
 /// Creates a bit length set for a union, which includes the implicit discriminant and all
 /// variants
-fn make_union_bit_length(fields: &[Field]) -> BitLengthSet {
-    let discriminant_bits = array_length_bits(fields.len());
+fn make_union_bit_length(variants: &[Variant]) -> BitLengthSet {
+    let discriminant_bits = array_length_bits(variants.len());
     let discriminant_length = BitLengthSet::single(
         discriminant_bits
             .try_into()
             .expect("Can't convert discriminant bits to usize"),
     );
-    todo!()
+    let variant_lengths = variants
+        .iter()
+        .map(|variant| variant.ty.size())
+        .fold1(|size1, size2| size1.unite([size2]))
+        .unwrap_or_else(|| BitLengthSet::single(0));
+    // Concatenate the discriminant and the variant lengths
+    discriminant_length.concatenate([variant_lengths])
 }

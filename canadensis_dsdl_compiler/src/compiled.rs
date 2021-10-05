@@ -1,5 +1,5 @@
 use crate::types::constant::Constant;
-use crate::types::Type;
+use crate::types::ResolvedType;
 use canadensis_bit_length_set::BitLengthSet;
 use std::collections::BTreeMap;
 
@@ -24,7 +24,7 @@ pub enum DsdlKind {
 }
 
 /// A DSDL message, request, or response
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Message {
     pub deprecated: bool,
     pub extent: Extent,
@@ -33,7 +33,7 @@ pub struct Message {
 }
 
 /// The extent of a type
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Extent {
     /// Sealed type
     Sealed,
@@ -41,24 +41,52 @@ pub enum Extent {
     Delimited(u64),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum MessageKind {
     Struct(Struct),
     Union(Union),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Struct {
     pub fields: Vec<Field>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Union {
-    pub variants: Vec<Field>,
+    pub variants: Vec<Variant>,
 }
 
-#[derive(Debug)]
+/// A field of a struct
+#[derive(Debug, Clone)]
 pub enum Field {
     Padding(u8),
-    Data { ty: Type, name: String },
+    Data { ty: ResolvedType, name: String },
+}
+
+impl Field {
+    /// A convenience constructor that makes a Field::Data
+    pub fn data(ty: ResolvedType, name: String) -> Self {
+        Field::Data { ty, name }
+    }
+
+    pub fn name(&self) -> Option<&str> {
+        match self {
+            Field::Padding(_) => None,
+            Field::Data { name, .. } => Some(&*name),
+        }
+    }
+}
+
+/// A variant of a union
+#[derive(Debug, Clone)]
+pub struct Variant {
+    pub ty: ResolvedType,
+    pub name: String,
+}
+
+impl Variant {
+    pub fn new(ty: ResolvedType, name: String) -> Self {
+        Variant { ty, name }
+    }
 }

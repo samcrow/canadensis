@@ -1,5 +1,5 @@
 use crate::compile::CompileContext;
-use crate::package::Error;
+use crate::error::Error;
 use crate::types::expression::evaluate_expression;
 use crate::types::Value;
 use canadensis_dsdl_parser::{make_error, Expression, Identifier};
@@ -31,7 +31,20 @@ pub(crate) fn evaluate_directive(
                             let value = value.denom();
                             // Try to fit into a u64
                             match value.to_u64() {
-                                Some(value) => cx.handle_extent(name.span, value),
+                                Some(value) => {
+                                    if value % 8 == 0 {
+                                        cx.handle_extent(name.span, value)
+                                    } else {
+                                        Err(make_error(
+                                            format!(
+                                                "Extent value {} is not a multiple of 8 bits",
+                                                value
+                                            ),
+                                            expression_span,
+                                        )
+                                        .into())
+                                    }
+                                }
                                 None => Err(make_error(
                                     format!(
                                         "Extent value {} is too large to fit into 64 bits",

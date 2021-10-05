@@ -2,12 +2,12 @@
 
 use crate::compile::CompileContext;
 use crate::compiled::DsdlKind;
-use crate::package::Error;
+use crate::error::Error;
 use crate::types::set::{Set, SetTypeError};
 use crate::types::string::StringValue;
 use crate::types::{ExprType, ScalarType, Type, Value};
 use canadensis_dsdl_parser::{
-    make_error, Expression, ExpressionAtom, ExpressionType, Literal, LiteralType, Span,
+    Expression, ExpressionAtom, ExpressionType, Literal, LiteralType, Span,
 };
 use num_rational::BigRational;
 use num_traits::{FromPrimitive, Pow, Signed, ToPrimitive};
@@ -25,21 +25,22 @@ pub(crate) fn evaluate_expression(
                 // Unary + on a number has no effect
                 Value::Rational(n) => Ok(Value::Rational(n)),
                 // On all other types, it's an error.
-                Value::String(_) => {
-                    Err(make_error("Can't apply unary + operator to a string", span).into())
-                }
+                Value::String(_) => Err(span_error!(
+                    span,
+                    "Can't apply unary + operator to a string"
+                )),
                 Value::Set { .. } => {
-                    Err(make_error("Can't apply unary + operator to a set", span).into())
+                    Err(span_error!(span, "Can't apply unary + operator to a set"))
                 }
-                Value::Boolean(_) => {
-                    Err(make_error("Can't apply unary + operator to a boolean", span).into())
-                }
-                Value::Type(_) => {
-                    Err(make_error("Can't apply unary + operator to a type", span).into())
-                }
-                Value::Identifier(_) => {
-                    Err(make_error("Can't apply unary + operator to an identifier", span).into())
-                }
+                Value::Boolean(_) => Err(span_error!(
+                    span,
+                    "Can't apply unary + operator to a boolean"
+                )),
+                Value::Type(_) => Err(span_error!(span, "Can't apply unary + operator to a type")),
+                Value::Identifier(_) => Err(span_error!(
+                    span,
+                    "Can't apply unary + operator to an identifier"
+                )),
             }
         }
         ExpressionType::UnaryMinus(inner) => {
@@ -48,35 +49,34 @@ pub(crate) fn evaluate_expression(
                 // Unary - on a number negates it
                 Value::Rational(n) => Ok(Value::Rational(-n)),
                 // On all other types, it's an error.
-                Value::String(_) => {
-                    Err(make_error("Can't apply unary - operator to a string", span).into())
-                }
+                Value::String(_) => Err(span_error!(
+                    span,
+                    "Can't apply unary - operator to a string"
+                )),
                 Value::Set { .. } => {
-                    Err(make_error("Can't apply unary - operator to a set", span).into())
+                    Err(span_error!(span, "Can't apply unary - operator to a set"))
                 }
-                Value::Boolean(_) => {
-                    Err(make_error("Can't apply unary - operator to a boolean", span).into())
-                }
-                Value::Type(_) => {
-                    Err(make_error("Can't apply unary - operator to a type", span).into())
-                }
-                Value::Identifier(_) => {
-                    Err(make_error("Can't apply unary - operator to an identifier", span).into())
-                }
+                Value::Boolean(_) => Err(span_error!(
+                    span,
+                    "Can't apply unary - operator to a boolean"
+                )),
+                Value::Type(_) => Err(span_error!(span, "Can't apply unary - operator to a type")),
+                Value::Identifier(_) => Err(span_error!(
+                    span,
+                    "Can't apply unary - operator to an identifier"
+                )),
             }
         }
         ExpressionType::UnaryNot(inner) => {
             let inner = evaluate_expression(cx, *inner)?;
             match inner {
-                Value::Rational(_) => {
-                    Err(make_error("Can't apply unary ! to a rational", span).into())
-                }
-                Value::String(_) => Err(make_error("Can't apply unary ! to a string", span).into()),
-                Value::Set { .. } => Err(make_error("Can't apply unary ! to a set", span).into()),
+                Value::Rational(_) => Err(span_error!(span, "Can't apply unary ! to a rational")),
+                Value::String(_) => Err(span_error!(span, "Can't apply unary ! to a string")),
+                Value::Set { .. } => Err(span_error!(span, "Can't apply unary ! to a set")),
                 Value::Boolean(value) => Ok(Value::Boolean(!value)),
-                Value::Type(_) => Err(make_error("Can't apply unary ! to a type", span).into()),
+                Value::Type(_) => Err(span_error!(span, "Can't apply unary ! to a type")),
                 Value::Identifier(_) => {
-                    Err(make_error("Can't apply unary ! to an identifier", span).into())
+                    Err(span_error!(span, "Can't apply unary ! to an identifier"))
                 }
             }
         }
@@ -85,7 +85,7 @@ pub(crate) fn evaluate_expression(
             match lhs {
                 Value::Set(lhs) => evaluate_set_attr(lhs, rhs, span),
                 Value::Type(ty) => evaluate_type_attr(cx, ty, rhs, span),
-                _ => Err(make_error(format!("{} has no attribute {}", lhs.ty(), rhs), span).into()),
+                _ => Err(span_error!(span, "{} has no attribute {}", lhs.ty(), rhs)),
             }
         }
         ExpressionType::Exponent(base, exponent) => {
@@ -285,11 +285,12 @@ pub(crate) fn evaluate_expression(
             let rhs = evaluate_expression(cx, *rhs)?;
             match (lhs, rhs) {
                 (Value::Boolean(lhs), Value::Boolean(rhs)) => Ok(Value::Boolean(lhs || rhs)),
-                (lhs, rhs) => Err(make_error(
-                    format!("Can't calculate {} || {}", lhs.ty(), rhs.ty()),
+                (lhs, rhs) => Err(span_error!(
                     span,
-                )
-                .into()),
+                    "Can't calculate {} || {}",
+                    lhs.ty(),
+                    rhs.ty()
+                )),
             }
         }
         ExpressionType::LogicalAnd(lhs, rhs) => {
@@ -299,11 +300,12 @@ pub(crate) fn evaluate_expression(
             let rhs = evaluate_expression(cx, *rhs)?;
             match (lhs, rhs) {
                 (Value::Boolean(lhs), Value::Boolean(rhs)) => Ok(Value::Boolean(lhs && rhs)),
-                (lhs, rhs) => Err(make_error(
-                    format!("Can't calculate {} && {}", lhs.ty(), rhs.ty()),
+                (lhs, rhs) => Err(span_error!(
                     span,
-                )
-                .into()),
+                    "Can't calculate {} && {}",
+                    lhs.ty(),
+                    rhs.ty()
+                )),
             }
         }
     }
@@ -335,7 +337,6 @@ fn evaluate_atom(
         },
         // This is where we try to replace an identifier with is value
         ExpressionAtom::Identifier(identifier) => {
-            println!("Evaluating identifier atom {}", identifier);
             match identifier {
                 // Magic variables
                 "_offset_" => {
@@ -353,11 +354,7 @@ fn evaluate_atom(
                     // Try constants
                     match cx.constants().get(identifier) {
                         Some(constant) => Ok(constant.value().clone()),
-                        None => Err(make_error(
-                            format!("Identifier {} not found", identifier),
-                            span,
-                        )
-                        .into()),
+                        None => Err(span_error!(span, "Identifier {} not found", identifier)),
                     }
                 }
             }
@@ -372,7 +369,7 @@ fn evaluate_set_attr(lhs: Set, rhs: &str, span: Span<'_>) -> Result<Value, Error
         "min" => evaluate_set_min(lhs, span),
         "max" => evaluate_set_max(lhs, span),
         "count" => Ok(Value::Rational(BigRational::from_integer(lhs.len().into()))),
-        _ => Err(make_error(format!("Set does not have a {} attribute", rhs), span).into()),
+        _ => Err(span_error!(span, "Set does not have a {} attribute", rhs)),
     }
 }
 
@@ -380,11 +377,10 @@ fn evaluate_set_min(lhs: Set, span: Span<'_>) -> Result<Value, Error> {
     match lhs.min_value() {
         Some(value) => Ok(value),
         None => match lhs.ty() {
-            None => Err(make_error(
-                "Set does not have a min attribute because it is empty",
+            None => Err(span_error!(
                 span,
-            )
-            .into()),
+                "Set does not have a min attribute because it is empty",
+            )),
             Some(element_ty) => Err(make_set_min_max_gt_undefined_error("min", element_ty, span)),
         },
     }
@@ -394,11 +390,10 @@ fn evaluate_set_max(lhs: Set, span: Span<'_>) -> Result<Value, Error> {
     match lhs.max_value() {
         Some(value) => Ok(value),
         None => match lhs.ty() {
-            None => Err(make_error(
-                "Set does not have a min attribute because it is empty",
+            None => Err(span_error!(
                 span,
-            )
-            .into()),
+                "Set does not have a min attribute because it is empty",
+            )),
             Some(element_ty) => Err(make_set_min_max_gt_undefined_error("max", element_ty, span)),
         },
     }
@@ -409,14 +404,10 @@ fn make_set_min_max_gt_undefined_error(
     element_ty: ExprType,
     span: Span<'_>,
 ) -> Error {
-    make_error(
-        format!(
+    span_error!(span,
             "Set does not have a {} attribute because the < operator is not defined for its element type ({})",
             attribute,
-            element_ty
-        ),
-        span,
-    ).into()
+            element_ty)
 }
 
 fn evaluate_type_attr(
@@ -452,32 +443,28 @@ fn evaluate_type_attr(
                                 // Look up the constant
                                 match constants.get(rhs) {
                                     Some(constant) => Ok(constant.value().clone()),
-                                    None => Err(make_error(
-                                        format!("Type {} has no attribute {}", ty, rhs),
+                                    None => Err(span_error!(
                                         span,
-                                    )
-                                    .into()),
+                                        "Type {} has no attribute {}",
+                                        ty,
+                                        rhs
+                                    )),
                                 }
                             }
                             DsdlKind::Service { .. } => {
                                 // A service type can't be named
-                                Err(make_error(
-                                    format!(
-                                        "Type {} has no attributes because it is a service",
-                                        ty
-                                    ),
+                                Err(span_error!(
                                     span,
-                                )
-                                .into())
+                                    "Type {} has no attributes because it is a service",
+                                    ty
+                                ))
                             }
                         }
                     }
-                    _ => Err(
-                        make_error(format!("Type {} has no attribute {}", ty, rhs), span).into(),
-                    ),
+                    _ => Err(span_error!(span, "Type {} has no attribute {}", ty, rhs)),
                 }
             }
-            _ => Err(make_error(format!("Type {} has no attribute {}", ty, rhs), span).into()),
+            _ => Err(span_error!(span, "Type {} has no attribute {}", ty, rhs)),
         },
     }
 }
@@ -492,36 +479,36 @@ fn evaluate_array_length(
             if rational.is_integer() {
                 let length = rational.numer().clone();
                 if length.is_negative() {
-                    return Err(make_error(
-                        format!("Array length evaluated to negative value {}", length),
+                    return Err(span_error!(
                         length_span,
-                    )
-                    .into());
+                        "Array length evaluated to negative value {}",
+                        length,
+                    ));
                 } else {
                     // Convert to usize
                     match length.to_usize() {
                         Some(length) => Ok(length),
-                        None => Err(make_error(
-                            format!("Compiler limitation: Array length {} is too large", length),
+                        None => Err(span_error!(
                             length_span,
-                        )
-                        .into()),
+                            "Compiler limitation: Array length {} is too large",
+                            length,
+                        )),
                     }
                 }
             } else {
-                return Err(make_error(
-                    format!("Array length evaluated to non-integer value {}", rational),
+                return Err(span_error!(
                     length_span,
-                )
-                .into());
+                    "Array length evaluated to non-integer value {}",
+                    rational
+                ));
             }
         }
         other => {
-            return Err(make_error(
-                format!("Array length evaluated to non-rational type {}", other.ty()),
+            return Err(span_error!(
                 length_span,
-            )
-            .into())
+                "Array length evaluated to non-rational type {}",
+                other.ty()
+            ))
         }
     }
 }
@@ -712,11 +699,13 @@ where
             let result = rational_op(lhs, rhs, span)?;
             Ok(result)
         }
-        (lhs, rhs) => Err(make_error(
-            format!("Can't calculate {} {} {}", lhs.ty(), symbol, rhs.ty()),
+        (lhs, rhs) => Err(span_error!(
             span,
-        )
-        .into()),
+            "Can't calculate {} {} {}",
+            lhs.ty(),
+            symbol,
+            rhs.ty()
+        )),
     }
 }
 
@@ -737,32 +726,26 @@ fn rational_pow(base: BigRational, exponent: BigRational, span: Span<'_>) -> Res
 /// This function returns an error if the conversion between BigRational and f64 fails.
 fn approx_pow(base: BigRational, exponent: BigRational, span: Span<'_>) -> Result<Value, Error> {
     let base = base.to_f64().ok_or_else(|| {
-        make_error(
-            format!(
-                "Can't convert base {} to a floating-point approximation",
-                base
-            ),
+        span_error!(
             span.clone(),
+            "Can't convert base {} to a floating-point approximation",
+            base
         )
     })?;
     let exponent = exponent.to_f64().ok_or_else(|| {
-        make_error(
-            format!(
-                "Can't convert exponent {} to a floating-point approximation",
-                exponent
-            ),
+        span_error!(
             span.clone(),
+            "Can't convert exponent {} to a floating-point approximation",
+            exponent
         )
     })?;
 
     let result = base.powf(exponent);
     let result = BigRational::from_f64(result).ok_or_else(|| {
-        make_error(
-            format!(
-                "Can't convert exponent result {} back to a rational",
-                result
-            ),
+        span_error!(
             span,
+            "Can't convert exponent result {} back to a rational",
+            result
         )
     })?;
     Ok(Value::Rational(result))
@@ -777,14 +760,12 @@ fn rational_bitwise_xor(
         let result = lhs.numer() ^ rhs.numer();
         Ok(Value::Rational(BigRational::from_integer(result)))
     } else {
-        Err(make_error(
-            format!(
-                "Can't calculate {} ^ {}: Both operands must be integers",
-                lhs, rhs
-            ),
+        Err(span_error!(
             span,
-        )
-        .into())
+            "Can't calculate {} ^ {}: Both operands must be integers",
+            lhs,
+            rhs
+        ))
     }
 }
 
@@ -797,14 +778,12 @@ fn rational_bitwise_and(
         let result = lhs.numer() & rhs.numer();
         Ok(Value::Rational(BigRational::from_integer(result)))
     } else {
-        Err(make_error(
-            format!(
-                "Can't calculate {} & {}: Both operands must be integers",
-                lhs, rhs
-            ),
+        Err(span_error!(
             span,
-        )
-        .into())
+            "Can't calculate {} & {}: Both operands must be integers",
+            lhs,
+            rhs
+        ))
     }
 }
 
@@ -813,14 +792,12 @@ fn rational_bitwise_or(lhs: BigRational, rhs: BigRational, span: Span<'_>) -> Re
         let result = lhs.numer() | rhs.numer();
         Ok(Value::Rational(BigRational::from_integer(result)))
     } else {
-        Err(make_error(
-            format!(
-                "Can't calculate {} | {}: Both operands must be integers",
-                lhs, rhs
-            ),
+        Err(span_error!(
             span,
-        )
-        .into())
+            "Can't calculate {} | {}: Both operands must be integers",
+            lhs,
+            rhs
+        ))
     }
 }
 
@@ -869,7 +846,7 @@ mod test {
 }
 
 fn make_set_error(e: SetTypeError, span: Span<'_>) -> Error {
-    make_error(format!("Invalid type in set: {}", e), span).into()
+    span_error!(span, "Invalid type in set: {}", e)
 }
 
 /// Converts an AST type into a compiler type
@@ -906,14 +883,11 @@ pub(crate) fn convert_type(
                             max_len: length - 1,
                         })
                     } else {
-                        Err(make_error(
-                            format!(
-                                "Non-inclusive array length evaluated to non-positive value {}",
-                                length
-                            ),
+                        Err(span_error!(
                             length_span,
-                        )
-                        .into())
+                            "Non-inclusive array length evaluated to non-positive value {}",
+                            length
+                        ))
                     }
                 }
             }

@@ -6,8 +6,8 @@ mod set;
 mod string;
 
 use crate::compile::CompileContext;
-use crate::compiled::{DsdlKind, Extent};
-use crate::package::Error;
+use crate::compiled::{DsdlKind, Extent, Message};
+use crate::error::Error;
 use crate::types::expression::evaluate_expression;
 use crate::types::set::Set;
 use crate::types::string::StringValue;
@@ -59,6 +59,25 @@ pub enum Type {
 }
 
 impl Type {
+    /// Resolves this type, looking up a versioned type (if any) and replacing it with a Message
+    pub(crate) fn resolve(
+        self,
+        cx: &mut CompileContext<'_>,
+        span: Span<'_>,
+    ) -> Result<ResolvedType, Error> {
+        match self {
+            Type::Scalar(scalar) => Ok(ResolvedType::Scalar(scalar.resolve(cx, span)?)),
+            Type::FixedArray { inner, len } => Ok(ResolvedType::FixedArray {
+                inner: inner.resolve(cx, span)?,
+                len,
+            }),
+            Type::VariableArray { inner, max_len } => Ok(ResolvedType::VariableArray {
+                inner: inner.resolve(cx, span)?,
+                max_len,
+            }),
+        }
+    }
+
     /// Returns a bit length set representing the possible lengths of this type
     pub(crate) fn bit_length_set(
         &self,
@@ -79,31 +98,11 @@ impl Type {
     }
 
     /// Returns the required alignment of this type
-    pub(crate) fn alignment(&self) -> usize {
+    pub fn alignment(&self) -> usize {
         match self {
             Type::Scalar(scalar) => scalar.alignment(),
             // The alignment of an array equals the alignment of its element type
             Type::FixedArray { inner, .. } | Type::VariableArray { inner, .. } => inner.alignment(),
-        }
-    }
-
-    /// Returns the delimiter header or length field, if any, that this type requires
-    pub(crate) fn implicit_field(
-        &self,
-        cx: &mut CompileContext<'_>,
-        span: Span<'_>,
-    ) -> Result<Option<ImplicitField>, Error> {
-        match self {
-            Type::Scalar(scalar) => scalar.implicit_field(cx, span),
-            Type::FixedArray { .. } => Ok(None),
-            Type::VariableArray { max_len, .. } => {
-                let length_bits = array_length_bits(*max_len);
-                Ok(Some(ImplicitField::ArrayLength {
-                    bits: length_bits
-                        .try_into()
-                        .expect("Implicit length field length too large for u8"),
-                }))
-            }
         }
     }
 }
@@ -214,6 +213,30 @@ pub enum ScalarType {
 }
 
 impl ScalarType {
+    // Resolves this type, looking up a versioned type (if any) and replacing it with a Message
+    pub(crate) fn resolve(
+        self,
+        cx: &mut CompileContext<'_>,
+        span: Span<'_>,
+    ) -> Result<ResolvedScalarType, Error> {
+        match self {
+            ScalarType::Versioned(key) => {
+                let referenced_type = cx.get_by_key(&key)?;
+                match &referenced_type.kind {
+                    DsdlKind::Message { message, .. } => Ok(ResolvedScalarType::Composite {
+                        key,
+                        inner: Box::new(message.clone()),
+                    }),
+                    DsdlKind::Service { .. } => {
+                        Err(make_error("Can't refer to a service type", span).into())
+                    }
+                }
+            }
+            ScalarType::Primitive(primitive) => Ok(ResolvedScalarType::Primitive(primitive)),
+            ScalarType::Void { bits } => Ok(ResolvedScalarType::Void { bits }),
+        }
+    }
+
     /// Returns a bit length set representing the possible lengths of this type
     fn bit_length_set(
         &self,
@@ -242,29 +265,6 @@ impl ScalarType {
             // Primitive and void types have 1-bit alignment
             ScalarType::Primitive(_) => 1,
             ScalarType::Void { .. } => 1,
-        }
-    }
-
-    /// Returns the delimiter header or length field, if any, that this type requires
-    pub(crate) fn implicit_field(
-        &self,
-        cx: &mut CompileContext<'_>,
-        span: Span<'_>,
-    ) -> Result<Option<ImplicitField>, Error> {
-        match self {
-            ScalarType::Versioned(key) => {
-                let inner = cx.get_by_key(key)?;
-                match &inner.kind {
-                    DsdlKind::Message { message, .. } => match message.extent {
-                        Extent::Sealed => Ok(None),
-                        Extent::Delimited(_) => Ok(Some(ImplicitField::DelimiterHeader)),
-                    },
-                    DsdlKind::Service { .. } => {
-                        Err(make_error("Can't refer to a service type", span).into())
-                    }
-                }
-            }
-            ScalarType::Primitive(_) | ScalarType::Void { .. } => Ok(None),
         }
     }
 }
@@ -426,6 +426,100 @@ mod fmt_impl {
                 ScalarType::Primitive(primitive) => write!(f, "{}", primitive),
                 ScalarType::Void { bits } => write!(f, "void{}", bits),
             }
+        }
+    }
+}
+
+/// A type of a DSDL field
+///
+/// If this is a composite type, the type name has been resolved to a Message.
+#[derive(Debug, Clone)]
+pub enum ResolvedType {
+    Scalar(ResolvedScalarType),
+    FixedArray {
+        inner: ResolvedScalarType,
+        len: usize,
+    },
+    VariableArray {
+        inner: ResolvedScalarType,
+        /// Maximum length of the array, inclusive
+        max_len: usize,
+    },
+}
+
+impl ResolvedType {
+    pub fn size(&self) -> BitLengthSet {
+        match self {
+            ResolvedType::Scalar(scalar) => scalar.size(),
+            ResolvedType::FixedArray { inner, len } => inner.size().repeat(*len),
+            ResolvedType::VariableArray { inner, max_len } => {
+                inner.size().repeat_range(..=*max_len)
+            }
+        }
+    }
+    pub fn alignment(&self) -> usize {
+        match self {
+            ResolvedType::Scalar(scalar) => scalar.alignment(),
+            ResolvedType::FixedArray { inner, .. } => inner.alignment(),
+            ResolvedType::VariableArray { inner, .. } => inner.alignment(),
+        }
+    }
+
+    /// Returns the delimiter header or length field, if any, that this type requires
+    pub(crate) fn implicit_field(&self) -> Option<ImplicitField> {
+        match self {
+            ResolvedType::Scalar(scalar) => scalar.implicit_field(),
+            ResolvedType::FixedArray { .. } => None,
+            ResolvedType::VariableArray { max_len, .. } => {
+                let length_bits = array_length_bits(*max_len);
+                Some(ImplicitField::ArrayLength {
+                    bits: length_bits
+                        .try_into()
+                        .expect("Implicit length field length too large for u8"),
+                })
+            }
+        }
+    }
+}
+
+/// A scalar (non-array) type
+///
+/// If this is a composite type, the type name has been resolved to a Message.
+#[derive(Debug, Clone)]
+pub enum ResolvedScalarType {
+    /// A composite message type
+    Composite { key: TypeKey, inner: Box<Message> },
+    /// A primitive type
+    Primitive(PrimitiveType),
+    /// A void type
+    Void { bits: u8 },
+}
+
+impl ResolvedScalarType {
+    pub fn size(&self) -> BitLengthSet {
+        match self {
+            ResolvedScalarType::Composite { inner, .. } => inner.bit_length.clone(),
+            ResolvedScalarType::Primitive(primitive) => {
+                BitLengthSet::single(primitive.bit_length())
+            }
+            ResolvedScalarType::Void { bits } => BitLengthSet::single(usize::from(*bits)),
+        }
+    }
+    pub fn alignment(&self) -> usize {
+        match self {
+            ResolvedScalarType::Composite { .. } => 8,
+            ResolvedScalarType::Primitive(_) | ResolvedScalarType::Void { .. } => 1,
+        }
+    }
+
+    /// Returns the delimiter header or length field, if any, that this type requires
+    pub(crate) fn implicit_field(&self) -> Option<ImplicitField> {
+        match self {
+            ResolvedScalarType::Composite { inner, .. } => match inner.extent {
+                Extent::Sealed => None,
+                Extent::Delimited(_) => Some(ImplicitField::DelimiterHeader),
+            },
+            ResolvedScalarType::Primitive(_) | ResolvedScalarType::Void { .. } => None,
         }
     }
 }
