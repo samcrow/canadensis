@@ -107,8 +107,8 @@ impl Type {
     }
 }
 
-/// Returns the number of bits needed for the array size field to store up to max_items values
-/// (inclusive) in a variable-length array, or max_items variants of a union
+/// Returns the number of bits needed for the array size field to store up to `max_items` values
+/// (inclusive) in a variable-length array, or `max_items` variants of a union
 pub(crate) fn array_length_bits(max_items: usize) -> u32 {
     round_up_length(bit_length(max_items))
 }
@@ -213,7 +213,7 @@ pub enum ScalarType {
 }
 
 impl ScalarType {
-    // Resolves this type, looking up a versioned type (if any) and replacing it with a Message
+    /// Resolves this type, looking up a versioned type (if any) and replacing it with a [[`Message`]]
     pub(crate) fn resolve(
         self,
         cx: &mut CompileContext<'_>,
@@ -263,8 +263,7 @@ impl ScalarType {
             // Versioned implies a composite type and 8-bit alignment
             ScalarType::Versioned(_) => 8,
             // Primitive and void types have 1-bit alignment
-            ScalarType::Primitive(_) => 1,
-            ScalarType::Void { .. } => 1,
+            ScalarType::Primitive(_) | ScalarType::Void { .. } => 1,
         }
     }
 }
@@ -290,20 +289,18 @@ impl PrimitiveType {
     /// Returns the cast mode of this type
     pub fn cast_mode(&self) -> CastMode {
         match self {
-            PrimitiveType::Boolean => CastMode::Saturated,
-            PrimitiveType::Int { .. } => CastMode::Saturated,
-            PrimitiveType::UInt { mode, .. } => mode.clone(),
-            PrimitiveType::Float16 { mode } => mode.clone(),
-            PrimitiveType::Float32 { mode } => mode.clone(),
-            PrimitiveType::Float64 { mode } => mode.clone(),
+            PrimitiveType::Boolean | PrimitiveType::Int { .. } => CastMode::Saturated,
+            PrimitiveType::UInt { mode, .. }
+            | PrimitiveType::Float16 { mode }
+            | PrimitiveType::Float32 { mode }
+            | PrimitiveType::Float64 { mode } => mode.clone(),
         }
     }
 
     pub fn bit_length(&self) -> usize {
         match self {
             PrimitiveType::Boolean => 1,
-            PrimitiveType::Int { bits } => usize::from(*bits),
-            PrimitiveType::UInt { bits, .. } => usize::from(*bits),
+            PrimitiveType::Int { bits } | PrimitiveType::UInt { bits, .. } => usize::from(*bits),
             PrimitiveType::Float16 { .. } => 16,
             PrimitiveType::Float32 { .. } => 32,
             PrimitiveType::Float64 { .. } => 64,
@@ -332,7 +329,7 @@ mod fmt_impl {
     use crate::types::string::StringValue;
     use crate::types::{PrimitiveType, ScalarType, Value};
     use canadensis_dsdl_parser::CastMode;
-    use std::fmt::*;
+    use std::fmt::{Display, Formatter, Result, Write};
 
     impl Display for ExprType {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
@@ -460,8 +457,9 @@ impl ResolvedType {
     pub fn alignment(&self) -> usize {
         match self {
             ResolvedType::Scalar(scalar) => scalar.alignment(),
-            ResolvedType::FixedArray { inner, .. } => inner.alignment(),
-            ResolvedType::VariableArray { inner, .. } => inner.alignment(),
+            ResolvedType::FixedArray { inner, .. } | ResolvedType::VariableArray { inner, .. } => {
+                inner.alignment()
+            }
         }
     }
 

@@ -3,7 +3,7 @@
 use crate::compile::CompileContext;
 use crate::compiled::DsdlKind;
 use crate::error::Error;
-use crate::types::set::{Set, SetTypeError};
+use crate::types::set::{Set, TypeError};
 use crate::types::string::StringValue;
 use crate::types::{ExprType, ScalarType, Type, Value};
 use canadensis_dsdl_parser::{
@@ -321,7 +321,7 @@ fn evaluate_atom(
         ExpressionAtom::Type(ty) => Ok(Value::Type(convert_type(cx, ty)?)),
         ExpressionAtom::Literal(Literal { literal, span }) => match literal {
             LiteralType::Set(expressions) => {
-                let set: Result<Result<Set, SetTypeError>, Error> = expressions
+                let set: Result<Result<Set, TypeError>, Error> = expressions
                     .into_iter()
                     .map(|expr| evaluate_expression(cx, expr))
                     .collect();
@@ -479,11 +479,11 @@ fn evaluate_array_length(
             if rational.is_integer() {
                 let length = rational.numer().clone();
                 if length.is_negative() {
-                    return Err(span_error!(
+                    Err(span_error!(
                         length_span,
                         "Array length evaluated to negative value {}",
                         length,
-                    ));
+                    ))
                 } else {
                     // Convert to usize
                     match length.to_usize() {
@@ -496,20 +496,18 @@ fn evaluate_array_length(
                     }
                 }
             } else {
-                return Err(span_error!(
+                Err(span_error!(
                     length_span,
                     "Array length evaluated to non-integer value {}",
                     rational
-                ));
+                ))
             }
         }
-        other => {
-            return Err(span_error!(
-                length_span,
-                "Array length evaluated to non-rational type {}",
-                other.ty()
-            ))
-        }
+        other => Err(span_error!(
+            length_span,
+            "Array length evaluated to non-rational type {}",
+            other.ty()
+        )),
     }
 }
 
@@ -526,9 +524,9 @@ fn calculate_exponent(base: Value, exponent: Value, span: Span<'_>) -> Result<Va
 /// When one input is a set, the operation will be applied to each element of the set. The result
 /// will have the operation applied between each element and the other (rational) input.
 ///
-/// symbol should be a short text representation of the operator, which will be used in error messages.
+/// `symbol` should be a short text representation of the operator, which will be used in error messages.
 ///
-/// rational_op should be a function that applies the operator to two rational values and returns the
+/// `rational_op` should be a function that applies the operator to two rational values and returns the
 /// result or an error.
 fn calculate_elementwise_binary<F>(
     lhs: Value,
@@ -544,7 +542,7 @@ where
         // rational op set<rational>
         (Value::Rational(lhs), Value::Set(set)) if set.can_hold(ExprType::Rational) => {
             // Apply elementwise
-            let new_elements: Result<Set, SetTypeError> = set
+            let new_elements: Result<Set, TypeError> = set
                 .into_iter()
                 .map(|element| match element {
                     Value::Rational(rhs) => rational_op(lhs.clone(), rhs, span.clone()),
@@ -560,7 +558,7 @@ where
         }
         // set<rational> op rational
         (Value::Set(set), Value::Rational(rhs)) if set.can_hold(ExprType::Rational) => {
-            let new_elements: Result<Set, SetTypeError> = set
+            let new_elements: Result<Set, TypeError> = set
                 .into_iter()
                 .map(|element| match element {
                     Value::Rational(lhs) => rational_op(lhs, rhs.clone(), span.clone()),
@@ -584,12 +582,12 @@ where
 ///
 /// This also accounts for strings that can implicitly convert to integers.
 ///
-/// symbol should be a short text representation of the operator, which will be used in error messages.
+/// `symbol should` be a short text representation of the operator, which will be used in error messages.
 ///
-/// rational_op should be a function that applies the operator to two rational values and returns the
+/// `rational_op` should be a function that applies the operator to two rational values and returns the
 /// result or an error.
 ///
-/// set_op shold be a function that applies the operator to two sets and returns the result.
+/// `set_op` shold be a function that applies the operator to two sets and returns the result.
 fn calculate_rational_or_set_binary<F, G>(
     lhs: Value,
     rhs: Value,
@@ -618,12 +616,12 @@ where
 /// The operator takes the form `rational op rational -> bool` or `set<T> op set<T> -> bool`,
 /// also accounting for strings that implicitly convert to integers.
 ///
-/// symbol should be a short text representation of the operator, which will be used in error messages.
+/// `symbol` should be a short text representation of the operator, which will be used in error messages.
 ///
-/// rational_op should be a function that applies the operator to two rational values and returns
+/// `rational_op` should be a function that applies the operator to two rational values and returns
 /// the result.
 ///
-/// set_op should be a function that applies the operator to two sets and returns
+/// `set_op` should be a function that applies the operator to two sets and returns
 /// the result.
 fn calculate_rational_or_set_comparison<F, G>(
     lhs: Value,
@@ -658,9 +656,9 @@ where
 ///
 /// This also accounts for strings that can implicitly convert to integers.
 ///
-/// symbol should be a short text representation of the operator, which will be used in error messages.
+/// `symbol` should be a short text representation of the operator, which will be used in error messages.
 ///
-/// rational_op should be a function that applies the operator to two rational values and returns the
+/// `rational_op` should be a function that applies the operator to two rational values and returns the
 /// result or an error.
 fn calculate_rational_binary<F>(
     lhs: Value,
@@ -709,7 +707,7 @@ where
     }
 }
 
-/// Calculates the result of raising a single rational to the power ofo another rational
+/// Calculates the result of raising a single rational to the power of another rational
 fn rational_pow(base: BigRational, exponent: BigRational, span: Span<'_>) -> Result<Value, Error> {
     if exponent.is_integer() {
         // Exact power
@@ -723,7 +721,9 @@ fn rational_pow(base: BigRational, exponent: BigRational, span: Span<'_>) -> Res
 
 /// Calculates the approximate value of a base raised to an exponent
 ///
-/// This function returns an error if the conversion between BigRational and f64 fails.
+/// # Errors
+///
+/// This function returns an error if the conversion between `BigRational` and `f64` fails.
 fn approx_pow(base: BigRational, exponent: BigRational, span: Span<'_>) -> Result<Value, Error> {
     let base = base.to_f64().ok_or_else(|| {
         span_error!(
@@ -845,7 +845,7 @@ mod test {
     }
 }
 
-fn make_set_error(e: SetTypeError, span: Span<'_>) -> Error {
+fn make_set_error(e: TypeError, span: Span<'_>) -> Error {
     span_error!(span, "Invalid type in set: {}", e)
 }
 

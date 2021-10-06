@@ -34,6 +34,10 @@ mod parser {
 pub type Error = pest::error::Error<Rule>;
 
 /// Attempts to parse the text of a DSDL file into an abstract syntax tree
+///
+/// # Errors
+///
+/// This function returns an error if the DSDL has invalid syntax.
 pub fn parse(dsdl: &str) -> Result<Definition<'_>, Error> {
     let parse_tree = DsdlParser::parse(Rule::definition, dsdl)?;
     ast::parse_to_ast(parse_tree)

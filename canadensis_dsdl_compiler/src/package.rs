@@ -30,6 +30,18 @@ impl Package {
         }
     }
     /// Scans for DSDL files in the provided root directory and adds them to this package
+    ///
+    /// # Errors
+    ///
+    /// This function returns an error if:
+    /// * The path does not exist or does not point to a directory
+    /// * An I/O error occurs when scanning for files
+    /// * A file name or path segment is not valid UTF-8
+    /// * A file name does not have the correct format
+    /// * The combined path and name of a data type are too long
+    /// * A data type version is 0.0
+    /// * A file represents a data type that is already in this package
+    ///
     pub fn add_files<P>(&mut self, root: P) -> Result<(), Error>
     where
         P: AsRef<Path>,
@@ -66,6 +78,11 @@ impl Package {
     }
 
     /// Compiles all input files that were previously added
+    ///
+    /// # Errors
+    ///
+    /// This function returns an error if any DSDL file could not be read, if any DSDL file has
+    /// invalid content, or an `@assert` directive fails.
     pub fn compile(self) -> Result<CompiledPackage, Error> {
         let result = crate::compile::compile(self.files)?;
         Ok(CompiledPackage { types: result })
@@ -80,11 +97,10 @@ pub struct CompiledPackage {
 /// Returns true if the provided entry is a DSDL file
 fn is_dsdl(entry: &DirEntry) -> bool {
     if entry.file_type().is_file() {
-        if let Some(extension) = entry.path().extension() {
-            extension == "uavcan"
-        } else {
-            false
-        }
+        entry
+            .path()
+            .extension()
+            .map_or(false, |extension| extension == "uavcan")
     } else {
         false
     }
@@ -127,7 +143,7 @@ impl DsdlFile {
 ///
 /// # Panics
 ///
-/// This function may panic if root is not an ancestor of file_path
+/// This function may panic if root is not an ancestor of `file_path`.
 fn info_from_path(root: &Path, file_path: &Path) -> Result<(TypeKey, FileNameInfo), Error> {
     let mut file_components = file_path.iter();
     // Consume all components of the file path that are the same as the root
@@ -154,17 +170,17 @@ fn info_from_path(root: &Path, file_path: &Path) -> Result<(TypeKey, FileNameInf
     let name_info = parse_file_name(&file_name).ok_or_else(|| Error::FileName(file_path.into()))?;
 
     // Check path and name for reserved keywords
-    for component in path_components.iter() {
+    for component in &path_components {
         if !is_valid_identifier(&*component) {
             return Err(Error::NameInvalidIdentifier {
                 path: file_path.into(),
-                component: component.to_owned(),
+                component: component.clone(),
             });
         }
         if is_reserved_keyword(&*component) {
             return Err(Error::NameKeyword {
                 path: file_path.into(),
-                keyword: component.to_owned(),
+                keyword: component.clone(),
             });
         }
     }

@@ -3,8 +3,8 @@ use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 
 /// A key that identifies a data type
 ///
-/// The PartialOrd, Ord, PartialEq, and Eq implementations for this type are based on the lowercase
-/// versions of the path and name. This means that type keys that differ only in case
+/// The `PartialOrd`, `Ord`, `PartialEq`, and `Eq` implementations for this type are based on the
+/// lowercase versions of the path and name. This means that type keys that differ only in case
 /// are considered equal.
 #[derive(Debug, Clone)]
 pub struct TypeKey {
@@ -130,7 +130,7 @@ impl From<VersionedType<'_>> for TypeKey {
 
 mod fmt_impl {
     use super::{TypeFullName, TypeKey};
-    use std::fmt::*;
+    use std::fmt::{Display, Formatter, Result};
     impl Display for TypeKey {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
             write!(f, "{}.{}", self.name, self.version)
@@ -139,7 +139,7 @@ mod fmt_impl {
 
     impl Display for TypeFullName {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-            for component in self.path.iter() {
+            for component in &self.path {
                 write!(f, "{}.", component)?;
             }
             write!(f, "{}", self.name)

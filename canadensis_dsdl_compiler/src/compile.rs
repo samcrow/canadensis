@@ -23,6 +23,10 @@ use std::path::PathBuf;
 const UNION_MIN_VARIANTS: usize = 2;
 /// Alignment of a composite type, in bits
 const COMPOSITE_ALIGNMENT: usize = 8;
+/// A bit length set containing 0
+///
+/// This is used to return a reference to a bit length set when no other bit length set is available.
+static BIT_LENGTH_ZERO: Lazy<BitLengthSet> = Lazy::new(|| BitLengthSet::single(0));
 
 pub(crate) fn compile(
     files: BTreeMap<TypeKey, DsdlFile>,
@@ -80,19 +84,19 @@ impl<'p> CompileContext<'p> {
         }
         // Now extract the bit length
 
-        static BIT_LENGTH_ZERO: Lazy<BitLengthSet> = Lazy::new(|| BitLengthSet::single(0));
-
         match self.current_file.state.as_ref().expect("No state") {
             // Before any field or @union, the length is zero
             State::Message | State::Response(_) => &BIT_LENGTH_ZERO,
-            // Normal struct length
-            State::MessageStruct(_, length) => length,
-            State::ResponseStruct(_, _, length) => length,
-            // Unions, length already calculated
-            State::MessageUnion(UnionState::UsedOffset(_, length))
-            | State::MessageUnion(UnionState::End(_, _, length))
-            | State::ResponseUnion(_, UnionState::UsedOffset(_, length))
-            | State::ResponseUnion(_, UnionState::End(_, _, length)) => length,
+            // Normal struct length, or union length already known
+            State::MessageStruct(_, length)
+            | State::ResponseStruct(_, _, length)
+            | State::MessageUnion(
+                UnionState::UsedOffset(_, length) | UnionState::End(_, _, length),
+            )
+            | State::ResponseUnion(
+                _,
+                UnionState::UsedOffset(_, length) | UnionState::End(_, _, length),
+            ) => length,
             // Unions, need to calculate length and change state
             State::MessageUnion(UnionState::Collecting(_))
             | State::ResponseUnion(_, UnionState::Collecting(_)) => {
@@ -179,13 +183,13 @@ impl<'p> CompileContext<'p> {
                     ))
                 }
             }
-            State::MessageStruct(StructState::Collecting(_), _)
-            | State::MessageStruct(StructState::End(_, _), _)
-            | State::MessageUnion(UnionState::UsedOffset(_, _))
-            | State::MessageUnion(UnionState::End(_, _, _)) => Err(span_error!(
-                span,
-                "@deprecated is not allowed after a composite type attribute definition",
-            )),
+            State::MessageStruct(StructState::Collecting(_) | StructState::End(_, _), _)
+            | State::MessageUnion(UnionState::UsedOffset(_, _) | UnionState::End(_, _, _)) => {
+                Err(span_error!(
+                    span,
+                    "@deprecated is not allowed after a composite type attribute definition",
+                ))
+            }
             State::Response(_) | State::ResponseUnion(_, _) | State::ResponseStruct(_, _, _) => {
                 Err(span_error!(
                     span,
@@ -196,7 +200,7 @@ impl<'p> CompileContext<'p> {
     }
 }
 
-/// A convenience function to make a CompileContext
+/// A convenience function to make a `CompileContext`
 fn ctx<'p>(p: &'p mut PersistentContext, c: &'p mut FileState) -> CompileContext<'p> {
     CompileContext {
         persistent: p,
@@ -251,12 +255,11 @@ impl PersistentContext {
                             "A constant attribute named {} has already been defined",
                             name.name
                         ));
-                    } else {
-                        let name_str = name.name;
-                        let new_constant =
-                            Constant::evaluate(&mut ctx(self, &mut state), ty, name, value)?;
-                        state.constants.insert(name_str.to_owned(), new_constant);
                     }
+                    let name_str = name.name;
+                    let new_constant =
+                        Constant::evaluate(&mut ctx(self, &mut state), ty, name, value)?;
+                    state.constants.insert(name_str.to_owned(), new_constant);
                 }
                 Statement::Field { ty, name, span } => {
                     let ty = convert_type(&mut ctx(self, &mut state), ty)?;
@@ -411,11 +414,12 @@ impl FileState {
             // Incomplete message, no @sealed or @extent
             State::Message
             | State::MessageStruct(StructState::Collecting(_), _)
-            | State::MessageUnion(UnionState::Collecting(_))
-            | State::MessageUnion(UnionState::UsedOffset(_, _)) => Err(span_error!(
-                span,
-                "Expected @sealed or @extent before the end of the request type"
-            )),
+            | State::MessageUnion(UnionState::Collecting(_) | UnionState::UsedOffset(_, _)) => {
+                Err(span_error!(
+                    span,
+                    "Expected @sealed or @extent before the end of the request type"
+                ))
+            }
             // If already in a response, can't have another ---
             State::Response(_) | State::ResponseUnion(_, _) | State::ResponseStruct(_, _, _) => {
                 Err(span_error!(
@@ -616,15 +620,15 @@ impl FileState {
             }
             State::Message
             | State::MessageStruct(StructState::Collecting(_), _)
-            | State::MessageUnion(UnionState::Collecting(_))
-            | State::MessageUnion(UnionState::UsedOffset(_, _))
+            | State::MessageUnion(UnionState::Collecting(_) | UnionState::UsedOffset(_, _))
             | State::Response(_)
             | State::ResponseStruct(_, StructState::Collecting(_), _)
-            | State::ResponseUnion(_, UnionState::Collecting(_))
-            | State::ResponseUnion(_, UnionState::UsedOffset(_, _)) => Err(span_error!(
-                eof_span,
-                "Expected @extent or @sealed before end of file"
-            )),
+            | State::ResponseUnion(_, UnionState::Collecting(_) | UnionState::UsedOffset(_, _)) => {
+                Err(span_error!(
+                    eof_span,
+                    "Expected @extent or @sealed before end of file"
+                ))
+            }
         }
     }
 }

@@ -8,7 +8,7 @@ use canadensis_dsdl_parser::num_bigint::BigInt;
 use canadensis_dsdl_parser::{Expression, Identifier, Span};
 use half::f16;
 use num_traits::ToPrimitive;
-use std::ops::{Deref, Range};
+use std::ops::Range;
 
 /// A constant declared in a data type
 #[derive(Debug)]
@@ -68,7 +68,7 @@ fn check_type_compatibility(
                 Err(span_error!(
                     value_span,
                     "String {:?} cannot be assigned to a constant of type {}",
-                    string.deref(),
+                    &**string,
                     declared
                 ))
             }

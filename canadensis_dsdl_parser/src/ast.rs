@@ -394,7 +394,7 @@ fn parse_literal(literal: Pair<'_, Rule>) -> Result<Literal<'_>, Error<Rule>> {
         }
         Rule::literal_real => LiteralType::Number(parse_real_literal(literal)?),
         Rule::literal_integer => {
-            LiteralType::Number(BigRational::from_integer(parse_integer_literal(literal)?))
+            LiteralType::Number(BigRational::from_integer(parse_integer_literal(literal)))
         }
         Rule::literal_string => LiteralType::String(parse_string_literal(literal)?),
         Rule::literal_boolean => {
@@ -432,12 +432,12 @@ fn parse_real_exponent_notation(literal: Pair<'_, Rule>) -> Result<BigRational, 
 
     let before_exp = match before_exp.as_rule() {
         Rule::literal_real_point_notation => parse_real_point_notation(before_exp)?,
-        Rule::literal_real_digits => BigRational::from_integer(parse_decimal_digits(before_exp)?),
+        Rule::literal_real_digits => BigRational::from_integer(parse_decimal_digits(before_exp)),
         _ => unreachable!("Unexpected rule in first child of literal_real_exponent_notation"),
     };
 
     let exp_sign = exp.as_str().chars().nth(1).expect("No sign");
-    let exp_value = parse_decimal_digits(exp.into_inner().next().unwrap())?;
+    let exp_value = parse_decimal_digits(exp.into_inner().next().unwrap());
     let exp_value = if exp_sign == '-' {
         -exp_value
     } else {
@@ -479,7 +479,7 @@ fn parse_real_point_notation(literal: Pair<'_, Rule>) -> Result<BigRational, Err
             )
         })?;
         // Divide the fractional digits by a power of ten to get the correct scale
-        let scale_factor = BigInt::from(10_u32).pow(num_fractional_digits as u32);
+        let scale_factor = Pow::pow(BigInt::from(10_u32), num_fractional_digits);
 
         let scaled_fractional = BigRational::new(fractional_digits, scale_factor);
         // Add whole and fractional parts
@@ -505,7 +505,7 @@ fn is_quote(c: char) -> bool {
     c == '"' || c == '\''
 }
 
-fn parse_integer_literal(literal: Pair<'_, Rule>) -> Result<BigInt, Error<Rule>> {
+fn parse_integer_literal(literal: Pair<'_, Rule>) -> BigInt {
     let variant = literal.into_inner().next().expect("No child");
     match variant.as_rule() {
         Rule::literal_integer_binary => parse_binary_literal(variant),
@@ -516,7 +516,7 @@ fn parse_integer_literal(literal: Pair<'_, Rule>) -> Result<BigInt, Error<Rule>>
     }
 }
 
-fn parse_binary_literal(variant: Pair<'_, Rule>) -> Result<BigInt, Error<Rule>> {
+fn parse_binary_literal(variant: Pair<'_, Rule>) -> BigInt {
     debug_assert_eq!(variant.as_rule(), Rule::literal_integer_binary);
     let mut value = BigInt::zero();
     // Skip the first two characters (the 0b or 0B prefix)
@@ -530,9 +530,9 @@ fn parse_binary_literal(variant: Pair<'_, Rule>) -> Result<BigInt, Error<Rule>> 
         };
         value = value * 2 + digit_value;
     }
-    Ok(value)
+    value
 }
-fn parse_octal_literal(variant: Pair<'_, Rule>) -> Result<BigInt, Error<Rule>> {
+fn parse_octal_literal(variant: Pair<'_, Rule>) -> BigInt {
     debug_assert_eq!(variant.as_rule(), Rule::literal_integer_octal);
     let mut value = BigInt::zero();
     // Skip the first two characters (the 0o or 0O prefix)
@@ -552,9 +552,9 @@ fn parse_octal_literal(variant: Pair<'_, Rule>) -> Result<BigInt, Error<Rule>> {
         };
         value = value * 8 + digit_value;
     }
-    Ok(value)
+    value
 }
-fn parse_hex_literal(variant: Pair<'_, Rule>) -> Result<BigInt, Error<Rule>> {
+fn parse_hex_literal(variant: Pair<'_, Rule>) -> BigInt {
     debug_assert_eq!(variant.as_rule(), Rule::literal_integer_hexadecimal);
     let mut value = BigInt::zero();
     // Skip the first two characters (the 0x or 0X prefix)
@@ -582,10 +582,10 @@ fn parse_hex_literal(variant: Pair<'_, Rule>) -> Result<BigInt, Error<Rule>> {
         };
         value = value * 16 + digit_value;
     }
-    Ok(value)
+    value
 }
 
-fn parse_decimal_digits(variant: Pair<'_, Rule>) -> Result<BigInt, Error<Rule>> {
+fn parse_decimal_digits(variant: Pair<'_, Rule>) -> BigInt {
     let mut value = BigInt::zero();
     // Process each character, ignoring _
     for character in variant.as_str().chars() {
@@ -606,10 +606,10 @@ fn parse_decimal_digits(variant: Pair<'_, Rule>) -> Result<BigInt, Error<Rule>> 
         };
         value = value * 10 + digit_value;
     }
-    Ok(value)
+    value
 }
 
-fn parse_primitive_type(dtype: Pair<'_, Rule>) -> Result<PrimitiveType, pest::error::Error<Rule>> {
+fn parse_primitive_type(dtype: Pair<'_, Rule>) -> Result<PrimitiveType, Error<Rule>> {
     debug_assert_eq!(dtype.as_rule(), Rule::type_primitive);
     let inner = dtype.into_inner().next().expect("No inner type");
     let inner_rule = inner.as_rule();

@@ -116,7 +116,7 @@ impl Set {
     /// a sorted vector of those values.
     fn string_as_ints_sorted(&self) -> Option<Vec<u8>> {
         let mut as_ints = Vec::with_capacity(self.len());
-        for value in self.0.iter() {
+        for value in &self.0 {
             match value {
                 Value::String(s) => match s.implicit_int() {
                     Some(int_value) => as_ints.push(int_value),
@@ -135,8 +135,11 @@ impl Set {
     /// of the provided value, the operation succeeds (even if this set already contained a matching
     /// value).
     ///
+    /// A string containing one ASCII character can also be added to a set of rationals. The
+    /// character will be converted into its numerical value.
+    ///
     /// Otherwise, the types do not match and the value is rejected.
-    pub fn insert(&mut self, value: Value) -> Result<(), SetTypeError> {
+    pub fn insert(&mut self, value: Value) -> Result<(), TypeError> {
         if let Some(ty) = self.ty() {
             if ty == value.ty() {
                 self.0.insert(value);
@@ -152,13 +155,14 @@ impl Set {
                         )));
                         Ok(())
                     }
-                    _ => Err(SetTypeError {
+                    _ => Err(TypeError {
                         left: ty,
                         right: value.ty(),
                     }),
                 }
             }
         } else {
+            // Adding the first element
             self.0.insert(value);
             Ok(())
         }
@@ -178,7 +182,7 @@ impl Set {
         Self::check_element_types(self.ty(), Some(ty)).is_ok()
     }
 
-    fn check_types_with(&self, other: &Set) -> Result<(), SetTypeError> {
+    fn check_types_with(&self, other: &Set) -> Result<(), TypeError> {
         Self::check_element_types(self.ty(), other.ty())
     }
 
@@ -186,14 +190,14 @@ impl Set {
     fn check_element_types(
         left: Option<ExprType>,
         right: Option<ExprType>,
-    ) -> Result<(), SetTypeError> {
+    ) -> Result<(), TypeError> {
         match (left, right) {
             (None, _) | (_, None) => Ok(()),
             (Some(left), Some(right)) => {
                 if left == right {
                     Ok(())
                 } else {
-                    Err(SetTypeError { left, right })
+                    Err(TypeError { left, right })
                 }
             }
         }
@@ -209,19 +213,19 @@ impl Set {
     }
 
     /// Calculates and returns the union of this set and another set
-    pub fn union(&self, other: &Set) -> Result<Set, SetTypeError> {
+    pub fn union(&self, other: &Set) -> Result<Set, TypeError> {
         self.check_types_with(other)?;
         Ok(Set(self.0.union(&other.0).cloned().collect()))
     }
 
     /// Calculates and returns the intersection of this set and another set
-    pub fn intersection(&self, other: &Set) -> Result<Set, SetTypeError> {
+    pub fn intersection(&self, other: &Set) -> Result<Set, TypeError> {
         self.check_types_with(other)?;
         Ok(Set(self.0.intersection(&other.0).cloned().collect()))
     }
 
     /// Calculates and returns the symmetric difference of this set and another set
-    pub fn symmetric_difference(&self, other: &Set) -> Result<Set, SetTypeError> {
+    pub fn symmetric_difference(&self, other: &Set) -> Result<Set, TypeError> {
         self.check_types_with(other)?;
         Ok(Set(self
             .0
@@ -277,7 +281,7 @@ impl<'s> Iterator for Iter<'s> {
     }
 }
 
-impl FromIterator<Value> for Result<Set, SetTypeError> {
+impl FromIterator<Value> for Result<Set, TypeError> {
     /// Collects a set from an iterator of elements
     ///
     /// The set's type is defined by the first element. If any subsequent element has a different
@@ -318,7 +322,7 @@ fn single_character_string(code: u8) -> String {
 
 /// An error resulting from an operation with two sets of incompatible element types
 #[derive(Debug, PartialEq)]
-pub struct SetTypeError {
+pub struct TypeError {
     /// The element type of the left set
     pub left: ExprType,
     /// The element type of the right set
@@ -326,16 +330,16 @@ pub struct SetTypeError {
 }
 
 mod fmt_impl {
-    use super::{Set, SetTypeError};
-    use std::fmt::*;
+    use super::{Set, TypeError};
+    use std::fmt::{Display, Formatter, Result, Write};
 
-    impl Display for SetTypeError {
+    impl Display for TypeError {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
             write!(f, "type mismatch between {} and {}", self.left, self.right)
         }
     }
 
-    impl std::error::Error for SetTypeError {}
+    impl std::error::Error for TypeError {}
 
     impl Display for Set {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {

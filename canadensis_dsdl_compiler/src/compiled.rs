@@ -65,7 +65,7 @@ pub enum Field {
 }
 
 impl Field {
-    /// A convenience constructor that makes a Field::Data
+    /// A convenience constructor that makes a `Field::Data`
     pub fn data(ty: ResolvedType, name: String) -> Self {
         Field::Data { ty, name }
     }
@@ -86,6 +86,7 @@ pub struct Variant {
 }
 
 impl Variant {
+    /// A convenience function that makes a `Variant`
     pub fn new(ty: ResolvedType, name: String) -> Self {
         Variant { ty, name }
     }

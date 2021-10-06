@@ -170,7 +170,7 @@ pub struct TypeVersion {
 
 mod fmt_impl {
     use super::TypeVersion;
-    use std::fmt::*;
+    use std::fmt::{Display, Formatter, Result};
 
     impl Display for TypeVersion {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
