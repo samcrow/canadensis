@@ -10,7 +10,7 @@
       <module fileurl="file://$PROJECT_DIR$/canadensis_crc/canadensis_crc.iml" filepath="$PROJECT_DIR$/canadensis_crc/canadensis_crc.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_data_types/canadensis_data_types.iml" filepath="$PROJECT_DIR$/canadensis_data_types/canadensis_data_types.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_derive_register_block/canadensis_derive_register_block.iml" filepath="$PROJECT_DIR$/canadensis_derive_register_block/canadensis_derive_register_block.iml" />
-      <module fileurl="file://$PROJECT_DIR$/canadensis_dsdl_compiler/canadensis_dsdl_compiler.iml" filepath="$PROJECT_DIR$/canadensis_dsdl_compiler/canadensis_dsdl_compiler.iml" />
+      <module fileurl="file://$PROJECT_DIR$/canadensis_dsdl_frontend/canadensis_dsdl_frontend.iml" filepath="$PROJECT_DIR$/canadensis_dsdl_frontend/canadensis_dsdl_frontend.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_dsdl_parser/canadensis_dsdl_parser.iml" filepath="$PROJECT_DIR$/canadensis_dsdl_parser/canadensis_dsdl_parser.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_encoding/canadensis_encoding.iml" filepath="$PROJECT_DIR$/canadensis_encoding/canadensis_encoding.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_encoding_derive/canadensis_encoding_derive.iml" filepath="$PROJECT_DIR$/canadensis_encoding_derive/canadensis_encoding_derive.iml" />

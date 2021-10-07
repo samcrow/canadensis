@@ -8,7 +8,7 @@ members = [
     "canadensis_crc",
     "canadensis_data_types",
     "canadensis_derive_register_block",
-    "canadensis_dsdl_compiler",
+    "canadensis_dsdl_frontend",
     "canadensis_dsdl_parser",
     "canadensis_encoding",
     "canadensis_encoding_derive",

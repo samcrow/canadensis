@@ -82,21 +82,41 @@ pub struct Union {
 
 /// A field of a struct
 #[derive(Debug, Clone)]
-pub enum Field {
+pub struct Field {
+    /// The kind of this field
+    kind: FieldKind,
+    /// True if this field is always aligned to a multiple of 8 bits
+    always_aligned: bool,
+}
+
+#[derive(Debug, Clone)]
+pub enum FieldKind {
     Padding(u8),
     Data { ty: ResolvedType, name: String },
 }
 
 impl Field {
-    /// A convenience constructor that makes a `Field::Data`
-    pub fn data(ty: ResolvedType, name: String) -> Self {
-        Field::Data { ty, name }
+    /// A convenience constructor that makes a data field
+    pub(crate) fn data(ty: ResolvedType, name: String, always_aligned: bool) -> Self {
+        Field {
+            kind: FieldKind::Data { ty, name },
+            always_aligned,
+        }
     }
 
+    /// A convenience constructor that makes a padding field
+    pub(crate) fn padding(bits: u8, always_aligned: bool) -> Self {
+        Field {
+            kind: FieldKind::Padding(bits),
+            always_aligned,
+        }
+    }
+
+    /// Returns the name of this field, if it has one
     pub fn name(&self) -> Option<&str> {
-        match self {
-            Field::Padding(_) => None,
-            Field::Data { name, .. } => Some(&*name),
+        match &self.kind {
+            FieldKind::Padding(_) => None,
+            FieldKind::Data { name, .. } => Some(&*name),
         }
     }
 }
@@ -110,7 +130,7 @@ pub struct Variant {
 
 impl Variant {
     /// A convenience function that makes a `Variant`
-    pub fn new(ty: ResolvedType, name: String) -> Self {
+    pub(crate) fn new(ty: ResolvedType, name: String) -> Self {
         Variant { ty, name }
     }
 }

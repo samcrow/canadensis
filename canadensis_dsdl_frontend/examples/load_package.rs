@@ -28,7 +28,12 @@ fn run() -> Result<(), Error> {
         package.add_files(path)?;
     }
 
-    let _ = package.compile()?;
+    let compiled = package.compile()?;
+
+    if let Some((key, compiled_dsdl)) = compiled.iter().next() {
+        println!("{}:", key);
+        println!("{:#?}", compiled_dsdl);
+    }
 
     Ok(())
 }

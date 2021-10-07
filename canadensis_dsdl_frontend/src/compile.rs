@@ -435,13 +435,13 @@ impl FileState {
         match self.state.take().expect("No state") {
             State::Message => {
                 self.state = Some(State::MessageStruct(
-                    StructState::Collecting(vec![Field::Padding(bits)]),
+                    StructState::Collecting(vec![Field::padding(bits, true)]),
                     bits_added,
                 ));
                 Ok(())
             }
             State::MessageStruct(StructState::Collecting(mut fields), length) => {
-                fields.push(Field::Padding(bits));
+                fields.push(Field::padding(bits, length.is_byte_aligned()));
                 self.state = Some(State::MessageStruct(
                     StructState::Collecting(fields),
                     length.concatenate([bits_added]),
@@ -451,13 +451,13 @@ impl FileState {
             State::Response(req) => {
                 self.state = Some(State::ResponseStruct(
                     req,
-                    StructState::Collecting(vec![Field::Padding(bits)]),
+                    StructState::Collecting(vec![Field::padding(bits, true)]),
                     bits_added,
                 ));
                 Ok(())
             }
             State::ResponseStruct(req, StructState::Collecting(mut fields), length) => {
-                fields.push(Field::Padding(bits));
+                fields.push(Field::padding(bits, length.is_byte_aligned()));
                 self.state = Some(State::ResponseStruct(
                     req,
                     StructState::Collecting(fields),
@@ -497,7 +497,7 @@ impl FileState {
             // No fields, enter struct mode and add the first one
             State::Message => {
                 self.state = Some(State::MessageStruct(
-                    StructState::Collecting(vec![Field::data(ty, name)]),
+                    StructState::Collecting(vec![Field::data(ty, name, true)]),
                     // Initial bit length matches the first field
                     update_struct_length(BitLengthSet::single(0)),
                 ));
@@ -506,7 +506,7 @@ impl FileState {
             State::Response(req) => {
                 self.state = Some(State::ResponseStruct(
                     req,
-                    StructState::Collecting(vec![Field::data(ty, name)]),
+                    StructState::Collecting(vec![Field::data(ty, name, true)]),
                     // Initial bit length matches the first field
                     update_struct_length(BitLengthSet::single(0)),
                 ));
@@ -518,7 +518,7 @@ impl FileState {
                     return Err(span_error!(span, "A field named {} already exists", name));
                 }
 
-                fields.push(Field::data(ty, name));
+                fields.push(Field::data(ty, name, length.is_byte_aligned()));
                 self.state = Some(State::MessageStruct(
                     StructState::Collecting(fields),
                     update_struct_length(length),
@@ -526,7 +526,7 @@ impl FileState {
                 Ok(())
             }
             State::ResponseStruct(req, StructState::Collecting(mut fields), length) => {
-                fields.push(Field::data(ty, name));
+                fields.push(Field::data(ty, name, length.is_byte_aligned()));
                 self.state = Some(State::ResponseStruct(
                     req,
                     StructState::Collecting(fields),
