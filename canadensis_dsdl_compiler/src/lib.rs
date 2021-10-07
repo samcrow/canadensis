@@ -24,6 +24,7 @@ macro_rules! span_error {
 pub(crate) mod compile;
 mod compiled;
 pub mod error;
+pub(crate) mod operators;
 pub mod package;
 mod type_key;
 mod types;

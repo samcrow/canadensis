@@ -1,0 +1,10 @@
+
+@union
+
+int32 a
+int8 b
+@print _offset_
+# Now the offset has been calculated, so no more variants are allowed.
+int16 c
+
+@sealed

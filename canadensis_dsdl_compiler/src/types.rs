@@ -2,7 +2,7 @@ pub mod constant;
 pub mod directive;
 pub mod expression;
 pub mod keywords;
-mod set;
+pub(crate) mod set;
 mod string;
 
 use crate::compile::CompileContext;
