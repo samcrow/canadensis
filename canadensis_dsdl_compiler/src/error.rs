@@ -4,6 +4,7 @@ use std::io;
 use std::path::PathBuf;
 use thiserror::Error;
 
+/// Errors that may occur when compiling
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum Error {

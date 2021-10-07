@@ -1,9 +1,13 @@
+//! Types that represent compiled data types
+
+pub mod package;
+
 use crate::types::constant::Constant;
 use crate::types::ResolvedType;
 use canadensis_bit_length_set::BitLengthSet;
 use std::collections::BTreeMap;
 
-/// A compiled DSDL message
+/// A compiled DSDL type
 #[derive(Debug)]
 pub struct CompiledDsdl {
     pub fixed_port_id: Option<u32>,
@@ -26,10 +30,29 @@ pub enum DsdlKind {
 /// A DSDL message, request, or response
 #[derive(Debug, Clone)]
 pub struct Message {
-    pub deprecated: bool,
-    pub extent: Extent,
-    pub kind: MessageKind,
-    pub bit_length: BitLengthSet,
+    pub(crate) deprecated: bool,
+    pub(crate) extent: Extent,
+    pub(crate) kind: MessageKind,
+    pub(crate) bit_length: BitLengthSet,
+}
+
+impl Message {
+    /// Returns true if this type is deprecated
+    pub fn deprecated(&self) -> bool {
+        self.deprecated
+    }
+    /// Returns the extent of this type
+    pub fn extent(&self) -> &Extent {
+        &self.extent
+    }
+    /// Returns the kind of this message (struct or union)
+    pub fn kind(&self) -> &MessageKind {
+        &self.kind
+    }
+    /// Returns the set of possible lengths of this message
+    pub fn bit_length(&self) -> &BitLengthSet {
+        &self.bit_length
+    }
 }
 
 /// The extent of a type

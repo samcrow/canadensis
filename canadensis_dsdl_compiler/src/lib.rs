@@ -10,8 +10,6 @@ extern crate thiserror;
 extern crate unicode_normalization;
 extern crate walkdir;
 
-use crate::type_key::TypeKey;
-
 /// Creates an error associated with a span in the input
 ///
 /// The first argument is a span expression. The others are forwarded to `::std::format!`.
@@ -22,9 +20,13 @@ macro_rules! span_error {
 }
 
 pub(crate) mod compile;
-mod compiled;
-pub mod error;
+pub mod compiled;
+pub(crate) mod error;
 pub(crate) mod operators;
-pub mod package;
+mod package;
 mod type_key;
 mod types;
+
+pub use crate::error::Error;
+pub use crate::package::{DsdlFile, Package};
+pub use crate::type_key::{TypeFullName, TypeKey};

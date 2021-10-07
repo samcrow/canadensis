@@ -1,7 +1,7 @@
 use canadensis_dsdl_parser::{TypeVersion, VersionedType};
 use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 
-/// A key that identifies a data type
+/// A key that identifies a data type based on its pacakge, name, and version
 ///
 /// The `PartialOrd`, `Ord`, `PartialEq`, and `Eq` implementations for this type are based on the
 /// lowercase versions of the path and name. This means that type keys that differ only in case

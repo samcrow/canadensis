@@ -5,8 +5,7 @@
 
 extern crate canadensis_dsdl_compiler;
 
-use canadensis_dsdl_compiler::error::Error;
-use canadensis_dsdl_compiler::package::Package;
+use canadensis_dsdl_compiler::{Error, Package};
 use std::ffi::OsString;
 use std::fs;
 use std::io;

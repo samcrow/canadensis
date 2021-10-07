@@ -1,8 +1,9 @@
-use crate::compiled::CompiledDsdl;
+use crate::compiled::package::CompiledPackage;
 use crate::error::Error;
 use crate::type_key::{TypeFullName, TypeKey};
 use crate::types::keywords::{is_reserved_keyword, is_valid_identifier};
 use canadensis_dsdl_parser::TypeVersion;
+use once_cell::sync::Lazy;
 use regex::Regex;
 use std::collections::btree_map::Entry;
 use std::collections::BTreeMap;
@@ -11,7 +12,7 @@ use walkdir::{DirEntry, WalkDir};
 
 /// The maximum length of a type name in characters, including the package name and .s but not
 /// including the version
-pub const TYPE_NAME_LENGTH_MAX: usize = 255;
+pub(crate) const TYPE_NAME_LENGTH_MAX: usize = 255;
 
 /// A package of zero or more data structure definitions read from files
 #[derive(Debug)]
@@ -85,13 +86,8 @@ impl Package {
     /// invalid content, or an `@assert` directive fails.
     pub fn compile(self) -> Result<CompiledPackage, Error> {
         let result = crate::compile::compile(self.files)?;
-        Ok(CompiledPackage { types: result })
+        Ok(CompiledPackage::new(result))
     }
-}
-
-#[derive(Debug)]
-pub struct CompiledPackage {
-    types: BTreeMap<TypeKey, CompiledDsdl>,
 }
 
 /// Returns true if the provided entry is a DSDL file
@@ -229,11 +225,12 @@ struct FileNameInfo {
 
 /// Extracts information about a data type from its file name and returns it
 fn parse_file_name(name: &str) -> Option<FileNameInfo> {
-    let pattern = Regex::new(
-        r"^((?P<port_id>\d+)\.)?(?P<short_name>[^.]+)\.(?P<version_major>\d+)\.(?P<version_minor>\d+)\.uavcan$",
-    )
-    .unwrap();
-    if let Some(captures) = pattern.captures(name) {
+    static PATTERN: Lazy<Regex> = Lazy::new(|| {
+        Regex::new(r"^((?P<port_id>\d+)\.)?(?P<short_name>[^.]+)\.(?P<version_major>\d+)\.(?P<version_minor>\d+)\.uavcan$")
+        .unwrap()
+    });
+
+    if let Some(captures) = PATTERN.captures(name) {
         let port_id = match captures.name("port_id") {
             Some(id_str) => Some(id_str.as_str().parse::<u32>().ok()?),
             None => None,
