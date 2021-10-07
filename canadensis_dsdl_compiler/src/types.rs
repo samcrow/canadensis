@@ -49,12 +49,12 @@ pub enum Type {
     Scalar(ScalarType),
     FixedArray {
         inner: ScalarType,
-        len: usize,
+        len: u64,
     },
     VariableArray {
         inner: ScalarType,
         /// Maximum length of the array, inclusive
-        max_len: usize,
+        max_len: u64,
     },
 }
 
@@ -98,7 +98,7 @@ impl Type {
     }
 
     /// Returns the required alignment of this type
-    pub fn alignment(&self) -> usize {
+    pub fn alignment(&self) -> u32 {
         match self {
             Type::Scalar(scalar) => scalar.alignment(),
             // The alignment of an array equals the alignment of its element type
@@ -109,12 +109,12 @@ impl Type {
 
 /// Returns the number of bits needed for the array size field to store up to `max_items` values
 /// (inclusive) in a variable-length array, or `max_items` variants of a union
-pub(crate) fn array_length_bits(max_items: usize) -> u32 {
+pub(crate) fn array_length_bits(max_items: u64) -> u32 {
     round_up_length(bit_length(max_items))
 }
 
-fn bit_length(value: usize) -> u32 {
-    usize::BITS - value.leading_zeros()
+fn bit_length(value: u64) -> u32 {
+    u64::BITS - value.leading_zeros()
 }
 fn round_up_length(value: u32) -> u32 {
     std::cmp::max(value, 8).next_power_of_two()
@@ -123,7 +123,7 @@ fn round_up_length(value: u32) -> u32 {
 #[cfg(test)]
 mod test {
     use super::{bit_length, round_up_length};
-    fn length_bits(max_length: usize) -> u32 {
+    fn length_bits(max_length: u64) -> u32 {
         round_up_length(bit_length(max_length))
     }
 
@@ -221,7 +221,7 @@ impl ScalarType {
     ) -> Result<ResolvedScalarType, Error> {
         match self {
             ScalarType::Versioned(key) => {
-                let referenced_type = cx.get_by_key(&key)?;
+                let referenced_type = cx.type_by_key(&key)?;
                 match &referenced_type.kind {
                     DsdlKind::Message { message, .. } => Ok(ResolvedScalarType::Composite {
                         key,
@@ -245,7 +245,7 @@ impl ScalarType {
     ) -> Result<BitLengthSet, Error> {
         match self {
             ScalarType::Versioned(key) => {
-                let referenced_type = cx.get_by_key(key)?;
+                let referenced_type = cx.type_by_key(key)?;
                 match &referenced_type.kind {
                     DsdlKind::Message { message, .. } => Ok(message.bit_length.clone()),
                     DsdlKind::Service { .. } => {
@@ -254,11 +254,11 @@ impl ScalarType {
                 }
             }
             ScalarType::Primitive(primitive) => Ok(BitLengthSet::single(primitive.bit_length())),
-            ScalarType::Void { bits } => Ok(BitLengthSet::single(usize::from(*bits))),
+            ScalarType::Void { bits } => Ok(BitLengthSet::single(u64::from(*bits))),
         }
     }
     /// Returns the required alignment of this type
-    pub(crate) fn alignment(&self) -> usize {
+    pub(crate) fn alignment(&self) -> u32 {
         match self {
             // Versioned implies a composite type and 8-bit alignment
             ScalarType::Versioned(_) => 8,
@@ -297,17 +297,17 @@ impl PrimitiveType {
         }
     }
 
-    pub fn bit_length(&self) -> usize {
+    pub fn bit_length(&self) -> u64 {
         match self {
             PrimitiveType::Boolean => 1,
-            PrimitiveType::Int { bits } | PrimitiveType::UInt { bits, .. } => usize::from(*bits),
+            PrimitiveType::Int { bits } | PrimitiveType::UInt { bits, .. } => u64::from(*bits),
             PrimitiveType::Float16 { .. } => 16,
             PrimitiveType::Float32 { .. } => 32,
             PrimitiveType::Float64 { .. } => 64,
         }
     }
 
-    pub fn alignment(&self) -> usize {
+    pub fn alignment(&self) -> u32 {
         // All primitive types have alignment 1
         1
     }
@@ -435,12 +435,12 @@ pub enum ResolvedType {
     Scalar(ResolvedScalarType),
     FixedArray {
         inner: ResolvedScalarType,
-        len: usize,
+        len: u64,
     },
     VariableArray {
         inner: ResolvedScalarType,
         /// Maximum length of the array, inclusive
-        max_len: usize,
+        max_len: u64,
     },
 }
 
@@ -454,7 +454,7 @@ impl ResolvedType {
             }
         }
     }
-    pub fn alignment(&self) -> usize {
+    pub fn alignment(&self) -> u32 {
         match self {
             ResolvedType::Scalar(scalar) => scalar.alignment(),
             ResolvedType::FixedArray { inner, .. } | ResolvedType::VariableArray { inner, .. } => {
@@ -500,10 +500,10 @@ impl ResolvedScalarType {
             ResolvedScalarType::Primitive(primitive) => {
                 BitLengthSet::single(primitive.bit_length())
             }
-            ResolvedScalarType::Void { bits } => BitLengthSet::single(usize::from(*bits)),
+            ResolvedScalarType::Void { bits } => BitLengthSet::single(u64::from(*bits)),
         }
     }
-    pub fn alignment(&self) -> usize {
+    pub fn alignment(&self) -> u32 {
         match self {
             ResolvedScalarType::Composite { .. } => 8,
             ResolvedScalarType::Primitive(_) | ResolvedScalarType::Void { .. } => 1,

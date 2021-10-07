@@ -255,7 +255,7 @@ fn evaluate_atom(
 fn evaluate_array_length(
     cx: &mut CompileContext<'_>,
     length: Expression<'_>,
-) -> Result<usize, Error> {
+) -> Result<u64, Error> {
     let length_span = length.span.clone();
     match evaluate_expression(cx, length)? {
         Value::Rational(rational) => {
@@ -269,7 +269,7 @@ fn evaluate_array_length(
                     ))
                 } else {
                     // Convert to usize
-                    match length.to_usize() {
+                    match length.to_u64() {
                         Some(length) => Ok(length),
                         None => Err(span_error!(
                             length_span,

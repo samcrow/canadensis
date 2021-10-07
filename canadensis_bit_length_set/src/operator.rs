@@ -1,5 +1,6 @@
 use std::cmp::min;
 use std::collections::BTreeSet;
+use std::convert::TryInto;
 use std::ops::RangeToInclusive;
 
 use itertools::Itertools;
@@ -9,33 +10,33 @@ pub enum Operator {
     /// A fixed set of bit lengths
     ///
     /// The set of lengths must not be empty.
-    Leaf(BTreeSet<usize>),
+    Leaf(BTreeSet<u64>),
     /// Adds up to ``alignment - 1`` padding bits to each entry of the child to ensure that the
     /// values are aligned
     Padding {
         child: Box<Operator>,
-        alignment: usize,
+        alignment: u32,
     },
     /// Given a set of children, transforms them into a single bit length set expression where each
     /// item is the elementwise sum of the cartesian product of the children's bit length sets
     Concatenate { children: Vec<Operator> },
     /// Concatenates ``count`` copies of the child.
     /// This is equivalent to `Concatenate` where the child is replicated ``count`` times.
-    Repeat { child: Box<Operator>, count: usize },
+    Repeat { child: Box<Operator>, count: u64 },
     /// Concatenates 0..=count.end copies of the child
     RangeRepeat {
         child: Box<Operator>,
-        count: RangeToInclusive<usize>,
+        count: RangeToInclusive<u64>,
     },
     /// A union of one or more children
     Union { children: Vec<Operator> },
 }
 
 impl Operator {
-    pub fn min(&self) -> usize {
+    pub fn min(&self) -> u64 {
         match self {
             Operator::Leaf(values) => *SetMinMax::min(values).unwrap(),
-            Operator::Padding { child, alignment } => align_up(child.min(), *alignment),
+            Operator::Padding { child, alignment } => align_up(child.min(), u64::from(*alignment)),
             Operator::Concatenate { children } => {
                 // Sum of child minimum lengths
                 children.iter().map(Operator::min).sum()
@@ -46,10 +47,10 @@ impl Operator {
         }
     }
 
-    pub fn max(&self) -> usize {
+    pub fn max(&self) -> u64 {
         match self {
             Operator::Leaf(values) => *SetMinMax::max(values).unwrap(),
-            Operator::Padding { child, alignment } => align_up(child.max(), *alignment),
+            Operator::Padding { child, alignment } => align_up(child.max(), u64::from(*alignment)),
             Operator::Concatenate { children } => {
                 // Sum of child maximum lengths
                 children.iter().map(Operator::max).sum()
@@ -60,7 +61,7 @@ impl Operator {
         }
     }
 
-    pub fn modulo(&self, divisor: usize) -> BTreeSet<usize> {
+    pub fn modulo(&self, divisor: u64) -> BTreeSet<u64> {
         match self {
             Operator::Leaf(values) => {
                 // Apply to each element
@@ -68,27 +69,27 @@ impl Operator {
             }
             Operator::Padding { child, alignment } => {
                 let max = self.max();
-                let lcm = num_integer::lcm(*alignment, divisor);
+                let lcm = num_integer::lcm(u64::from(*alignment), divisor);
                 child
                     .modulo(divisor)
                     .into_iter()
                     .map(|value| {
                         debug_assert!(value <= max);
                         debug_assert!(value < lcm);
-                        align_up(value, *alignment) % divisor
+                        align_up(value, u64::from(*alignment)) % divisor
                     })
                     .collect()
             }
             Operator::Concatenate { children } => {
-                let child_mods: Vec<BTreeSet<usize>> =
+                let child_mods: Vec<BTreeSet<u64>> =
                     children.iter().map(|child| child.modulo(divisor)).collect();
                 child_mods
                     .iter()
                     .map(|mods| mods.iter().copied())
                     .multi_cartesian_product()
                     // For each possible combination of child sizes, add them up and then modulo
-                    .map(|values: Vec<usize>| values.into_iter().sum())
-                    .map(|sum: usize| sum % divisor)
+                    .map(|values: Vec<u64>| values.into_iter().sum())
+                    .map(|sum: u64| sum % divisor)
                     .collect()
             }
             Operator::Repeat { child, count } => {
@@ -98,8 +99,12 @@ impl Operator {
                 child
                     .modulo(divisor)
                     .into_iter()
-                    .combinations_with_replacement(equivalent_count)
-                    .map(|values| values.into_iter().sum::<usize>() % divisor)
+                    .combinations_with_replacement(
+                        equivalent_count
+                            .try_into()
+                            .expect("equivalent_count too large for usize"),
+                    )
+                    .map(|values| values.into_iter().sum::<u64>() % divisor)
                     .collect()
             }
             Operator::RangeRepeat { child, count } => {
@@ -113,8 +118,10 @@ impl Operator {
                         single
                             .iter()
                             .copied()
-                            .combinations_with_replacement(k)
-                            .map(|values| values.into_iter().sum::<usize>() % divisor)
+                            .combinations_with_replacement(
+                                k.try_into().expect("k too large for usize"),
+                            )
+                            .map(|values| values.into_iter().sum::<u64>() % divisor)
                     })
                     .collect()
             }
@@ -126,16 +133,16 @@ impl Operator {
     }
 
     /// Expands this bit length set and returns a set with all enclosed values
-    pub fn expand(&self) -> BTreeSet<usize> {
+    pub fn expand(&self) -> BTreeSet<u64> {
         match self {
             Operator::Leaf(values) => values.clone(),
             Operator::Padding { child, alignment } => child
                 .expand()
                 .into_iter()
-                .map(|length| align_up(length, *alignment))
+                .map(|length| align_up(length, u64::from(*alignment)))
                 .collect(),
             Operator::Concatenate { children } => {
-                let child_values: Vec<BTreeSet<usize>> =
+                let child_values: Vec<BTreeSet<u64>> =
                     children.iter().map(Operator::expand).collect();
                 child_values
                     .iter()
@@ -146,7 +153,9 @@ impl Operator {
             Operator::Repeat { child, count } => child
                 .expand()
                 .into_iter()
-                .combinations_with_replacement(*count)
+                .combinations_with_replacement(
+                    (*count).try_into().expect("count too large for usize"),
+                )
                 .map(|child_sizes| child_sizes.into_iter().sum())
                 .collect(),
             Operator::RangeRepeat { child, count } => {
@@ -155,7 +164,9 @@ impl Operator {
                     .flat_map(|k| {
                         ch.iter()
                             .copied()
-                            .combinations_with_replacement(k)
+                            .combinations_with_replacement(
+                                k.try_into().expect("k too large for usize"),
+                            )
                             .map(|child_sizes| child_sizes.into_iter().sum())
                     })
                     .collect()
@@ -175,14 +186,14 @@ impl Operator {
 
         for i in 1..=64 {
             let mod_expanded = self.modulo(i);
-            let expected: BTreeSet<usize> = expanded.iter().map(|value| value % i).collect();
+            let expected: BTreeSet<u64> = expanded.iter().map(|value| value % i).collect();
             assert_eq!(mod_expanded, expected, "Incorrect modulo for {}", i);
         }
     }
 }
 
 /// Rounds the value up to a multiple of alignment
-fn align_up(value: usize, alignment: usize) -> usize {
+fn align_up(value: u64, alignment: u64) -> u64 {
     (value + (alignment - 1)) / alignment * alignment
 }
 

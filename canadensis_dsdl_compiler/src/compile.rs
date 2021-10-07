@@ -22,7 +22,7 @@ use std::path::PathBuf;
 /// The minimum number of variants in a union
 const UNION_MIN_VARIANTS: usize = 2;
 /// Alignment of a composite type, in bits
-const COMPOSITE_ALIGNMENT: usize = 8;
+const COMPOSITE_ALIGNMENT: u32 = 8;
 /// A bit length set containing 0
 ///
 /// This is used to return a reference to a bit length set when no other bit length set is available.
@@ -109,16 +109,16 @@ impl<'p> CompileContext<'p> {
     ///
     /// If the type has already been compiled, this function returns it. Otherwise, this function
     /// attempts to compile it and then returns it.
-    pub fn get_by_key(&mut self, key: &TypeKey) -> Result<&CompiledDsdl, Error> {
+    pub fn type_by_key(&mut self, key: &TypeKey) -> Result<&CompiledDsdl, Error> {
         // Look in the current package if the package is not specified
         if key.name().path().is_empty() {
             let local_key = TypeKey::new(
                 TypeFullName::new(self.current_file.path.clone(), key.name().name().to_owned()),
                 key.version().clone(),
             );
-            self.persistent.get_by_key(&local_key)
+            self.persistent.type_by_key(&local_key)
         } else {
-            self.persistent.get_by_key(key)
+            self.persistent.type_by_key(key)
         }
     }
 
@@ -296,11 +296,11 @@ impl PersistentContext {
         state.finish(ast.eof_span, input.fixed_port_id())
     }
 
-    /// Looks up a type by its name and version
+    /// Looks up a composite type by its name and version
     ///
     /// If the type has already been compiled, this function returns it. Otherwise, this function
     /// attempts to compile it and then returns it.
-    pub fn get_by_key(&mut self, key: &TypeKey) -> Result<&CompiledDsdl, Error> {
+    pub fn type_by_key(&mut self, key: &TypeKey) -> Result<&CompiledDsdl, Error> {
         // Although types that differ only in case are prohibited, the names must match exactly
         // when looking them up.
         if self.done.contains_key_case_sensitive(key) {
@@ -481,7 +481,7 @@ impl FileState {
         ty: ResolvedType,
         name: Identifier,
         total_length: BitLengthSet,
-        total_alignment: usize,
+        total_alignment: u32,
         span: Span<'_>,
     ) -> Result<(), Error> {
         // TODO: Check for an existing field/variant with the same name
@@ -778,7 +778,12 @@ fn apply_sealed_or_extent(
 /// Creates a bit length set for a union, which includes the implicit discriminant and all
 /// variants
 fn make_union_bit_length(variants: &[Variant]) -> BitLengthSet {
-    let discriminant_bits = array_length_bits(variants.len());
+    let discriminant_bits = array_length_bits(
+        variants
+            .len()
+            .try_into()
+            .expect("Number of variants too large for u64"),
+    );
     let discriminant_length = BitLengthSet::single(
         discriminant_bits
             .try_into()

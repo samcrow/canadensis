@@ -19,7 +19,7 @@ pub struct BitLengthSet {
 
 impl BitLengthSet {
     /// Creates a bit length set with one length value in bits
-    pub fn single(length: usize) -> BitLengthSet {
+    pub fn single(length: u64) -> BitLengthSet {
         let mut values = BTreeSet::new();
         values.insert(length);
         BitLengthSet {
@@ -31,9 +31,9 @@ impl BitLengthSet {
     /// If the provided iterator does not yield any elements, this function returns None.
     pub fn from_lengths<I>(values: I) -> Option<BitLengthSet>
     where
-        I: IntoIterator<Item = usize>,
+        I: IntoIterator<Item = u64>,
     {
-        let value_set: BTreeSet<usize> = values.into_iter().collect();
+        let value_set: BTreeSet<u64> = values.into_iter().collect();
         if value_set.is_empty() {
             None
         } else {
@@ -46,7 +46,7 @@ impl BitLengthSet {
     /// Creates a bit length set from a set of possible length values
     ///
     /// If the provided set is empty, this function returns None.
-    pub fn from_length_set(values: BTreeSet<usize>) -> Option<BitLengthSet> {
+    pub fn from_length_set(values: BTreeSet<u64>) -> Option<BitLengthSet> {
         if values.is_empty() {
             None
         } else {
@@ -71,7 +71,7 @@ impl BitLengthSet {
     /// let lengths = BitLengthSet::from_lengths([1, 10, 30]).unwrap();
     /// assert_eq!(1, lengths.min());
     /// ```
-    pub fn min(&self) -> usize {
+    pub fn min(&self) -> u64 {
         self.operator.min()
     }
     /// Returns the maximum length value in this set
@@ -89,7 +89,7 @@ impl BitLengthSet {
     /// let lengths = BitLengthSet::from_lengths([1, 10, 30]).unwrap();
     /// assert_eq!(30, lengths.max());
     /// ```
-    pub fn max(&self) -> usize {
+    pub fn max(&self) -> u64 {
         self.operator.max()
     }
 
@@ -150,7 +150,7 @@ impl BitLengthSet {
     /// assert!(BitLengthSet::from_lengths([0, 17, 34, 68]).unwrap().is_aligned(17));
     /// assert!(!BitLengthSet::from_lengths([0, 17, 34, 64]).unwrap().is_aligned(17));
     /// ```
-    pub fn is_aligned(&self, bit_length: usize) -> bool {
+    pub fn is_aligned(&self, bit_length: u64) -> bool {
         let remainder = self % bit_length;
         remainder.is_fixed_size() && remainder.min() == 0
     }
@@ -170,10 +170,10 @@ impl BitLengthSet {
     /// let union = lengths1.unite([lengths2]);
     /// let expanded_union = union.expand();
     ///
-    /// let expected: BTreeSet<usize> = [0usize, 1, 2, 8, 24, 96].iter().copied().collect();
+    /// let expected: BTreeSet<u64> = [0, 1, 2, 8, 24, 96].iter().copied().collect();
     /// assert_eq!(expected, expanded_union);
     /// ```
-    pub fn expand(&self) -> BTreeSet<usize> {
+    pub fn expand(&self) -> BTreeSet<u64> {
         self.operator.expand()
     }
 
@@ -190,7 +190,7 @@ impl BitLengthSet {
     /// let expected = BitLengthSet::from_lengths([0, 8, 16]).unwrap();
     /// assert_eq!(padded.expand(), expected.expand());
     /// ```
-    pub fn pad_to_alignment(self, alignment: usize) -> BitLengthSet {
+    pub fn pad_to_alignment(self, alignment: u32) -> BitLengthSet {
         BitLengthSet {
             operator: Operator::Padding {
                 child: Box::new(self.operator),
@@ -228,7 +228,7 @@ impl BitLengthSet {
     /// assert_eq!(repeated.expand(), expected.expand());
     /// ```
     ///
-    pub fn repeat(self, count: usize) -> BitLengthSet {
+    pub fn repeat(self, count: u64) -> BitLengthSet {
         BitLengthSet {
             operator: Operator::Repeat {
                 child: Box::new(self.operator),
@@ -263,7 +263,7 @@ impl BitLengthSet {
     /// let expected = BitLengthSet::from_lengths([0, 1, 2, 3, 4, 5, 6, 8]).unwrap();
     /// assert_eq!(repeated.expand(), expected.expand());
     /// ```
-    pub fn repeat_range(self, count: RangeToInclusive<usize>) -> BitLengthSet {
+    pub fn repeat_range(self, count: RangeToInclusive<u64>) -> BitLengthSet {
         BitLengthSet {
             operator: Operator::RangeRepeat {
                 child: Box::new(self.operator),
@@ -340,17 +340,17 @@ impl Default for BitLengthSet {
     }
 }
 
-impl Rem<usize> for BitLengthSet {
+impl Rem<u64> for BitLengthSet {
     type Output = BitLengthSet;
 
     /// Calculates the elementwise modulo of each value in this set
-    fn rem(self, rhs: usize) -> Self::Output {
+    fn rem(self, rhs: u64) -> Self::Output {
         // Delegate to version that takes &self
         Rem::rem(&self, rhs)
     }
 }
 
-impl Rem<usize> for &'_ BitLengthSet {
+impl Rem<u64> for &'_ BitLengthSet {
     type Output = BitLengthSet;
 
     /// Calculates the elementwise modulo of each value in this set
@@ -366,7 +366,7 @@ impl Rem<usize> for &'_ BitLengthSet {
     /// assert_eq!((bit_length![0, 3, 8, 9, 27] % 8).expand(), bit_length![0, 1, 3].expand());
     ///
     /// ```
-    fn rem(self, rhs: usize) -> Self::Output {
+    fn rem(self, rhs: u64) -> Self::Output {
         let result = self.operator.modulo(rhs);
         debug_assert!(!result.is_empty());
         BitLengthSet {
