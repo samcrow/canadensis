@@ -94,7 +94,7 @@ fn evaluate_type_attr(
                     ScalarType::Versioned(ty) => {
                         // Recursion!
                         // Look up the type that this refers to and check its properties
-                        let ty_compiled = cx.type_by_key(&ty)?;
+                        let (ty, ty_compiled) = cx.type_by_key(ty)?;
 
                         match &ty_compiled.kind {
                             DsdlKind::Message { constants, .. } => {

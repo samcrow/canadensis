@@ -89,6 +89,15 @@ pub struct Field {
     always_aligned: bool,
 }
 
+impl Field {
+    pub fn kind(&self) -> &FieldKind {
+        &self.kind
+    }
+    pub fn always_aligned(&self) -> bool {
+        self.always_aligned
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum FieldKind {
     Padding(u8),

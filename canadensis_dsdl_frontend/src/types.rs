@@ -1,7 +1,7 @@
-pub mod constant;
-pub mod directive;
-pub mod expression;
-pub mod keywords;
+pub(crate) mod constant;
+pub(crate) mod directive;
+pub(crate) mod expression;
+pub(crate) mod keywords;
 pub(crate) mod set;
 mod string;
 
@@ -19,13 +19,12 @@ use std::convert::TryInto;
 
 /// A DSDL expression value
 #[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub enum Value {
+pub(crate) enum Value {
     Rational(BigRational),
     String(StringValue),
     Set(Set),
     Boolean(bool),
     Type(Type),
-    Identifier(String),
 }
 
 impl Value {
@@ -36,7 +35,6 @@ impl Value {
             Value::Set(set) => ExprType::Set(set.ty().map(Box::new)),
             Value::Boolean(_) => ExprType::Boolean,
             Value::Type(_) => ExprType::Type,
-            Value::Identifier(_) => ExprType::Identifier,
         }
     }
 }
@@ -45,7 +43,7 @@ impl Value {
 ///
 /// This is separate from `ExprType`, which is the type of a DSDL expression.
 #[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub enum Type {
+pub(crate) enum Type {
     Scalar(ScalarType),
     FixedArray {
         inner: ScalarType,
@@ -145,7 +143,7 @@ mod test {
 }
 
 /// An implicit field that may be inserted before another field
-pub(crate) enum ImplicitField {
+pub enum ImplicitField {
     /// A u32 header for an enclosed delimited type
     DelimiterHeader,
     /// An unsigned integer length for a variable-length array
@@ -203,7 +201,7 @@ impl From<canadensis_dsdl_parser::PrimitiveType> for PrimitiveType {
 }
 
 #[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub enum ScalarType {
+pub(crate) enum ScalarType {
     /// A composite type with a name and version
     Versioned(TypeKey),
     /// A primitive type
@@ -221,10 +219,11 @@ impl ScalarType {
     ) -> Result<ResolvedScalarType, Error> {
         match self {
             ScalarType::Versioned(key) => {
-                let referenced_type = cx.type_by_key(&key)?;
+                let (canonical_key, referenced_type) = cx.type_by_key(key)?;
                 match &referenced_type.kind {
                     DsdlKind::Message { message, .. } => Ok(ResolvedScalarType::Composite {
-                        key,
+                        // The resolved type key can't be local. It needs the full path to the type.
+                        key: canonical_key,
                         inner: Box::new(message.clone()),
                     }),
                     DsdlKind::Service { .. } => {
@@ -245,7 +244,7 @@ impl ScalarType {
     ) -> Result<BitLengthSet, Error> {
         match self {
             ScalarType::Versioned(key) => {
-                let referenced_type = cx.type_by_key(key)?;
+                let (_, referenced_type) = cx.type_by_key(key.clone())?;
                 match &referenced_type.kind {
                     DsdlKind::Message { message, .. } => Ok(message.bit_length.clone()),
                     DsdlKind::Service { .. } => {
@@ -315,19 +314,18 @@ impl PrimitiveType {
 
 /// A DSDL expression type
 #[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub enum ExprType {
+pub(crate) enum ExprType {
     Rational,
     String,
     Set(Option<Box<ExprType>>),
     Boolean,
     Type,
-    Identifier,
 }
 
 mod fmt_impl {
     use super::{ExprType, Type};
     use crate::types::string::StringValue;
-    use crate::types::{PrimitiveType, ScalarType, Value};
+    use crate::types::{PrimitiveType, ResolvedScalarType, ResolvedType, ScalarType, Value};
     use canadensis_dsdl_parser::CastMode;
     use std::fmt::{Display, Formatter, Result, Write};
 
@@ -341,7 +339,6 @@ mod fmt_impl {
                 ExprType::Boolean => write!(f, "bool"),
                 // So this is the serializable metatype I've heard so much about
                 ExprType::Type => write!(f, "metaserializable"),
-                ExprType::Identifier => write!(f, "identifier"),
             }
         }
     }
@@ -381,7 +378,6 @@ mod fmt_impl {
                 Value::Set(set) => write!(f, "{}", set),
                 Value::Boolean(value) => write!(f, "{}", *value),
                 Value::Type(ty) => write!(f, "{}", ty),
-                Value::Identifier(identifier) => write!(f, "{}", identifier),
             }
         }
     }
@@ -416,12 +412,33 @@ mod fmt_impl {
         }
     }
 
+    impl Display for ResolvedType {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+            match self {
+                ResolvedType::Scalar(scalar) => write!(f, "{}", scalar),
+                ResolvedType::FixedArray { inner, len } => write!(f, "{}[{}]", inner, len),
+                ResolvedType::VariableArray { inner, max_len } => {
+                    write!(f, "{}[<={}]", inner, max_len)
+                }
+            }
+        }
+    }
+
     impl Display for ScalarType {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
             match self {
                 ScalarType::Versioned(key) => write!(f, "{}", key),
                 ScalarType::Primitive(primitive) => write!(f, "{}", primitive),
                 ScalarType::Void { bits } => write!(f, "void{}", bits),
+            }
+        }
+    }
+    impl Display for ResolvedScalarType {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+            match self {
+                ResolvedScalarType::Composite { key, .. } => write!(f, "{}", key),
+                ResolvedScalarType::Primitive(primitive) => write!(f, "{}", primitive),
+                ResolvedScalarType::Void { bits } => write!(f, "void{}", bits),
             }
         }
     }

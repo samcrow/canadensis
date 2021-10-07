@@ -4,7 +4,7 @@ use crate::types::Value;
 use canadensis_dsdl_parser::Span;
 
 /// Evaluates the addition operator `expr + expr`
-pub fn evaluate(lhs: Value, rhs: Value, span: Span<'_>) -> Result<Value, Error> {
+pub(crate) fn evaluate(lhs: Value, rhs: Value, span: Span<'_>) -> Result<Value, Error> {
     // + concatenates strings, and also works on rationals and sets like several other operators.
     match (lhs, rhs) {
         (Value::String(mut lhs), Value::String(rhs)) => {

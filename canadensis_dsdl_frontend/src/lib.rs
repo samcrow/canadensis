@@ -25,7 +25,7 @@ pub(crate) mod error;
 pub(crate) mod operators;
 mod package;
 mod type_key;
-mod types;
+pub mod types;
 
 pub use crate::error::Error;
 pub use crate::package::{DsdlFile, Package};

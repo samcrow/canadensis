@@ -5,7 +5,7 @@ use canadensis_dsdl_parser::Span;
 use num_rational::BigRational;
 
 /// Evaluates the bitwise and operator `expr & expr`
-pub fn evaluate(lhs: Value, rhs: Value, span: Span<'_>) -> Result<Value, Error> {
+pub(crate) fn evaluate(lhs: Value, rhs: Value, span: Span<'_>) -> Result<Value, Error> {
     // a & b: Bitwise and on integers, or intersection of sets of the same type
     calculate_rational_or_set_binary(lhs, rhs, span, "&", rational_bitwise_and, |lhs, rhs| {
         lhs.intersection(&rhs).unwrap()

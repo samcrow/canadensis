@@ -109,16 +109,24 @@ impl<'p> CompileContext<'p> {
     ///
     /// If the type has already been compiled, this function returns it. Otherwise, this function
     /// attempts to compile it and then returns it.
-    pub fn type_by_key(&mut self, key: &TypeKey) -> Result<&CompiledDsdl, Error> {
+    ///
+    /// The provided key may be a local key (with no path), which refers to a type in the same
+    /// module.
+    ///
+    /// The return value is the canonical version of the provided key and the corresponding compiled
+    /// type.
+    pub fn type_by_key(&mut self, key: TypeKey) -> Result<(TypeKey, &CompiledDsdl), Error> {
         // Look in the current package if the package is not specified
         if key.name().path().is_empty() {
-            let local_key = TypeKey::new(
+            let canonical_key = TypeKey::new(
                 TypeFullName::new(self.current_file.path.clone(), key.name().name().to_owned()),
                 key.version().clone(),
             );
-            self.persistent.type_by_key(&local_key)
+            let result = self.persistent.type_by_key(&canonical_key)?;
+            Ok((canonical_key, result))
         } else {
-            self.persistent.type_by_key(key)
+            let result = self.persistent.type_by_key(&key)?;
+            Ok((key, result))
         }
     }
 

@@ -6,7 +6,7 @@ use num_rational::BigRational;
 use num_traits::{FromPrimitive, Pow, ToPrimitive};
 
 /// Evaluates the exponentiation operator `expr ** expr`
-pub fn evaluate(base: Value, exponent: Value, span: Span<'_>) -> Result<Value, Error> {
+pub(crate) fn evaluate(base: Value, exponent: Value, span: Span<'_>) -> Result<Value, Error> {
     calculate_elementwise_binary(base, exponent, span, "**", rational_exponent)
 }
 

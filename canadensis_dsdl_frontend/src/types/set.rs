@@ -9,7 +9,7 @@ use std::iter::FromIterator;
 /// A set has an element type if and only if its not empty. If it is not empty, all its elements
 /// have the same type.
 #[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub struct Set(BTreeSet<Value>);
+pub(crate) struct Set(BTreeSet<Value>);
 
 impl Set {
     pub fn new() -> Self {
@@ -251,7 +251,7 @@ impl IntoIterator for Set {
 }
 
 /// A consuming iterator over values in a set
-pub struct IntoIter(std::collections::btree_set::IntoIter<Value>);
+pub(crate) struct IntoIter(std::collections::btree_set::IntoIter<Value>);
 
 impl Iterator for IntoIter {
     type Item = Value;
@@ -271,7 +271,7 @@ impl<'s> IntoIterator for &'s Set {
 }
 
 /// A borrowed iterator over values in a set
-pub struct Iter<'s>(std::collections::btree_set::Iter<'s, Value>);
+pub(crate) struct Iter<'s>(std::collections::btree_set::Iter<'s, Value>);
 
 impl<'s> Iterator for Iter<'s> {
     type Item = &'s Value;
@@ -322,7 +322,7 @@ fn single_character_string(code: u8) -> String {
 
 /// An error resulting from an operation with two sets of incompatible element types
 #[derive(Debug, PartialEq)]
-pub struct TypeError {
+pub(crate) struct TypeError {
     /// The element type of the left set
     pub left: ExprType,
     /// The element type of the right set

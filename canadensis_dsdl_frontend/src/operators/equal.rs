@@ -4,7 +4,7 @@ use crate::types::Value;
 use canadensis_dsdl_parser::Span;
 
 /// Evaluates the equality operator `expr == expr`
-pub fn evaluate(lhs: Value, rhs: Value, span: Span<'_>) -> Result<Value, Error> {
+pub(crate) fn evaluate(lhs: Value, rhs: Value, span: Span<'_>) -> Result<Value, Error> {
     let result = match (lhs, rhs) {
         // string == string
         (Value::String(lhs), Value::String(rhs)) => {

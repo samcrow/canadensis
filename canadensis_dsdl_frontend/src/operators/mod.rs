@@ -1,15 +1,15 @@
 //! All DSDL operators
 
-pub mod add;
-pub mod attribute;
-pub mod bit_and;
-pub mod bit_or;
-pub mod equal;
-pub mod exponent;
-pub mod not_equal;
-pub mod unary_minus;
-pub mod unary_not;
-pub mod unary_plus;
+pub(crate) mod add;
+pub(crate) mod attribute;
+pub(crate) mod bit_and;
+pub(crate) mod bit_or;
+pub(crate) mod equal;
+pub(crate) mod exponent;
+pub(crate) mod not_equal;
+pub(crate) mod unary_minus;
+pub(crate) mod unary_not;
+pub(crate) mod unary_plus;
 
 use crate::error::Error;
 use crate::types::set::{Set, TypeError};

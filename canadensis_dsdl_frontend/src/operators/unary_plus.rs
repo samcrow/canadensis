@@ -3,7 +3,7 @@ use crate::types::Value;
 use canadensis_dsdl_parser::Span;
 
 /// Evaluates the unary plus operator `+expr`
-pub fn evaluate(inner: Value, span: Span<'_>) -> Result<Value, Error> {
+pub(crate) fn evaluate(inner: Value, span: Span<'_>) -> Result<Value, Error> {
     match inner {
         // Unary + on a number has no effect
         Value::Rational(n) => Ok(Value::Rational(n)),
@@ -18,9 +18,5 @@ pub fn evaluate(inner: Value, span: Span<'_>) -> Result<Value, Error> {
             "Can't apply unary + operator to a boolean"
         )),
         Value::Type(_) => Err(span_error!(span, "Can't apply unary + operator to a type")),
-        Value::Identifier(_) => Err(span_error!(
-            span,
-            "Can't apply unary + operator to an identifier"
-        )),
     }
 }

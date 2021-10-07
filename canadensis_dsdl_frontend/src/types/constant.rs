@@ -44,7 +44,7 @@ impl Constant {
         Ok(Constant { ty, value })
     }
 
-    pub fn value(&self) -> &Value {
+    pub(crate) fn value(&self) -> &Value {
         &self.value
     }
 }
