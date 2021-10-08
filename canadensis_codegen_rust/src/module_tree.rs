@@ -38,7 +38,7 @@ impl FromIterator<GeneratedType> for ModuleTree {
         let mut tree = ModuleTree::default();
 
         for generated_struct in iter {
-            let path = generated_struct.name().path.clone();
+            let path = generated_struct.name.path.clone();
             tree.add_struct(&path, generated_struct);
         }
 

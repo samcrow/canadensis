@@ -1,0 +1,6 @@
+
+# Two fields with the same name
+uint32 a
+uint8 a
+
+@extent 8 * 8

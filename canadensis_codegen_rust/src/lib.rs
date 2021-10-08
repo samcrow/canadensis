@@ -1,15 +1,20 @@
+extern crate canadensis_bit_length_set;
 extern crate canadensis_dsdl_frontend;
 extern crate heck;
 
+mod impl_data_type;
+mod impl_serialize;
 mod module_tree;
+mod size_bits;
 
+use canadensis_bit_length_set::BitLengthSet;
 use heck::{CamelCase, SnakeCase};
 use std::iter;
 
 use crate::module_tree::ModuleTree;
 use canadensis_dsdl_frontend::compiled::package::CompiledPackage;
 use canadensis_dsdl_frontend::compiled::{
-    CompiledDsdl, DsdlKind, FieldKind, Message, MessageKind, Struct, Union,
+    CompiledDsdl, DsdlKind, Extent, FieldKind, Message, MessageKind, Struct, Union,
 };
 use canadensis_dsdl_frontend::types::{PrimitiveType, ResolvedScalarType, ResolvedType};
 use canadensis_dsdl_frontend::TypeKey;
@@ -22,55 +27,81 @@ pub fn generate_code(package: &CompiledPackage) {
             DsdlKind::Message { message, .. } => {
                 let rust_type = RustTypeName::for_message_type(key);
                 // println!("{} from {}", rust_type, key);
-                generated_types.push(generate_rust_type(key, message, &rust_type));
+                generated_types.push(generate_rust_type(
+                    key,
+                    message,
+                    &rust_type,
+                    message.extent().clone(),
+                    MessageRole::Message,
+                ));
             }
             DsdlKind::Service { request, response } => {
                 let rust_type = ServiceTypeNames::for_service_type(key);
                 // println!("{} request from {}", rust_type.request, key);
                 // println!("{} response from {}", rust_type.response, key);
-                generated_types.push(generate_rust_type(key, request, &rust_type.request));
-                generated_types.push(generate_rust_type(key, response, &rust_type.response));
+                generated_types.push(generate_rust_type(
+                    key,
+                    request,
+                    &rust_type.request,
+                    request.extent().clone(),
+                    MessageRole::Request,
+                ));
+                generated_types.push(generate_rust_type(
+                    key,
+                    response,
+                    &rust_type.response,
+                    response.extent().clone(),
+                    MessageRole::Response,
+                ));
             }
         }
     }
     let tree: ModuleTree = generated_types.into_iter().collect();
 
-    println!("{}", tree);
+    println!("#![allow_unused_variables\n{}", tree);
 }
 
-fn generate_rust_type(key: &TypeKey, message: &Message, rust_type: &RustTypeName) -> GeneratedType {
+fn generate_rust_type(
+    key: &TypeKey,
+    message: &Message,
+    rust_type: &RustTypeName,
+    extent: Extent,
+    role: MessageRole,
+) -> GeneratedType {
+    let length = message.bit_length().clone();
     match message.kind() {
         MessageKind::Struct(uavcan_struct) => {
-            GeneratedType::Struct(GeneratedStruct::new(key, rust_type.clone(), uavcan_struct))
+            GeneratedType::new_struct(key, rust_type.clone(), length, extent, role, uavcan_struct)
         }
         MessageKind::Union(uavcan_union) => {
-            GeneratedType::Enum(GeneratedEnum::new(key, rust_type.clone(), uavcan_union))
+            GeneratedType::new_enum(key, rust_type.clone(), length, extent, role, uavcan_union)
         }
     }
 }
 
-enum GeneratedType {
+struct GeneratedType {
+    uavcan_name: String,
+    name: RustTypeName,
+    size: BitLengthSet,
+    extent: Extent,
+    role: MessageRole,
+    kind: GeneratedTypeKind,
+}
+
+enum GeneratedTypeKind {
     Struct(GeneratedStruct),
     Enum(GeneratedEnum),
 }
 
 impl GeneratedType {
-    pub fn name(&self) -> &RustTypeName {
-        match self {
-            GeneratedType::Struct(generated_struct) => &generated_struct.name,
-            GeneratedType::Enum(generated_enum) => &generated_enum.name,
-        }
-    }
-}
-
-struct GeneratedStruct {
-    uavcan_name: String,
-    name: RustTypeName,
-    fields: Vec<GeneratedField>,
-}
-
-impl GeneratedStruct {
-    pub fn new(key: &TypeKey, name: RustTypeName, uavcan_struct: &Struct) -> Self {
+    pub fn new_struct(
+        key: &TypeKey,
+        name: RustTypeName,
+        size: BitLengthSet,
+        extent: Extent,
+        role: MessageRole,
+        uavcan_struct: &Struct,
+    ) -> GeneratedType {
         let fields = uavcan_struct
             .fields
             .iter()
@@ -78,74 +109,120 @@ impl GeneratedStruct {
             .filter_map(|field| match field.kind() {
                 FieldKind::Padding(_) => None,
                 FieldKind::Data { ty, name } => Some(GeneratedField::new(
-                    ty,
+                    ty.clone(),
                     name.clone(),
                     field.always_aligned(),
                 )),
             })
             .collect();
-        GeneratedStruct {
+        GeneratedType::new(
+            key,
+            name,
+            size,
+            extent,
+            role,
+            GeneratedTypeKind::Struct(GeneratedStruct { fields }),
+        )
+    }
+    pub fn new_enum(
+        key: &TypeKey,
+        name: RustTypeName,
+        size: BitLengthSet,
+        extent: Extent,
+        role: MessageRole,
+        uavcan_union: &Union,
+    ) -> GeneratedType {
+        let variants = uavcan_union
+            .variants
+            .iter()
+            .cloned()
+            .map(|variant| GeneratedVariant::new(variant.ty.clone(), variant.name))
+            .collect();
+        GeneratedType::new(
+            key,
+            name,
+            size,
+            extent,
+            role,
+            GeneratedTypeKind::Enum(GeneratedEnum {
+                discriminant_bits: uavcan_union.discriminant_bits,
+                variants,
+            }),
+        )
+    }
+
+    fn new(
+        key: &TypeKey,
+        name: RustTypeName,
+        size: BitLengthSet,
+        extent: Extent,
+        role: MessageRole,
+        kind: GeneratedTypeKind,
+    ) -> Self {
+        GeneratedType {
             uavcan_name: key.to_string(),
             name,
-            fields,
+            size,
+            extent,
+            role,
+            kind,
         }
     }
+}
+
+struct GeneratedStruct {
+    fields: Vec<GeneratedField>,
 }
 
 struct GeneratedField {
     name: String,
     ty: String,
-    uavcan_ty: String,
+    uavcan_ty: ResolvedType,
     always_aligned: bool,
 }
 
 impl GeneratedField {
-    pub fn new(ty: &ResolvedType, name: String, always_aligned: bool) -> Self {
+    pub fn new(ty: ResolvedType, name: String, always_aligned: bool) -> Self {
         GeneratedField {
             name: make_rust_identifier(name),
-            ty: to_rust_type(ty),
-            uavcan_ty: ty.to_string(),
+            ty: to_rust_type(&ty),
+            uavcan_ty: ty,
             always_aligned,
         }
     }
 }
 
 struct GeneratedEnum {
-    uavcan_name: String,
-    name: RustTypeName,
+    /// The number of bits used for the discriminant, which identifies the active variant
+    discriminant_bits: u8,
+    /// The enum variants
     variants: Vec<GeneratedVariant>,
-}
-
-impl GeneratedEnum {
-    pub fn new(key: &TypeKey, name: RustTypeName, uavcan_enum: &Union) -> Self {
-        let variants = uavcan_enum
-            .variants
-            .iter()
-            .cloned()
-            .map(|variant| GeneratedVariant::new(&variant.ty, variant.name))
-            .collect();
-        GeneratedEnum {
-            uavcan_name: key.to_string(),
-            name,
-            variants,
-        }
-    }
 }
 
 struct GeneratedVariant {
     name: String,
     ty: String,
-    uavcan_ty: String,
+    uavcan_ty: ResolvedType,
 }
 
 impl GeneratedVariant {
-    pub fn new(ty: &ResolvedType, name: String) -> Self {
+    pub fn new(ty: ResolvedType, name: String) -> Self {
         GeneratedVariant {
             name: make_rust_identifier(name).to_camel_case(),
-            ty: to_rust_type(ty),
-            uavcan_ty: ty.to_string(),
+            ty: to_rust_type(&ty),
+            uavcan_ty: ty,
         }
     }
+}
+
+/// The role of a generated message type
+enum MessageRole {
+    /// A message (not service-related)
+    Message,
+    /// A service request
+    Request,
+    /// A service response
+    Response,
 }
 
 fn to_rust_type(ty: &ResolvedType) -> String {
@@ -187,8 +264,7 @@ fn round_up_integer_size(bits: u8) -> u8 {
         9..=16 => 16,
         17..=32 => 32,
         33..=64 => 64,
-        65..=128 => 128,
-        _ => panic!("Integer too large"),
+        65..=u8::MAX => panic!("Integer too large"),
     }
 }
 
@@ -262,8 +338,10 @@ fn make_rust_identifier(mut identifier: String) -> String {
 }
 
 mod fmt_impl {
-    use super::{GeneratedEnum, GeneratedField, GeneratedStruct, GeneratedType, RustTypeName};
-    use crate::GeneratedVariant;
+    use super::{GeneratedField, GeneratedType, RustTypeName};
+    use crate::impl_data_type::ImplementDataType;
+    use crate::impl_serialize::ImplementSerialize;
+    use crate::{GeneratedTypeKind, GeneratedVariant};
     use std::fmt::{Display, Formatter, Result};
 
     impl Display for RustTypeName {
@@ -278,21 +356,40 @@ mod fmt_impl {
 
     impl Display for GeneratedType {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-            match self {
-                GeneratedType::Struct(inner) => Display::fmt(inner, f),
-                GeneratedType::Enum(inner) => Display::fmt(inner, f),
-            }
-        }
-    }
-
-    impl Display for GeneratedStruct {
-        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
             writeln!(f, "/// `{}`", self.uavcan_name)?;
-            writeln!(f, "pub struct {} {{", self.name.type_name)?;
-            for field in &self.fields {
-                field.fmt(f)?;
+            let min_size = self.size.min();
+            let max_size = self.size.max();
+            if min_size == max_size {
+                writeln!(f, "/// Fixed size {} bytes", min_size / 8)?;
+            } else {
+                writeln!(
+                    f,
+                    "/// Size ranges from {} to {} bytes",
+                    min_size / 8,
+                    max_size / 8
+                )?;
             }
-            writeln!(f, "}}")
+            match &self.kind {
+                GeneratedTypeKind::Struct(inner) => {
+                    writeln!(f, "pub struct {} {{", self.name.type_name)?;
+                    for field in &inner.fields {
+                        field.fmt(f)?;
+                    }
+                    writeln!(f, "}}")?;
+                }
+                GeneratedTypeKind::Enum(inner) => {
+                    writeln!(f, "pub enum {} {{", self.name.type_name)?;
+                    for variant in &inner.variants {
+                        variant.fmt(f)?;
+                    }
+                    writeln!(f, "}}")?;
+                }
+            }
+
+            Display::fmt(&ImplementDataType(self), f)?;
+            Display::fmt(&ImplementSerialize(self), f)?;
+
+            Ok(())
         }
     }
 
@@ -305,17 +402,6 @@ mod fmt_impl {
                 writeln!(f, "// Not always aligned")?;
             }
             writeln!(f, "pub {}: {},", self.name, self.ty)
-        }
-    }
-
-    impl Display for GeneratedEnum {
-        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-            writeln!(f, "/// `{}`", self.uavcan_name)?;
-            writeln!(f, "pub enum {} {{", self.name.type_name)?;
-            for variant in &self.variants {
-                variant.fmt(f)?;
-            }
-            writeln!(f, "}}")
         }
     }
 

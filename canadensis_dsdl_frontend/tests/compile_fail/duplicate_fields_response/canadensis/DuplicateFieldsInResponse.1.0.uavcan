@@ -1,0 +1,9 @@
+
+@sealed
+---
+# Duplicate fields in this response
+
+int64 a
+int8 a
+
+@sealed

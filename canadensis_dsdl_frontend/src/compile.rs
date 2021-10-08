@@ -408,10 +408,14 @@ impl FileState {
             }
             // Union message completed
             State::MessageUnion(UnionState::End(variants, extent, length)) => {
+                let discriminant_bits = calculate_discriminant_bits(variants.len());
                 let message = Message {
                     deprecated: mem::take(&mut self.deprecated),
                     extent,
-                    kind: MessageKind::Union(Union { variants }),
+                    kind: MessageKind::Union(Union {
+                        discriminant_bits,
+                        variants,
+                    }),
                     bit_length: length,
                 };
                 // Clear constants
@@ -492,7 +496,6 @@ impl FileState {
         total_alignment: u32,
         span: Span<'_>,
     ) -> Result<(), Error> {
-        // TODO: Check for an existing field/variant with the same name
         let name = name.name.to_owned();
         let update_struct_length = |length: BitLengthSet| {
             length
@@ -534,6 +537,10 @@ impl FileState {
                 Ok(())
             }
             State::ResponseStruct(req, StructState::Collecting(mut fields), length) => {
+                if fields.iter().any(|existing| existing.name() == Some(&name)) {
+                    return Err(span_error!(span, "A field named {} already exists", name));
+                }
+
                 fields.push(Field::data(ty, name, length.is_byte_aligned()));
                 self.state = Some(State::ResponseStruct(
                     req,
@@ -544,11 +551,19 @@ impl FileState {
             }
             // Add a variant to a union
             State::MessageUnion(UnionState::Collecting(mut variants)) => {
+                if variants.iter().any(|existing| existing.name == name) {
+                    return Err(span_error!(span, "A variant named {} already exists", name));
+                }
+
                 variants.push(Variant::new(ty, name));
                 self.state = Some(State::MessageUnion(UnionState::Collecting(variants)));
                 Ok(())
             }
             State::ResponseUnion(req, UnionState::Collecting(mut variants)) => {
+                if variants.iter().any(|existing| existing.name == name) {
+                    return Err(span_error!(span, "A variant named {} already exists", name));
+                }
+
                 variants.push(Variant::new(ty, name));
                 self.state = Some(State::ResponseUnion(req, UnionState::Collecting(variants)));
                 Ok(())
@@ -600,10 +615,14 @@ impl FileState {
                 })
             }
             State::MessageUnion(UnionState::End(variants, extent, length)) => {
+                let discriminant_bits = calculate_discriminant_bits(variants.len());
                 let message = Message {
                     deprecated: self.deprecated,
                     extent,
-                    kind: MessageKind::Union(Union { variants }),
+                    kind: MessageKind::Union(Union {
+                        discriminant_bits,
+                        variants,
+                    }),
                     bit_length: length.pad_to_alignment(COMPOSITE_ALIGNMENT),
                 };
                 Ok(CompiledDsdl {
@@ -615,10 +634,14 @@ impl FileState {
                 })
             }
             State::ResponseUnion(request, UnionState::End(variants, extent, length)) => {
+                let discriminant_bits = calculate_discriminant_bits(variants.len());
                 let response = Message {
                     deprecated: self.deprecated,
                     extent,
-                    kind: MessageKind::Union(Union { variants }),
+                    kind: MessageKind::Union(Union {
+                        discriminant_bits,
+                        variants,
+                    }),
                     bit_length: length.pad_to_alignment(COMPOSITE_ALIGNMENT),
                 };
                 Ok(CompiledDsdl {
@@ -783,20 +806,23 @@ fn apply_sealed_or_extent(
     }
 }
 
+/// Calculates the number of bits needed for the discriminant of a union with the provided number
+/// of variants
+fn calculate_discriminant_bits(num_variants: usize) -> u8 {
+    array_length_bits(
+        num_variants
+            .try_into()
+            .expect("Number of union variants too large for u64"),
+    )
+    .try_into()
+    .expect("Discriminant bit length too large for u8")
+}
+
 /// Creates a bit length set for a union, which includes the implicit discriminant and all
 /// variants
 fn make_union_bit_length(variants: &[Variant]) -> BitLengthSet {
-    let discriminant_bits = array_length_bits(
-        variants
-            .len()
-            .try_into()
-            .expect("Number of variants too large for u64"),
-    );
-    let discriminant_length = BitLengthSet::single(
-        discriminant_bits
-            .try_into()
-            .expect("Can't convert discriminant bits to usize"),
-    );
+    let discriminant_bits = calculate_discriminant_bits(variants.len());
+    let discriminant_length = BitLengthSet::single(discriminant_bits.into());
     let variant_lengths = variants
         .iter()
         .map(|variant| variant.ty.size())

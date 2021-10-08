@@ -11,3 +11,5 @@ heck = "0.3.3"
 
 [dependencies.canadensis_dsdl_frontend]
 path = "../canadensis_dsdl_frontend"
+[dependencies.canadensis_bit_length_set]
+path = "../canadensis_bit_length_set"

@@ -481,7 +481,7 @@ impl ResolvedType {
     }
 
     /// Returns the delimiter header or length field, if any, that this type requires
-    pub(crate) fn implicit_field(&self) -> Option<ImplicitField> {
+    pub fn implicit_field(&self) -> Option<ImplicitField> {
         match self {
             ResolvedType::Scalar(scalar) => scalar.implicit_field(),
             ResolvedType::FixedArray { .. } => None,

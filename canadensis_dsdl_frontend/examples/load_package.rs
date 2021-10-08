@@ -1,5 +1,5 @@
-extern crate canadensis_dsdl_compiler;
-use canadensis_dsdl_compiler::{Error, Package};
+extern crate canadensis_dsdl_frontend;
+use canadensis_dsdl_frontend::{Error, Package};
 use std::env;
 use std::process;
 

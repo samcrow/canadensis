@@ -8,3 +8,4 @@ edition = "2018"
 [dependencies]
 half = "1.7.1"
 heapless = "0.7.7"
+canadensis_encoding = "0.1.0"

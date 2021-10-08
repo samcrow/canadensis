@@ -1,9 +1,9 @@
 //! Checks that this library can compile the UAVCAN public regulated data types, Nunavut test
 //! types, and a few additional Canadensis test types
 
-extern crate canadensis_dsdl_compiler;
+extern crate canadensis_dsdl_frontend;
 
-use canadensis_dsdl_compiler::{Error, Package};
+use canadensis_dsdl_frontend::{Error, Package};
 use std::path::PathBuf;
 
 #[test]

@@ -77,6 +77,9 @@ pub struct Struct {
 
 #[derive(Debug, Clone)]
 pub struct Union {
+    /// The number of bits used for the discriminant, which identifies the active variant
+    pub discriminant_bits: u8,
+    /// The possible variants of this union
     pub variants: Vec<Variant>,
 }
 
