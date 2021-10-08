@@ -21,7 +21,7 @@ pub struct ReadCursor<'b> {
     /// The number of bits in the current byte that have already been read
     ///
     /// Multiple values within a byte are read from right to left:
-    /// https://github.com/UAVCAN/specification/issues/70
+    /// <https://github.com/UAVCAN/specification/issues/70>
     ///
     /// Invariant: This is in the range 0..=7.
     bit_index: u8,
@@ -990,8 +990,7 @@ mod test {
 
     #[test]
     fn u64_one() {
-        let bytes = [0x67u8, 0x45, 0x23, 0x01,
-                                0xD4, 0xC3, 0xB2, 0xA1];
+        let bytes = [0x67u8, 0x45, 0x23, 0x01, 0xD4, 0xC3, 0xB2, 0xA1];
         let mut cursor = ReadCursor::new(&bytes);
         assert_eq!(cursor.read_u64(), 0xA1B2C3D401234567);
     }
@@ -1012,8 +1011,7 @@ mod test {
 
     #[test]
     fn f64_one() {
-        let bytes = [0x67u8, 0x45, 0x23, 0x01,
-                                0xD4, 0xC3, 0xB2, 0xA1];
+        let bytes = [0x67u8, 0x45, 0x23, 0x01, 0xD4, 0xC3, 0xB2, 0xA1];
         let mut cursor = ReadCursor::new(&bytes);
         assert_eq!(cursor.read_f64(), f64::from_bits(0xA1B2C3D401234567));
     }

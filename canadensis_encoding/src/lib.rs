@@ -28,10 +28,11 @@ pub trait Serialize: DataType {
     /// Serializes this value into a buffer
     ///
     /// The provided cursor will allow writing at least the number of bits returned by the
-    /// size_bits() function.
+    /// [`size_bits()`](#tymethod.size_bits) function.
     fn serialize(&self, cursor: &mut WriteCursor<'_>);
 
-    /// A convenience function that creates a cursor around the provided bytes and calls serialize
+    /// A convenience function that creates a cursor around the provided bytes and calls
+    /// [`serialize`](#tymethod.serialize)
     fn serialize_to_bytes(&self, bytes: &mut [u8]) {
         let mut cursor = WriteCursor::new(bytes);
         self.serialize(&mut cursor);
@@ -40,22 +41,13 @@ pub trait Serialize: DataType {
 
 /// Trait for types that can be deserialized from UAVCAN transfers
 pub trait Deserialize: DataType {
-    /// Returns true if the provided number of bits is in this type's bit length set
-    ///
-    /// For composite types, this function must not return true for any input that is not
-    /// a multiple of 8.
-    fn in_bit_length_set(bit_length: usize) -> bool;
-
-    /// Deserializes a value, replacing the content of self with the decoded value
-    fn deserialize_in_place(&mut self, cursor: &mut ReadCursor<'_>)
-        -> Result<(), DeserializeError>;
-
     /// Deserializes a value and returns it
     fn deserialize(cursor: &mut ReadCursor<'_>) -> Result<Self, DeserializeError>
     where
         Self: Sized;
 
-    /// A convenience function that creates a cursor around the provided bytes and calls deserialize
+    /// A convenience function that creates a cursor around the provided bytes and calls
+    /// [`deserialize`](#tymethod.deserialize)
     fn deserialize_from_bytes(bytes: &[u8]) -> Result<Self, DeserializeError>
     where
         Self: Sized,

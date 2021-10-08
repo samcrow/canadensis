@@ -17,7 +17,7 @@ pub struct WriteCursor<'b> {
     /// The number of bits in the current byte that have already been filled
     ///
     /// Multiple values within a byte are filled from right to left:
-    /// https://github.com/UAVCAN/specification/issues/70
+    /// <https://github.com/UAVCAN/specification/issues/70>
     ///
     /// Invariant: This is in the range 0..=7.
     bit_index: u8,
