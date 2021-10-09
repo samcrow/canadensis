@@ -11,14 +11,17 @@ use num_traits::ToPrimitive;
 use std::ops::Range;
 
 /// A constant declared in a data type
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Constant {
     /// The declared type of the constant
     ty: PrimitiveType,
-    /// The value of the constant
+    /// The value of the constant, used to evaluate DSDL expressions
     ///
     /// The type of this value may not be equal to its declared type.
-    value: Value,
+    dsdl_value: Value,
+    /// The possibly-simplified value of this constant that is exposed to client code in other
+    /// crates and can be used to generate code
+    value: ConstantValue,
 }
 
 impl Constant {
@@ -38,32 +41,49 @@ impl Constant {
                 name.name
             ));
         }
-        let value = evaluate_expression(cx, value)?;
-        check_type_compatibility(&ty, &value, value_span)?;
+        let dsdl_value = evaluate_expression(cx, value)?;
+        let value = check_type_compatibility(&ty, &dsdl_value, value_span)?;
 
-        Ok(Constant { ty, value })
+        Ok(Constant {
+            ty,
+            dsdl_value,
+            value,
+        })
     }
 
-    pub(crate) fn value(&self) -> &Value {
+    /// Returns the declared type of this constant
+    pub fn ty(&self) -> &PrimitiveType {
+        &self.ty
+    }
+
+    /// Returns the value of this constant in a form used to evaluate DSDL expressions
+    pub(crate) fn dsdl_value(&self) -> &Value {
+        &self.dsdl_value
+    }
+
+    /// Returns the value of the constant
+    pub fn value(&self) -> &ConstantValue {
         &self.value
     }
 }
 
 /// Checks a declared type and an expression value to determine if they are compatible
 ///
+/// If the types are compatible, this function returns the value as a ConstantValue.
+///
 /// This is based on table 3.14 in the specification.
 fn check_type_compatibility(
     declared: &PrimitiveType,
     value: &Value,
     value_span: Span<'_>,
-) -> Result<(), Error> {
+) -> Result<ConstantValue, Error> {
     match (declared, value) {
         // bool = bool
-        (PrimitiveType::Boolean, Value::Boolean(_)) => Ok(()),
+        (PrimitiveType::Boolean, Value::Boolean(value)) => Ok(ConstantValue::Boolean(*value)),
         // [any cast mode] uint8 = integer-convertible-string
         (PrimitiveType::UInt { bits: 8, .. }, Value::String(string)) => {
-            if string.implicit_int().is_some() {
-                Ok(())
+            if let Some(int_value) = string.implicit_int() {
+                Ok(ConstantValue::Int(int_value.into()))
             } else {
                 Err(span_error!(
                     value_span,
@@ -78,7 +98,7 @@ fn check_type_compatibility(
             if value.is_integer() {
                 let value = value.numer();
                 if signed_int_bounds(*bits).contains(value) {
-                    Ok(())
+                    Ok(ConstantValue::Int(value.clone()))
                 } else {
                     Err(span_error!(
                         value_span,
@@ -100,7 +120,7 @@ fn check_type_compatibility(
             if value.is_integer() {
                 let value = value.numer();
                 if unsigned_int_bounds(*bits).contains(value) {
-                    Ok(())
+                    Ok(ConstantValue::Int(value.clone()))
                 } else {
                     Err(span_error!(value_span,
                         "Integer {} cannot be assigned to a {} constant because it is too large or negative",
@@ -118,7 +138,7 @@ fn check_type_compatibility(
         // float16 = rational that fits into a float16
         (PrimitiveType::Float16 { .. }, Value::Rational(value)) => {
             match value.to_f32().map(f16::from_f32) {
-                Some(float_value) if float_value.is_finite() => Ok(()),
+                Some(float_value) if float_value.is_finite() => Ok(ConstantValue::Float16(float_value)),
                 _ =>  Err(span_error!(value_span,
                         "Rational {} cannot be assigned to floating-point constant because it is too large",
                         value
@@ -127,7 +147,7 @@ fn check_type_compatibility(
         }
         // float32 = rational that fits into a float32
         (PrimitiveType::Float32 { .. }, Value::Rational(value)) => match value.to_f32() {
-            Some(float_value) if float_value.is_finite() => Ok(()),
+            Some(float_value) if float_value.is_finite() => Ok(ConstantValue::Float32(float_value)),
             _ => Err(span_error!(
                 value_span,
                 "Value {} cannot be assigned to a floating-point constant because it is too large",
@@ -136,7 +156,7 @@ fn check_type_compatibility(
         },
         // float64 = rational that fits into a float64
         (PrimitiveType::Float64 { .. }, Value::Rational(value)) => match value.to_f64() {
-            Some(float_value) if float_value.is_finite() => Ok(()),
+            Some(float_value) if float_value.is_finite() => Ok(ConstantValue::Float64(float_value)),
             _ => Err(span_error!(
                 value_span,
                 "Value {} cannot be assigned to a floating-point constant because it is too large",
@@ -167,4 +187,36 @@ fn unsigned_int_bounds(bits: u8) -> Range<BigInt> {
     let lower = BigInt::from(0);
     let upper = BigInt::from(2).pow(u32::from(bits));
     lower..upper
+}
+
+/// Values that a constant can hold
+#[derive(Debug, Clone)]
+pub enum ConstantValue {
+    /// Boolean
+    Boolean(bool),
+    /// Signed or unsigned integer
+    Int(BigInt),
+    /// 16-bit float
+    Float16(f16),
+    /// 32-bit float
+    Float32(f32),
+    /// 64-bit float
+    Float64(f64),
+}
+
+mod fmt_impl {
+    use super::ConstantValue;
+    use std::fmt::{Display, Formatter, Result};
+
+    impl Display for ConstantValue {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+            match self {
+                ConstantValue::Boolean(inner) => Display::fmt(inner, f),
+                ConstantValue::Int(inner) => Display::fmt(inner, f),
+                ConstantValue::Float16(inner) => Display::fmt(inner, f),
+                ConstantValue::Float32(inner) => Display::fmt(inner, f),
+                ConstantValue::Float64(inner) => Display::fmt(inner, f),
+            }
+        }
+    }
 }

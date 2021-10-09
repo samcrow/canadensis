@@ -77,22 +77,27 @@ struct SerializeField<'f>(&'f GeneratedField);
 
 impl Display for SerializeField<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        if self.0.always_aligned {
-            Display::fmt(
-                &WriteAlignedField {
-                    field_expr: &format!("self.{}", self.0.name),
-                    ty: &self.0.uavcan_ty,
-                },
-                f,
-            )
-        } else {
-            Display::fmt(
-                &WriteUnalignedField {
-                    field_expr: &format!("self.{}", self.0.name),
-                    ty: &self.0.uavcan_ty,
-                },
-                f,
-            )
+        match &self.0 {
+            GeneratedField::Data(data) => {
+                if data.always_aligned {
+                    Display::fmt(
+                        &WriteAlignedField {
+                            field_expr: &format!("self.{}", data.name),
+                            ty: &data.uavcan_ty,
+                        },
+                        f,
+                    )
+                } else {
+                    Display::fmt(
+                        &WriteUnalignedField {
+                            field_expr: &format!("self.{}", data.name),
+                            ty: &data.uavcan_ty,
+                        },
+                        f,
+                    )
+                }
+            }
+            GeneratedField::Padding(bits) => writeln!(f, "cursor.skip_{}();", *bits),
         }
     }
 }
@@ -146,44 +151,41 @@ impl<'t> Display for WriteAlignedField<'_> {
                 ResolvedScalarType::Composite { .. } => {
                     writeln!(f, "cursor.write_composite(&{});", self.field_expr)?;
                 }
-                ResolvedScalarType::Primitive(primitive) => {
-                    // A variant is always aligned, so we can use the aligned functions
-                    match primitive {
-                        PrimitiveType::Boolean => {
-                            writeln!(f, "cursor.write_bool({});", self.field_expr)?
-                        }
-                        PrimitiveType::Int { bits } => {
-                            Display::fmt(
-                                &CallWriteAligned {
-                                    bits: *bits,
-                                    name: self.field_expr,
-                                    as_uint: true,
-                                },
-                                f,
-                            )?;
-                        }
-                        PrimitiveType::UInt { bits, .. } => {
-                            Display::fmt(
-                                &CallWriteAligned {
-                                    bits: *bits,
-                                    name: self.field_expr,
-                                    as_uint: false,
-                                },
-                                f,
-                            )?;
-                        }
-                        PrimitiveType::Float16 { .. } => {
-                            writeln!(f, "cursor.write_f16({});", self.field_expr)?
-                        }
-                        PrimitiveType::Float32 { .. } => {
-                            writeln!(f, "cursor.write_f32({});", self.field_expr)?
-                        }
-                        PrimitiveType::Float64 { .. } => {
-                            writeln!(f, "cursor.write_f64({});", self.field_expr)?
-                        }
+                ResolvedScalarType::Primitive(primitive) => match primitive {
+                    PrimitiveType::Boolean => {
+                        writeln!(f, "cursor.write_bool({});", self.field_expr)?
                     }
-                }
-                ResolvedScalarType::Void { .. } => panic!("A void type can't be part of a union"),
+                    PrimitiveType::Int { bits } => {
+                        Display::fmt(
+                            &CallWriteAligned {
+                                bits: *bits,
+                                name: self.field_expr,
+                                as_uint: true,
+                            },
+                            f,
+                        )?;
+                    }
+                    PrimitiveType::UInt { bits, .. } => {
+                        Display::fmt(
+                            &CallWriteAligned {
+                                bits: *bits,
+                                name: self.field_expr,
+                                as_uint: false,
+                            },
+                            f,
+                        )?;
+                    }
+                    PrimitiveType::Float16 { .. } => {
+                        writeln!(f, "cursor.write_f16({});", self.field_expr)?
+                    }
+                    PrimitiveType::Float32 { .. } => {
+                        writeln!(f, "cursor.write_f32({});", self.field_expr)?
+                    }
+                    PrimitiveType::Float64 { .. } => {
+                        writeln!(f, "cursor.write_f64({});", self.field_expr)?
+                    }
+                },
+                ResolvedScalarType::Void { bits } => writeln!(f, "cursor.skip_{}();", *bits)?,
             },
             ResolvedType::FixedArray { inner, .. } => {
                 Display::fmt(
@@ -264,7 +266,7 @@ impl Display for WriteUnalignedField<'_> {
                         writeln!(f, "cursor.write_f64({});", self.field_expr)?
                     }
                 },
-                ResolvedScalarType::Void { .. } => panic!("A void type can't be part of a union"),
+                ResolvedScalarType::Void { bits } => writeln!(f, "cursor.skip_{}();", *bits)?,
             },
             ResolvedType::FixedArray { inner, .. } => {
                 Display::fmt(

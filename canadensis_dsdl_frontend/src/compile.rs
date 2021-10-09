@@ -1,6 +1,7 @@
 use crate::compiled::{
     CompiledDsdl, DsdlKind, Extent, Field, Message, MessageKind, Struct, Union, Variant,
 };
+use crate::constants::Constants;
 use crate::error::Error;
 use crate::package::DsdlFile;
 use crate::type_key::{TypeFullName, TypeKey};
@@ -400,9 +401,8 @@ impl FileState {
                     extent,
                     kind: MessageKind::Struct(Struct { fields }),
                     bit_length: length,
+                    constants: self.take_constants(),
                 };
-                // Clear constants
-                self.constants.clear();
                 self.state = Some(State::Response(message));
                 Ok(())
             }
@@ -417,9 +417,8 @@ impl FileState {
                         variants,
                     }),
                     bit_length: length,
+                    constants: self.take_constants(),
                 };
-                // Clear constants
-                self.constants.clear();
                 self.state = Some(State::Response(message));
                 Ok(())
             }
@@ -593,13 +592,11 @@ impl FileState {
                     extent,
                     kind: MessageKind::Struct(Struct { fields }),
                     bit_length: length.pad_to_alignment(COMPOSITE_ALIGNMENT),
+                    constants: Constants::from_map(self.constants),
                 };
                 Ok(CompiledDsdl {
                     fixed_port_id,
-                    kind: DsdlKind::Message {
-                        message,
-                        constants: self.constants,
-                    },
+                    kind: DsdlKind::Message(message),
                 })
             }
             State::ResponseStruct(request, StructState::End(fields, extent), length) => {
@@ -608,6 +605,7 @@ impl FileState {
                     extent,
                     kind: MessageKind::Struct(Struct { fields }),
                     bit_length: length.pad_to_alignment(COMPOSITE_ALIGNMENT),
+                    constants: Constants::from_map(self.constants),
                 };
                 Ok(CompiledDsdl {
                     fixed_port_id,
@@ -624,13 +622,11 @@ impl FileState {
                         variants,
                     }),
                     bit_length: length.pad_to_alignment(COMPOSITE_ALIGNMENT),
+                    constants: Constants::from_map(self.constants),
                 };
                 Ok(CompiledDsdl {
                     fixed_port_id,
-                    kind: DsdlKind::Message {
-                        message,
-                        constants: self.constants,
-                    },
+                    kind: DsdlKind::Message(message),
                 })
             }
             State::ResponseUnion(request, UnionState::End(variants, extent, length)) => {
@@ -643,6 +639,7 @@ impl FileState {
                         variants,
                     }),
                     bit_length: length.pad_to_alignment(COMPOSITE_ALIGNMENT),
+                    constants: Constants::from_map(self.constants),
                 };
                 Ok(CompiledDsdl {
                     fixed_port_id,
@@ -661,6 +658,12 @@ impl FileState {
                 ))
             }
         }
+    }
+
+    /// Removes and returns the current constants map, replacing it with an empty map
+    #[must_use]
+    fn take_constants(&mut self) -> Constants {
+        Constants::from_map(mem::take(&mut self.constants))
     }
 }
 

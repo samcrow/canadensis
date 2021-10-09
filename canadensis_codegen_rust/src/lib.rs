@@ -2,7 +2,9 @@ extern crate canadensis_bit_length_set;
 extern crate canadensis_dsdl_frontend;
 extern crate heck;
 
+mod impl_constants;
 mod impl_data_type;
+mod impl_deserialize;
 mod impl_serialize;
 mod module_tree;
 mod size_bits;
@@ -14,8 +16,9 @@ use std::iter;
 use crate::module_tree::ModuleTree;
 use canadensis_dsdl_frontend::compiled::package::CompiledPackage;
 use canadensis_dsdl_frontend::compiled::{
-    CompiledDsdl, DsdlKind, Extent, FieldKind, Message, MessageKind, Struct, Union,
+    DsdlKind, Extent, FieldKind, Message, MessageKind, Struct, Union,
 };
+use canadensis_dsdl_frontend::constants::Constants;
 use canadensis_dsdl_frontend::types::{PrimitiveType, ResolvedScalarType, ResolvedType};
 use canadensis_dsdl_frontend::TypeKey;
 
@@ -24,7 +27,7 @@ pub fn generate_code(package: &CompiledPackage) {
 
     for (key, dsdl) in package {
         match &dsdl.kind {
-            DsdlKind::Message { message, .. } => {
+            DsdlKind::Message(message) => {
                 let rust_type = RustTypeName::for_message_type(key);
                 // println!("{} from {}", rust_type, key);
                 generated_types.push(generate_rust_type(
@@ -58,7 +61,10 @@ pub fn generate_code(package: &CompiledPackage) {
     }
     let tree: ModuleTree = generated_types.into_iter().collect();
 
-    println!("#![allow_unused_variables\n{}", tree);
+    println!(
+        "#![no_std]\n#![allow(unused_variables, unused_braces)]\n{}",
+        tree
+    );
 }
 
 fn generate_rust_type(
@@ -70,12 +76,24 @@ fn generate_rust_type(
 ) -> GeneratedType {
     let length = message.bit_length().clone();
     match message.kind() {
-        MessageKind::Struct(uavcan_struct) => {
-            GeneratedType::new_struct(key, rust_type.clone(), length, extent, role, uavcan_struct)
-        }
-        MessageKind::Union(uavcan_union) => {
-            GeneratedType::new_enum(key, rust_type.clone(), length, extent, role, uavcan_union)
-        }
+        MessageKind::Struct(uavcan_struct) => GeneratedType::new_struct(
+            key,
+            rust_type.clone(),
+            length,
+            extent,
+            role,
+            uavcan_struct,
+            message.constants().clone(),
+        ),
+        MessageKind::Union(uavcan_union) => GeneratedType::new_enum(
+            key,
+            rust_type.clone(),
+            length,
+            extent,
+            role,
+            uavcan_union,
+            message.constants().clone(),
+        ),
     }
 }
 
@@ -86,6 +104,7 @@ struct GeneratedType {
     extent: Extent,
     role: MessageRole,
     kind: GeneratedTypeKind,
+    constants: Constants,
 }
 
 enum GeneratedTypeKind {
@@ -101,18 +120,17 @@ impl GeneratedType {
         extent: Extent,
         role: MessageRole,
         uavcan_struct: &Struct,
+        constants: Constants,
     ) -> GeneratedType {
         let fields = uavcan_struct
             .fields
             .iter()
             .cloned()
-            .filter_map(|field| match field.kind() {
-                FieldKind::Padding(_) => None,
-                FieldKind::Data { ty, name } => Some(GeneratedField::new(
-                    ty.clone(),
-                    name.clone(),
-                    field.always_aligned(),
-                )),
+            .map(|field| match field.kind() {
+                FieldKind::Padding(bits) => GeneratedField::Padding(*bits),
+                FieldKind::Data { ty, name } => {
+                    GeneratedField::data(ty.clone(), name.clone(), field.always_aligned())
+                }
             })
             .collect();
         GeneratedType::new(
@@ -122,6 +140,7 @@ impl GeneratedType {
             extent,
             role,
             GeneratedTypeKind::Struct(GeneratedStruct { fields }),
+            constants,
         )
     }
     pub fn new_enum(
@@ -131,6 +150,7 @@ impl GeneratedType {
         extent: Extent,
         role: MessageRole,
         uavcan_union: &Union,
+        constants: Constants,
     ) -> GeneratedType {
         let variants = uavcan_union
             .variants
@@ -148,6 +168,7 @@ impl GeneratedType {
                 discriminant_bits: uavcan_union.discriminant_bits,
                 variants,
             }),
+            constants,
         )
     }
 
@@ -158,6 +179,7 @@ impl GeneratedType {
         extent: Extent,
         role: MessageRole,
         kind: GeneratedTypeKind,
+        constants: Constants,
     ) -> Self {
         GeneratedType {
             uavcan_name: key.to_string(),
@@ -166,6 +188,7 @@ impl GeneratedType {
             extent,
             role,
             kind,
+            constants,
         }
     }
 }
@@ -174,7 +197,15 @@ struct GeneratedStruct {
     fields: Vec<GeneratedField>,
 }
 
-struct GeneratedField {
+enum GeneratedField {
+    Data(GeneratedDataField),
+    /// A padding field
+    ///
+    /// The enclosed value is the number of bits
+    Padding(u8),
+}
+
+struct GeneratedDataField {
     name: String,
     ty: String,
     uavcan_ty: ResolvedType,
@@ -182,13 +213,13 @@ struct GeneratedField {
 }
 
 impl GeneratedField {
-    pub fn new(ty: ResolvedType, name: String, always_aligned: bool) -> Self {
-        GeneratedField {
+    pub fn data(ty: ResolvedType, name: String, always_aligned: bool) -> Self {
+        GeneratedField::Data(GeneratedDataField {
             name: make_rust_identifier(name),
             ty: to_rust_type(&ty),
             uavcan_ty: ty,
             always_aligned,
-        }
+        })
     }
 }
 
@@ -268,12 +299,6 @@ fn round_up_integer_size(bits: u8) -> u8 {
     }
 }
 
-struct Module {
-    name: String,
-    types: Vec<CompiledDsdl>,
-    children: Vec<Module>,
-}
-
 /// The path and name of a Rust type
 #[derive(Debug, Clone)]
 struct RustTypeName {
@@ -339,7 +364,9 @@ fn make_rust_identifier(mut identifier: String) -> String {
 
 mod fmt_impl {
     use super::{GeneratedField, GeneratedType, RustTypeName};
+    use crate::impl_constants::ImplementConstants;
     use crate::impl_data_type::ImplementDataType;
+    use crate::impl_deserialize::ImplementDeserialize;
     use crate::impl_serialize::ImplementSerialize;
     use crate::{GeneratedTypeKind, GeneratedVariant};
     use std::fmt::{Display, Formatter, Result};
@@ -356,7 +383,7 @@ mod fmt_impl {
 
     impl Display for GeneratedType {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-            writeln!(f, "/// `{}`", self.uavcan_name)?;
+            writeln!(f, "/// `{}`\n///", self.uavcan_name)?;
             let min_size = self.size.min();
             let max_size = self.size.max();
             if min_size == max_size {
@@ -387,7 +414,9 @@ mod fmt_impl {
             }
 
             Display::fmt(&ImplementDataType(self), f)?;
+            Display::fmt(&ImplementConstants(self), f)?;
             Display::fmt(&ImplementSerialize(self), f)?;
+            Display::fmt(&ImplementDeserialize(self), f)?;
 
             Ok(())
         }
@@ -395,13 +424,28 @@ mod fmt_impl {
 
     impl Display for GeneratedField {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-            writeln!(f, "// {}", self.uavcan_ty)?;
-            if self.always_aligned {
-                writeln!(f, "// Always aligned")?;
-            } else {
-                writeln!(f, "// Not always aligned")?;
+            match self {
+                GeneratedField::Data(data) => {
+                    writeln!(f, "/// {}\n///", data.uavcan_ty)?;
+                    if data.always_aligned {
+                        writeln!(f, "/// Always aligned")?;
+                    } else {
+                        writeln!(f, "/// Not always aligned")?;
+                    }
+                    let size = data.uavcan_ty.size();
+                    let size_min = size.min();
+                    let size_max = size.max();
+                    if size_min == size_max {
+                        writeln!(f, "/// Size {} bits", size_min)?;
+                    } else {
+                        writeln!(f, "/// Size ranges from {} to {} bits", size_min, size_max)?;
+                    }
+                    writeln!(f, "pub {}: {},", data.name, data.ty)
+                }
+                GeneratedField::Padding(bits) => {
+                    writeln!(f, "// {} bits of padding", *bits)
+                }
             }
-            writeln!(f, "pub {}: {},", self.name, self.ty)
         }
     }
 

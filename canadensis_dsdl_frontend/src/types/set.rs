@@ -12,7 +12,7 @@ use std::iter::FromIterator;
 pub(crate) struct Set(BTreeSet<Value>);
 
 impl Set {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Set(BTreeSet::new())
     }
 
@@ -27,7 +27,7 @@ impl Set {
     }
 
     /// Returns the type of this set, or None if this set is empty
-    pub fn ty(&self) -> Option<ExprType> {
+    pub(crate) fn ty(&self) -> Option<ExprType> {
         self.0.iter().next().map(Value::ty)
     }
 
@@ -35,7 +35,7 @@ impl Set {
     ///
     /// This function returns None if the set is empty, or if the < operator is not defined on the
     /// element type.
-    pub fn min_value(&self) -> Option<Value> {
+    pub(crate) fn min_value(&self) -> Option<Value> {
         match self.ty() {
             Some(ExprType::Rational) => {
                 // This is easy. They're already sorted.
@@ -62,7 +62,7 @@ impl Set {
     ///
     /// This function returns None if the set is empty, or if the < operator is not defined on the
     /// element type.
-    pub fn max_value(&self) -> Option<Value> {
+    pub(crate) fn max_value(&self) -> Option<Value> {
         match self.ty() {
             Some(ExprType::Rational) => {
                 // This is easy. They're already sorted.
@@ -139,7 +139,7 @@ impl Set {
     /// character will be converted into its numerical value.
     ///
     /// Otherwise, the types do not match and the value is rejected.
-    pub fn insert(&mut self, value: Value) -> Result<(), TypeError> {
+    pub(crate) fn insert(&mut self, value: Value) -> Result<(), TypeError> {
         if let Some(ty) = self.ty() {
             if ty == value.ty() {
                 self.0.insert(value);

@@ -1,3 +1,5 @@
+//! DSDL data types
+
 pub(crate) mod constant;
 pub(crate) mod directive;
 pub(crate) mod expression;
@@ -20,10 +22,15 @@ use std::convert::TryInto;
 /// A DSDL expression value
 #[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub(crate) enum Value {
+    /// A rational number
     Rational(BigRational),
+    /// A string
     String(StringValue),
+    /// A set of values
     Set(Set),
+    /// A boolean
     Boolean(bool),
+    /// A data type
     Type(Type),
 }
 
@@ -221,7 +228,7 @@ impl ScalarType {
             ScalarType::Versioned(key) => {
                 let (canonical_key, referenced_type) = cx.type_by_key(key)?;
                 match &referenced_type.kind {
-                    DsdlKind::Message { message, .. } => Ok(ResolvedScalarType::Composite {
+                    DsdlKind::Message(message) => Ok(ResolvedScalarType::Composite {
                         // The resolved type key can't be local. It needs the full path to the type.
                         key: canonical_key,
                         inner: Box::new(message.clone()),
@@ -246,7 +253,7 @@ impl ScalarType {
             ScalarType::Versioned(key) => {
                 let (_, referenced_type) = cx.type_by_key(key.clone())?;
                 match &referenced_type.kind {
-                    DsdlKind::Message { message, .. } => Ok(message.bit_length.clone()),
+                    DsdlKind::Message(message) => Ok(message.bit_length.clone()),
                     DsdlKind::Service { .. } => {
                         Err(span_error!(span, "Can't refer to a service type"))
                     }

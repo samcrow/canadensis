@@ -1,6 +1,6 @@
 //! Generates an expression that calculates the size (in bits) of a data type
 
-use crate::{GeneratedType, GeneratedTypeKind};
+use crate::{GeneratedField, GeneratedType, GeneratedTypeKind};
 use canadensis_dsdl_frontend::compiled::Extent;
 use canadensis_dsdl_frontend::types::{
     ImplicitField, PrimitiveType, ResolvedScalarType, ResolvedType,
@@ -11,54 +11,67 @@ pub(crate) struct SizeBitsExpr<'t>(pub &'t GeneratedType);
 
 impl Display for SizeBitsExpr<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        // This is similar to generating the serialize implementation, but we have to manually
-        // add 32 bits for delimiter headers of delimited composite types.
-
-        match &self.0.kind {
-            GeneratedTypeKind::Struct(gstruct) => {
-                for field in &gstruct.fields {
-                    Display::fmt(
-                        &WriteFieldSize {
-                            ty: &field.uavcan_ty,
-                            expr: &format!("self.{}", field.name),
-                        },
-                        f,
-                    )?;
-                    // End of field
-                    write!(f, " + ")?;
-                }
-                // Last field, make the expression end in + 0
-                write!(f, "0")?;
-            }
-            GeneratedTypeKind::Enum(genum) => {
-                write!(f, "{} + match self {{", genum.discriminant_bits)?;
-
-                for variant in genum.variants.iter() {
-                    // Match arm (inner value is called `inner`)
-                    writeln!(
-                        f,
-                        "{}::{}(inner) => {{",
-                        self.0.name.type_name, variant.name
-                    )?;
-                    Display::fmt(
-                        &WriteFieldSize {
-                            ty: &variant.uavcan_ty,
-                            expr: "inner",
-                        },
-                        f,
-                    )?;
-
-                    // End match arm
-                    writeln!(f, "}}")?;
-                }
-
-                // End match
-                write!(f, "}}")?;
-            }
+        let size_min = self.0.size.min();
+        let size_max = self.0.size.max();
+        if size_min == size_max {
+            // Just a single precalculated value
+            write!(f, "{}", size_min)
+        } else {
+            write_complex_size_expression(f, &self.0)
         }
-
-        Ok(())
     }
+}
+
+fn write_complex_size_expression(f: &mut Formatter, ty: &GeneratedType) -> Result {
+    // This is similar to generating the serialize implementation, but we have to manually
+    // add 32 bits for delimiter headers of delimited composite types.
+
+    match &ty.kind {
+        GeneratedTypeKind::Struct(gstruct) => {
+            for field in &gstruct.fields {
+                match field {
+                    GeneratedField::Data(field) => {
+                        Display::fmt(
+                            &WriteFieldSize {
+                                ty: &field.uavcan_ty,
+                                expr: &format!("self.{}", field.name),
+                            },
+                            f,
+                        )?;
+                    }
+                    GeneratedField::Padding(bits) => write!(f, "{}", *bits)?,
+                }
+
+                // End of field
+                write!(f, " + ")?;
+            }
+            // Last field, make the expression end in + 0
+            write!(f, "0")?;
+        }
+        GeneratedTypeKind::Enum(genum) => {
+            write!(f, "{} + match self {{", genum.discriminant_bits)?;
+
+            for variant in genum.variants.iter() {
+                // Match arm (inner value is called `inner`)
+                writeln!(f, "{}::{}(inner) => {{", ty.name.type_name, variant.name)?;
+                Display::fmt(
+                    &WriteFieldSize {
+                        ty: &variant.uavcan_ty,
+                        expr: "inner",
+                    },
+                    f,
+                )?;
+
+                // End match arm
+                writeln!(f, "}}")?;
+            }
+
+            // End match
+            write!(f, "}}")?;
+        }
+    }
+
+    Ok(())
 }
 
 struct WriteFieldSize<'t> {

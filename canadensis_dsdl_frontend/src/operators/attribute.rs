@@ -97,10 +97,10 @@ fn evaluate_type_attr(
                         let (ty, ty_compiled) = cx.type_by_key(ty)?;
 
                         match &ty_compiled.kind {
-                            DsdlKind::Message { constants, .. } => {
+                            DsdlKind::Message(message) => {
                                 // Look up the constant
-                                match constants.get(rhs) {
-                                    Some(constant) => Ok(constant.value().clone()),
+                                match message.constants().get(rhs) {
+                                    Some(constant) => Ok(constant.dsdl_value().clone()),
                                     None => Err(span_error!(
                                         span,
                                         "Type {} has no attribute {}",
@@ -110,7 +110,7 @@ fn evaluate_type_attr(
                                 }
                             }
                             DsdlKind::Service { .. } => {
-                                // A service type can't be named
+                                // A service type can't be named and its constants are not accessible
                                 Err(span_error!(
                                     span,
                                     "Type {} has no attributes because it is a service",

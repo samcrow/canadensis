@@ -2,10 +2,9 @@
 
 pub mod package;
 
-use crate::types::constant::Constant;
+use crate::constants::Constants;
 use crate::types::ResolvedType;
 use canadensis_bit_length_set::BitLengthSet;
-use std::collections::BTreeMap;
 
 /// A compiled DSDL type
 #[derive(Debug)]
@@ -14,16 +13,14 @@ pub struct CompiledDsdl {
     pub kind: DsdlKind,
 }
 
+/// The two types of compiled DSDL files
 #[derive(Debug)]
 pub enum DsdlKind {
-    Message {
-        message: Message,
-        /// The constants that this message type makes available
-        constants: BTreeMap<String, Constant>,
-    },
+    /// A message type
+    Message(Message),
     /// A service type, containing a request and a response
     ///
-    /// Service types can't be named and don't have any available constants.
+    /// Service types can't be named and their constants are not accessible from other DSDL files.
     Service { request: Message, response: Message },
 }
 
@@ -34,6 +31,8 @@ pub struct Message {
     pub(crate) extent: Extent,
     pub(crate) kind: MessageKind,
     pub(crate) bit_length: BitLengthSet,
+    /// The constants that this message type makes available
+    pub(crate) constants: Constants,
 }
 
 impl Message {
@@ -52,6 +51,10 @@ impl Message {
     /// Returns the set of possible lengths of this message
     pub fn bit_length(&self) -> &BitLengthSet {
         &self.bit_length
+    }
+    /// Returns the constants that this message type makes available
+    pub fn constants(&self) -> &Constants {
+        &self.constants
     }
 }
 

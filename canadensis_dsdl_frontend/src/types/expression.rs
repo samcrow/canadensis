@@ -243,7 +243,7 @@ fn evaluate_atom(
                 _ => {
                     // Try constants
                     match cx.constants().get(identifier) {
-                        Some(constant) => Ok(constant.value().clone()),
+                        Some(constant) => Ok(constant.dsdl_value().clone()),
                         None => Err(span_error!(span, "Identifier {} not found", identifier)),
                     }
                 }
