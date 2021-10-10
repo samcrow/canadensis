@@ -59,8 +59,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     can.set_write_timeout(Duration::from_millis(500))?;
     let mut can = LinuxCan::new(can);
 
-    // Create a node with capacity for 1 publisher and 0 requesters
-    let core_node: CoreNode<_, _, 1, 0> = CoreNode::new(
+    // Create a node with capacity for 1 publisher and 1 requester
+    let core_node: CoreNode<_, _, 1, 1> = CoreNode::new(
         SystemClock::new(),
         node_id,
         Mtu::Can8,

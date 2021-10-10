@@ -22,8 +22,10 @@ use crate::{Node, PublishToken, ResponseToken, ServiceToken, StartSendError, Tra
 /// Type parameters:
 /// * `C`: The clock used to get the current time
 /// * `Q`: The queue type used to store outgoing frames
-/// * `P`: The maximum number of topics that can be published
-/// * `R`: The maximum number of services for which requests can be sent
+/// * `P`: The maximum number of topics that can be published.
+///   This must be greater than 0, or the code will fail to compile.
+/// * `R`: The maximum number of services for which requests can be sent.
+///   This must be greater than 0, or the code will fail to compile.
 ///
 pub struct CoreNode<C, Q, const P: usize, const R: usize>
 where
