@@ -16,7 +16,6 @@ use once_cell::sync::Lazy;
 use std::collections::btree_map::Entry;
 use std::collections::BTreeMap;
 use std::convert::TryInto;
-use std::fs;
 use std::mem;
 use std::path::PathBuf;
 
@@ -237,9 +236,10 @@ impl PersistentContext {
     }
 
     fn compile_one(&mut self, key: &TypeKey, input: DsdlFile) -> Result<CompiledDsdl, Error> {
-        let input_path: PathBuf = input.path().into();
+        let input_path = input.path().map(PathBuf::from);
         self.compile_one_inner(key, input)
             .map_err(|e| Error::CompileFile {
+                key: key.clone(),
                 path: input_path,
                 inner: Box::new(e),
             })
@@ -249,7 +249,7 @@ impl PersistentContext {
         // Create a new state for this file
         let mut state = FileState::new(key.name().path());
 
-        let text = fs::read_to_string(input.path())?;
+        let text = input.read()?;
         let ast = canadensis_dsdl_parser::parse(&text)?;
 
         for statement in ast.statements {

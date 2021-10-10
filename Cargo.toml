@@ -16,6 +16,7 @@ members = [
     "canadensis_encoding_derive",
     "canadensis_filter_config",
     "canadensis_linux",
+    "canadensis_macro",
     "canadensis_pnp_client",
     "canadensis_write_crc"
 ]

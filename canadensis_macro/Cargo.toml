@@ -1,0 +1,32 @@
+[package]
+# TODO: This needs a better name
+name = "canadensis_macro"
+version = "0.1.0"
+authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
+description = "Canadensis UAVCAN-related macros"
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1"
+proc-macro2 = "1.0"
+
+[dependencies.syn]
+version = "1.0"
+default-features = false
+
+[dependencies.canadensis_dsdl_frontend]
+path = "../canadensis_dsdl_frontend"
+[dependencies.canadensis_codegen_rust]
+path = "../canadensis_codegen_rust"
+
+# These dev-dependencies are required by the generated code
+[dev-dependencies]
+half = "1.7.1"
+heapless = "0.7.7"
+zerocopy = "0.6.0"
+memoffset = "0.6.4"
+canadensis_encoding = { path = "../canadensis_encoding" }
+

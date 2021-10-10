@@ -14,9 +14,9 @@
       <module fileurl="file://$PROJECT_DIR$/canadensis_dsdl_frontend/canadensis_dsdl_frontend.iml" filepath="$PROJECT_DIR$/canadensis_dsdl_frontend/canadensis_dsdl_frontend.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_dsdl_parser/canadensis_dsdl_parser.iml" filepath="$PROJECT_DIR$/canadensis_dsdl_parser/canadensis_dsdl_parser.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_encoding/canadensis_encoding.iml" filepath="$PROJECT_DIR$/canadensis_encoding/canadensis_encoding.iml" />
-      <module fileurl="file://$PROJECT_DIR$/canadensis_encoding_derive/canadensis_encoding_derive.iml" filepath="$PROJECT_DIR$/canadensis_encoding_derive/canadensis_encoding_derive.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_filter_config/canadensis_filter_config.iml" filepath="$PROJECT_DIR$/canadensis_filter_config/canadensis_filter_config.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_linux/canadensis_linux.iml" filepath="$PROJECT_DIR$/canadensis_linux/canadensis_linux.iml" />
+      <module fileurl="file://$PROJECT_DIR$/canadensis_macro/canadensis_macro.iml" filepath="$PROJECT_DIR$/canadensis_macro/canadensis_macro.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_pnp_client/canadensis_pnp_client.iml" filepath="$PROJECT_DIR$/canadensis_pnp_client/canadensis_pnp_client.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_write_crc/canadensis_write_crc.iml" filepath="$PROJECT_DIR$/canadensis_write_crc/canadensis_write_crc.iml" />
     </modules>

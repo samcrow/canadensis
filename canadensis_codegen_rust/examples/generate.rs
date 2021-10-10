@@ -11,7 +11,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let package = package.compile()?;
 
-    canadensis_codegen_rust::generate_code(&package);
+    let generated = canadensis_codegen_rust::generate_code(&package);
 
+    println!("{}", generated);
     Ok(())
 }

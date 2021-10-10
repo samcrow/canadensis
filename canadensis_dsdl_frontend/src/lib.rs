@@ -29,5 +29,5 @@ mod type_key;
 pub mod types;
 
 pub use crate::error::Error;
-pub use crate::package::{DsdlFile, Package};
+pub use crate::package::Package;
 pub use crate::type_key::{TypeFullName, TypeKey};

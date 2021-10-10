@@ -1,7 +1,14 @@
 use canadensis_dsdl_parser::{TypeVersion, VersionedType};
+use once_cell::sync::Lazy;
+use regex::Regex;
 use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
+use std::num::ParseIntError;
+use std::str::FromStr;
+use thiserror::Error;
 
-/// A key that identifies a data type based on its pacakge, name, and version
+/// A key that identifies a data type based on its package, name, and version
+///
+/// The path components and package name should be valid DSDL identifiers.
 ///
 /// The `PartialOrd`, `Ord`, `PartialEq`, and `Eq` implementations for this type are based on the
 /// lowercase versions of the path and name. This means that type keys that differ only in case
@@ -128,6 +135,62 @@ impl From<VersionedType<'_>> for TypeKey {
     }
 }
 
+impl FromStr for TypeKey {
+    type Err = ParseError;
+
+    /// Parses a type key from a string
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        static PATTERN: Lazy<Regex> = Lazy::new(|| {
+            Regex::new(
+                r"^(?P<path_and_name>(?:[^.]+\.)+)(?P<version_major>\d+)\.(?P<version_minor>\d+)$",
+            )
+            .unwrap()
+        });
+
+        match PATTERN.captures(s) {
+            Some(captures) => {
+                let path_and_name = &captures["path_and_name"];
+                // Remove the . from the end, leaving only .-separated segments
+                let path_and_name = path_and_name.strip_suffix('.').unwrap();
+                let name = path_and_name.parse()?;
+
+                let version = TypeVersion {
+                    major: captures["version_major"].parse()?,
+                    minor: captures["version_minor"].parse()?,
+                };
+
+                Ok(TypeKey::new(name, version))
+            }
+            None => Err(ParseError::Format),
+        }
+    }
+}
+
+impl FromStr for TypeFullName {
+    type Err = ParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut components: Vec<String> = s.split('.').map(String::from).collect();
+        if components.len() >= 2 {
+            // Have at least one package segment and a name
+            let name = components.pop().unwrap();
+            Ok(TypeFullName::new(components, name))
+        } else {
+            Err(ParseError::Format)
+        }
+    }
+}
+
+#[derive(Debug, Error)]
+pub enum ParseError {
+    #[error("Invalid format")]
+    Format,
+    #[error("Used reserved keyword {0}")]
+    ReservedKeyword(String),
+    #[error("Invalid version number")]
+    ParseInt(#[from] ParseIntError),
+}
+
 mod fmt_impl {
     use super::{TypeFullName, TypeKey};
     use std::fmt::{Display, Formatter, Result};
@@ -170,5 +233,17 @@ mod test {
                 TypeVersion { major: 1, minor: 0 }
             )
         );
+    }
+
+    #[test]
+    fn parse_key() {
+        let expected = TypeKey::new(
+            TypeFullName::new(
+                vec!["package".into(), "test".into(), "t37".into()],
+                "KeyedType".into(),
+            ),
+            TypeVersion { major: 9, minor: 3 },
+        );
+        assert_eq!(expected, "package.test.t37.KeyedType.9.3".parse().unwrap());
     }
 }

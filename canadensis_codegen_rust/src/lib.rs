@@ -22,7 +22,8 @@ use canadensis_dsdl_frontend::constants::Constants;
 use canadensis_dsdl_frontend::types::{PrimitiveType, ResolvedScalarType, ResolvedType};
 use canadensis_dsdl_frontend::TypeKey;
 
-pub fn generate_code(package: &CompiledPackage) {
+/// Generates a Rust module from the provided package of DSDL
+pub fn generate_code(package: &CompiledPackage) -> GeneratedModule {
     let mut generated_types = Vec::new();
 
     for (key, dsdl) in package {
@@ -60,11 +61,12 @@ pub fn generate_code(package: &CompiledPackage) {
         }
     }
     let tree: ModuleTree = generated_types.into_iter().collect();
+    GeneratedModule { tree }
+}
 
-    println!(
-        "#![no_std]\n#![allow(unused_variables, unused_braces)]\n#![deny(unaligned_references)]#[cfg(not(target_endian = \"little\"))] compile_error!(\"Zero-copy serialization requires a little-endian target\");\n{}",
-        tree
-    );
+/// A module of generated Rust code
+pub struct GeneratedModule {
+    tree: ModuleTree,
 }
 
 fn generate_rust_type(
@@ -470,7 +472,7 @@ mod fmt_impl {
     use crate::impl_data_type::ImplementDataType;
     use crate::impl_deserialize::ImplementDeserialize;
     use crate::impl_serialize::ImplementSerialize;
-    use crate::{GeneratedTypeKind, GeneratedVariant};
+    use crate::{GeneratedModule, GeneratedTypeKind, GeneratedVariant};
     use std::convert::TryFrom;
     use std::fmt::{Display, Formatter, Result};
 
@@ -619,6 +621,20 @@ mod fmt_impl {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
             writeln!(f, "// {}", self.uavcan_ty)?;
             writeln!(f, "{}({}),", self.name, self.ty)
+        }
+    }
+
+    impl Display for GeneratedModule {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+            writeln!(f, "#[allow(unused_variables, unused_braces)]")?;
+            writeln!(f, "#[deny(unaligned_references)]")?;
+            writeln!(
+                f,
+                r#"#[cfg(not(target_endian = "little"))] compile_error!("Zero-copy serialization requires a little-endian target");"#
+            )?;
+            Display::fmt(&self.tree, f)?;
+
+            Ok(())
         }
     }
 }
