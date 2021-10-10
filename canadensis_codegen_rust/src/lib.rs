@@ -62,7 +62,7 @@ pub fn generate_code(package: &CompiledPackage) {
     let tree: ModuleTree = generated_types.into_iter().collect();
 
     println!(
-        "#![no_std]\n#![allow(unused_variables, unused_braces)]\n{}",
+        "#![no_std]\n#![allow(unused_variables, unused_braces)]\n#![deny(unaligned_references)]#[cfg(not(target_endian = \"little\"))] compile_error!(\"Zero-copy serialization requires a little-endian target\");\n{}",
         tree
     );
 }
@@ -191,6 +191,36 @@ impl GeneratedType {
             constants,
         }
     }
+
+    /// Returns true if this type supports zero-copy serialization and deserialization
+    fn supports_zero_copy(&self) -> bool {
+        match &self.kind {
+            GeneratedTypeKind::Struct(gstruct) => {
+                // Things that disqualify a struct from zero-copy:
+                // * Non-fixed length
+                // * Padding fields
+                // * Any field that does not support zero-copy
+                // * Padding in the Rust in-memory representation (how do we check that?)
+
+                if !self.size.is_fixed_size() {
+                    return false;
+                }
+                for field in &gstruct.fields {
+                    match field {
+                        GeneratedField::Data(field) => {
+                            if !field.supports_zero_copy() {
+                                return false;
+                            }
+                        }
+                        GeneratedField::Padding(_) => return false,
+                    }
+                }
+
+                true
+            }
+            GeneratedTypeKind::Enum(_) => false,
+        }
+    }
 }
 
 struct GeneratedStruct {
@@ -210,6 +240,62 @@ struct GeneratedDataField {
     ty: String,
     uavcan_ty: ResolvedType,
     always_aligned: bool,
+}
+
+impl GeneratedDataField {
+    pub fn supports_zero_copy(&self) -> bool {
+        type_supports_zero_copy(&self.uavcan_ty)
+    }
+}
+
+fn type_supports_zero_copy(ty: &ResolvedType) -> bool {
+    match ty {
+        ResolvedType::Scalar(scalar) => scalar_supports_zero_copy(scalar),
+        ResolvedType::FixedArray { inner, .. } => scalar_supports_zero_copy(inner),
+        ResolvedType::VariableArray { .. } => false,
+    }
+}
+
+fn scalar_supports_zero_copy(scalar: &ResolvedScalarType) -> bool {
+    match scalar {
+        ResolvedScalarType::Composite { inner, .. } => message_supports_zero_copy(&*inner),
+        ResolvedScalarType::Primitive(primitive) => match primitive {
+            PrimitiveType::Boolean => false,
+            PrimitiveType::Int { bits } | PrimitiveType::UInt { bits, .. } => match bits {
+                8 | 16 | 32 | 64 => true,
+                _ => false,
+            },
+            PrimitiveType::Float16 { .. }
+            | PrimitiveType::Float32 { .. }
+            | PrimitiveType::Float64 { .. } => true,
+        },
+        ResolvedScalarType::Void { .. } => false,
+    }
+}
+
+fn message_supports_zero_copy(message: &Message) -> bool {
+    if !message.bit_length().is_fixed_size() {
+        return false;
+    }
+    match message.kind() {
+        MessageKind::Struct(mstruct) => {
+            for field in &mstruct.fields {
+                if !field.always_aligned() {
+                    return false;
+                }
+                match field.kind() {
+                    FieldKind::Padding(_) => return false,
+                    FieldKind::Data { ty, .. } => {
+                        if !type_supports_zero_copy(ty) {
+                            return false;
+                        }
+                    }
+                }
+            }
+            true
+        }
+        MessageKind::Union(_) => false,
+    }
 }
 
 impl GeneratedField {
@@ -259,6 +345,19 @@ enum MessageRole {
 fn to_rust_type(ty: &ResolvedType) -> String {
     match ty {
         ResolvedType::Scalar(scalar) => scalar_to_rust_type(scalar),
+        ResolvedType::FixedArray {
+            inner: ResolvedScalarType::Primitive(PrimitiveType::Boolean),
+            len,
+        }
+        | ResolvedType::VariableArray {
+            inner: ResolvedScalarType::Primitive(PrimitiveType::Boolean),
+            max_len: len,
+        } => {
+            // Use a BitArray
+            // Convert from bits to bytes and round up
+            let bytes = (*len + 7) / 8;
+            format!("::canadensis_encoding::bits::BitArray<{}>", bytes)
+        }
         ResolvedType::FixedArray { inner, len } => {
             format!("[{}; {}]", scalar_to_rust_type(inner), len)
         }
@@ -281,7 +380,10 @@ fn scalar_to_rust_type(scalar: &ResolvedScalarType) -> String {
             PrimitiveType::Boolean => "bool".to_owned(),
             PrimitiveType::Int { bits, .. } => format!("i{}", round_up_integer_size(*bits)),
             PrimitiveType::UInt { bits, .. } => format!("u{}", round_up_integer_size(*bits)),
-            PrimitiveType::Float16 { .. } => "::half::f16".to_owned(),
+            PrimitiveType::Float16 { .. } => {
+                // Use the wrapper type that works with zerocopy
+                "::canadensis_encoding::f16_zerocopy::ZeroCopyF16".to_owned()
+            }
             PrimitiveType::Float32 { .. } => "f32".to_owned(),
             PrimitiveType::Float64 { .. } => "f64".to_owned(),
         },
@@ -369,6 +471,7 @@ mod fmt_impl {
     use crate::impl_deserialize::ImplementDeserialize;
     use crate::impl_serialize::ImplementSerialize;
     use crate::{GeneratedTypeKind, GeneratedVariant};
+    use std::convert::TryFrom;
     use std::fmt::{Display, Formatter, Result};
 
     impl Display for RustTypeName {
@@ -396,6 +499,14 @@ mod fmt_impl {
                     max_size / 8
                 )?;
             }
+
+            // Derive zerocopy traits if possible
+            let supports_zero_copy = self.supports_zero_copy();
+            if supports_zero_copy {
+                writeln!(f, "#[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]")?;
+                writeln!(f, "#[repr(C, packed)]")?;
+            }
+
             match &self.kind {
                 GeneratedTypeKind::Struct(inner) => {
                     writeln!(f, "pub struct {} {{", self.name.type_name)?;
@@ -415,8 +526,63 @@ mod fmt_impl {
 
             Display::fmt(&ImplementDataType(self), f)?;
             Display::fmt(&ImplementConstants(self), f)?;
-            Display::fmt(&ImplementSerialize(self), f)?;
-            Display::fmt(&ImplementDeserialize(self), f)?;
+
+            Display::fmt(
+                &ImplementSerialize {
+                    ty: self,
+                    zero_copy: supports_zero_copy,
+                },
+                f,
+            )?;
+
+            Display::fmt(
+                &ImplementDeserialize {
+                    ty: self,
+                    zero_copy: supports_zero_copy,
+                },
+                f,
+            )?;
+
+            if supports_zero_copy {
+                // Add some static assertions about the type size and field layout
+                writeln!(f, "#[test] fn test_layout() {{")?;
+                // Check total size
+                writeln!(
+                    f,
+                    "assert_eq!(::core::mem::size_of::<{}>() * 8, {});",
+                    self.name.type_name, min_size
+                )?;
+                match &self.kind {
+                    GeneratedTypeKind::Struct(gstruct) => {
+                        let mut expected_offset_bits = 0usize;
+                        for field in &gstruct.fields {
+                            match field {
+                                GeneratedField::Data(field) => {
+                                    writeln!(
+                                        f,
+                                        "assert_eq!(::memoffset::offset_of!({}, {}) * 8, {});",
+                                        self.name.type_name, field.name, expected_offset_bits
+                                    )?;
+
+                                    // Update expected offset for the next field
+                                    let field_size = field.uavcan_ty.size();
+                                    let field_size_min = field_size.min();
+                                    let field_size_max = field_size.max();
+                                    assert_eq!(field_size_min, field_size_max);
+                                    expected_offset_bits +=
+                                        usize::try_from(field_size_min).unwrap();
+                                }
+                                GeneratedField::Padding(bits) => {
+                                    expected_offset_bits += usize::from(*bits);
+                                }
+                            }
+                        }
+                    }
+                    GeneratedTypeKind::Enum(_) => unreachable!("Enums can't be zero-copy"),
+                }
+
+                writeln!(f, "}}")?;
+            }
 
             Ok(())
         }
@@ -426,7 +592,7 @@ mod fmt_impl {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
             match self {
                 GeneratedField::Data(data) => {
-                    writeln!(f, "/// {}\n///", data.uavcan_ty)?;
+                    writeln!(f, "/// `{}`\n///", data.uavcan_ty)?;
                     if data.always_aligned {
                         writeln!(f, "/// Always aligned")?;
                     } else {

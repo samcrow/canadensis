@@ -101,15 +101,6 @@ impl Type {
             }
         }
     }
-
-    /// Returns the required alignment of this type
-    pub fn alignment(&self) -> u32 {
-        match self {
-            Type::Scalar(scalar) => scalar.alignment(),
-            // The alignment of an array equals the alignment of its element type
-            Type::FixedArray { inner, .. } | Type::VariableArray { inner, .. } => inner.alignment(),
-        }
-    }
 }
 
 /// Returns the number of bits needed for the array size field to store up to `max_items` values
@@ -261,15 +252,6 @@ impl ScalarType {
             }
             ScalarType::Primitive(primitive) => Ok(BitLengthSet::single(primitive.bit_length())),
             ScalarType::Void { bits } => Ok(BitLengthSet::single(u64::from(*bits))),
-        }
-    }
-    /// Returns the required alignment of this type
-    pub(crate) fn alignment(&self) -> u32 {
-        match self {
-            // Versioned implies a composite type and 8-bit alignment
-            ScalarType::Versioned(_) => 8,
-            // Primitive and void types have 1-bit alignment
-            ScalarType::Primitive(_) | ScalarType::Void { .. } => 1,
         }
     }
 }
@@ -518,6 +500,7 @@ pub enum ResolvedScalarType {
 }
 
 impl ResolvedScalarType {
+    /// Returns the possible bit lengths of this type
     pub fn size(&self) -> BitLengthSet {
         match self {
             ResolvedScalarType::Composite { inner, .. } => inner.bit_length.clone(),
@@ -527,10 +510,22 @@ impl ResolvedScalarType {
             ResolvedScalarType::Void { bits } => BitLengthSet::single(u64::from(*bits)),
         }
     }
+    /// Returns the required alignment of this type, in bits
     pub fn alignment(&self) -> u32 {
         match self {
             ResolvedScalarType::Composite { .. } => 8,
             ResolvedScalarType::Primitive(_) | ResolvedScalarType::Void { .. } => 1,
+        }
+    }
+
+    /// Returns the extent (sealed or delimited) of this type
+    ///
+    /// Primitive and void types are always considered sealed.
+    pub fn extent(&self) -> Extent {
+        match self {
+            ResolvedScalarType::Composite { inner, .. } => inner.extent.clone(),
+            ResolvedScalarType::Primitive(_) => Extent::Sealed,
+            ResolvedScalarType::Void { .. } => Extent::Sealed,
         }
     }
 

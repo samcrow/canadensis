@@ -6,11 +6,16 @@
 #![deny(missing_docs)]
 
 extern crate half;
+extern crate zerocopy;
 
+pub mod bits;
 mod cursor;
+pub mod f16_zerocopy;
 
 pub use crate::cursor::deserialize::ReadCursor;
 pub use crate::cursor::serialize::WriteCursor;
+use core::cmp;
+use zerocopy::{AsBytes, FromBytes};
 
 /// Trait for types that can be encoded into UAVCAN transfers, or decoded from transfers
 pub trait DataType {
@@ -45,6 +50,32 @@ pub trait Deserialize: DataType {
     fn deserialize(cursor: &mut ReadCursor<'_>) -> Result<Self, DeserializeError>
     where
         Self: Sized;
+
+    /// Deserializes a value from a slice of bytes and returns it
+    ///
+    /// This is available only for types that implement [`Sized`], [`AsBytes`], and [`FromBytes`].
+    ///
+    /// # Panics
+    ///
+    /// This function panics if the provided cursor is not aligned to a byte boundary.
+    fn deserialize_zero_copy(cursor: &mut ReadCursor<'_>) -> Self
+    where
+        Self: Sized + AsBytes + FromBytes,
+    {
+        // This isn't quite zero-copy. It's one-copy, but it eliminates handling each field
+        // individually.
+        let cursor_bytes = cursor.as_bytes().expect("Cursor not aligned");
+        let mut value = Self::new_zeroed();
+
+        let value_bytes = value.as_bytes_mut();
+        // To apply implicit truncation and zero extension, copy whatever bytes we can
+        let bytes_to_copy = cmp::min(value_bytes.len(), cursor_bytes.len());
+        value_bytes[..bytes_to_copy].copy_from_slice(&cursor_bytes[..bytes_to_copy]);
+
+        cursor.advance_bytes(bytes_to_copy);
+
+        value
+    }
 
     /// A convenience function that creates a cursor around the provided bytes and calls
     /// [`deserialize`](#tymethod.deserialize)

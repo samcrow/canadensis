@@ -1,4 +1,7 @@
-use canadensis_encoding::{ReadCursor, WriteCursor};
+//! A bit array type
+
+use crate::{ReadCursor, WriteCursor};
+use core::cmp::Ordering;
 use core::fmt;
 
 /// An array of bits in a format compatible with UAVCAN serialization
@@ -85,29 +88,34 @@ impl<const BYTES: usize> BitArray<BYTES> {
         }
     }
 
+    /// Deserializes a bit set
+    ///
+    /// `bit_length` is the number of bits that should be read from the cursor.
     pub fn deserialize(bit_length: usize, cursor: &mut ReadCursor<'_>) -> Self {
         let mut set = BitArray::new(bit_length);
         set.deserialize_in_place(cursor);
         set
     }
 
+    /// Returns an iterator over the bits in this array
+    pub fn iter(&self) -> Iter<'_, BYTES> {
+        Iter {
+            array: self,
+            next_index: 0,
+        }
+    }
+
+    /// Splits a bit index into a byte index and an index of the bit within the byte
+    ///
+    /// # Panics
+    ///
+    /// This function panics if bit_index is greater than or equal to `self.len()`.
     fn split_index(&self, bit_index: usize) -> (usize, u8) {
         assert!(bit_index < self.bit_length);
         // The UAVCAN serialization makes this simple
         let byte = bit_index / 8;
         let bit_in_byte = (bit_index % 8) as u8;
         (byte, bit_in_byte)
-    }
-}
-
-impl<const BYTES: usize> PartialEq for BitArray<BYTES> {
-    fn eq(&self, other: &Self) -> bool {
-        if self.len() == other.len() {
-            // Take advantage of the invariant that any bits beyond self.bit_length are zero
-            self.bytes == other.bytes
-        } else {
-            false
-        }
     }
 }
 
@@ -119,4 +127,124 @@ impl<const BYTES: usize> fmt::Debug for BitArray<BYTES> {
         }
         list_debug.finish()
     }
+}
+
+impl<const BYTES: usize> Default for BitArray<BYTES> {
+    /// Creates a new array with a length of zero
+    fn default() -> Self {
+        BitArray {
+            bytes: [0u8; BYTES],
+            bit_length: 0,
+        }
+    }
+}
+
+/// An iterator over values in a bit array
+pub struct Iter<'a, const BYTES: usize> {
+    array: &'a BitArray<BYTES>,
+    next_index: usize,
+}
+
+impl<const BYTES: usize> Iterator for Iter<'_, BYTES> {
+    type Item = bool;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.next_index == self.array.len() {
+            None
+        } else {
+            let value = self.array.get(self.next_index);
+            self.next_index += 1;
+            Some(value)
+        }
+    }
+}
+
+impl<'a, const BYTES: usize> IntoIterator for &'a BitArray<BYTES> {
+    type Item = bool;
+    type IntoIter = Iter<'a, BYTES>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+/// An iterator over values in a bit array
+pub struct IntoIter<const BYTES: usize> {
+    array: BitArray<BYTES>,
+    next_index: usize,
+}
+
+impl<const BYTES: usize> Iterator for IntoIter<BYTES> {
+    type Item = bool;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.next_index == self.array.len() {
+            None
+        } else {
+            let value = self.array.get(self.next_index);
+            self.next_index += 1;
+            Some(value)
+        }
+    }
+}
+
+impl<const BYTES: usize> IntoIterator for BitArray<BYTES> {
+    type Item = bool;
+    type IntoIter = IntoIter<BYTES>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIter {
+            array: self,
+            next_index: 0,
+        }
+    }
+}
+
+impl<const LBYTES: usize, const RBYTES: usize> PartialEq<BitArray<RBYTES>> for BitArray<LBYTES> {
+    fn eq(&self, other: &BitArray<RBYTES>) -> bool {
+        if self.len() == other.len() {
+            // This may be slow, but it's good enough for now.
+            for (lbit, rbit) in self.iter().zip(other.iter()) {
+                if lbit != rbit {
+                    return false;
+                }
+            }
+            true
+        } else {
+            false
+        }
+    }
+}
+
+impl<const LBYTES: usize> Eq for BitArray<LBYTES> {}
+
+impl<const LBYTES: usize, const RBYTES: usize> PartialOrd<BitArray<RBYTES>> for BitArray<LBYTES> {
+    fn partial_cmp(&self, other: &BitArray<RBYTES>) -> Option<Ordering> {
+        Some(compare(self, other))
+    }
+}
+
+impl<const LBYTES: usize> Ord for BitArray<LBYTES> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        compare(self, other)
+    }
+}
+
+fn compare<const LBYTES: usize, const RBYTES: usize>(
+    lhs: &BitArray<LBYTES>,
+    rhs: &BitArray<RBYTES>,
+) -> Ordering {
+    lhs.len().cmp(&rhs.len()).then_with(|| {
+        // lhs and rhs have the same length
+        // Compare bits
+        for (lbit, rbit) in lhs.iter().zip(rhs.iter()) {
+            match (lbit, rbit) {
+                (true, false) => return Ordering::Greater,
+                (false, true) => return Ordering::Less,
+                _ => {}
+            }
+        }
+        // All bits equal
+        Ordering::Equal
+    })
 }

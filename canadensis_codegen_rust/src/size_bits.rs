@@ -127,18 +127,29 @@ struct WriteArrayElementSizes<'t> {
 
 impl Display for WriteArrayElementSizes<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        // In general, we need to iterate over every element and add up the
-        // lengths. If this doesn't call size_bits(), hopefully the compiler
-        // will optimize it.
-        write!(
-            f,
-            "({}).iter().map(|element| {}).sum::<usize>()",
-            self.expr,
-            WriteScalarSize {
-                ty: self.ty,
-                expr: "element"
-            }
-        )
+        let element_size = self.ty.size();
+        let size_min = element_size.min();
+        if size_min == element_size.max() {
+            // Element size is fixed
+            // Add space for the delimiter header if the element type is delimited
+            let element_size = match self.ty.extent() {
+                Extent::Delimited(_) => 32 + size_min,
+                Extent::Sealed => size_min,
+            };
+            writeln!(f, "({}).len() * {}", self.expr, element_size)
+        } else {
+            // In general, we need to iterate over every element and add up the
+            // lengths.
+            write!(
+                f,
+                "({}).iter().map(|element| {}).sum::<usize>()",
+                self.expr,
+                WriteScalarSize {
+                    ty: self.ty,
+                    expr: "element"
+                }
+            )
+        }
     }
 }
 

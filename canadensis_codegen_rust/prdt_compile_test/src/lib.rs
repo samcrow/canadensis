@@ -1,5 +1,8 @@
 #![no_std]
 #![allow(unused_variables, unused_braces)]
+#![deny(unaligned_references)]
+#[cfg(not(target_endian = "little"))]
+compile_error!("Zero-copy serialization requires a little-endian target");
 pub mod reg {
     pub mod drone {
         pub mod physics {
@@ -8,18 +11,20 @@ pub mod reg {
                     /// `reg.drone.physics.acoustics.Note.0.1`
                     ///
                     /// Fixed size 12 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Note {
-                        /// uavcan.si.unit.frequency.Scalar.1.0
+                        /// `uavcan.si.unit.frequency.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub frequency: crate::uavcan::si::unit::frequency::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.duration.Scalar.1.0
+                        /// `uavcan.si.unit.duration.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub duration: crate::uavcan::si::unit::duration::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.power.Scalar.1.0
+                        /// `uavcan.si.unit.power.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -35,9 +40,7 @@ pub mod reg {
                             96
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_composite(&self.frequency);
-                            cursor.write_composite(&self.duration);
-                            cursor.write_composite(&self.acoustic_power);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Note {
@@ -47,12 +50,15 @@ pub mod reg {
                         where
                             Self: Sized,
                         {
-                            Ok(Note {
-                                frequency: { cursor.read_composite()? },
-                                duration: { cursor.read_composite()? },
-                                acoustic_power: { cursor.read_composite()? },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Note>() * 8, 96);
+                        assert_eq!(::memoffset::offset_of!(Note, frequency) * 8, 0);
+                        assert_eq!(::memoffset::offset_of!(Note, duration) * 8, 32);
+                        assert_eq!(::memoffset::offset_of!(Note, acoustic_power) * 8, 64);
                     }
                 }
             }
@@ -62,13 +68,15 @@ pub mod reg {
                         /// `reg.drone.physics.dynamics.rotation.Planar.0.1`
                         ///
                         /// Fixed size 16 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct Planar {
-/// reg.drone.physics.kinematics.rotation.Planar.0.1
+/// `reg.drone.physics.kinematics.rotation.Planar.0.1`
 ///
 /// Always aligned
 /// Size 96 bits
 pub kinematics: crate::reg::drone::physics::kinematics::rotation::planar_0_1::Planar,
-/// uavcan.si.unit.torque.Scalar.1.0
+/// `uavcan.si.unit.torque.Scalar.1.0`
 ///
 /// Always aligned
 /// Size 32 bits
@@ -87,8 +95,7 @@ pub torque: crate::uavcan::si::unit::torque::scalar_1_0::Scalar,
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_composite(&self.kinematics);
-                                cursor.write_composite(&self.torque);
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for Planar {
@@ -98,11 +105,14 @@ pub torque: crate::uavcan::si::unit::torque::scalar_1_0::Scalar,
                             where
                                 Self: Sized,
                             {
-                                Ok(Planar {
-                                    kinematics: { cursor.read_composite()? },
-                                    torque: { cursor.read_composite()? },
-                                })
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<Planar>() * 8, 128);
+                            assert_eq!(::memoffset::offset_of!(Planar, kinematics) * 8, 0);
+                            assert_eq!(::memoffset::offset_of!(Planar, torque) * 8, 96);
                         }
                     }
                     pub mod planar_ts_0_1 {
@@ -110,12 +120,12 @@ pub torque: crate::uavcan::si::unit::torque::scalar_1_0::Scalar,
                         ///
                         /// Fixed size 23 bytes
                         pub struct PlanarTs {
-/// uavcan.time.SynchronizedTimestamp.1.0
+/// `uavcan.time.SynchronizedTimestamp.1.0`
 ///
 /// Always aligned
 /// Size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-/// reg.drone.physics.dynamics.rotation.Planar.0.1
+/// `reg.drone.physics.dynamics.rotation.Planar.0.1`
 ///
 /// Always aligned
 /// Size 128 bits
@@ -158,13 +168,15 @@ pub value: crate::reg::drone::physics::dynamics::rotation::planar_0_1::Planar,
                         /// `reg.drone.physics.dynamics.translation.Linear.0.1`
                         ///
                         /// Fixed size 16 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct Linear {
-/// reg.drone.physics.kinematics.translation.Linear.0.1
+/// `reg.drone.physics.kinematics.translation.Linear.0.1`
 ///
 /// Always aligned
 /// Size 96 bits
 pub kinematics: crate::reg::drone::physics::kinematics::translation::linear_0_1::Linear,
-/// uavcan.si.unit.force.Scalar.1.0
+/// `uavcan.si.unit.force.Scalar.1.0`
 ///
 /// Always aligned
 /// Size 32 bits
@@ -183,8 +195,7 @@ pub force: crate::uavcan::si::unit::force::scalar_1_0::Scalar,
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_composite(&self.kinematics);
-                                cursor.write_composite(&self.force);
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for Linear {
@@ -194,11 +205,14 @@ pub force: crate::uavcan::si::unit::force::scalar_1_0::Scalar,
                             where
                                 Self: Sized,
                             {
-                                Ok(Linear {
-                                    kinematics: { cursor.read_composite()? },
-                                    force: { cursor.read_composite()? },
-                                })
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<Linear>() * 8, 128);
+                            assert_eq!(::memoffset::offset_of!(Linear, kinematics) * 8, 0);
+                            assert_eq!(::memoffset::offset_of!(Linear, force) * 8, 96);
                         }
                     }
                     pub mod linear_ts_0_1 {
@@ -206,12 +220,12 @@ pub force: crate::uavcan::si::unit::force::scalar_1_0::Scalar,
                         ///
                         /// Fixed size 23 bytes
                         pub struct LinearTs {
-/// uavcan.time.SynchronizedTimestamp.1.0
+/// `uavcan.time.SynchronizedTimestamp.1.0`
 ///
 /// Always aligned
 /// Size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-/// reg.drone.physics.dynamics.translation.Linear.0.1
+/// `reg.drone.physics.dynamics.translation.Linear.0.1`
 ///
 /// Always aligned
 /// Size 128 bits
@@ -255,13 +269,15 @@ pub value: crate::reg::drone::physics::dynamics::translation::linear_0_1::Linear
                     /// `reg.drone.physics.electricity.Power.0.1`
                     ///
                     /// Fixed size 8 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Power {
-                        /// uavcan.si.unit.electric_current.Scalar.1.0
+                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub current: crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.voltage.Scalar.1.0
+                        /// `uavcan.si.unit.voltage.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -277,8 +293,7 @@ pub value: crate::reg::drone::physics::dynamics::translation::linear_0_1::Linear
                             64
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_composite(&self.current);
-                            cursor.write_composite(&self.voltage);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Power {
@@ -288,11 +303,14 @@ pub value: crate::reg::drone::physics::dynamics::translation::linear_0_1::Linear
                         where
                             Self: Sized,
                         {
-                            Ok(Power {
-                                current: { cursor.read_composite()? },
-                                voltage: { cursor.read_composite()? },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Power>() * 8, 64);
+                        assert_eq!(::memoffset::offset_of!(Power, current) * 8, 0);
+                        assert_eq!(::memoffset::offset_of!(Power, voltage) * 8, 32);
                     }
                 }
                 pub mod power_ts_0_1 {
@@ -300,13 +318,13 @@ pub value: crate::reg::drone::physics::dynamics::translation::linear_0_1::Linear
                     ///
                     /// Fixed size 15 bytes
                     pub struct PowerTs {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// reg.drone.physics.electricity.Power.0.1
+                        /// `reg.drone.physics.electricity.Power.0.1`
                         ///
                         /// Always aligned
                         /// Size 64 bits
@@ -344,18 +362,20 @@ pub value: crate::reg::drone::physics::dynamics::translation::linear_0_1::Linear
                     /// `reg.drone.physics.electricity.Source.0.1`
                     ///
                     /// Fixed size 16 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Source {
-                        /// reg.drone.physics.electricity.Power.0.1
+                        /// `reg.drone.physics.electricity.Power.0.1`
                         ///
                         /// Always aligned
                         /// Size 64 bits
                         pub power: crate::reg::drone::physics::electricity::power_0_1::Power,
-                        /// uavcan.si.unit.energy.Scalar.1.0
+                        /// `uavcan.si.unit.energy.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub energy: crate::uavcan::si::unit::energy::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.energy.Scalar.1.0
+                        /// `uavcan.si.unit.energy.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -371,9 +391,7 @@ pub value: crate::reg::drone::physics::dynamics::translation::linear_0_1::Linear
                             128
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_composite(&self.power);
-                            cursor.write_composite(&self.energy);
-                            cursor.write_composite(&self.full_energy);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Source {
@@ -383,12 +401,15 @@ pub value: crate::reg::drone::physics::dynamics::translation::linear_0_1::Linear
                         where
                             Self: Sized,
                         {
-                            Ok(Source {
-                                power: { cursor.read_composite()? },
-                                energy: { cursor.read_composite()? },
-                                full_energy: { cursor.read_composite()? },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Source>() * 8, 128);
+                        assert_eq!(::memoffset::offset_of!(Source, power) * 8, 0);
+                        assert_eq!(::memoffset::offset_of!(Source, energy) * 8, 64);
+                        assert_eq!(::memoffset::offset_of!(Source, full_energy) * 8, 96);
                     }
                 }
                 pub mod source_ts_0_1 {
@@ -396,13 +417,13 @@ pub value: crate::reg::drone::physics::dynamics::translation::linear_0_1::Linear
                     ///
                     /// Fixed size 23 bytes
                     pub struct SourceTs {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// reg.drone.physics.electricity.Source.0.1
+                        /// `reg.drone.physics.electricity.Source.0.1`
                         ///
                         /// Always aligned
                         /// Size 128 bits
@@ -443,8 +464,10 @@ pub value: crate::reg::drone::physics::dynamics::translation::linear_0_1::Linear
                         /// `reg.drone.physics.kinematics.cartesian.Point.0.1`
                         ///
                         /// Fixed size 24 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct Point {
-                            /// uavcan.si.unit.length.WideVector3.1.0
+                            /// `uavcan.si.unit.length.WideVector3.1.0`
                             ///
                             /// Always aligned
                             /// Size 192 bits
@@ -464,7 +487,7 @@ pub value: crate::reg::drone::physics::dynamics::translation::linear_0_1::Linear
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_composite(&self.value);
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for Point {
@@ -474,24 +497,29 @@ pub value: crate::reg::drone::physics::dynamics::translation::linear_0_1::Linear
                             where
                                 Self: Sized,
                             {
-                                Ok(Point {
-                                    value: { cursor.read_composite()? },
-                                })
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<Point>() * 8, 192);
+                            assert_eq!(::memoffset::offset_of!(Point, value) * 8, 0);
                         }
                     }
                     pub mod point_state_0_1 {
                         /// `reg.drone.physics.kinematics.cartesian.PointState.0.1`
                         ///
                         /// Fixed size 36 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct PointState {
-                            /// reg.drone.physics.kinematics.cartesian.Point.0.1
+                            /// `reg.drone.physics.kinematics.cartesian.Point.0.1`
                             ///
                             /// Always aligned
                             /// Size 192 bits
                             pub position:
                                 crate::reg::drone::physics::kinematics::cartesian::point_0_1::Point,
-                            /// uavcan.si.unit.velocity.Vector3.1.0
+                            /// `uavcan.si.unit.velocity.Vector3.1.0`
                             ///
                             /// Always aligned
                             /// Size 96 bits
@@ -510,8 +538,7 @@ pub value: crate::reg::drone::physics::dynamics::translation::linear_0_1::Linear
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_composite(&self.position);
-                                cursor.write_composite(&self.velocity);
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for PointState {
@@ -521,24 +548,29 @@ pub value: crate::reg::drone::physics::dynamics::translation::linear_0_1::Linear
                             where
                                 Self: Sized,
                             {
-                                Ok(PointState {
-                                    position: { cursor.read_composite()? },
-                                    velocity: { cursor.read_composite()? },
-                                })
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<PointState>() * 8, 288);
+                            assert_eq!(::memoffset::offset_of!(PointState, position) * 8, 0);
+                            assert_eq!(::memoffset::offset_of!(PointState, velocity) * 8, 192);
                         }
                     }
                     pub mod point_state_var_0_1 {
                         /// `reg.drone.physics.kinematics.cartesian.PointStateVar.0.1`
                         ///
                         /// Fixed size 60 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct PointStateVar {
-/// reg.drone.physics.kinematics.cartesian.PointVar.0.1
+/// `reg.drone.physics.kinematics.cartesian.PointVar.0.1`
 ///
 /// Always aligned
 /// Size 288 bits
 pub position: crate::reg::drone::physics::kinematics::cartesian::point_var_0_1::PointVar,
-/// reg.drone.physics.kinematics.translation.Velocity3Var.0.2
+/// `reg.drone.physics.kinematics.translation.Velocity3Var.0.2`
 ///
 /// Always aligned
 /// Size 192 bits
@@ -557,8 +589,7 @@ pub velocity: crate::reg::drone::physics::kinematics::translation::velocity3_var
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_composite(&self.position);
-                                cursor.write_composite(&self.velocity);
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for PointStateVar {
@@ -568,11 +599,14 @@ pub velocity: crate::reg::drone::physics::kinematics::translation::velocity3_var
                             where
                                 Self: Sized,
                             {
-                                Ok(PointStateVar {
-                                    position: { cursor.read_composite()? },
-                                    velocity: { cursor.read_composite()? },
-                                })
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<PointStateVar>() * 8, 480);
+                            assert_eq!(::memoffset::offset_of!(PointStateVar, position) * 8, 0);
+                            assert_eq!(::memoffset::offset_of!(PointStateVar, velocity) * 8, 288);
                         }
                     }
                     pub mod point_state_var_ts_0_1 {
@@ -580,12 +614,12 @@ pub velocity: crate::reg::drone::physics::kinematics::translation::velocity3_var
                         ///
                         /// Fixed size 67 bytes
                         pub struct PointStateVarTs {
-/// uavcan.time.SynchronizedTimestamp.1.0
+/// `uavcan.time.SynchronizedTimestamp.1.0`
 ///
 /// Always aligned
 /// Size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-/// reg.drone.physics.kinematics.cartesian.PointStateVar.0.1
+/// `reg.drone.physics.kinematics.cartesian.PointStateVar.0.1`
 ///
 /// Always aligned
 /// Size 480 bits
@@ -626,18 +660,21 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::point_state_var_0_
                         /// `reg.drone.physics.kinematics.cartesian.PointVar.0.1`
                         ///
                         /// Fixed size 36 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct PointVar {
-                            /// reg.drone.physics.kinematics.cartesian.Point.0.1
+                            /// `reg.drone.physics.kinematics.cartesian.Point.0.1`
                             ///
                             /// Always aligned
                             /// Size 192 bits
                             pub value:
                                 crate::reg::drone::physics::kinematics::cartesian::point_0_1::Point,
-                            /// saturated float16[6]
+                            /// `saturated float16[6]`
                             ///
                             /// Always aligned
                             /// Size 96 bits
-                            pub covariance_urt: [::half::f16; 6],
+                            pub covariance_urt:
+                                [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 6],
                         }
                         impl ::canadensis_encoding::DataType for PointVar {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -652,10 +689,7 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::point_state_var_0_
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_composite(&self.value);
-                                for value in (self.covariance_urt).iter() {
-                                    cursor.write_f16(*value);
-                                }
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for PointVar {
@@ -665,34 +699,30 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::point_state_var_0_
                             where
                                 Self: Sized,
                             {
-                                Ok(PointVar {
-                                    value: { cursor.read_composite()? },
-                                    covariance_urt: {
-                                        [
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                        ]
-                                    },
-                                })
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<PointVar>() * 8, 288);
+                            assert_eq!(::memoffset::offset_of!(PointVar, value) * 8, 0);
+                            assert_eq!(::memoffset::offset_of!(PointVar, covariance_urt) * 8, 192);
                         }
                     }
                     pub mod pose_0_1 {
                         /// `reg.drone.physics.kinematics.cartesian.Pose.0.1`
                         ///
                         /// Fixed size 40 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct Pose {
-                            /// reg.drone.physics.kinematics.cartesian.Point.0.1
+                            /// `reg.drone.physics.kinematics.cartesian.Point.0.1`
                             ///
                             /// Always aligned
                             /// Size 192 bits
                             pub position:
                                 crate::reg::drone::physics::kinematics::cartesian::point_0_1::Point,
-                            /// uavcan.si.unit.angle.Quaternion.1.0
+                            /// `uavcan.si.unit.angle.Quaternion.1.0`
                             ///
                             /// Always aligned
                             /// Size 128 bits
@@ -712,8 +742,7 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::point_state_var_0_
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_composite(&self.position);
-                                cursor.write_composite(&self.orientation);
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for Pose {
@@ -723,29 +752,35 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::point_state_var_0_
                             where
                                 Self: Sized,
                             {
-                                Ok(Pose {
-                                    position: { cursor.read_composite()? },
-                                    orientation: { cursor.read_composite()? },
-                                })
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<Pose>() * 8, 320);
+                            assert_eq!(::memoffset::offset_of!(Pose, position) * 8, 0);
+                            assert_eq!(::memoffset::offset_of!(Pose, orientation) * 8, 192);
                         }
                     }
                     pub mod pose_var_0_1 {
                         /// `reg.drone.physics.kinematics.cartesian.PoseVar.0.1`
                         ///
                         /// Fixed size 82 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct PoseVar {
-                            /// reg.drone.physics.kinematics.cartesian.Pose.0.1
+                            /// `reg.drone.physics.kinematics.cartesian.Pose.0.1`
                             ///
                             /// Always aligned
                             /// Size 320 bits
                             pub value:
                                 crate::reg::drone::physics::kinematics::cartesian::pose_0_1::Pose,
-                            /// saturated float16[21]
+                            /// `saturated float16[21]`
                             ///
                             /// Always aligned
                             /// Size 336 bits
-                            pub covariance_urt: [::half::f16; 21],
+                            pub covariance_urt:
+                                [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 21],
                         }
                         impl ::canadensis_encoding::DataType for PoseVar {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -760,10 +795,7 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::point_state_var_0_
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_composite(&self.value);
-                                for value in (self.covariance_urt).iter() {
-                                    cursor.write_f16(*value);
-                                }
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for PoseVar {
@@ -773,35 +805,14 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::point_state_var_0_
                             where
                                 Self: Sized,
                             {
-                                Ok(PoseVar {
-                                    value: { cursor.read_composite()? },
-                                    covariance_urt: {
-                                        [
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                        ]
-                                    },
-                                })
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<PoseVar>() * 8, 656);
+                            assert_eq!(::memoffset::offset_of!(PoseVar, value) * 8, 0);
+                            assert_eq!(::memoffset::offset_of!(PoseVar, covariance_urt) * 8, 320);
                         }
                     }
                     pub mod pose_var_ts_0_1 {
@@ -809,12 +820,12 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::point_state_var_0_
                         ///
                         /// Fixed size 89 bytes
                         pub struct PoseVarTs {
-/// uavcan.time.SynchronizedTimestamp.1.0
+/// `uavcan.time.SynchronizedTimestamp.1.0`
 ///
 /// Always aligned
 /// Size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-/// reg.drone.physics.kinematics.cartesian.PoseVar.0.1
+/// `reg.drone.physics.kinematics.cartesian.PoseVar.0.1`
 ///
 /// Always aligned
 /// Size 656 bits
@@ -855,14 +866,16 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::pose_var_0_1::Pose
                         /// `reg.drone.physics.kinematics.cartesian.State.0.1`
                         ///
                         /// Fixed size 64 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct State {
-                            /// reg.drone.physics.kinematics.cartesian.Pose.0.1
+                            /// `reg.drone.physics.kinematics.cartesian.Pose.0.1`
                             ///
                             /// Always aligned
                             /// Size 320 bits
                             pub pose:
                                 crate::reg::drone::physics::kinematics::cartesian::pose_0_1::Pose,
-                            /// reg.drone.physics.kinematics.cartesian.Twist.0.1
+                            /// `reg.drone.physics.kinematics.cartesian.Twist.0.1`
                             ///
                             /// Always aligned
                             /// Size 192 bits
@@ -882,8 +895,7 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::pose_var_0_1::Pose
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_composite(&self.pose);
-                                cursor.write_composite(&self.twist);
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for State {
@@ -893,24 +905,29 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::pose_var_0_1::Pose
                             where
                                 Self: Sized,
                             {
-                                Ok(State {
-                                    pose: { cursor.read_composite()? },
-                                    twist: { cursor.read_composite()? },
-                                })
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<State>() * 8, 512);
+                            assert_eq!(::memoffset::offset_of!(State, pose) * 8, 0);
+                            assert_eq!(::memoffset::offset_of!(State, twist) * 8, 320);
                         }
                     }
                     pub mod state_var_0_1 {
                         /// `reg.drone.physics.kinematics.cartesian.StateVar.0.1`
                         ///
                         /// Fixed size 148 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct StateVar {
-/// reg.drone.physics.kinematics.cartesian.PoseVar.0.1
+/// `reg.drone.physics.kinematics.cartesian.PoseVar.0.1`
 ///
 /// Always aligned
 /// Size 656 bits
 pub pose: crate::reg::drone::physics::kinematics::cartesian::pose_var_0_1::PoseVar,
-/// reg.drone.physics.kinematics.cartesian.TwistVar.0.1
+/// `reg.drone.physics.kinematics.cartesian.TwistVar.0.1`
 ///
 /// Always aligned
 /// Size 528 bits
@@ -929,8 +946,7 @@ pub twist: crate::reg::drone::physics::kinematics::cartesian::twist_var_0_1::Twi
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_composite(&self.pose);
-                                cursor.write_composite(&self.twist);
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for StateVar {
@@ -940,11 +956,14 @@ pub twist: crate::reg::drone::physics::kinematics::cartesian::twist_var_0_1::Twi
                             where
                                 Self: Sized,
                             {
-                                Ok(StateVar {
-                                    pose: { cursor.read_composite()? },
-                                    twist: { cursor.read_composite()? },
-                                })
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<StateVar>() * 8, 1184);
+                            assert_eq!(::memoffset::offset_of!(StateVar, pose) * 8, 0);
+                            assert_eq!(::memoffset::offset_of!(StateVar, twist) * 8, 656);
                         }
                     }
                     pub mod state_var_ts_0_1 {
@@ -952,12 +971,12 @@ pub twist: crate::reg::drone::physics::kinematics::cartesian::twist_var_0_1::Twi
                         ///
                         /// Fixed size 155 bytes
                         pub struct StateVarTs {
-/// uavcan.time.SynchronizedTimestamp.1.0
+/// `uavcan.time.SynchronizedTimestamp.1.0`
 ///
 /// Always aligned
 /// Size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-/// reg.drone.physics.kinematics.cartesian.StateVar.0.1
+/// `reg.drone.physics.kinematics.cartesian.StateVar.0.1`
 ///
 /// Always aligned
 /// Size 1184 bits
@@ -998,13 +1017,15 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::state_var_0_1::Sta
                         /// `reg.drone.physics.kinematics.cartesian.Twist.0.1`
                         ///
                         /// Fixed size 24 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct Twist {
-                            /// uavcan.si.unit.velocity.Vector3.1.0
+                            /// `uavcan.si.unit.velocity.Vector3.1.0`
                             ///
                             /// Always aligned
                             /// Size 96 bits
                             pub linear: crate::uavcan::si::unit::velocity::vector3_1_0::Vector3,
-                            /// uavcan.si.unit.angular_velocity.Vector3.1.0
+                            /// `uavcan.si.unit.angular_velocity.Vector3.1.0`
                             ///
                             /// Always aligned
                             /// Size 96 bits
@@ -1024,8 +1045,7 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::state_var_0_1::Sta
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_composite(&self.linear);
-                                cursor.write_composite(&self.angular);
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for Twist {
@@ -1035,29 +1055,35 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::state_var_0_1::Sta
                             where
                                 Self: Sized,
                             {
-                                Ok(Twist {
-                                    linear: { cursor.read_composite()? },
-                                    angular: { cursor.read_composite()? },
-                                })
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<Twist>() * 8, 192);
+                            assert_eq!(::memoffset::offset_of!(Twist, linear) * 8, 0);
+                            assert_eq!(::memoffset::offset_of!(Twist, angular) * 8, 96);
                         }
                     }
                     pub mod twist_var_0_1 {
                         /// `reg.drone.physics.kinematics.cartesian.TwistVar.0.1`
                         ///
                         /// Fixed size 66 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct TwistVar {
-                            /// reg.drone.physics.kinematics.cartesian.Twist.0.1
+                            /// `reg.drone.physics.kinematics.cartesian.Twist.0.1`
                             ///
                             /// Always aligned
                             /// Size 192 bits
                             pub value:
                                 crate::reg::drone::physics::kinematics::cartesian::twist_0_1::Twist,
-                            /// saturated float16[21]
+                            /// `saturated float16[21]`
                             ///
                             /// Always aligned
                             /// Size 336 bits
-                            pub covariance_urt: [::half::f16; 21],
+                            pub covariance_urt:
+                                [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 21],
                         }
                         impl ::canadensis_encoding::DataType for TwistVar {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -1072,10 +1098,7 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::state_var_0_1::Sta
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_composite(&self.value);
-                                for value in (self.covariance_urt).iter() {
-                                    cursor.write_f16(*value);
-                                }
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for TwistVar {
@@ -1085,35 +1108,14 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::state_var_0_1::Sta
                             where
                                 Self: Sized,
                             {
-                                Ok(TwistVar {
-                                    value: { cursor.read_composite()? },
-                                    covariance_urt: {
-                                        [
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                        ]
-                                    },
-                                })
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<TwistVar>() * 8, 528);
+                            assert_eq!(::memoffset::offset_of!(TwistVar, value) * 8, 0);
+                            assert_eq!(::memoffset::offset_of!(TwistVar, covariance_urt) * 8, 192);
                         }
                     }
                     pub mod twist_var_ts_0_1 {
@@ -1121,12 +1123,12 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::state_var_0_1::Sta
                         ///
                         /// Fixed size 73 bytes
                         pub struct TwistVarTs {
-/// uavcan.time.SynchronizedTimestamp.1.0
+/// `uavcan.time.SynchronizedTimestamp.1.0`
 ///
 /// Always aligned
 /// Size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-/// reg.drone.physics.kinematics.cartesian.TwistVar.0.1
+/// `reg.drone.physics.kinematics.cartesian.TwistVar.0.1`
 ///
 /// Always aligned
 /// Size 528 bits
@@ -1169,18 +1171,20 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::twist_var_0_1::Twi
                         /// `reg.drone.physics.kinematics.geodetic.Point.0.1`
                         ///
                         /// Fixed size 24 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct Point {
-                            /// saturated float64
+                            /// `saturated float64`
                             ///
                             /// Always aligned
                             /// Size 64 bits
                             pub latitude: f64,
-                            /// saturated float64
+                            /// `saturated float64`
                             ///
                             /// Always aligned
                             /// Size 64 bits
                             pub longitude: f64,
-                            /// uavcan.si.unit.length.WideScalar.1.0
+                            /// `uavcan.si.unit.length.WideScalar.1.0`
                             ///
                             /// Always aligned
                             /// Size 64 bits
@@ -1200,9 +1204,7 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::twist_var_0_1::Twi
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_f64(self.latitude);
-                                cursor.write_f64(self.longitude);
-                                cursor.write_composite(&self.altitude);
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for Point {
@@ -1212,26 +1214,31 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::twist_var_0_1::Twi
                             where
                                 Self: Sized,
                             {
-                                Ok(Point {
-                                    latitude: { cursor.read_f64() },
-                                    longitude: { cursor.read_f64() },
-                                    altitude: { cursor.read_composite()? },
-                                })
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<Point>() * 8, 192);
+                            assert_eq!(::memoffset::offset_of!(Point, latitude) * 8, 0);
+                            assert_eq!(::memoffset::offset_of!(Point, longitude) * 8, 64);
+                            assert_eq!(::memoffset::offset_of!(Point, altitude) * 8, 128);
                         }
                     }
                     pub mod point_state_0_1 {
                         /// `reg.drone.physics.kinematics.geodetic.PointState.0.1`
                         ///
                         /// Fixed size 36 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct PointState {
-                            /// reg.drone.physics.kinematics.geodetic.Point.0.1
+                            /// `reg.drone.physics.kinematics.geodetic.Point.0.1`
                             ///
                             /// Always aligned
                             /// Size 192 bits
                             pub position:
                                 crate::reg::drone::physics::kinematics::geodetic::point_0_1::Point,
-                            /// uavcan.si.unit.velocity.Vector3.1.0
+                            /// `uavcan.si.unit.velocity.Vector3.1.0`
                             ///
                             /// Always aligned
                             /// Size 96 bits
@@ -1250,8 +1257,7 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::twist_var_0_1::Twi
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_composite(&self.position);
-                                cursor.write_composite(&self.velocity);
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for PointState {
@@ -1261,24 +1267,29 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::twist_var_0_1::Twi
                             where
                                 Self: Sized,
                             {
-                                Ok(PointState {
-                                    position: { cursor.read_composite()? },
-                                    velocity: { cursor.read_composite()? },
-                                })
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<PointState>() * 8, 288);
+                            assert_eq!(::memoffset::offset_of!(PointState, position) * 8, 0);
+                            assert_eq!(::memoffset::offset_of!(PointState, velocity) * 8, 192);
                         }
                     }
                     pub mod point_state_var_0_1 {
                         /// `reg.drone.physics.kinematics.geodetic.PointStateVar.0.1`
                         ///
                         /// Fixed size 60 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct PointStateVar {
-/// reg.drone.physics.kinematics.geodetic.PointVar.0.1
+/// `reg.drone.physics.kinematics.geodetic.PointVar.0.1`
 ///
 /// Always aligned
 /// Size 288 bits
 pub position: crate::reg::drone::physics::kinematics::geodetic::point_var_0_1::PointVar,
-/// reg.drone.physics.kinematics.translation.Velocity3Var.0.2
+/// `reg.drone.physics.kinematics.translation.Velocity3Var.0.2`
 ///
 /// Always aligned
 /// Size 192 bits
@@ -1297,8 +1308,7 @@ pub velocity: crate::reg::drone::physics::kinematics::translation::velocity3_var
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_composite(&self.position);
-                                cursor.write_composite(&self.velocity);
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for PointStateVar {
@@ -1308,11 +1318,14 @@ pub velocity: crate::reg::drone::physics::kinematics::translation::velocity3_var
                             where
                                 Self: Sized,
                             {
-                                Ok(PointStateVar {
-                                    position: { cursor.read_composite()? },
-                                    velocity: { cursor.read_composite()? },
-                                })
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<PointStateVar>() * 8, 480);
+                            assert_eq!(::memoffset::offset_of!(PointStateVar, position) * 8, 0);
+                            assert_eq!(::memoffset::offset_of!(PointStateVar, velocity) * 8, 288);
                         }
                     }
                     pub mod point_state_var_ts_0_1 {
@@ -1320,12 +1333,12 @@ pub velocity: crate::reg::drone::physics::kinematics::translation::velocity3_var
                         ///
                         /// Fixed size 67 bytes
                         pub struct PointStateVarTs {
-/// uavcan.time.SynchronizedTimestamp.1.0
+/// `uavcan.time.SynchronizedTimestamp.1.0`
 ///
 /// Always aligned
 /// Size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-/// reg.drone.physics.kinematics.geodetic.PointStateVar.0.1
+/// `reg.drone.physics.kinematics.geodetic.PointStateVar.0.1`
 ///
 /// Always aligned
 /// Size 480 bits
@@ -1366,18 +1379,21 @@ pub value: crate::reg::drone::physics::kinematics::geodetic::point_state_var_0_1
                         /// `reg.drone.physics.kinematics.geodetic.PointVar.0.1`
                         ///
                         /// Fixed size 36 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct PointVar {
-                            /// reg.drone.physics.kinematics.geodetic.Point.0.1
+                            /// `reg.drone.physics.kinematics.geodetic.Point.0.1`
                             ///
                             /// Always aligned
                             /// Size 192 bits
                             pub value:
                                 crate::reg::drone::physics::kinematics::geodetic::point_0_1::Point,
-                            /// saturated float16[6]
+                            /// `saturated float16[6]`
                             ///
                             /// Always aligned
                             /// Size 96 bits
-                            pub covariance_urt: [::half::f16; 6],
+                            pub covariance_urt:
+                                [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 6],
                         }
                         impl ::canadensis_encoding::DataType for PointVar {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -1392,10 +1408,7 @@ pub value: crate::reg::drone::physics::kinematics::geodetic::point_state_var_0_1
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_composite(&self.value);
-                                for value in (self.covariance_urt).iter() {
-                                    cursor.write_f16(*value);
-                                }
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for PointVar {
@@ -1405,34 +1418,30 @@ pub value: crate::reg::drone::physics::kinematics::geodetic::point_state_var_0_1
                             where
                                 Self: Sized,
                             {
-                                Ok(PointVar {
-                                    value: { cursor.read_composite()? },
-                                    covariance_urt: {
-                                        [
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                        ]
-                                    },
-                                })
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<PointVar>() * 8, 288);
+                            assert_eq!(::memoffset::offset_of!(PointVar, value) * 8, 0);
+                            assert_eq!(::memoffset::offset_of!(PointVar, covariance_urt) * 8, 192);
                         }
                     }
                     pub mod pose_0_1 {
                         /// `reg.drone.physics.kinematics.geodetic.Pose.0.1`
                         ///
                         /// Fixed size 40 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct Pose {
-                            /// reg.drone.physics.kinematics.geodetic.Point.0.1
+                            /// `reg.drone.physics.kinematics.geodetic.Point.0.1`
                             ///
                             /// Always aligned
                             /// Size 192 bits
                             pub position:
                                 crate::reg::drone::physics::kinematics::geodetic::point_0_1::Point,
-                            /// uavcan.si.unit.angle.Quaternion.1.0
+                            /// `uavcan.si.unit.angle.Quaternion.1.0`
                             ///
                             /// Always aligned
                             /// Size 128 bits
@@ -1452,8 +1461,7 @@ pub value: crate::reg::drone::physics::kinematics::geodetic::point_state_var_0_1
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_composite(&self.position);
-                                cursor.write_composite(&self.orientation);
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for Pose {
@@ -1463,29 +1471,35 @@ pub value: crate::reg::drone::physics::kinematics::geodetic::point_state_var_0_1
                             where
                                 Self: Sized,
                             {
-                                Ok(Pose {
-                                    position: { cursor.read_composite()? },
-                                    orientation: { cursor.read_composite()? },
-                                })
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<Pose>() * 8, 320);
+                            assert_eq!(::memoffset::offset_of!(Pose, position) * 8, 0);
+                            assert_eq!(::memoffset::offset_of!(Pose, orientation) * 8, 192);
                         }
                     }
                     pub mod pose_var_0_1 {
                         /// `reg.drone.physics.kinematics.geodetic.PoseVar.0.1`
                         ///
                         /// Fixed size 82 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct PoseVar {
-                            /// reg.drone.physics.kinematics.geodetic.Pose.0.1
+                            /// `reg.drone.physics.kinematics.geodetic.Pose.0.1`
                             ///
                             /// Always aligned
                             /// Size 320 bits
                             pub value:
                                 crate::reg::drone::physics::kinematics::geodetic::pose_0_1::Pose,
-                            /// saturated float16[21]
+                            /// `saturated float16[21]`
                             ///
                             /// Always aligned
                             /// Size 336 bits
-                            pub covariance_urt: [::half::f16; 21],
+                            pub covariance_urt:
+                                [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 21],
                         }
                         impl ::canadensis_encoding::DataType for PoseVar {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -1500,10 +1514,7 @@ pub value: crate::reg::drone::physics::kinematics::geodetic::point_state_var_0_1
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_composite(&self.value);
-                                for value in (self.covariance_urt).iter() {
-                                    cursor.write_f16(*value);
-                                }
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for PoseVar {
@@ -1513,49 +1524,30 @@ pub value: crate::reg::drone::physics::kinematics::geodetic::point_state_var_0_1
                             where
                                 Self: Sized,
                             {
-                                Ok(PoseVar {
-                                    value: { cursor.read_composite()? },
-                                    covariance_urt: {
-                                        [
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                        ]
-                                    },
-                                })
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<PoseVar>() * 8, 656);
+                            assert_eq!(::memoffset::offset_of!(PoseVar, value) * 8, 0);
+                            assert_eq!(::memoffset::offset_of!(PoseVar, covariance_urt) * 8, 320);
                         }
                     }
                     pub mod state_0_1 {
                         /// `reg.drone.physics.kinematics.geodetic.State.0.1`
                         ///
                         /// Fixed size 64 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct State {
-                            /// reg.drone.physics.kinematics.geodetic.Pose.0.1
+                            /// `reg.drone.physics.kinematics.geodetic.Pose.0.1`
                             ///
                             /// Always aligned
                             /// Size 320 bits
                             pub pose:
                                 crate::reg::drone::physics::kinematics::geodetic::pose_0_1::Pose,
-                            /// reg.drone.physics.kinematics.cartesian.Twist.0.1
+                            /// `reg.drone.physics.kinematics.cartesian.Twist.0.1`
                             ///
                             /// Always aligned
                             /// Size 192 bits
@@ -1575,8 +1567,7 @@ pub value: crate::reg::drone::physics::kinematics::geodetic::point_state_var_0_1
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_composite(&self.pose);
-                                cursor.write_composite(&self.twist);
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for State {
@@ -1586,24 +1577,29 @@ pub value: crate::reg::drone::physics::kinematics::geodetic::point_state_var_0_1
                             where
                                 Self: Sized,
                             {
-                                Ok(State {
-                                    pose: { cursor.read_composite()? },
-                                    twist: { cursor.read_composite()? },
-                                })
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<State>() * 8, 512);
+                            assert_eq!(::memoffset::offset_of!(State, pose) * 8, 0);
+                            assert_eq!(::memoffset::offset_of!(State, twist) * 8, 320);
                         }
                     }
                     pub mod state_var_0_1 {
                         /// `reg.drone.physics.kinematics.geodetic.StateVar.0.1`
                         ///
                         /// Fixed size 148 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct StateVar {
-/// reg.drone.physics.kinematics.geodetic.PoseVar.0.1
+/// `reg.drone.physics.kinematics.geodetic.PoseVar.0.1`
 ///
 /// Always aligned
 /// Size 656 bits
 pub pose: crate::reg::drone::physics::kinematics::geodetic::pose_var_0_1::PoseVar,
-/// reg.drone.physics.kinematics.cartesian.TwistVar.0.1
+/// `reg.drone.physics.kinematics.cartesian.TwistVar.0.1`
 ///
 /// Always aligned
 /// Size 528 bits
@@ -1622,8 +1618,7 @@ pub twist: crate::reg::drone::physics::kinematics::cartesian::twist_var_0_1::Twi
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_composite(&self.pose);
-                                cursor.write_composite(&self.twist);
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for StateVar {
@@ -1633,11 +1628,14 @@ pub twist: crate::reg::drone::physics::kinematics::cartesian::twist_var_0_1::Twi
                             where
                                 Self: Sized,
                             {
-                                Ok(StateVar {
-                                    pose: { cursor.read_composite()? },
-                                    twist: { cursor.read_composite()? },
-                                })
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<StateVar>() * 8, 1184);
+                            assert_eq!(::memoffset::offset_of!(StateVar, pose) * 8, 0);
+                            assert_eq!(::memoffset::offset_of!(StateVar, twist) * 8, 656);
                         }
                     }
                     pub mod state_var_ts_0_1 {
@@ -1645,12 +1643,12 @@ pub twist: crate::reg::drone::physics::kinematics::cartesian::twist_var_0_1::Twi
                         ///
                         /// Fixed size 155 bytes
                         pub struct StateVarTs {
-/// uavcan.time.SynchronizedTimestamp.1.0
+/// `uavcan.time.SynchronizedTimestamp.1.0`
 ///
 /// Always aligned
 /// Size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-/// reg.drone.physics.kinematics.geodetic.StateVar.0.1
+/// `reg.drone.physics.kinematics.geodetic.StateVar.0.1`
 ///
 /// Always aligned
 /// Size 1184 bits
@@ -1693,20 +1691,22 @@ pub value: crate::reg::drone::physics::kinematics::geodetic::state_var_0_1::Stat
                         /// `reg.drone.physics.kinematics.rotation.Planar.0.1`
                         ///
                         /// Fixed size 12 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct Planar {
-                            /// uavcan.si.unit.angle.Scalar.1.0
+                            /// `uavcan.si.unit.angle.Scalar.1.0`
                             ///
                             /// Always aligned
                             /// Size 32 bits
                             pub angular_position:
                                 crate::uavcan::si::unit::angle::scalar_1_0::Scalar,
-                            /// uavcan.si.unit.angular_velocity.Scalar.1.0
+                            /// `uavcan.si.unit.angular_velocity.Scalar.1.0`
                             ///
                             /// Always aligned
                             /// Size 32 bits
                             pub angular_velocity:
                                 crate::uavcan::si::unit::angular_velocity::scalar_1_0::Scalar,
-                            /// uavcan.si.unit.angular_acceleration.Scalar.1.0
+                            /// `uavcan.si.unit.angular_acceleration.Scalar.1.0`
                             ///
                             /// Always aligned
                             /// Size 32 bits
@@ -1726,9 +1726,7 @@ pub value: crate::reg::drone::physics::kinematics::geodetic::state_var_0_1::Stat
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_composite(&self.angular_position);
-                                cursor.write_composite(&self.angular_velocity);
-                                cursor.write_composite(&self.angular_acceleration);
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for Planar {
@@ -1738,12 +1736,18 @@ pub value: crate::reg::drone::physics::kinematics::geodetic::state_var_0_1::Stat
                             where
                                 Self: Sized,
                             {
-                                Ok(Planar {
-                                    angular_position: { cursor.read_composite()? },
-                                    angular_velocity: { cursor.read_composite()? },
-                                    angular_acceleration: { cursor.read_composite()? },
-                                })
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<Planar>() * 8, 96);
+                            assert_eq!(::memoffset::offset_of!(Planar, angular_position) * 8, 0);
+                            assert_eq!(::memoffset::offset_of!(Planar, angular_velocity) * 8, 32);
+                            assert_eq!(
+                                ::memoffset::offset_of!(Planar, angular_acceleration) * 8,
+                                64
+                            );
                         }
                     }
                     pub mod planar_ts_0_1 {
@@ -1751,12 +1755,12 @@ pub value: crate::reg::drone::physics::kinematics::geodetic::state_var_0_1::Stat
                         ///
                         /// Fixed size 19 bytes
                         pub struct PlanarTs {
-/// uavcan.time.SynchronizedTimestamp.1.0
+/// `uavcan.time.SynchronizedTimestamp.1.0`
 ///
 /// Always aligned
 /// Size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-/// reg.drone.physics.kinematics.rotation.Planar.0.1
+/// `reg.drone.physics.kinematics.rotation.Planar.0.1`
 ///
 /// Always aligned
 /// Size 96 bits
@@ -1799,18 +1803,20 @@ pub value: crate::reg::drone::physics::kinematics::rotation::planar_0_1::Planar,
                         /// `reg.drone.physics.kinematics.translation.Linear.0.1`
                         ///
                         /// Fixed size 12 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct Linear {
-                            /// uavcan.si.unit.length.Scalar.1.0
+                            /// `uavcan.si.unit.length.Scalar.1.0`
                             ///
                             /// Always aligned
                             /// Size 32 bits
                             pub position: crate::uavcan::si::unit::length::scalar_1_0::Scalar,
-                            /// uavcan.si.unit.velocity.Scalar.1.0
+                            /// `uavcan.si.unit.velocity.Scalar.1.0`
                             ///
                             /// Always aligned
                             /// Size 32 bits
                             pub velocity: crate::uavcan::si::unit::velocity::scalar_1_0::Scalar,
-                            /// uavcan.si.unit.acceleration.Scalar.1.0
+                            /// `uavcan.si.unit.acceleration.Scalar.1.0`
                             ///
                             /// Always aligned
                             /// Size 32 bits
@@ -1830,9 +1836,7 @@ pub value: crate::reg::drone::physics::kinematics::rotation::planar_0_1::Planar,
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_composite(&self.position);
-                                cursor.write_composite(&self.velocity);
-                                cursor.write_composite(&self.acceleration);
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for Linear {
@@ -1842,12 +1846,15 @@ pub value: crate::reg::drone::physics::kinematics::rotation::planar_0_1::Planar,
                             where
                                 Self: Sized,
                             {
-                                Ok(Linear {
-                                    position: { cursor.read_composite()? },
-                                    velocity: { cursor.read_composite()? },
-                                    acceleration: { cursor.read_composite()? },
-                                })
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<Linear>() * 8, 96);
+                            assert_eq!(::memoffset::offset_of!(Linear, position) * 8, 0);
+                            assert_eq!(::memoffset::offset_of!(Linear, velocity) * 8, 32);
+                            assert_eq!(::memoffset::offset_of!(Linear, acceleration) * 8, 64);
                         }
                     }
                     pub mod linear_ts_0_1 {
@@ -1855,12 +1862,12 @@ pub value: crate::reg::drone::physics::kinematics::rotation::planar_0_1::Planar,
                         ///
                         /// Fixed size 19 bytes
                         pub struct LinearTs {
-/// uavcan.time.SynchronizedTimestamp.1.0
+/// `uavcan.time.SynchronizedTimestamp.1.0`
 ///
 /// Always aligned
 /// Size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-/// reg.drone.physics.kinematics.translation.Linear.0.1
+/// `reg.drone.physics.kinematics.translation.Linear.0.1`
 ///
 /// Always aligned
 /// Size 96 bits
@@ -1902,26 +1909,26 @@ pub value: crate::reg::drone::physics::kinematics::translation::linear_0_1::Line
                         ///
                         /// Fixed size 25 bytes
                         pub struct LinearVarTs {
-/// reg.drone.physics.kinematics.translation.LinearTs.0.1
+/// `reg.drone.physics.kinematics.translation.LinearTs.0.1`
 ///
 /// Always aligned
 /// Size 152 bits
 pub value: crate::reg::drone::physics::kinematics::translation::linear_ts_0_1::LinearTs,
-/// saturated float16
+/// `saturated float16`
 ///
 /// Always aligned
 /// Size 16 bits
-pub position_error_variance: ::half::f16,
-/// saturated float16
+pub position_error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
+/// `saturated float16`
 ///
 /// Always aligned
 /// Size 16 bits
-pub velocity_error_variance: ::half::f16,
-/// saturated float16
+pub velocity_error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
+/// `saturated float16`
 ///
 /// Always aligned
 /// Size 16 bits
-pub acceleration_error_variance: ::half::f16,
+pub acceleration_error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
 }
                         impl ::canadensis_encoding::DataType for LinearVarTs {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -1937,9 +1944,9 @@ pub acceleration_error_variance: ::half::f16,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
                                 cursor.write_composite(&self.value);
-                                cursor.write_f16(self.position_error_variance);
-                                cursor.write_f16(self.velocity_error_variance);
-                                cursor.write_f16(self.acceleration_error_variance);
+                                cursor.write_f16((self.position_error_variance).into());
+                                cursor.write_f16((self.velocity_error_variance).into());
+                                cursor.write_f16((self.acceleration_error_variance).into());
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for LinearVarTs {
@@ -1951,9 +1958,9 @@ pub acceleration_error_variance: ::half::f16,
                             {
                                 Ok(LinearVarTs {
                                     value: { cursor.read_composite()? },
-                                    position_error_variance: { cursor.read_f16() },
-                                    velocity_error_variance: { cursor.read_f16() },
-                                    acceleration_error_variance: { cursor.read_f16() },
+                                    position_error_variance: { cursor.read_f16().into() },
+                                    velocity_error_variance: { cursor.read_f16().into() },
+                                    acceleration_error_variance: { cursor.read_f16().into() },
                                 })
                             }
                         }
@@ -1963,16 +1970,16 @@ pub acceleration_error_variance: ::half::f16,
                         ///
                         /// Fixed size 13 bytes
                         pub struct Velocity1VarTs {
-                            /// uavcan.si.sample.velocity.Scalar.1.0
+                            /// `uavcan.si.sample.velocity.Scalar.1.0`
                             ///
                             /// Always aligned
                             /// Size 88 bits
                             pub value: crate::uavcan::si::sample::velocity::scalar_1_0::Scalar,
-                            /// saturated float16
+                            /// `saturated float16`
                             ///
                             /// Always aligned
                             /// Size 16 bits
-                            pub error_variance: ::half::f16,
+                            pub error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
                         }
                         impl ::canadensis_encoding::DataType for Velocity1VarTs {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -1988,7 +1995,7 @@ pub acceleration_error_variance: ::half::f16,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
                                 cursor.write_composite(&self.value);
-                                cursor.write_f16(self.error_variance);
+                                cursor.write_f16((self.error_variance).into());
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for Velocity1VarTs {
@@ -2000,7 +2007,7 @@ pub acceleration_error_variance: ::half::f16,
                             {
                                 Ok(Velocity1VarTs {
                                     value: { cursor.read_composite()? },
-                                    error_variance: { cursor.read_f16() },
+                                    error_variance: { cursor.read_f16().into() },
                                 })
                             }
                         }
@@ -2010,16 +2017,17 @@ pub acceleration_error_variance: ::half::f16,
                         ///
                         /// Fixed size 31 bytes
                         pub struct Velocity3Var {
-                            /// uavcan.si.sample.velocity.Vector3.1.0
+                            /// `uavcan.si.sample.velocity.Vector3.1.0`
                             ///
                             /// Always aligned
                             /// Size 152 bits
                             pub value: crate::uavcan::si::sample::velocity::vector3_1_0::Vector3,
-                            /// saturated float16[6]
+                            /// `saturated float16[6]`
                             ///
                             /// Always aligned
                             /// Size 96 bits
-                            pub covariance_urt: [::half::f16; 6],
+                            pub covariance_urt:
+                                [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 6],
                         }
                         impl ::canadensis_encoding::DataType for Velocity3Var {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -2036,7 +2044,7 @@ pub acceleration_error_variance: ::half::f16,
                             ) {
                                 cursor.write_composite(&self.value);
                                 for value in (self.covariance_urt).iter() {
-                                    cursor.write_f16(*value);
+                                    cursor.write_f16((*value).into());
                                 }
                             }
                         }
@@ -2051,12 +2059,12 @@ pub acceleration_error_variance: ::half::f16,
                                     value: { cursor.read_composite()? },
                                     covariance_urt: {
                                         [
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
+                                            cursor.read_f16().into(),
+                                            cursor.read_f16().into(),
+                                            cursor.read_f16().into(),
+                                            cursor.read_f16().into(),
+                                            cursor.read_f16().into(),
+                                            cursor.read_f16().into(),
                                         ]
                                     },
                                 })
@@ -2067,17 +2075,20 @@ pub acceleration_error_variance: ::half::f16,
                         /// `reg.drone.physics.kinematics.translation.Velocity3Var.0.2`
                         ///
                         /// Fixed size 24 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct Velocity3Var {
-                            /// uavcan.si.unit.velocity.Vector3.1.0
+                            /// `uavcan.si.unit.velocity.Vector3.1.0`
                             ///
                             /// Always aligned
                             /// Size 96 bits
                             pub value: crate::uavcan::si::unit::velocity::vector3_1_0::Vector3,
-                            /// saturated float16[6]
+                            /// `saturated float16[6]`
                             ///
                             /// Always aligned
                             /// Size 96 bits
-                            pub covariance_urt: [::half::f16; 6],
+                            pub covariance_urt:
+                                [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 6],
                         }
                         impl ::canadensis_encoding::DataType for Velocity3Var {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -2092,10 +2103,7 @@ pub acceleration_error_variance: ::half::f16,
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_composite(&self.value);
-                                for value in (self.covariance_urt).iter() {
-                                    cursor.write_f16(*value);
-                                }
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for Velocity3Var {
@@ -2105,20 +2113,17 @@ pub acceleration_error_variance: ::half::f16,
                             where
                                 Self: Sized,
                             {
-                                Ok(Velocity3Var {
-                                    value: { cursor.read_composite()? },
-                                    covariance_urt: {
-                                        [
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                            cursor.read_f16(),
-                                        ]
-                                    },
-                                })
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<Velocity3Var>() * 8, 192);
+                            assert_eq!(::memoffset::offset_of!(Velocity3Var, value) * 8, 0);
+                            assert_eq!(
+                                ::memoffset::offset_of!(Velocity3Var, covariance_urt) * 8,
+                                96
+                            );
                         }
                     }
                 }
@@ -2129,17 +2134,17 @@ pub acceleration_error_variance: ::half::f16,
                     ///
                     /// Fixed size 2 bytes
                     pub struct HighColor {
-                        /// saturated uint5
+                        /// `saturated uint5`
                         ///
                         /// Always aligned
                         /// Size 5 bits
                         pub red: u8,
-                        /// saturated uint6
+                        /// `saturated uint6`
                         ///
                         /// Not always aligned
                         /// Size 6 bits
                         pub green: u8,
-                        /// saturated uint5
+                        /// `saturated uint5`
                         ///
                         /// Not always aligned
                         /// Size 5 bits
@@ -2186,27 +2191,27 @@ pub acceleration_error_variance: ::half::f16,
                     ///
                     /// Fixed size 21 bytes
                     pub struct PressureTempVarTs {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// uavcan.si.unit.pressure.Scalar.1.0
+                        /// `uavcan.si.unit.pressure.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub pressure: crate::uavcan::si::unit::pressure::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.temperature.Scalar.1.0
+                        /// `uavcan.si.unit.temperature.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub temperature: crate::uavcan::si::unit::temperature::scalar_1_0::Scalar,
-                        /// saturated float16[3]
+                        /// `saturated float16[3]`
                         ///
                         /// Always aligned
                         /// Size 48 bits
-                        pub covariance_urt: [::half::f16; 3],
+                        pub covariance_urt: [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 3],
                     }
                     impl ::canadensis_encoding::DataType for PressureTempVarTs {
                         const EXTENT_BYTES: Option<u32> = None;
@@ -2222,7 +2227,7 @@ pub acceleration_error_variance: ::half::f16,
                             cursor.write_composite(&self.pressure);
                             cursor.write_composite(&self.temperature);
                             for value in (self.covariance_urt).iter() {
-                                cursor.write_f16(*value);
+                                cursor.write_f16((*value).into());
                             }
                         }
                     }
@@ -2238,7 +2243,11 @@ pub acceleration_error_variance: ::half::f16,
                                 pressure: { cursor.read_composite()? },
                                 temperature: { cursor.read_composite()? },
                                 covariance_urt: {
-                                    [cursor.read_f16(), cursor.read_f16(), cursor.read_f16()]
+                                    [
+                                        cursor.read_f16().into(),
+                                        cursor.read_f16().into(),
+                                        cursor.read_f16().into(),
+                                    ]
                                 },
                             })
                         }
@@ -2250,8 +2259,10 @@ pub acceleration_error_variance: ::half::f16,
                     /// `reg.drone.physics.time.TAI64.0.1`
                     ///
                     /// Fixed size 8 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct TAI64 {
-                        /// saturated int64
+                        /// `saturated int64`
                         ///
                         /// Always aligned
                         /// Size 64 bits
@@ -2267,7 +2278,7 @@ pub acceleration_error_variance: ::half::f16,
                             64
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_u64(self.tai64n as u64);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for TAI64 {
@@ -2277,23 +2288,28 @@ pub acceleration_error_variance: ::half::f16,
                         where
                             Self: Sized,
                         {
-                            Ok(TAI64 {
-                                tai64n: { cursor.read_u64() as _ },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<TAI64>() * 8, 64);
+                        assert_eq!(::memoffset::offset_of!(TAI64, tai64n) * 8, 0);
                     }
                 }
                 pub mod tai64_var_0_1 {
                     /// `reg.drone.physics.time.TAI64Var.0.1`
                     ///
                     /// Fixed size 12 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct TAI64Var {
-                        /// reg.drone.physics.time.TAI64.0.1
+                        /// `reg.drone.physics.time.TAI64.0.1`
                         ///
                         /// Always aligned
                         /// Size 64 bits
                         pub value: crate::reg::drone::physics::time::tai64_0_1::TAI64,
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -2309,8 +2325,7 @@ pub acceleration_error_variance: ::half::f16,
                             96
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_composite(&self.value);
-                            cursor.write_f32(self.error_variance);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for TAI64Var {
@@ -2320,11 +2335,14 @@ pub acceleration_error_variance: ::half::f16,
                         where
                             Self: Sized,
                         {
-                            Ok(TAI64Var {
-                                value: { cursor.read_composite()? },
-                                error_variance: { cursor.read_f32() },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<TAI64Var>() * 8, 96);
+                        assert_eq!(::memoffset::offset_of!(TAI64Var, value) * 8, 0);
+                        assert_eq!(::memoffset::offset_of!(TAI64Var, error_variance) * 8, 64);
                     }
                 }
                 pub mod tai64_var_ts_0_1 {
@@ -2332,13 +2350,13 @@ pub acceleration_error_variance: ::half::f16,
                     ///
                     /// Fixed size 19 bytes
                     pub struct TAI64VarTs {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// reg.drone.physics.time.TAI64Var.0.1
+                        /// `reg.drone.physics.time.TAI64Var.0.1`
                         ///
                         /// Always aligned
                         /// Size 96 bits
@@ -2381,6 +2399,8 @@ pub acceleration_error_variance: ::half::f16,
                         /// `reg.drone.service.actuator.common._.0.1`
                         ///
                         /// Fixed size 0 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct _0 {}
                         impl ::canadensis_encoding::DataType for _0 {
                             const EXTENT_BYTES: Option<u32> = Some(0);
@@ -2398,6 +2418,7 @@ pub acceleration_error_variance: ::half::f16,
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for _0 {
@@ -2407,8 +2428,12 @@ pub acceleration_error_variance: ::half::f16,
                             where
                                 Self: Sized,
                             {
-                                Ok(_0 {})
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<_0>() * 8, 0);
                         }
                     }
                     pub mod fault_flags_0_1 {
@@ -2416,53 +2441,53 @@ pub acceleration_error_variance: ::half::f16,
                         ///
                         /// Fixed size 2 bytes
                         pub struct FaultFlags {
-                            /// saturated bool
+                            /// `saturated bool`
                             ///
                             /// Always aligned
                             /// Size 1 bits
                             pub overload: bool,
-                            /// saturated bool
+                            /// `saturated bool`
                             ///
                             /// Not always aligned
                             /// Size 1 bits
                             pub voltage: bool,
-                            /// saturated bool
+                            /// `saturated bool`
                             ///
                             /// Not always aligned
                             /// Size 1 bits
                             pub motor_temperature: bool,
-                            /// saturated bool
+                            /// `saturated bool`
                             ///
                             /// Not always aligned
                             /// Size 1 bits
                             pub controller_temperature: bool,
-                            /// saturated bool
+                            /// `saturated bool`
                             ///
                             /// Not always aligned
                             /// Size 1 bits
                             pub velocity: bool,
-                            /// saturated bool
+                            /// `saturated bool`
                             ///
                             /// Not always aligned
                             /// Size 1 bits
                             pub mechanical: bool,
-                            /// saturated bool
+                            /// `saturated bool`
                             ///
                             /// Not always aligned
                             /// Size 1 bits
                             pub vibration: bool,
-                            /// saturated bool
+                            /// `saturated bool`
                             ///
                             /// Not always aligned
                             /// Size 1 bits
                             pub configuration: bool,
-                            /// saturated bool
+                            /// `saturated bool`
                             ///
                             /// Always aligned
                             /// Size 1 bits
                             pub control_mode: bool,
                             // 6 bits of padding
-                            /// saturated bool
+                            /// `saturated bool`
                             ///
                             /// Not always aligned
                             /// Size 1 bits
@@ -2524,13 +2549,13 @@ pub acceleration_error_variance: ::half::f16,
                         ///
                         /// Fixed size 3 bytes
                         pub struct Feedback {
-                            /// reg.drone.service.common.Heartbeat.0.1
+                            /// `reg.drone.service.common.Heartbeat.0.1`
                             ///
                             /// Always aligned
                             /// Size 16 bits
                             pub heartbeat:
                                 crate::reg::drone::service::common::heartbeat_0_1::Heartbeat,
-                            /// saturated int8
+                            /// `saturated int8`
                             ///
                             /// Always aligned
                             /// Size 8 bits
@@ -2572,6 +2597,8 @@ pub acceleration_error_variance: ::half::f16,
                             /// `reg.drone.service.actuator.common.sp._.0.1`
                             ///
                             /// Fixed size 0 bytes
+                            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                            #[repr(C, packed)]
                             pub struct _0 {}
                             impl ::canadensis_encoding::DataType for _0 {
                                 const EXTENT_BYTES: Option<u32> = Some(0);
@@ -2588,6 +2615,7 @@ pub acceleration_error_variance: ::half::f16,
                                     &self,
                                     cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                                 ) {
+                                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                                 }
                             }
                             impl ::canadensis_encoding::Deserialize for _0 {
@@ -2600,20 +2628,26 @@ pub acceleration_error_variance: ::half::f16,
                                 where
                                     Self: Sized,
                                 {
-                                    Ok(_0 {})
+                                    Ok(Self::deserialize_zero_copy(cursor))
                                 }
+                            }
+                            #[test]
+                            fn test_layout() {
+                                assert_eq!(::core::mem::size_of::<_0>() * 8, 0);
                             }
                         }
                         pub mod scalar_0_1 {
                             /// `reg.drone.service.actuator.common.sp.Scalar.0.1`
                             ///
                             /// Fixed size 2 bytes
+                            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                            #[repr(C, packed)]
                             pub struct Scalar {
-                                /// saturated float16
+                                /// `saturated float16`
                                 ///
                                 /// Always aligned
                                 /// Size 16 bits
-                                pub value: ::half::f16,
+                                pub value: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
                             }
                             impl ::canadensis_encoding::DataType for Scalar {
                                 const EXTENT_BYTES: Option<u32> = Some(512);
@@ -2628,7 +2662,7 @@ pub acceleration_error_variance: ::half::f16,
                                     &self,
                                     cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                                 ) {
-                                    cursor.write_f16(self.value);
+                                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                                 }
                             }
                             impl ::canadensis_encoding::Deserialize for Scalar {
@@ -2641,22 +2675,27 @@ pub acceleration_error_variance: ::half::f16,
                                 where
                                     Self: Sized,
                                 {
-                                    Ok(Scalar {
-                                        value: { cursor.read_f16() },
-                                    })
+                                    Ok(Self::deserialize_zero_copy(cursor))
                                 }
+                            }
+                            #[test]
+                            fn test_layout() {
+                                assert_eq!(::core::mem::size_of::<Scalar>() * 8, 16);
+                                assert_eq!(::memoffset::offset_of!(Scalar, value) * 8, 0);
                             }
                         }
                         pub mod vector2_0_1 {
                             /// `reg.drone.service.actuator.common.sp.Vector2.0.1`
                             ///
                             /// Fixed size 4 bytes
+                            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                            #[repr(C, packed)]
                             pub struct Vector2 {
-                                /// saturated float16[2]
+                                /// `saturated float16[2]`
                                 ///
                                 /// Always aligned
                                 /// Size 32 bits
-                                pub value: [::half::f16; 2],
+                                pub value: [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 2],
                             }
                             impl ::canadensis_encoding::DataType for Vector2 {
                                 const EXTENT_BYTES: Option<u32> = Some(512);
@@ -2671,9 +2710,7 @@ pub acceleration_error_variance: ::half::f16,
                                     &self,
                                     cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                                 ) {
-                                    for value in (self.value).iter() {
-                                        cursor.write_f16(*value);
-                                    }
+                                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                                 }
                             }
                             impl ::canadensis_encoding::Deserialize for Vector2 {
@@ -2686,22 +2723,27 @@ pub acceleration_error_variance: ::half::f16,
                                 where
                                     Self: Sized,
                                 {
-                                    Ok(Vector2 {
-                                        value: { [cursor.read_f16(), cursor.read_f16()] },
-                                    })
+                                    Ok(Self::deserialize_zero_copy(cursor))
                                 }
+                            }
+                            #[test]
+                            fn test_layout() {
+                                assert_eq!(::core::mem::size_of::<Vector2>() * 8, 32);
+                                assert_eq!(::memoffset::offset_of!(Vector2, value) * 8, 0);
                             }
                         }
                         pub mod vector31_0_1 {
                             /// `reg.drone.service.actuator.common.sp.Vector31.0.1`
                             ///
                             /// Fixed size 62 bytes
+                            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                            #[repr(C, packed)]
                             pub struct Vector31 {
-                                /// saturated float16[31]
+                                /// `saturated float16[31]`
                                 ///
                                 /// Always aligned
                                 /// Size 496 bits
-                                pub value: [::half::f16; 31],
+                                pub value: [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 31],
                             }
                             impl ::canadensis_encoding::DataType for Vector31 {
                                 const EXTENT_BYTES: Option<u32> = Some(512);
@@ -2716,9 +2758,7 @@ pub acceleration_error_variance: ::half::f16,
                                     &self,
                                     cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                                 ) {
-                                    for value in (self.value).iter() {
-                                        cursor.write_f16(*value);
-                                    }
+                                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                                 }
                             }
                             impl ::canadensis_encoding::Deserialize for Vector31 {
@@ -2731,56 +2771,27 @@ pub acceleration_error_variance: ::half::f16,
                                 where
                                     Self: Sized,
                                 {
-                                    Ok(Vector31 {
-                                        value: {
-                                            [
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                            ]
-                                        },
-                                    })
+                                    Ok(Self::deserialize_zero_copy(cursor))
                                 }
+                            }
+                            #[test]
+                            fn test_layout() {
+                                assert_eq!(::core::mem::size_of::<Vector31>() * 8, 496);
+                                assert_eq!(::memoffset::offset_of!(Vector31, value) * 8, 0);
                             }
                         }
                         pub mod vector3_0_1 {
                             /// `reg.drone.service.actuator.common.sp.Vector3.0.1`
                             ///
                             /// Fixed size 6 bytes
+                            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                            #[repr(C, packed)]
                             pub struct Vector3 {
-                                /// saturated float16[3]
+                                /// `saturated float16[3]`
                                 ///
                                 /// Always aligned
                                 /// Size 48 bits
-                                pub value: [::half::f16; 3],
+                                pub value: [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 3],
                             }
                             impl ::canadensis_encoding::DataType for Vector3 {
                                 const EXTENT_BYTES: Option<u32> = Some(512);
@@ -2795,9 +2806,7 @@ pub acceleration_error_variance: ::half::f16,
                                     &self,
                                     cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                                 ) {
-                                    for value in (self.value).iter() {
-                                        cursor.write_f16(*value);
-                                    }
+                                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                                 }
                             }
                             impl ::canadensis_encoding::Deserialize for Vector3 {
@@ -2810,28 +2819,27 @@ pub acceleration_error_variance: ::half::f16,
                                 where
                                     Self: Sized,
                                 {
-                                    Ok(Vector3 {
-                                        value: {
-                                            [
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                            ]
-                                        },
-                                    })
+                                    Ok(Self::deserialize_zero_copy(cursor))
                                 }
+                            }
+                            #[test]
+                            fn test_layout() {
+                                assert_eq!(::core::mem::size_of::<Vector3>() * 8, 48);
+                                assert_eq!(::memoffset::offset_of!(Vector3, value) * 8, 0);
                             }
                         }
                         pub mod vector4_0_1 {
                             /// `reg.drone.service.actuator.common.sp.Vector4.0.1`
                             ///
                             /// Fixed size 8 bytes
+                            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                            #[repr(C, packed)]
                             pub struct Vector4 {
-                                /// saturated float16[4]
+                                /// `saturated float16[4]`
                                 ///
                                 /// Always aligned
                                 /// Size 64 bits
-                                pub value: [::half::f16; 4],
+                                pub value: [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 4],
                             }
                             impl ::canadensis_encoding::DataType for Vector4 {
                                 const EXTENT_BYTES: Option<u32> = Some(512);
@@ -2846,9 +2854,7 @@ pub acceleration_error_variance: ::half::f16,
                                     &self,
                                     cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                                 ) {
-                                    for value in (self.value).iter() {
-                                        cursor.write_f16(*value);
-                                    }
+                                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                                 }
                             }
                             impl ::canadensis_encoding::Deserialize for Vector4 {
@@ -2861,29 +2867,27 @@ pub acceleration_error_variance: ::half::f16,
                                 where
                                     Self: Sized,
                                 {
-                                    Ok(Vector4 {
-                                        value: {
-                                            [
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                            ]
-                                        },
-                                    })
+                                    Ok(Self::deserialize_zero_copy(cursor))
                                 }
+                            }
+                            #[test]
+                            fn test_layout() {
+                                assert_eq!(::core::mem::size_of::<Vector4>() * 8, 64);
+                                assert_eq!(::memoffset::offset_of!(Vector4, value) * 8, 0);
                             }
                         }
                         pub mod vector6_0_1 {
                             /// `reg.drone.service.actuator.common.sp.Vector6.0.1`
                             ///
                             /// Fixed size 12 bytes
+                            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                            #[repr(C, packed)]
                             pub struct Vector6 {
-                                /// saturated float16[6]
+                                /// `saturated float16[6]`
                                 ///
                                 /// Always aligned
                                 /// Size 96 bits
-                                pub value: [::half::f16; 6],
+                                pub value: [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 6],
                             }
                             impl ::canadensis_encoding::DataType for Vector6 {
                                 const EXTENT_BYTES: Option<u32> = Some(512);
@@ -2898,9 +2902,7 @@ pub acceleration_error_variance: ::half::f16,
                                     &self,
                                     cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                                 ) {
-                                    for value in (self.value).iter() {
-                                        cursor.write_f16(*value);
-                                    }
+                                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                                 }
                             }
                             impl ::canadensis_encoding::Deserialize for Vector6 {
@@ -2913,31 +2915,27 @@ pub acceleration_error_variance: ::half::f16,
                                 where
                                     Self: Sized,
                                 {
-                                    Ok(Vector6 {
-                                        value: {
-                                            [
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                            ]
-                                        },
-                                    })
+                                    Ok(Self::deserialize_zero_copy(cursor))
                                 }
+                            }
+                            #[test]
+                            fn test_layout() {
+                                assert_eq!(::core::mem::size_of::<Vector6>() * 8, 96);
+                                assert_eq!(::memoffset::offset_of!(Vector6, value) * 8, 0);
                             }
                         }
                         pub mod vector8_0_1 {
                             /// `reg.drone.service.actuator.common.sp.Vector8.0.1`
                             ///
                             /// Fixed size 16 bytes
+                            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                            #[repr(C, packed)]
                             pub struct Vector8 {
-                                /// saturated float16[8]
+                                /// `saturated float16[8]`
                                 ///
                                 /// Always aligned
                                 /// Size 128 bits
-                                pub value: [::half::f16; 8],
+                                pub value: [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 8],
                             }
                             impl ::canadensis_encoding::DataType for Vector8 {
                                 const EXTENT_BYTES: Option<u32> = Some(512);
@@ -2952,9 +2950,7 @@ pub acceleration_error_variance: ::half::f16,
                                     &self,
                                     cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                                 ) {
-                                    for value in (self.value).iter() {
-                                        cursor.write_f16(*value);
-                                    }
+                                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                                 }
                             }
                             impl ::canadensis_encoding::Deserialize for Vector8 {
@@ -2967,21 +2963,13 @@ pub acceleration_error_variance: ::half::f16,
                                 where
                                     Self: Sized,
                                 {
-                                    Ok(Vector8 {
-                                        value: {
-                                            [
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                                cursor.read_f16(),
-                                            ]
-                                        },
-                                    })
+                                    Ok(Self::deserialize_zero_copy(cursor))
                                 }
+                            }
+                            #[test]
+                            fn test_layout() {
+                                assert_eq!(::core::mem::size_of::<Vector8>() * 8, 128);
+                                assert_eq!(::memoffset::offset_of!(Vector8, value) * 8, 0);
                             }
                         }
                     }
@@ -2990,22 +2978,22 @@ pub acceleration_error_variance: ::half::f16,
                         ///
                         /// Fixed size 14 bytes
                         pub struct Status {
-/// uavcan.si.unit.temperature.Scalar.1.0
+/// `uavcan.si.unit.temperature.Scalar.1.0`
 ///
 /// Always aligned
 /// Size 32 bits
 pub motor_temperature: crate::uavcan::si::unit::temperature::scalar_1_0::Scalar,
-/// uavcan.si.unit.temperature.Scalar.1.0
+/// `uavcan.si.unit.temperature.Scalar.1.0`
 ///
 /// Always aligned
 /// Size 32 bits
 pub controller_temperature: crate::uavcan::si::unit::temperature::scalar_1_0::Scalar,
-/// saturated uint32
+/// `saturated uint32`
 ///
 /// Always aligned
 /// Size 32 bits
 pub error_count: u32,
-/// reg.drone.service.actuator.common.FaultFlags.0.1
+/// `reg.drone.service.actuator.common.FaultFlags.0.1`
 ///
 /// Always aligned
 /// Size 16 bits
@@ -3052,6 +3040,8 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                         /// `reg.drone.service.actuator.esc._.0.1`
                         ///
                         /// Fixed size 0 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct _0 {}
                         impl ::canadensis_encoding::DataType for _0 {
                             const EXTENT_BYTES: Option<u32> = Some(0);
@@ -3066,6 +3056,7 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for _0 {
@@ -3075,8 +3066,12 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                             where
                                 Self: Sized,
                             {
-                                Ok(_0 {})
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<_0>() * 8, 0);
                         }
                     }
                 }
@@ -3085,6 +3080,8 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                         /// `reg.drone.service.actuator.servo._.0.1`
                         ///
                         /// Fixed size 0 bytes
+                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[repr(C, packed)]
                         pub struct _0 {}
                         impl ::canadensis_encoding::DataType for _0 {
                             const EXTENT_BYTES: Option<u32> = Some(0);
@@ -3099,6 +3096,7 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
+                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for _0 {
@@ -3108,8 +3106,12 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                             where
                                 Self: Sized,
                             {
-                                Ok(_0 {})
+                                Ok(Self::deserialize_zero_copy(cursor))
                             }
+                        }
+                        #[test]
+                        fn test_layout() {
+                            assert_eq!(::core::mem::size_of::<_0>() * 8, 0);
                         }
                     }
                 }
@@ -3119,6 +3121,8 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                     /// `reg.drone.service.air_data_computer._.0.1`
                     ///
                     /// Fixed size 0 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct _0 {}
                     impl ::canadensis_encoding::DataType for _0 {
                         const EXTENT_BYTES: Option<u32> = Some(0);
@@ -3131,7 +3135,9 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                         fn size_bits(&self) -> usize {
                             0
                         }
-                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {}
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                        }
                     }
                     impl ::canadensis_encoding::Deserialize for _0 {
                         fn deserialize(
@@ -3140,8 +3146,12 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                         where
                             Self: Sized,
                         {
-                            Ok(_0 {})
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<_0>() * 8, 0);
                     }
                 }
             }
@@ -3150,6 +3160,8 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                     /// `reg.drone.service.battery._.0.1`
                     ///
                     /// Fixed size 0 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct _0 {}
                     impl ::canadensis_encoding::DataType for _0 {
                         const EXTENT_BYTES: Option<u32> = Some(0);
@@ -3160,7 +3172,9 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                         fn size_bits(&self) -> usize {
                             0
                         }
-                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {}
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                        }
                     }
                     impl ::canadensis_encoding::Deserialize for _0 {
                         fn deserialize(
@@ -3169,16 +3183,22 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                         where
                             Self: Sized,
                         {
-                            Ok(_0 {})
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<_0>() * 8, 0);
                     }
                 }
                 pub mod error_0_1 {
                     /// `reg.drone.service.battery.Error.0.1`
                     ///
                     /// Fixed size 1 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Error {
-                        /// saturated uint8
+                        /// `saturated uint8`
                         ///
                         /// Always aligned
                         /// Size 8 bits
@@ -3207,7 +3227,7 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                             8
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_u8(self.value);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Error {
@@ -3217,10 +3237,13 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                         where
                             Self: Sized,
                         {
-                            Ok(Error {
-                                value: { cursor.read_u8() as _ },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Error>() * 8, 8);
+                        assert_eq!(::memoffset::offset_of!(Error, value) * 8, 0);
                     }
                 }
                 pub mod parameters_0_1 {
@@ -3228,81 +3251,81 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                     ///
                     /// Fixed size 54 bytes
                     pub struct Parameters {
-                        /// truncated uint64
+                        /// `truncated uint64`
                         ///
                         /// Always aligned
                         /// Size 64 bits
                         pub unique_id: u64,
-                        /// uavcan.si.unit.mass.Scalar.1.0
+                        /// `uavcan.si.unit.mass.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub mass: crate::uavcan::si::unit::mass::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.electric_charge.Scalar.1.0
+                        /// `uavcan.si.unit.electric_charge.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub design_capacity:
                             crate::uavcan::si::unit::electric_charge::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.voltage.Scalar.1.0[2]
+                        /// `uavcan.si.unit.voltage.Scalar.1.0[2]`
                         ///
                         /// Always aligned
                         /// Size 64 bits
                         pub design_cell_voltage_min_max:
                             [crate::uavcan::si::unit::voltage::scalar_1_0::Scalar; 2],
-                        /// uavcan.si.unit.electric_current.Scalar.1.0
+                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub discharge_current:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.electric_current.Scalar.1.0
+                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub discharge_current_burst:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.electric_current.Scalar.1.0
+                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub charge_current:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.electric_current.Scalar.1.0
+                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub charge_current_fast:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.electric_current.Scalar.1.0
+                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub charge_termination_treshold:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.voltage.Scalar.1.0
+                        /// `uavcan.si.unit.voltage.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub charge_voltage: crate::uavcan::si::unit::voltage::scalar_1_0::Scalar,
-                        /// saturated uint16
+                        /// `saturated uint16`
                         ///
                         /// Always aligned
                         /// Size 16 bits
                         pub cycle_count: u16,
                         // 8 bits of padding
-                        /// saturated uint8
+                        /// `saturated uint8`
                         ///
                         /// Always aligned
                         /// Size 8 bits
                         pub series_cell_count: u8,
-                        /// saturated uint7
+                        /// `saturated uint7`
                         ///
                         /// Always aligned
                         /// Size 7 bits
                         pub state_of_health_pct: u8,
                         // 1 bits of padding
-                        /// reg.drone.service.battery.Technology.0.1
+                        /// `reg.drone.service.battery.Technology.0.1`
                         ///
                         /// Always aligned
                         /// Size 8 bits
@@ -3378,76 +3401,76 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                     ///
                     /// Fixed size 54 bytes
                     pub struct Parameters {
-                        /// truncated uint64
+                        /// `truncated uint64`
                         ///
                         /// Always aligned
                         /// Size 64 bits
                         pub unique_id: u64,
-                        /// uavcan.si.unit.mass.Scalar.1.0
+                        /// `uavcan.si.unit.mass.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub mass: crate::uavcan::si::unit::mass::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.electric_charge.Scalar.1.0
+                        /// `uavcan.si.unit.electric_charge.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub design_capacity:
                             crate::uavcan::si::unit::electric_charge::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.voltage.Scalar.1.0[2]
+                        /// `uavcan.si.unit.voltage.Scalar.1.0[2]`
                         ///
                         /// Always aligned
                         /// Size 64 bits
                         pub design_cell_voltage_min_max:
                             [crate::uavcan::si::unit::voltage::scalar_1_0::Scalar; 2],
-                        /// uavcan.si.unit.electric_current.Scalar.1.0
+                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub discharge_current:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.electric_current.Scalar.1.0
+                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub discharge_current_burst:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.electric_current.Scalar.1.0
+                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub charge_current:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.electric_current.Scalar.1.0
+                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub charge_current_fast:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.electric_current.Scalar.1.0
+                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub charge_termination_threshold:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.voltage.Scalar.1.0
+                        /// `uavcan.si.unit.voltage.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub charge_voltage: crate::uavcan::si::unit::voltage::scalar_1_0::Scalar,
-                        /// saturated uint16
+                        /// `saturated uint16`
                         ///
                         /// Always aligned
                         /// Size 16 bits
                         pub cycle_count: u16,
                         // 16 bits of padding
-                        /// saturated uint7
+                        /// `saturated uint7`
                         ///
                         /// Always aligned
                         /// Size 7 bits
                         pub state_of_health_pct: u8,
                         // 1 bits of padding
-                        /// reg.drone.service.battery.Technology.0.1
+                        /// `reg.drone.service.battery.Technology.0.1`
                         ///
                         /// Always aligned
                         /// Size 8 bits
@@ -3521,82 +3544,82 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                     ///
                     /// Fixed size 58 bytes
                     pub struct Parameters {
-                        /// truncated uint64
+                        /// `truncated uint64`
                         ///
                         /// Always aligned
                         /// Size 64 bits
                         pub unique_id: u64,
-                        /// uavcan.si.unit.mass.Scalar.1.0
+                        /// `uavcan.si.unit.mass.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub mass: crate::uavcan::si::unit::mass::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.electric_charge.Scalar.1.0
+                        /// `uavcan.si.unit.electric_charge.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub design_capacity:
                             crate::uavcan::si::unit::electric_charge::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.voltage.Scalar.1.0[2]
+                        /// `uavcan.si.unit.voltage.Scalar.1.0[2]`
                         ///
                         /// Always aligned
                         /// Size 64 bits
                         pub design_cell_voltage_min_max:
                             [crate::uavcan::si::unit::voltage::scalar_1_0::Scalar; 2],
-                        /// uavcan.si.unit.electric_current.Scalar.1.0
+                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub discharge_current:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.electric_current.Scalar.1.0
+                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub discharge_current_burst:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.electric_current.Scalar.1.0
+                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub charge_current:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.electric_current.Scalar.1.0
+                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub charge_current_fast:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.electric_current.Scalar.1.0
+                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub charge_termination_threshold:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// uavcan.si.unit.voltage.Scalar.1.0
+                        /// `uavcan.si.unit.voltage.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub charge_voltage: crate::uavcan::si::unit::voltage::scalar_1_0::Scalar,
-                        /// saturated uint16
+                        /// `saturated uint16`
                         ///
                         /// Always aligned
                         /// Size 16 bits
                         pub cycle_count: u16,
                         // 16 bits of padding
-                        /// saturated uint7
+                        /// `saturated uint7`
                         ///
                         /// Always aligned
                         /// Size 7 bits
                         pub state_of_health_pct: u8,
                         // 1 bits of padding
-                        /// reg.drone.service.battery.Technology.0.1
+                        /// `reg.drone.service.battery.Technology.0.1`
                         ///
                         /// Always aligned
                         /// Size 8 bits
                         pub technology:
                             crate::reg::drone::service::battery::technology_0_1::Technology,
-                        /// uavcan.si.unit.voltage.Scalar.1.0
+                        /// `uavcan.si.unit.voltage.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -3671,30 +3694,30 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                     ///
                     /// Fixed size 23 bytes
                     pub struct Status {
-                        /// reg.drone.service.common.Heartbeat.0.1
+                        /// `reg.drone.service.common.Heartbeat.0.1`
                         ///
                         /// Always aligned
                         /// Size 16 bits
                         pub heartbeat: crate::reg::drone::service::common::heartbeat_0_1::Heartbeat,
-                        /// uavcan.si.unit.temperature.Scalar.1.0[2]
+                        /// `uavcan.si.unit.temperature.Scalar.1.0[2]`
                         ///
                         /// Always aligned
                         /// Size 64 bits
                         pub temperature_min_max:
                             [crate::uavcan::si::unit::temperature::scalar_1_0::Scalar; 2],
-                        /// uavcan.si.unit.voltage.Scalar.1.0[2]
+                        /// `uavcan.si.unit.voltage.Scalar.1.0[2]`
                         ///
                         /// Always aligned
                         /// Size 64 bits
                         pub cell_voltage_min_max:
                             [crate::uavcan::si::unit::voltage::scalar_1_0::Scalar; 2],
-                        /// uavcan.si.unit.electric_charge.Scalar.1.0
+                        /// `uavcan.si.unit.electric_charge.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub available_charge:
                             crate::uavcan::si::unit::electric_charge::scalar_1_0::Scalar,
-                        /// reg.drone.service.battery.Error.0.1
+                        /// `reg.drone.service.battery.Error.0.1`
                         ///
                         /// Always aligned
                         /// Size 8 bits
@@ -3747,34 +3770,35 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                     ///
                     /// Size ranges from 24 to 534 bytes
                     pub struct Status {
-                        /// reg.drone.service.common.Heartbeat.0.1
+                        /// `reg.drone.service.common.Heartbeat.0.1`
                         ///
                         /// Always aligned
                         /// Size 16 bits
                         pub heartbeat: crate::reg::drone::service::common::heartbeat_0_1::Heartbeat,
-                        /// uavcan.si.unit.temperature.Scalar.1.0[2]
+                        /// `uavcan.si.unit.temperature.Scalar.1.0[2]`
                         ///
                         /// Always aligned
                         /// Size 64 bits
                         pub temperature_min_max:
                             [crate::uavcan::si::unit::temperature::scalar_1_0::Scalar; 2],
                         // 64 bits of padding
-                        /// uavcan.si.unit.electric_charge.Scalar.1.0
+                        /// `uavcan.si.unit.electric_charge.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub available_charge:
                             crate::uavcan::si::unit::electric_charge::scalar_1_0::Scalar,
-                        /// reg.drone.service.battery.Error.0.1
+                        /// `reg.drone.service.battery.Error.0.1`
                         ///
                         /// Always aligned
                         /// Size 8 bits
                         pub error: crate::reg::drone::service::battery::error_0_1::Error,
-                        /// saturated float16[<=255]
+                        /// `saturated float16[<=255]`
                         ///
                         /// Always aligned
                         /// Size ranges from 0 to 4080 bits
-                        pub cell_voltages: ::heapless::Vec<::half::f16, 255>,
+                        pub cell_voltages:
+                            ::heapless::Vec<::canadensis_encoding::f16_zerocopy::ZeroCopyF16, 255>,
                     }
                     impl ::canadensis_encoding::DataType for Status {
                         const EXTENT_BYTES: Option<u32> = Some(600);
@@ -3785,15 +3809,12 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                     }
                     impl ::canadensis_encoding::Serialize for Status {
                         fn size_bits(&self) -> usize {
-                            16 + (self.temperature_min_max)
-                                .iter()
-                                .map(|element| 32)
-                                .sum::<usize>()
+                            16 + (self.temperature_min_max).len() * 32
                                 + 64
                                 + 32
                                 + 8
                                 + 8
-                                + (self.cell_voltages).iter().map(|element| 16).sum::<usize>()
+                                + (self.cell_voltages).len() * 16
                                 + 0
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
@@ -3806,7 +3827,7 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                             cursor.write_composite(&self.error);
                             cursor.write_aligned_u8((self.cell_voltages).len() as u8);
                             for value in (self.cell_voltages).iter() {
-                                cursor.write_f16(*value);
+                                cursor.write_f16((*value).into());
                             }
                         }
                     }
@@ -3828,11 +3849,11 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                                 },
                                 error: { cursor.read_composite()? },
                                 cell_voltages: {
-                                    let length = cursor.read_aligned_u8() as _;
+                                    let length = cursor.read_u8() as _;
                                     if length <= 255 {
                                         let mut elements = ::heapless::Vec::new();
                                         for _ in 0..length {
-                                            let _ = elements.push(cursor.read_f16());
+                                            let _ = elements.push(cursor.read_f16().into());
                                         }
                                         elements
                                     } else {
@@ -3849,8 +3870,10 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                     /// `reg.drone.service.battery.Technology.0.1`
                     ///
                     /// Fixed size 1 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Technology {
-                        /// saturated uint8
+                        /// `saturated uint8`
                         ///
                         /// Always aligned
                         /// Size 8 bits
@@ -3891,7 +3914,7 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                             8
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_u8(self.value);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Technology {
@@ -3901,10 +3924,13 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                         where
                             Self: Sized,
                         {
-                            Ok(Technology {
-                                value: { cursor.read_u8() as _ },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Technology>() * 8, 8);
+                        assert_eq!(::memoffset::offset_of!(Technology, value) * 8, 0);
                     }
                 }
             }
@@ -3914,12 +3940,12 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                     ///
                     /// Fixed size 2 bytes
                     pub struct Heartbeat {
-                        /// reg.drone.service.common.Readiness.0.1
+                        /// `reg.drone.service.common.Readiness.0.1`
                         ///
                         /// Always aligned
                         /// Size 8 bits
                         pub readiness: crate::reg::drone::service::common::readiness_0_1::Readiness,
-                        /// uavcan.node.Health.1.0
+                        /// `uavcan.node.Health.1.0`
                         ///
                         /// Always aligned
                         /// Size 8 bits
@@ -3960,7 +3986,7 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                     ///
                     /// Fixed size 1 bytes
                     pub struct Readiness {
-                        /// truncated uint2
+                        /// `truncated uint2`
                         ///
                         /// Always aligned
                         /// Size 2 bits
@@ -4002,6 +4028,8 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                     /// `reg.drone.service.gnss._.0.1`
                     ///
                     /// Fixed size 0 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct _0 {}
                     impl ::canadensis_encoding::DataType for _0 {
                         const EXTENT_BYTES: Option<u32> = Some(0);
@@ -4012,7 +4040,9 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                         fn size_bits(&self) -> usize {
                             0
                         }
-                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {}
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                        }
                     }
                     impl ::canadensis_encoding::Deserialize for _0 {
                         fn deserialize(
@@ -4021,50 +4051,56 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                         where
                             Self: Sized,
                         {
-                            Ok(_0 {})
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<_0>() * 8, 0);
                     }
                 }
                 pub mod dilution_of_precision_0_1 {
                     /// `reg.drone.service.gnss.DilutionOfPrecision.0.1`
                     ///
                     /// Fixed size 14 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct DilutionOfPrecision {
-                        /// saturated float16
+                        /// `saturated float16`
                         ///
                         /// Always aligned
                         /// Size 16 bits
-                        pub geometric: ::half::f16,
-                        /// saturated float16
+                        pub geometric: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
+                        /// `saturated float16`
                         ///
                         /// Always aligned
                         /// Size 16 bits
-                        pub position: ::half::f16,
-                        /// saturated float16
+                        pub position: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
+                        /// `saturated float16`
                         ///
                         /// Always aligned
                         /// Size 16 bits
-                        pub horizontal: ::half::f16,
-                        /// saturated float16
+                        pub horizontal: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
+                        /// `saturated float16`
                         ///
                         /// Always aligned
                         /// Size 16 bits
-                        pub vertical: ::half::f16,
-                        /// saturated float16
+                        pub vertical: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
+                        /// `saturated float16`
                         ///
                         /// Always aligned
                         /// Size 16 bits
-                        pub time: ::half::f16,
-                        /// saturated float16
+                        pub time: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
+                        /// `saturated float16`
                         ///
                         /// Always aligned
                         /// Size 16 bits
-                        pub northing: ::half::f16,
-                        /// saturated float16
+                        pub northing: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
+                        /// `saturated float16`
                         ///
                         /// Always aligned
                         /// Size 16 bits
-                        pub easting: ::half::f16,
+                        pub easting: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
                     }
                     impl ::canadensis_encoding::DataType for DilutionOfPrecision {
                         const EXTENT_BYTES: Option<u32> = None;
@@ -4076,13 +4112,7 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                             112
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_f16(self.geometric);
-                            cursor.write_f16(self.position);
-                            cursor.write_f16(self.horizontal);
-                            cursor.write_f16(self.vertical);
-                            cursor.write_f16(self.time);
-                            cursor.write_f16(self.northing);
-                            cursor.write_f16(self.easting);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for DilutionOfPrecision {
@@ -4092,16 +4122,37 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                         where
                             Self: Sized,
                         {
-                            Ok(DilutionOfPrecision {
-                                geometric: { cursor.read_f16() },
-                                position: { cursor.read_f16() },
-                                horizontal: { cursor.read_f16() },
-                                vertical: { cursor.read_f16() },
-                                time: { cursor.read_f16() },
-                                northing: { cursor.read_f16() },
-                                easting: { cursor.read_f16() },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<DilutionOfPrecision>() * 8, 112);
+                        assert_eq!(
+                            ::memoffset::offset_of!(DilutionOfPrecision, geometric) * 8,
+                            0
+                        );
+                        assert_eq!(
+                            ::memoffset::offset_of!(DilutionOfPrecision, position) * 8,
+                            16
+                        );
+                        assert_eq!(
+                            ::memoffset::offset_of!(DilutionOfPrecision, horizontal) * 8,
+                            32
+                        );
+                        assert_eq!(
+                            ::memoffset::offset_of!(DilutionOfPrecision, vertical) * 8,
+                            48
+                        );
+                        assert_eq!(::memoffset::offset_of!(DilutionOfPrecision, time) * 8, 64);
+                        assert_eq!(
+                            ::memoffset::offset_of!(DilutionOfPrecision, northing) * 8,
+                            80
+                        );
+                        assert_eq!(
+                            ::memoffset::offset_of!(DilutionOfPrecision, easting) * 8,
+                            96
+                        );
                     }
                 }
                 pub mod heartbeat_0_1 {
@@ -4109,37 +4160,37 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                     ///
                     /// Fixed size 25 bytes
                     pub struct Heartbeat {
-/// reg.drone.service.common.Heartbeat.0.1
+/// `reg.drone.service.common.Heartbeat.0.1`
 ///
 /// Always aligned
 /// Size 16 bits
 pub heartbeat: crate::reg::drone::service::common::heartbeat_0_1::Heartbeat,
-/// reg.drone.service.gnss.Sources.0.1
+/// `reg.drone.service.gnss.Sources.0.1`
 ///
 /// Always aligned
 /// Size 48 bits
 pub sources: crate::reg::drone::service::gnss::sources_0_1::Sources,
-/// reg.drone.service.gnss.DilutionOfPrecision.0.1
+/// `reg.drone.service.gnss.DilutionOfPrecision.0.1`
 ///
 /// Always aligned
 /// Size 112 bits
 pub dop: crate::reg::drone::service::gnss::dilution_of_precision_0_1::DilutionOfPrecision,
-/// saturated uint8
+/// `saturated uint8`
 ///
 /// Always aligned
 /// Size 8 bits
 pub num_visible_satellites: u8,
-/// saturated uint8
+/// `saturated uint8`
 ///
 /// Always aligned
 /// Size 8 bits
 pub num_used_satellites: u8,
-/// saturated bool
+/// `saturated bool`
 ///
 /// Always aligned
 /// Size 1 bits
 pub fix: bool,
-/// saturated bool
+/// `saturated bool`
 ///
 /// Not always aligned
 /// Size 1 bits
@@ -4188,115 +4239,115 @@ pub rtk_fix: bool,
                     ///
                     /// Fixed size 6 bytes
                     pub struct Sources {
-                        /// saturated bool
+                        /// `saturated bool`
                         ///
                         /// Always aligned
                         /// Size 1 bits
                         pub gps_l1: bool,
-                        /// saturated bool
+                        /// `saturated bool`
                         ///
                         /// Not always aligned
                         /// Size 1 bits
                         pub gps_l2: bool,
-                        /// saturated bool
+                        /// `saturated bool`
                         ///
                         /// Not always aligned
                         /// Size 1 bits
                         pub gps_l5: bool,
-                        /// saturated bool
+                        /// `saturated bool`
                         ///
                         /// Not always aligned
                         /// Size 1 bits
                         pub glonass_l1: bool,
-                        /// saturated bool
+                        /// `saturated bool`
                         ///
                         /// Not always aligned
                         /// Size 1 bits
                         pub glonass_l2: bool,
-                        /// saturated bool
+                        /// `saturated bool`
                         ///
                         /// Not always aligned
                         /// Size 1 bits
                         pub glonass_l3: bool,
-                        /// saturated bool
+                        /// `saturated bool`
                         ///
                         /// Not always aligned
                         /// Size 1 bits
                         pub galileo_e1: bool,
-                        /// saturated bool
+                        /// `saturated bool`
                         ///
                         /// Not always aligned
                         /// Size 1 bits
                         pub galileo_e5a: bool,
-                        /// saturated bool
+                        /// `saturated bool`
                         ///
                         /// Always aligned
                         /// Size 1 bits
                         pub galileo_e5b: bool,
-                        /// saturated bool
+                        /// `saturated bool`
                         ///
                         /// Not always aligned
                         /// Size 1 bits
                         pub galileo_e6: bool,
-                        /// saturated bool
+                        /// `saturated bool`
                         ///
                         /// Not always aligned
                         /// Size 1 bits
                         pub beidou_b1: bool,
-                        /// saturated bool
+                        /// `saturated bool`
                         ///
                         /// Not always aligned
                         /// Size 1 bits
                         pub beidou_b2: bool,
                         // 5 bits of padding
-                        /// saturated bool
+                        /// `saturated bool`
                         ///
                         /// Not always aligned
                         /// Size 1 bits
                         pub sbas: bool,
-                        /// saturated bool
+                        /// `saturated bool`
                         ///
                         /// Not always aligned
                         /// Size 1 bits
                         pub gbas: bool,
-                        /// saturated bool
+                        /// `saturated bool`
                         ///
                         /// Not always aligned
                         /// Size 1 bits
                         pub rtk_base: bool,
                         // 3 bits of padding
-                        /// saturated bool
+                        /// `saturated bool`
                         ///
                         /// Not always aligned
                         /// Size 1 bits
                         pub imu: bool,
-                        /// saturated bool
+                        /// `saturated bool`
                         ///
                         /// Always aligned
                         /// Size 1 bits
                         pub visual_odometry: bool,
-                        /// saturated bool
+                        /// `saturated bool`
                         ///
                         /// Not always aligned
                         /// Size 1 bits
                         pub dead_reckoning: bool,
-                        /// saturated bool
+                        /// `saturated bool`
                         ///
                         /// Not always aligned
                         /// Size 1 bits
                         pub uwb: bool,
                         // 4 bits of padding
-                        /// saturated bool
+                        /// `saturated bool`
                         ///
                         /// Not always aligned
                         /// Size 1 bits
                         pub magnetic_compass: bool,
-                        /// saturated bool
+                        /// `saturated bool`
                         ///
                         /// Always aligned
                         /// Size 1 bits
                         pub gyro_compass: bool,
-                        /// saturated bool
+                        /// `saturated bool`
                         ///
                         /// Not always aligned
                         /// Size 1 bits
@@ -4389,12 +4440,12 @@ pub rtk_fix: bool,
                     ///
                     /// Fixed size 21 bytes
                     pub struct Time {
-                        /// reg.drone.physics.time.TAI64VarTs.0.1
+                        /// `reg.drone.physics.time.TAI64VarTs.0.1`
                         ///
                         /// Always aligned
                         /// Size 152 bits
                         pub value: crate::reg::drone::physics::time::tai64_var_ts_0_1::TAI64VarTs,
-                        /// uavcan.time.TAIInfo.0.1
+                        /// `uavcan.time.TAIInfo.0.1`
                         ///
                         /// Always aligned
                         /// Size 16 bits
@@ -4434,19 +4485,21 @@ pub rtk_fix: bool,
                     /// `reg.drone.service.sensor.Status.0.1`
                     ///
                     /// Fixed size 12 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Status {
-                        /// uavcan.si.unit.duration.Scalar.1.0
+                        /// `uavcan.si.unit.duration.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub data_validity_period:
                             crate::uavcan::si::unit::duration::scalar_1_0::Scalar,
-                        /// saturated uint32
+                        /// `saturated uint32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub error_count: u32,
-                        /// uavcan.si.unit.temperature.Scalar.1.0
+                        /// `uavcan.si.unit.temperature.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -4465,9 +4518,7 @@ pub rtk_fix: bool,
                             96
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_composite(&self.data_validity_period);
-                            cursor.write_aligned_u32(self.error_count);
-                            cursor.write_composite(&self.sensor_temperature);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Status {
@@ -4477,12 +4528,15 @@ pub rtk_fix: bool,
                         where
                             Self: Sized,
                         {
-                            Ok(Status {
-                                data_validity_period: { cursor.read_composite()? },
-                                error_count: { cursor.read_u32() as _ },
-                                sensor_temperature: { cursor.read_composite()? },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Status>() * 8, 96);
+                        assert_eq!(::memoffset::offset_of!(Status, data_validity_period) * 8, 0);
+                        assert_eq!(::memoffset::offset_of!(Status, error_count) * 8, 32);
+                        assert_eq!(::memoffset::offset_of!(Status, sensor_temperature) * 8, 64);
                     }
                 }
             }
@@ -4496,18 +4550,18 @@ pub mod uavcan {
             ///
             /// Size ranges from 9 to 121 bytes
             pub struct Record {
-                /// uavcan.time.SynchronizedTimestamp.1.0
+                /// `uavcan.time.SynchronizedTimestamp.1.0`
                 ///
                 /// Always aligned
                 /// Size 56 bits
                 pub timestamp:
                     crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                /// uavcan.diagnostic.Severity.1.0
+                /// `uavcan.diagnostic.Severity.1.0`
                 ///
                 /// Always aligned
                 /// Size 8 bits
                 pub severity: crate::uavcan::diagnostic::severity_1_0::Severity,
-                /// saturated uint8[<=112]
+                /// `saturated uint8[<=112]`
                 ///
                 /// Always aligned
                 /// Size ranges from 0 to 896 bits
@@ -4520,7 +4574,7 @@ pub mod uavcan {
             impl Record {}
             impl ::canadensis_encoding::Serialize for Record {
                 fn size_bits(&self) -> usize {
-                    56 + 8 + 8 + (self.text).iter().map(|element| 8).sum::<usize>() + 0
+                    56 + 8 + 8 + (self.text).len() * 8 + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_composite(&self.timestamp);
@@ -4540,7 +4594,7 @@ pub mod uavcan {
                         timestamp: { cursor.read_composite()? },
                         severity: { cursor.read_composite()? },
                         text: {
-                            let length = cursor.read_aligned_u8() as _;
+                            let length = cursor.read_u8() as _;
                             if length <= 112 {
                                 let mut elements = ::heapless::Vec::new();
                                 for _ in 0..length {
@@ -4560,18 +4614,18 @@ pub mod uavcan {
             ///
             /// Size ranges from 9 to 264 bytes
             pub struct Record {
-                /// uavcan.time.SynchronizedTimestamp.1.0
+                /// `uavcan.time.SynchronizedTimestamp.1.0`
                 ///
                 /// Always aligned
                 /// Size 56 bits
                 pub timestamp:
                     crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                /// uavcan.diagnostic.Severity.1.0
+                /// `uavcan.diagnostic.Severity.1.0`
                 ///
                 /// Always aligned
                 /// Size 8 bits
                 pub severity: crate::uavcan::diagnostic::severity_1_0::Severity,
-                /// saturated uint8[<=255]
+                /// `saturated uint8[<=255]`
                 ///
                 /// Always aligned
                 /// Size ranges from 0 to 2040 bits
@@ -4584,7 +4638,7 @@ pub mod uavcan {
             impl Record {}
             impl ::canadensis_encoding::Serialize for Record {
                 fn size_bits(&self) -> usize {
-                    56 + 8 + 8 + (self.text).iter().map(|element| 8).sum::<usize>() + 0
+                    56 + 8 + 8 + (self.text).len() * 8 + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_composite(&self.timestamp);
@@ -4604,7 +4658,7 @@ pub mod uavcan {
                         timestamp: { cursor.read_composite()? },
                         severity: { cursor.read_composite()? },
                         text: {
-                            let length = cursor.read_aligned_u8() as _;
+                            let length = cursor.read_u8() as _;
                             if length <= 255 {
                                 let mut elements = ::heapless::Vec::new();
                                 for _ in 0..length {
@@ -4624,7 +4678,7 @@ pub mod uavcan {
             ///
             /// Fixed size 1 bytes
             pub struct Severity {
-                /// saturated uint3
+                /// `saturated uint3`
                 ///
                 /// Always aligned
                 /// Size 3 bits
@@ -4671,8 +4725,10 @@ pub mod uavcan {
             /// `uavcan.file.Error.1.0`
             ///
             /// Fixed size 2 bytes
+            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[repr(C, packed)]
             pub struct Error {
-                /// saturated uint16
+                /// `saturated uint16`
                 ///
                 /// Always aligned
                 /// Size 16 bits
@@ -4699,7 +4755,7 @@ pub mod uavcan {
                     16
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_aligned_u16(self.value);
+                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for Error {
@@ -4709,10 +4765,13 @@ pub mod uavcan {
                 where
                     Self: Sized,
                 {
-                    Ok(Error {
-                        value: { cursor.read_u16() as _ },
-                    })
+                    Ok(Self::deserialize_zero_copy(cursor))
                 }
+            }
+            #[test]
+            fn test_layout() {
+                assert_eq!(::core::mem::size_of::<Error>() * 8, 16);
+                assert_eq!(::memoffset::offset_of!(Error, value) * 8, 0);
             }
         }
         pub mod get_info_0_1 {
@@ -4720,7 +4779,7 @@ pub mod uavcan {
             ///
             /// Size ranges from 1 to 113 bytes
             pub struct GetInfoRequest {
-                /// uavcan.file.Path.1.0
+                /// `uavcan.file.Path.1.0`
                 ///
                 /// Always aligned
                 /// Size ranges from 8 to 904 bits
@@ -4756,37 +4815,37 @@ pub mod uavcan {
             ///
             /// Fixed size 13 bytes
             pub struct GetInfoResponse {
-                /// uavcan.file.Error.1.0
+                /// `uavcan.file.Error.1.0`
                 ///
                 /// Always aligned
                 /// Size 16 bits
                 pub error: crate::uavcan::file::error_1_0::Error,
-                /// truncated uint40
+                /// `truncated uint40`
                 ///
                 /// Always aligned
                 /// Size 40 bits
                 pub size: u64,
-                /// truncated uint40
+                /// `truncated uint40`
                 ///
                 /// Always aligned
                 /// Size 40 bits
                 pub unix_timestamp_of_last_modification: u64,
-                /// saturated bool
+                /// `saturated bool`
                 ///
                 /// Always aligned
                 /// Size 1 bits
                 pub is_file_not_directory: bool,
-                /// saturated bool
+                /// `saturated bool`
                 ///
                 /// Not always aligned
                 /// Size 1 bits
                 pub is_link: bool,
-                /// saturated bool
+                /// `saturated bool`
                 ///
                 /// Not always aligned
                 /// Size 1 bits
                 pub is_readable: bool,
-                /// saturated bool
+                /// `saturated bool`
                 ///
                 /// Not always aligned
                 /// Size 1 bits
@@ -4837,7 +4896,7 @@ pub mod uavcan {
             ///
             /// Size ranges from 1 to 256 bytes
             pub struct GetInfoRequest {
-                /// uavcan.file.Path.2.0
+                /// `uavcan.file.Path.2.0`
                 ///
                 /// Always aligned
                 /// Size ranges from 8 to 2048 bits
@@ -4873,37 +4932,37 @@ pub mod uavcan {
             ///
             /// Fixed size 13 bytes
             pub struct GetInfoResponse {
-                /// uavcan.file.Error.1.0
+                /// `uavcan.file.Error.1.0`
                 ///
                 /// Always aligned
                 /// Size 16 bits
                 pub error: crate::uavcan::file::error_1_0::Error,
-                /// truncated uint40
+                /// `truncated uint40`
                 ///
                 /// Always aligned
                 /// Size 40 bits
                 pub size: u64,
-                /// truncated uint40
+                /// `truncated uint40`
                 ///
                 /// Always aligned
                 /// Size 40 bits
                 pub unix_timestamp_of_last_modification: u64,
-                /// saturated bool
+                /// `saturated bool`
                 ///
                 /// Always aligned
                 /// Size 1 bits
                 pub is_file_not_directory: bool,
-                /// saturated bool
+                /// `saturated bool`
                 ///
                 /// Not always aligned
                 /// Size 1 bits
                 pub is_link: bool,
-                /// saturated bool
+                /// `saturated bool`
                 ///
                 /// Not always aligned
                 /// Size 1 bits
                 pub is_readable: bool,
-                /// saturated bool
+                /// `saturated bool`
                 ///
                 /// Not always aligned
                 /// Size 1 bits
@@ -4954,13 +5013,13 @@ pub mod uavcan {
             ///
             /// Size ranges from 9 to 121 bytes
             pub struct ListRequest {
-                /// saturated uint32
+                /// `saturated uint32`
                 ///
                 /// Always aligned
                 /// Size 32 bits
                 pub entry_index: u32,
                 // 32 bits of padding
-                /// uavcan.file.Path.1.0
+                /// `uavcan.file.Path.1.0`
                 ///
                 /// Always aligned
                 /// Size ranges from 8 to 904 bits
@@ -5003,7 +5062,7 @@ pub mod uavcan {
             /// Size ranges from 5 to 117 bytes
             pub struct ListResponse {
                 // 32 bits of padding
-                /// uavcan.file.Path.1.0
+                /// `uavcan.file.Path.1.0`
                 ///
                 /// Always aligned
                 /// Size ranges from 8 to 904 bits
@@ -5044,13 +5103,13 @@ pub mod uavcan {
             ///
             /// Size ranges from 9 to 264 bytes
             pub struct ListRequest {
-                /// saturated uint32
+                /// `saturated uint32`
                 ///
                 /// Always aligned
                 /// Size 32 bits
                 pub entry_index: u32,
                 // 32 bits of padding
-                /// uavcan.file.Path.2.0
+                /// `uavcan.file.Path.2.0`
                 ///
                 /// Always aligned
                 /// Size ranges from 8 to 2048 bits
@@ -5093,7 +5152,7 @@ pub mod uavcan {
             /// Size ranges from 5 to 260 bytes
             pub struct ListResponse {
                 // 32 bits of padding
-                /// uavcan.file.Path.2.0
+                /// `uavcan.file.Path.2.0`
                 ///
                 /// Always aligned
                 /// Size ranges from 8 to 2048 bits
@@ -5134,23 +5193,23 @@ pub mod uavcan {
             ///
             /// Size ranges from 6 to 230 bytes
             pub struct ModifyRequest {
-                /// saturated bool
+                /// `saturated bool`
                 ///
                 /// Always aligned
                 /// Size 1 bits
                 pub preserve_source: bool,
-                /// saturated bool
+                /// `saturated bool`
                 ///
                 /// Not always aligned
                 /// Size 1 bits
                 pub overwrite_destination: bool,
                 // 30 bits of padding
-                /// uavcan.file.Path.1.0
+                /// `uavcan.file.Path.1.0`
                 ///
                 /// Always aligned
                 /// Size ranges from 8 to 904 bits
                 pub source: crate::uavcan::file::path_1_0::Path,
-                /// uavcan.file.Path.1.0
+                /// `uavcan.file.Path.1.0`
                 ///
                 /// Always aligned
                 /// Size ranges from 8 to 904 bits
@@ -5195,8 +5254,10 @@ pub mod uavcan {
             /// `uavcan.file.Modify.1.0`
             ///
             /// Fixed size 2 bytes
+            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[repr(C, packed)]
             pub struct ModifyResponse {
-                /// uavcan.file.Error.1.0
+                /// `uavcan.file.Error.1.0`
                 ///
                 /// Always aligned
                 /// Size 16 bits
@@ -5212,7 +5273,7 @@ pub mod uavcan {
                     16
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_composite(&self.error);
+                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for ModifyResponse {
@@ -5222,10 +5283,13 @@ pub mod uavcan {
                 where
                     Self: Sized,
                 {
-                    Ok(ModifyResponse {
-                        error: { cursor.read_composite()? },
-                    })
+                    Ok(Self::deserialize_zero_copy(cursor))
                 }
+            }
+            #[test]
+            fn test_layout() {
+                assert_eq!(::core::mem::size_of::<ModifyResponse>() * 8, 16);
+                assert_eq!(::memoffset::offset_of!(ModifyResponse, error) * 8, 0);
             }
         }
         pub mod modify_1_1 {
@@ -5233,23 +5297,23 @@ pub mod uavcan {
             ///
             /// Size ranges from 6 to 516 bytes
             pub struct ModifyRequest {
-                /// saturated bool
+                /// `saturated bool`
                 ///
                 /// Always aligned
                 /// Size 1 bits
                 pub preserve_source: bool,
-                /// saturated bool
+                /// `saturated bool`
                 ///
                 /// Not always aligned
                 /// Size 1 bits
                 pub overwrite_destination: bool,
                 // 30 bits of padding
-                /// uavcan.file.Path.2.0
+                /// `uavcan.file.Path.2.0`
                 ///
                 /// Always aligned
                 /// Size ranges from 8 to 2048 bits
                 pub source: crate::uavcan::file::path_2_0::Path,
-                /// uavcan.file.Path.2.0
+                /// `uavcan.file.Path.2.0`
                 ///
                 /// Always aligned
                 /// Size ranges from 8 to 2048 bits
@@ -5294,8 +5358,10 @@ pub mod uavcan {
             /// `uavcan.file.Modify.1.1`
             ///
             /// Fixed size 2 bytes
+            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[repr(C, packed)]
             pub struct ModifyResponse {
-                /// uavcan.file.Error.1.0
+                /// `uavcan.file.Error.1.0`
                 ///
                 /// Always aligned
                 /// Size 16 bits
@@ -5311,7 +5377,7 @@ pub mod uavcan {
                     16
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_composite(&self.error);
+                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for ModifyResponse {
@@ -5321,10 +5387,13 @@ pub mod uavcan {
                 where
                     Self: Sized,
                 {
-                    Ok(ModifyResponse {
-                        error: { cursor.read_composite()? },
-                    })
+                    Ok(Self::deserialize_zero_copy(cursor))
                 }
+            }
+            #[test]
+            fn test_layout() {
+                assert_eq!(::core::mem::size_of::<ModifyResponse>() * 8, 16);
+                assert_eq!(::memoffset::offset_of!(ModifyResponse, error) * 8, 0);
             }
         }
         pub mod path_1_0 {
@@ -5332,7 +5401,7 @@ pub mod uavcan {
             ///
             /// Size ranges from 1 to 113 bytes
             pub struct Path {
-                /// saturated uint8[<=112]
+                /// `saturated uint8[<=112]`
                 ///
                 /// Always aligned
                 /// Size ranges from 0 to 896 bits
@@ -5348,7 +5417,7 @@ pub mod uavcan {
             }
             impl ::canadensis_encoding::Serialize for Path {
                 fn size_bits(&self) -> usize {
-                    8 + (self.path).iter().map(|element| 8).sum::<usize>() + 0
+                    8 + (self.path).len() * 8 + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_aligned_u8((self.path).len() as u8);
@@ -5364,7 +5433,7 @@ pub mod uavcan {
                 {
                     Ok(Path {
                         path: {
-                            let length = cursor.read_aligned_u8() as _;
+                            let length = cursor.read_u8() as _;
                             if length <= 112 {
                                 let mut elements = ::heapless::Vec::new();
                                 for _ in 0..length {
@@ -5384,7 +5453,7 @@ pub mod uavcan {
             ///
             /// Size ranges from 1 to 256 bytes
             pub struct Path {
-                /// saturated uint8[<=255]
+                /// `saturated uint8[<=255]`
                 ///
                 /// Always aligned
                 /// Size ranges from 0 to 2040 bits
@@ -5400,7 +5469,7 @@ pub mod uavcan {
             }
             impl ::canadensis_encoding::Serialize for Path {
                 fn size_bits(&self) -> usize {
-                    8 + (self.path).iter().map(|element| 8).sum::<usize>() + 0
+                    8 + (self.path).len() * 8 + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_aligned_u8((self.path).len() as u8);
@@ -5416,7 +5485,7 @@ pub mod uavcan {
                 {
                     Ok(Path {
                         path: {
-                            let length = cursor.read_aligned_u8() as _;
+                            let length = cursor.read_u8() as _;
                             if length <= 255 {
                                 let mut elements = ::heapless::Vec::new();
                                 for _ in 0..length {
@@ -5436,12 +5505,12 @@ pub mod uavcan {
             ///
             /// Size ranges from 6 to 118 bytes
             pub struct ReadRequest {
-                /// truncated uint40
+                /// `truncated uint40`
                 ///
                 /// Always aligned
                 /// Size 40 bits
                 pub offset: u64,
-                /// uavcan.file.Path.1.0
+                /// `uavcan.file.Path.1.0`
                 ///
                 /// Always aligned
                 /// Size ranges from 8 to 904 bits
@@ -5479,12 +5548,12 @@ pub mod uavcan {
             ///
             /// Size ranges from 4 to 260 bytes
             pub struct ReadResponse {
-                /// uavcan.file.Error.1.0
+                /// `uavcan.file.Error.1.0`
                 ///
                 /// Always aligned
                 /// Size 16 bits
                 pub error: crate::uavcan::file::error_1_0::Error,
-                /// saturated uint8[<=256]
+                /// `saturated uint8[<=256]`
                 ///
                 /// Always aligned
                 /// Size ranges from 0 to 2048 bits
@@ -5497,7 +5566,7 @@ pub mod uavcan {
             impl ReadResponse {}
             impl ::canadensis_encoding::Serialize for ReadResponse {
                 fn size_bits(&self) -> usize {
-                    16 + 16 + (self.data).iter().map(|element| 8).sum::<usize>() + 0
+                    16 + 16 + (self.data).len() * 8 + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_composite(&self.error);
@@ -5515,7 +5584,7 @@ pub mod uavcan {
                     Ok(ReadResponse {
                         error: { cursor.read_composite()? },
                         data: {
-                            let length = cursor.read_aligned_u16() as _;
+                            let length = cursor.read_u16() as _;
                             if length <= 256 {
                                 let mut elements = ::heapless::Vec::new();
                                 for _ in 0..length {
@@ -5535,12 +5604,12 @@ pub mod uavcan {
             ///
             /// Size ranges from 6 to 261 bytes
             pub struct ReadRequest {
-                /// truncated uint40
+                /// `truncated uint40`
                 ///
                 /// Always aligned
                 /// Size 40 bits
                 pub offset: u64,
-                /// uavcan.file.Path.2.0
+                /// `uavcan.file.Path.2.0`
                 ///
                 /// Always aligned
                 /// Size ranges from 8 to 2048 bits
@@ -5578,12 +5647,12 @@ pub mod uavcan {
             ///
             /// Size ranges from 4 to 260 bytes
             pub struct ReadResponse {
-                /// uavcan.file.Error.1.0
+                /// `uavcan.file.Error.1.0`
                 ///
                 /// Always aligned
                 /// Size 16 bits
                 pub error: crate::uavcan::file::error_1_0::Error,
-                /// uavcan.primitive.Unstructured.1.0
+                /// `uavcan.primitive.Unstructured.1.0`
                 ///
                 /// Always aligned
                 /// Size ranges from 16 to 2064 bits
@@ -5622,17 +5691,17 @@ pub mod uavcan {
             ///
             /// Size ranges from 7 to 311 bytes
             pub struct WriteRequest {
-                /// truncated uint40
+                /// `truncated uint40`
                 ///
                 /// Always aligned
                 /// Size 40 bits
                 pub offset: u64,
-                /// uavcan.file.Path.1.0
+                /// `uavcan.file.Path.1.0`
                 ///
                 /// Always aligned
                 /// Size ranges from 8 to 904 bits
                 pub path: crate::uavcan::file::path_1_0::Path,
-                /// saturated uint8[<=192]
+                /// `saturated uint8[<=192]`
                 ///
                 /// Always aligned
                 /// Size ranges from 0 to 1536 bits
@@ -5645,10 +5714,7 @@ pub mod uavcan {
             impl WriteRequest {}
             impl ::canadensis_encoding::Serialize for WriteRequest {
                 fn size_bits(&self) -> usize {
-                    40 + (self.path).size_bits()
-                        + 8
-                        + (self.data).iter().map(|element| 8).sum::<usize>()
-                        + 0
+                    40 + (self.path).size_bits() + 8 + (self.data).len() * 8 + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_u40(self.offset);
@@ -5668,7 +5734,7 @@ pub mod uavcan {
                         offset: { cursor.read_u40() as _ },
                         path: { cursor.read_composite()? },
                         data: {
-                            let length = cursor.read_aligned_u8() as _;
+                            let length = cursor.read_u8() as _;
                             if length <= 192 {
                                 let mut elements = ::heapless::Vec::new();
                                 for _ in 0..length {
@@ -5686,8 +5752,10 @@ pub mod uavcan {
             /// `uavcan.file.Write.1.0`
             ///
             /// Fixed size 2 bytes
+            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[repr(C, packed)]
             pub struct WriteResponse {
-                /// uavcan.file.Error.1.0
+                /// `uavcan.file.Error.1.0`
                 ///
                 /// Always aligned
                 /// Size 16 bits
@@ -5703,7 +5771,7 @@ pub mod uavcan {
                     16
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_composite(&self.error);
+                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for WriteResponse {
@@ -5713,10 +5781,13 @@ pub mod uavcan {
                 where
                     Self: Sized,
                 {
-                    Ok(WriteResponse {
-                        error: { cursor.read_composite()? },
-                    })
+                    Ok(Self::deserialize_zero_copy(cursor))
                 }
+            }
+            #[test]
+            fn test_layout() {
+                assert_eq!(::core::mem::size_of::<WriteResponse>() * 8, 16);
+                assert_eq!(::memoffset::offset_of!(WriteResponse, error) * 8, 0);
             }
         }
         pub mod write_1_1 {
@@ -5724,17 +5795,17 @@ pub mod uavcan {
             ///
             /// Size ranges from 8 to 519 bytes
             pub struct WriteRequest {
-                /// truncated uint40
+                /// `truncated uint40`
                 ///
                 /// Always aligned
                 /// Size 40 bits
                 pub offset: u64,
-                /// uavcan.file.Path.2.0
+                /// `uavcan.file.Path.2.0`
                 ///
                 /// Always aligned
                 /// Size ranges from 8 to 2048 bits
                 pub path: crate::uavcan::file::path_2_0::Path,
-                /// uavcan.primitive.Unstructured.1.0
+                /// `uavcan.primitive.Unstructured.1.0`
                 ///
                 /// Always aligned
                 /// Size ranges from 16 to 2064 bits
@@ -5773,8 +5844,10 @@ pub mod uavcan {
             /// `uavcan.file.Write.1.1`
             ///
             /// Fixed size 2 bytes
+            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[repr(C, packed)]
             pub struct WriteResponse {
-                /// uavcan.file.Error.1.0
+                /// `uavcan.file.Error.1.0`
                 ///
                 /// Always aligned
                 /// Size 16 bits
@@ -5790,7 +5863,7 @@ pub mod uavcan {
                     16
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_composite(&self.error);
+                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for WriteResponse {
@@ -5800,10 +5873,13 @@ pub mod uavcan {
                 where
                     Self: Sized,
                 {
-                    Ok(WriteResponse {
-                        error: { cursor.read_composite()? },
-                    })
+                    Ok(Self::deserialize_zero_copy(cursor))
                 }
+            }
+            #[test]
+            fn test_layout() {
+                assert_eq!(::core::mem::size_of::<WriteResponse>() * 8, 16);
+                assert_eq!(::memoffset::offset_of!(WriteResponse, error) * 8, 0);
             }
         }
     }
@@ -5814,12 +5890,12 @@ pub mod uavcan {
                 ///
                 /// Size ranges from 4 to 313 bytes
                 pub struct HandleIncomingPacketRequest {
-                    /// saturated uint16
+                    /// `saturated uint16`
                     ///
                     /// Always aligned
                     /// Size 16 bits
                     pub session_id: u16,
-                    /// saturated uint8[<=309]
+                    /// `saturated uint8[<=309]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 2472 bits
@@ -5832,7 +5908,7 @@ pub mod uavcan {
                 impl HandleIncomingPacketRequest {}
                 impl ::canadensis_encoding::Serialize for HandleIncomingPacketRequest {
                     fn size_bits(&self) -> usize {
-                        16 + 16 + (self.payload).iter().map(|element| 8).sum::<usize>() + 0
+                        16 + 16 + (self.payload).len() * 8 + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u16(self.session_id);
@@ -5850,7 +5926,7 @@ pub mod uavcan {
                         Ok(HandleIncomingPacketRequest {
                             session_id: { cursor.read_u16() as _ },
                             payload: {
-                                let length = cursor.read_aligned_u16() as _;
+                                let length = cursor.read_u16() as _;
                                 if length <= 309 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
@@ -5870,6 +5946,8 @@ pub mod uavcan {
                 /// `uavcan.internet.udp.HandleIncomingPacket.0.1`
                 ///
                 /// Fixed size 0 bytes
+                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[repr(C, packed)]
                 pub struct HandleIncomingPacketResponse {}
                 impl ::canadensis_encoding::DataType for HandleIncomingPacketResponse {
                     const EXTENT_BYTES: Option<u32> = Some(63);
@@ -5880,7 +5958,9 @@ pub mod uavcan {
                     fn size_bits(&self) -> usize {
                         0
                     }
-                    fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {}
+                    fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                    }
                 }
                 impl ::canadensis_encoding::Deserialize for HandleIncomingPacketResponse {
                     fn deserialize(
@@ -5889,8 +5969,15 @@ pub mod uavcan {
                     where
                         Self: Sized,
                     {
-                        Ok(HandleIncomingPacketResponse {})
+                        Ok(Self::deserialize_zero_copy(cursor))
                     }
+                }
+                #[test]
+                fn test_layout() {
+                    assert_eq!(
+                        ::core::mem::size_of::<HandleIncomingPacketResponse>() * 8,
+                        0
+                    );
                 }
             }
             pub mod handle_incoming_packet_0_2 {
@@ -5898,12 +5985,12 @@ pub mod uavcan {
                 ///
                 /// Size ranges from 4 to 512 bytes
                 pub struct HandleIncomingPacketRequest {
-                    /// saturated uint16
+                    /// `saturated uint16`
                     ///
                     /// Always aligned
                     /// Size 16 bits
                     pub session_id: u16,
-                    /// saturated uint8[<=508]
+                    /// `saturated uint8[<=508]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 4064 bits
@@ -5916,7 +6003,7 @@ pub mod uavcan {
                 impl HandleIncomingPacketRequest {}
                 impl ::canadensis_encoding::Serialize for HandleIncomingPacketRequest {
                     fn size_bits(&self) -> usize {
-                        16 + 16 + (self.payload).iter().map(|element| 8).sum::<usize>() + 0
+                        16 + 16 + (self.payload).len() * 8 + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u16(self.session_id);
@@ -5934,7 +6021,7 @@ pub mod uavcan {
                         Ok(HandleIncomingPacketRequest {
                             session_id: { cursor.read_u16() as _ },
                             payload: {
-                                let length = cursor.read_aligned_u16() as _;
+                                let length = cursor.read_u16() as _;
                                 if length <= 508 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
@@ -5954,6 +6041,8 @@ pub mod uavcan {
                 /// `uavcan.internet.udp.HandleIncomingPacket.0.2`
                 ///
                 /// Fixed size 0 bytes
+                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[repr(C, packed)]
                 pub struct HandleIncomingPacketResponse {}
                 impl ::canadensis_encoding::DataType for HandleIncomingPacketResponse {
                     const EXTENT_BYTES: Option<u32> = Some(63);
@@ -5964,7 +6053,9 @@ pub mod uavcan {
                     fn size_bits(&self) -> usize {
                         0
                     }
-                    fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {}
+                    fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                    }
                 }
                 impl ::canadensis_encoding::Deserialize for HandleIncomingPacketResponse {
                     fn deserialize(
@@ -5973,8 +6064,15 @@ pub mod uavcan {
                     where
                         Self: Sized,
                     {
-                        Ok(HandleIncomingPacketResponse {})
+                        Ok(Self::deserialize_zero_copy(cursor))
                     }
+                }
+                #[test]
+                fn test_layout() {
+                    assert_eq!(
+                        ::core::mem::size_of::<HandleIncomingPacketResponse>() * 8,
+                        0
+                    );
                 }
             }
             pub mod outgoing_packet_0_1 {
@@ -5982,33 +6080,33 @@ pub mod uavcan {
                 ///
                 /// Size ranges from 8 to 313 bytes
                 pub struct OutgoingPacket {
-                    /// saturated uint16
+                    /// `saturated uint16`
                     ///
                     /// Always aligned
                     /// Size 16 bits
                     pub session_id: u16,
-                    /// saturated uint16
+                    /// `saturated uint16`
                     ///
                     /// Always aligned
                     /// Size 16 bits
                     pub destination_port: u16,
-                    /// saturated uint8[<=45]
+                    /// `saturated uint8[<=45]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 360 bits
                     pub destination_address: ::heapless::Vec<u8, 45>,
-                    /// saturated bool
+                    /// `saturated bool`
                     ///
                     /// Always aligned
                     /// Size 1 bits
                     pub use_masquerading: bool,
-                    /// saturated bool
+                    /// `saturated bool`
                     ///
                     /// Not always aligned
                     /// Size 1 bits
                     pub use_dtls: bool,
                     // 6 bits of padding
-                    /// saturated uint8[<=260]
+                    /// `saturated uint8[<=260]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 2080 bits
@@ -6025,15 +6123,12 @@ pub mod uavcan {
                     fn size_bits(&self) -> usize {
                         16 + 16
                             + 8
-                            + (self.destination_address)
-                                .iter()
-                                .map(|element| 8)
-                                .sum::<usize>()
+                            + (self.destination_address).len() * 8
                             + 1
                             + 1
                             + 6
                             + 16
-                            + (self.payload).iter().map(|element| 8).sum::<usize>()
+                            + (self.payload).len() * 8
                             + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
@@ -6059,7 +6154,7 @@ pub mod uavcan {
                             session_id: { cursor.read_u16() as _ },
                             destination_port: { cursor.read_u16() as _ },
                             destination_address: {
-                                let length = cursor.read_aligned_u8() as _;
+                                let length = cursor.read_u8() as _;
                                 if length <= 45 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
@@ -6076,7 +6171,7 @@ pub mod uavcan {
                             use_dtls: { cursor.read_bool() },
                             payload: {
                                 cursor.skip_6();
-                                let length = cursor.read_aligned_u16() as _;
+                                let length = cursor.read_u16() as _;
                                 if length <= 260 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
@@ -6098,33 +6193,33 @@ pub mod uavcan {
                 ///
                 /// Size ranges from 8 to 561 bytes
                 pub struct OutgoingPacket {
-                    /// saturated uint16
+                    /// `saturated uint16`
                     ///
                     /// Always aligned
                     /// Size 16 bits
                     pub session_id: u16,
-                    /// saturated uint16
+                    /// `saturated uint16`
                     ///
                     /// Always aligned
                     /// Size 16 bits
                     pub destination_port: u16,
-                    /// saturated uint8[<=45]
+                    /// `saturated uint8[<=45]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 360 bits
                     pub destination_address: ::heapless::Vec<u8, 45>,
-                    /// saturated bool
+                    /// `saturated bool`
                     ///
                     /// Always aligned
                     /// Size 1 bits
                     pub use_masquerading: bool,
-                    /// saturated bool
+                    /// `saturated bool`
                     ///
                     /// Not always aligned
                     /// Size 1 bits
                     pub use_dtls: bool,
                     // 6 bits of padding
-                    /// saturated uint8[<=508]
+                    /// `saturated uint8[<=508]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 4064 bits
@@ -6141,15 +6236,12 @@ pub mod uavcan {
                     fn size_bits(&self) -> usize {
                         16 + 16
                             + 8
-                            + (self.destination_address)
-                                .iter()
-                                .map(|element| 8)
-                                .sum::<usize>()
+                            + (self.destination_address).len() * 8
                             + 1
                             + 1
                             + 6
                             + 16
-                            + (self.payload).iter().map(|element| 8).sum::<usize>()
+                            + (self.payload).len() * 8
                             + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
@@ -6175,7 +6267,7 @@ pub mod uavcan {
                             session_id: { cursor.read_u16() as _ },
                             destination_port: { cursor.read_u16() as _ },
                             destination_address: {
-                                let length = cursor.read_aligned_u8() as _;
+                                let length = cursor.read_u8() as _;
                                 if length <= 45 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
@@ -6192,7 +6284,7 @@ pub mod uavcan {
                             use_dtls: { cursor.read_bool() },
                             payload: {
                                 cursor.skip_6();
-                                let length = cursor.read_aligned_u16() as _;
+                                let length = cursor.read_u16() as _;
                                 if length <= 508 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
@@ -6265,7 +6357,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Fixed size 4 bytes
                 pub struct BaseArbitrationID {
-                    /// truncated uint11
+                    /// `truncated uint11`
                     ///
                     /// Always aligned
                     /// Size 11 bits
@@ -6304,13 +6396,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Size ranges from 6 to 14 bytes
                 pub struct DataClassic {
-                    /// uavcan.metatransport.can.ArbitrationID.0.1
+                    /// `uavcan.metatransport.can.ArbitrationID.0.1`
                     ///
                     /// Always aligned
                     /// Size 40 bits
                     pub arbitration_id:
                         crate::uavcan::metatransport::can::arbitration_id_0_1::ArbitrationID,
-                    /// saturated uint8[<=8]
+                    /// `saturated uint8[<=8]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 64 bits
@@ -6323,7 +6415,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 impl DataClassic {}
                 impl ::canadensis_encoding::Serialize for DataClassic {
                     fn size_bits(&self) -> usize {
-                        40 + 8 + (self.data).iter().map(|element| 8).sum::<usize>() + 0
+                        40 + 8 + (self.data).len() * 8 + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_composite(&self.arbitration_id);
@@ -6341,7 +6433,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         Ok(DataClassic {
                             arbitration_id: { cursor.read_composite()? },
                             data: {
-                                let length = cursor.read_aligned_u8() as _;
+                                let length = cursor.read_u8() as _;
                                 if length <= 8 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
@@ -6363,13 +6455,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Size ranges from 6 to 70 bytes
                 pub struct DataFD {
-                    /// uavcan.metatransport.can.ArbitrationID.0.1
+                    /// `uavcan.metatransport.can.ArbitrationID.0.1`
                     ///
                     /// Always aligned
                     /// Size 40 bits
                     pub arbitration_id:
                         crate::uavcan::metatransport::can::arbitration_id_0_1::ArbitrationID,
-                    /// saturated uint8[<=64]
+                    /// `saturated uint8[<=64]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 512 bits
@@ -6382,7 +6474,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 impl DataFD {}
                 impl ::canadensis_encoding::Serialize for DataFD {
                     fn size_bits(&self) -> usize {
-                        40 + 8 + (self.data).iter().map(|element| 8).sum::<usize>() + 0
+                        40 + 8 + (self.data).len() * 8 + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_composite(&self.arbitration_id);
@@ -6400,7 +6492,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         Ok(DataFD {
                             arbitration_id: { cursor.read_composite()? },
                             data: {
-                                let length = cursor.read_aligned_u8() as _;
+                                let length = cursor.read_u8() as _;
                                 if length <= 64 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
@@ -6453,7 +6545,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Fixed size 4 bytes
                 pub struct ExtendedArbitrationID {
-                    /// truncated uint29
+                    /// `truncated uint29`
                     ///
                     /// Always aligned
                     /// Size 29 bits
@@ -6492,13 +6584,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Size ranges from 12 to 78 bytes
                 pub struct Frame {
-                    /// uavcan.time.SynchronizedTimestamp.1.0
+                    /// `uavcan.time.SynchronizedTimestamp.1.0`
                     ///
                     /// Always aligned
                     /// Size 56 bits
                     pub timestamp:
                         crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                    /// uavcan.metatransport.can.Manifestation.0.1
+                    /// `uavcan.metatransport.can.Manifestation.0.1`
                     ///
                     /// Always aligned
                     /// Size ranges from 40 to 568 bits
@@ -6674,7 +6766,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Fixed size 5 bytes
                 pub struct RTR {
-                    /// uavcan.metatransport.can.ArbitrationID.0.1
+                    /// `uavcan.metatransport.can.ArbitrationID.0.1`
                     ///
                     /// Always aligned
                     /// Size 40 bits
@@ -6713,8 +6805,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 /// `uavcan.metatransport.ethernet.EtherType.0.1`
                 ///
                 /// Fixed size 2 bytes
+                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[repr(C, packed)]
                 pub struct EtherType {
-                    /// saturated uint16
+                    /// `saturated uint16`
                     ///
                     /// Always aligned
                     /// Size 16 bits
@@ -6734,7 +6828,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         16
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_u16(self.value);
+                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for EtherType {
@@ -6744,10 +6838,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     where
                         Self: Sized,
                     {
-                        Ok(EtherType {
-                            value: { cursor.read_u16() as _ },
-                        })
+                        Ok(Self::deserialize_zero_copy(cursor))
                     }
+                }
+                #[test]
+                fn test_layout() {
+                    assert_eq!(::core::mem::size_of::<EtherType>() * 8, 16);
+                    assert_eq!(::memoffset::offset_of!(EtherType, value) * 8, 0);
                 }
             }
             pub mod frame_0_1 {
@@ -6755,23 +6852,23 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Size ranges from 16 to 9232 bytes
                 pub struct Frame {
-                    /// saturated uint8[6]
+                    /// `saturated uint8[6]`
                     ///
                     /// Always aligned
                     /// Size 48 bits
                     pub destination: [u8; 6],
-                    /// saturated uint8[6]
+                    /// `saturated uint8[6]`
                     ///
                     /// Always aligned
                     /// Size 48 bits
                     pub source: [u8; 6],
-                    /// uavcan.metatransport.ethernet.EtherType.0.1
+                    /// `uavcan.metatransport.ethernet.EtherType.0.1`
                     ///
                     /// Always aligned
                     /// Size 16 bits
                     pub ethertype:
                         crate::uavcan::metatransport::ethernet::ether_type_0_1::EtherType,
-                    /// saturated uint8[<=9216]
+                    /// `saturated uint8[<=9216]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 73728 bits
@@ -6784,11 +6881,11 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 impl Frame {}
                 impl ::canadensis_encoding::Serialize for Frame {
                     fn size_bits(&self) -> usize {
-                        (self.destination).iter().map(|element| 8).sum::<usize>()
-                            + (self.source).iter().map(|element| 8).sum::<usize>()
+                        (self.destination).len() * 8
+                            + (self.source).len() * 8
                             + 16
                             + 16
-                            + (self.payload).iter().map(|element| 8).sum::<usize>()
+                            + (self.payload).len() * 8
                             + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
@@ -6829,7 +6926,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             },
                             ethertype: { cursor.read_composite()? },
                             payload: {
-                                let length = cursor.read_aligned_u16() as _;
+                                let length = cursor.read_u16() as _;
                                 if length <= 9216 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
@@ -6853,13 +6950,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Size ranges from 9 to 265 bytes
                 pub struct Fragment {
-                    /// uavcan.time.SynchronizedTimestamp.1.0
+                    /// `uavcan.time.SynchronizedTimestamp.1.0`
                     ///
                     /// Always aligned
                     /// Size 56 bits
                     pub timestamp:
                         crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                    /// saturated uint8[<=256]
+                    /// `saturated uint8[<=256]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 2048 bits
@@ -6874,7 +6971,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 }
                 impl ::canadensis_encoding::Serialize for Fragment {
                     fn size_bits(&self) -> usize {
-                        56 + 16 + (self.data).iter().map(|element| 8).sum::<usize>() + 0
+                        56 + 16 + (self.data).len() * 8 + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_composite(&self.timestamp);
@@ -6892,7 +6989,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         Ok(Fragment {
                             timestamp: { cursor.read_composite()? },
                             data: {
-                                let length = cursor.read_aligned_u16() as _;
+                                let length = cursor.read_u16() as _;
                                 if length <= 256 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
@@ -6914,7 +7011,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Size ranges from 2 to 2050 bytes
                 pub struct Fragment {
-                    /// saturated uint8[<=2048]
+                    /// `saturated uint8[<=2048]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 16384 bits
@@ -6929,7 +7026,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 }
                 impl ::canadensis_encoding::Serialize for Fragment {
                     fn size_bits(&self) -> usize {
-                        16 + (self.data).iter().map(|element| 8).sum::<usize>() + 0
+                        16 + (self.data).len() * 8 + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u16((self.data).len() as u16);
@@ -6945,7 +7042,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     {
                         Ok(Fragment {
                             data: {
-                                let length = cursor.read_aligned_u16() as _;
+                                let length = cursor.read_u16() as _;
                                 if length <= 2048 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
@@ -6969,17 +7066,17 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Fixed size 32 bytes
                 pub struct Endpoint {
-                    /// saturated uint8[16]
+                    /// `saturated uint8[16]`
                     ///
                     /// Always aligned
                     /// Size 128 bits
                     pub ip_address: [u8; 16],
-                    /// saturated uint8[6]
+                    /// `saturated uint8[6]`
                     ///
                     /// Always aligned
                     /// Size 48 bits
                     pub mac_address: [u8; 6],
-                    /// saturated uint16
+                    /// `saturated uint16`
                     ///
                     /// Always aligned
                     /// Size 16 bits
@@ -7050,24 +7147,24 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Size ranges from 74 to 9262 bytes
                 pub struct Frame {
-                    /// uavcan.time.SynchronizedTimestamp.1.0
+                    /// `uavcan.time.SynchronizedTimestamp.1.0`
                     ///
                     /// Always aligned
                     /// Size 56 bits
                     pub timestamp:
                         crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                     // 8 bits of padding
-                    /// uavcan.metatransport.udp.Endpoint.0.1
+                    /// `uavcan.metatransport.udp.Endpoint.0.1`
                     ///
                     /// Always aligned
                     /// Size 256 bits
                     pub source: crate::uavcan::metatransport::udp::endpoint_0_1::Endpoint,
-                    /// uavcan.metatransport.udp.Endpoint.0.1
+                    /// `uavcan.metatransport.udp.Endpoint.0.1`
                     ///
                     /// Always aligned
                     /// Size 256 bits
                     pub destination: crate::uavcan::metatransport::udp::endpoint_0_1::Endpoint,
-                    /// saturated uint8[<=9188]
+                    /// `saturated uint8[<=9188]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 73504 bits
@@ -7082,12 +7179,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 }
                 impl ::canadensis_encoding::Serialize for Frame {
                     fn size_bits(&self) -> usize {
-                        56 + 8
-                            + 256
-                            + 256
-                            + 16
-                            + (self.data).iter().map(|element| 8).sum::<usize>()
-                            + 0
+                        56 + 8 + 256 + 256 + 16 + (self.data).len() * 8 + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_composite(&self.timestamp);
@@ -7113,7 +7205,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             },
                             destination: { cursor.read_composite()? },
                             data: {
-                                let length = cursor.read_aligned_u16() as _;
+                                let length = cursor.read_u16() as _;
                                 if length <= 9188 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
@@ -7138,12 +7230,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             /// Size ranges from 3 to 115 bytes
             pub struct ExecuteCommandRequest {
-                /// saturated uint16
+                /// `saturated uint16`
                 ///
                 /// Always aligned
                 /// Size 16 bits
                 pub command: u16,
-                /// saturated uint8[<=112]
+                /// `saturated uint8[<=112]`
                 ///
                 /// Always aligned
                 /// Size ranges from 0 to 896 bits
@@ -7163,7 +7255,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
             impl ::canadensis_encoding::Serialize for ExecuteCommandRequest {
                 fn size_bits(&self) -> usize {
-                    16 + 8 + (self.parameter).iter().map(|element| 8).sum::<usize>() + 0
+                    16 + 8 + (self.parameter).len() * 8 + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_aligned_u16(self.command);
@@ -7181,7 +7273,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     Ok(ExecuteCommandRequest {
                         command: { cursor.read_u16() as _ },
                         parameter: {
-                            let length = cursor.read_aligned_u8() as _;
+                            let length = cursor.read_u8() as _;
                             if length <= 112 {
                                 let mut elements = ::heapless::Vec::new();
                                 for _ in 0..length {
@@ -7199,8 +7291,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             /// `uavcan.node.ExecuteCommand.1.0`
             ///
             /// Fixed size 1 bytes
+            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[repr(C, packed)]
             pub struct ExecuteCommandResponse {
-                /// saturated uint8
+                /// `saturated uint8`
                 ///
                 /// Always aligned
                 /// Size 8 bits
@@ -7224,7 +7318,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     8
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_aligned_u8(self.status);
+                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for ExecuteCommandResponse {
@@ -7234,10 +7328,16 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 where
                     Self: Sized,
                 {
-                    Ok(ExecuteCommandResponse {
-                        status: { cursor.read_u8() as _ },
-                    })
+                    Ok(Self::deserialize_zero_copy(cursor))
                 }
+            }
+            #[test]
+            fn test_layout() {
+                assert_eq!(::core::mem::size_of::<ExecuteCommandResponse>() * 8, 8);
+                assert_eq!(
+                    ::memoffset::offset_of!(ExecuteCommandResponse, status) * 8,
+                    0
+                );
             }
         }
         pub mod execute_command_1_1 {
@@ -7245,12 +7345,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             /// Size ranges from 3 to 258 bytes
             pub struct ExecuteCommandRequest {
-                /// saturated uint16
+                /// `saturated uint16`
                 ///
                 /// Always aligned
                 /// Size 16 bits
                 pub command: u16,
-                /// saturated uint8[<=255]
+                /// `saturated uint8[<=255]`
                 ///
                 /// Always aligned
                 /// Size ranges from 0 to 2040 bits
@@ -7270,7 +7370,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
             impl ::canadensis_encoding::Serialize for ExecuteCommandRequest {
                 fn size_bits(&self) -> usize {
-                    16 + 8 + (self.parameter).iter().map(|element| 8).sum::<usize>() + 0
+                    16 + 8 + (self.parameter).len() * 8 + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_aligned_u16(self.command);
@@ -7288,7 +7388,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     Ok(ExecuteCommandRequest {
                         command: { cursor.read_u16() as _ },
                         parameter: {
-                            let length = cursor.read_aligned_u8() as _;
+                            let length = cursor.read_u8() as _;
                             if length <= 255 {
                                 let mut elements = ::heapless::Vec::new();
                                 for _ in 0..length {
@@ -7306,8 +7406,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             /// `uavcan.node.ExecuteCommand.1.1`
             ///
             /// Fixed size 1 bytes
+            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[repr(C, packed)]
             pub struct ExecuteCommandResponse {
-                /// saturated uint8
+                /// `saturated uint8`
                 ///
                 /// Always aligned
                 /// Size 8 bits
@@ -7331,7 +7433,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     8
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_aligned_u8(self.status);
+                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for ExecuteCommandResponse {
@@ -7341,16 +7443,24 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 where
                     Self: Sized,
                 {
-                    Ok(ExecuteCommandResponse {
-                        status: { cursor.read_u8() as _ },
-                    })
+                    Ok(Self::deserialize_zero_copy(cursor))
                 }
+            }
+            #[test]
+            fn test_layout() {
+                assert_eq!(::core::mem::size_of::<ExecuteCommandResponse>() * 8, 8);
+                assert_eq!(
+                    ::memoffset::offset_of!(ExecuteCommandResponse, status) * 8,
+                    0
+                );
             }
         }
         pub mod get_info_1_0 {
             /// `uavcan.node.GetInfo.1.0`
             ///
             /// Fixed size 0 bytes
+            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[repr(C, packed)]
             pub struct GetInfoRequest {}
             impl ::canadensis_encoding::DataType for GetInfoRequest {
                 const EXTENT_BYTES: Option<u32> = None;
@@ -7361,7 +7471,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 fn size_bits(&self) -> usize {
                     0
                 }
-                fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {}
+                fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                }
             }
             impl ::canadensis_encoding::Deserialize for GetInfoRequest {
                 fn deserialize(
@@ -7370,50 +7482,54 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 where
                     Self: Sized,
                 {
-                    Ok(GetInfoRequest {})
+                    Ok(Self::deserialize_zero_copy(cursor))
                 }
+            }
+            #[test]
+            fn test_layout() {
+                assert_eq!(::core::mem::size_of::<GetInfoRequest>() * 8, 0);
             }
 
             /// `uavcan.node.GetInfo.1.0`
             ///
             /// Size ranges from 33 to 313 bytes
             pub struct GetInfoResponse {
-                /// uavcan.node.Version.1.0
+                /// `uavcan.node.Version.1.0`
                 ///
                 /// Always aligned
                 /// Size 16 bits
                 pub protocol_version: crate::uavcan::node::version_1_0::Version,
-                /// uavcan.node.Version.1.0
+                /// `uavcan.node.Version.1.0`
                 ///
                 /// Always aligned
                 /// Size 16 bits
                 pub hardware_version: crate::uavcan::node::version_1_0::Version,
-                /// uavcan.node.Version.1.0
+                /// `uavcan.node.Version.1.0`
                 ///
                 /// Always aligned
                 /// Size 16 bits
                 pub software_version: crate::uavcan::node::version_1_0::Version,
-                /// saturated uint64
+                /// `saturated uint64`
                 ///
                 /// Always aligned
                 /// Size 64 bits
                 pub software_vcs_revision_id: u64,
-                /// saturated uint8[16]
+                /// `saturated uint8[16]`
                 ///
                 /// Always aligned
                 /// Size 128 bits
                 pub unique_id: [u8; 16],
-                /// saturated uint8[<=50]
+                /// `saturated uint8[<=50]`
                 ///
                 /// Always aligned
                 /// Size ranges from 0 to 400 bits
                 pub name: ::heapless::Vec<u8, 50>,
-                /// saturated uint64[<=1]
+                /// `saturated uint64[<=1]`
                 ///
                 /// Always aligned
                 /// Size ranges from 0 to 64 bits
                 pub software_image_crc: ::heapless::Vec<u64, 1>,
-                /// saturated uint8[<=222]
+                /// `saturated uint8[<=222]`
                 ///
                 /// Always aligned
                 /// Size ranges from 0 to 1776 bits
@@ -7429,19 +7545,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     16 + 16
                         + 16
                         + 64
-                        + (self.unique_id).iter().map(|element| 8).sum::<usize>()
+                        + (self.unique_id).len() * 8
                         + 8
-                        + (self.name).iter().map(|element| 8).sum::<usize>()
+                        + (self.name).len() * 8
                         + 8
-                        + (self.software_image_crc)
-                            .iter()
-                            .map(|element| 64)
-                            .sum::<usize>()
+                        + (self.software_image_crc).len() * 64
                         + 8
-                        + (self.certificate_of_authenticity)
-                            .iter()
-                            .map(|element| 8)
-                            .sum::<usize>()
+                        + (self.certificate_of_authenticity).len() * 8
                         + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
@@ -7493,7 +7603,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             ]
                         },
                         name: {
-                            let length = cursor.read_aligned_u8() as _;
+                            let length = cursor.read_u8() as _;
                             if length <= 50 {
                                 let mut elements = ::heapless::Vec::new();
                                 for _ in 0..length {
@@ -7505,7 +7615,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             }
                         },
                         software_image_crc: {
-                            let length = cursor.read_aligned_u8() as _;
+                            let length = cursor.read_u8() as _;
                             if length <= 1 {
                                 let mut elements = ::heapless::Vec::new();
                                 for _ in 0..length {
@@ -7517,7 +7627,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             }
                         },
                         certificate_of_authenticity: {
-                            let length = cursor.read_aligned_u8() as _;
+                            let length = cursor.read_u8() as _;
                             if length <= 222 {
                                 let mut elements = ::heapless::Vec::new();
                                 for _ in 0..length {
@@ -7536,6 +7646,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             /// `uavcan.node.GetTransportStatistics.0.1`
             ///
             /// Fixed size 0 bytes
+            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[repr(C, packed)]
             pub struct GetTransportStatisticsRequest {}
             impl ::canadensis_encoding::DataType for GetTransportStatisticsRequest {
                 const EXTENT_BYTES: Option<u32> = None;
@@ -7546,7 +7658,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 fn size_bits(&self) -> usize {
                     0
                 }
-                fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {}
+                fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                }
             }
             impl ::canadensis_encoding::Deserialize for GetTransportStatisticsRequest {
                 fn deserialize(
@@ -7555,20 +7669,27 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 where
                     Self: Sized,
                 {
-                    Ok(GetTransportStatisticsRequest {})
+                    Ok(Self::deserialize_zero_copy(cursor))
                 }
+            }
+            #[test]
+            fn test_layout() {
+                assert_eq!(
+                    ::core::mem::size_of::<GetTransportStatisticsRequest>() * 8,
+                    0
+                );
             }
 
             /// `uavcan.node.GetTransportStatistics.0.1`
             ///
             /// Size ranges from 16 to 61 bytes
             pub struct GetTransportStatisticsResponse {
-                /// uavcan.node.IOStatistics.0.1
+                /// `uavcan.node.IOStatistics.0.1`
                 ///
                 /// Always aligned
                 /// Size 120 bits
                 pub transfer_statistics: crate::uavcan::node::io_statistics_0_1::IOStatistics,
-                /// uavcan.node.IOStatistics.0.1[<=3]
+                /// `uavcan.node.IOStatistics.0.1[<=3]`
                 ///
                 /// Always aligned
                 /// Size ranges from 0 to 360 bits
@@ -7584,12 +7705,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
             impl ::canadensis_encoding::Serialize for GetTransportStatisticsResponse {
                 fn size_bits(&self) -> usize {
-                    120 + 8
-                        + (self.network_interface_statistics)
-                            .iter()
-                            .map(|element| 120)
-                            .sum::<usize>()
-                        + 0
+                    120 + 8 + (self.network_interface_statistics).len() * 120 + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_composite(&self.transfer_statistics);
@@ -7609,7 +7725,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     Ok(GetTransportStatisticsResponse {
                         transfer_statistics: { cursor.read_composite()? },
                         network_interface_statistics: {
-                            let length = cursor.read_aligned_u8() as _;
+                            let length = cursor.read_u8() as _;
                             if length <= 3 {
                                 let mut elements = ::heapless::Vec::new();
                                 for _ in 0..length {
@@ -7629,7 +7745,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             /// Fixed size 1 bytes
             pub struct Health {
-                /// saturated uint2
+                /// `saturated uint2`
                 ///
                 /// Always aligned
                 /// Size 2 bits
@@ -7671,22 +7787,22 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             /// Fixed size 7 bytes
             pub struct Heartbeat {
-                /// saturated uint32
+                /// `saturated uint32`
                 ///
                 /// Always aligned
                 /// Size 32 bits
                 pub uptime: u32,
-                /// uavcan.node.Health.1.0
+                /// `uavcan.node.Health.1.0`
                 ///
                 /// Always aligned
                 /// Size 8 bits
                 pub health: crate::uavcan::node::health_1_0::Health,
-                /// uavcan.node.Mode.1.0
+                /// `uavcan.node.Mode.1.0`
                 ///
                 /// Always aligned
                 /// Size 8 bits
                 pub mode: crate::uavcan::node::mode_1_0::Mode,
-                /// saturated uint8
+                /// `saturated uint8`
                 ///
                 /// Always aligned
                 /// Size 8 bits
@@ -7731,8 +7847,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             /// `uavcan.node.ID.1.0`
             ///
             /// Fixed size 2 bytes
+            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[repr(C, packed)]
             pub struct ID {
-                /// saturated uint16
+                /// `saturated uint16`
                 ///
                 /// Always aligned
                 /// Size 16 bits
@@ -7748,7 +7866,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     16
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_aligned_u16(self.value);
+                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for ID {
@@ -7758,10 +7876,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 where
                     Self: Sized,
                 {
-                    Ok(ID {
-                        value: { cursor.read_u16() as _ },
-                    })
+                    Ok(Self::deserialize_zero_copy(cursor))
                 }
+            }
+            #[test]
+            fn test_layout() {
+                assert_eq!(::core::mem::size_of::<ID>() * 8, 16);
+                assert_eq!(::memoffset::offset_of!(ID, value) * 8, 0);
             }
         }
         pub mod io_statistics_0_1 {
@@ -7769,17 +7890,17 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             /// Fixed size 15 bytes
             pub struct IOStatistics {
-                /// truncated uint40
+                /// `truncated uint40`
                 ///
                 /// Always aligned
                 /// Size 40 bits
                 pub num_emitted: u64,
-                /// truncated uint40
+                /// `truncated uint40`
                 ///
                 /// Always aligned
                 /// Size 40 bits
                 pub num_received: u64,
-                /// truncated uint40
+                /// `truncated uint40`
                 ///
                 /// Always aligned
                 /// Size 40 bits
@@ -7820,7 +7941,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             /// Fixed size 1 bytes
             pub struct Mode {
-                /// saturated uint3
+                /// `saturated uint3`
                 ///
                 /// Always aligned
                 /// Size 3 bits
@@ -7910,22 +8031,22 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Size ranges from 146 to 2194 bytes
                 pub struct List {
-                    /// uavcan.node.port.SubjectIDList.0.1
+                    /// `uavcan.node.port.SubjectIDList.0.1`
                     ///
                     /// Always aligned
                     /// Size ranges from 8 to 8200 bits
                     pub publishers: crate::uavcan::node::port::subject_id_list_0_1::SubjectIDList,
-                    /// uavcan.node.port.SubjectIDList.0.1
+                    /// `uavcan.node.port.SubjectIDList.0.1`
                     ///
                     /// Always aligned
                     /// Size ranges from 8 to 8200 bits
                     pub subscribers: crate::uavcan::node::port::subject_id_list_0_1::SubjectIDList,
-                    /// uavcan.node.port.ServiceIDList.0.1
+                    /// `uavcan.node.port.ServiceIDList.0.1`
                     ///
                     /// Always aligned
                     /// Size 512 bits
                     pub clients: crate::uavcan::node::port::service_id_list_0_1::ServiceIDList,
-                    /// uavcan.node.port.ServiceIDList.0.1
+                    /// `uavcan.node.port.ServiceIDList.0.1`
                     ///
                     /// Always aligned
                     /// Size 512 bits
@@ -7977,7 +8098,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Fixed size 2 bytes
                 pub struct ServiceID {
-                    /// saturated uint9
+                    /// `saturated uint9`
                     ///
                     /// Always aligned
                     /// Size 9 bits
@@ -8016,11 +8137,11 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Fixed size 64 bytes
                 pub struct ServiceIDList {
-                    /// saturated bool[512]
+                    /// `saturated bool[512]`
                     ///
                     /// Always aligned
                     /// Size 512 bits
-                    pub mask: [bool; 512],
+                    pub mask: ::canadensis_encoding::bits::BitArray<64>,
                 }
                 impl ::canadensis_encoding::DataType for ServiceIDList {
                     const EXTENT_BYTES: Option<u32> = Some(128);
@@ -8034,9 +8155,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         512
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        for value in (self.mask).iter() {
-                            cursor.write_bool(*value);
-                        }
+                        (self.mask).serialize(cursor);
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for ServiceIDList {
@@ -8048,520 +8167,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     {
                         Ok(ServiceIDList {
                             mask: {
-                                [
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                ]
+                                ::canadensis_encoding::bits::BitArray::deserialize(
+                                    512_usize, cursor,
+                                )
                             },
                         })
                     }
@@ -8572,7 +8180,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Fixed size 2 bytes
                 pub struct SubjectID {
-                    /// saturated uint13
+                    /// `saturated uint13`
                     ///
                     /// Always aligned
                     /// Size 13 bits
@@ -8612,7 +8220,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 /// Size ranges from 1 to 1025 bytes
                 pub enum SubjectIDList {
                     // saturated bool[8192]
-                    Mask([bool; 8192]),
+                    Mask(::canadensis_encoding::bits::BitArray<1024>),
                     // uavcan.node.port.SubjectID.1.0[<=255]
                     SparseList(
                         ::heapless::Vec<crate::uavcan::node::port::subject_id_1_0::SubjectID, 255>,
@@ -8630,12 +8238,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 impl ::canadensis_encoding::Serialize for SubjectIDList {
                     fn size_bits(&self) -> usize {
                         8 + match self {
-                            SubjectIDList::Mask(inner) => {
-                                (inner).iter().map(|element| 1).sum::<usize>()
-                            }
-                            SubjectIDList::SparseList(inner) => {
-                                8 + (inner).iter().map(|element| 16).sum::<usize>()
-                            }
+                            SubjectIDList::Mask(inner) => (inner).len() * 1,
+                            SubjectIDList::SparseList(inner) => 8 + (inner).len() * 16,
                             SubjectIDList::Total(inner) => 0,
                         }
                     }
@@ -8643,9 +8247,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         match self {
                             SubjectIDList::Mask(inner) => {
                                 cursor.write_aligned_u8(0);
-                                for value in (inner).iter() {
-                                    cursor.write_bool(*value);
-                                }
+                                (inner).serialize(cursor);
                             }
                             SubjectIDList::SparseList(inner) => {
                                 cursor.write_aligned_u8(1);
@@ -8670,8203 +8272,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     {
                         match cursor.read_aligned_u8() as _ {
                             0 => Ok(SubjectIDList::Mask({
-                                [
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                    cursor.read_bool(),
-                                ]
+                                ::canadensis_encoding::bits::BitArray::deserialize(
+                                    8192_usize, cursor,
+                                )
                             })),
                             1 => Ok(SubjectIDList::SparseList({
-                                let length = cursor.read_aligned_u8() as _;
+                                let length = cursor.read_u8() as _;
                                 if length <= 255 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
@@ -16890,13 +8301,15 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             /// `uavcan.node.Version.1.0`
             ///
             /// Fixed size 2 bytes
+            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[repr(C, packed)]
             pub struct Version {
-                /// saturated uint8
+                /// `saturated uint8`
                 ///
                 /// Always aligned
                 /// Size 8 bits
                 pub major: u8,
-                /// saturated uint8
+                /// `saturated uint8`
                 ///
                 /// Always aligned
                 /// Size 8 bits
@@ -16912,8 +8325,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     16
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_aligned_u8(self.major);
-                    cursor.write_aligned_u8(self.minor);
+                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for Version {
@@ -16923,11 +8335,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 where
                     Self: Sized,
                 {
-                    Ok(Version {
-                        major: { cursor.read_u8() as _ },
-                        minor: { cursor.read_u8() as _ },
-                    })
+                    Ok(Self::deserialize_zero_copy(cursor))
                 }
+            }
+            #[test]
+            fn test_layout() {
+                assert_eq!(::core::mem::size_of::<Version>() * 8, 16);
+                assert_eq!(::memoffset::offset_of!(Version, major) * 8, 0);
+                assert_eq!(::memoffset::offset_of!(Version, minor) * 8, 8);
             }
         }
     }
@@ -16938,27 +8353,27 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Size ranges from 13 to 35 bytes
                 pub struct AppendEntriesRequest {
-                    /// saturated uint32
+                    /// `saturated uint32`
                     ///
                     /// Always aligned
                     /// Size 32 bits
                     pub term: u32,
-                    /// saturated uint32
+                    /// `saturated uint32`
                     ///
                     /// Always aligned
                     /// Size 32 bits
                     pub prev_log_term: u32,
-                    /// saturated uint16
+                    /// `saturated uint16`
                     ///
                     /// Always aligned
                     /// Size 16 bits
                     pub prev_log_index: u16,
-                    /// saturated uint16
+                    /// `saturated uint16`
                     ///
                     /// Always aligned
                     /// Size 16 bits
                     pub leader_commit: u16,
-                    /// uavcan.pnp.cluster.Entry.1.0[<=1]
+                    /// `uavcan.pnp.cluster.Entry.1.0[<=1]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 176 bits
@@ -16974,12 +8389,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 }
                 impl ::canadensis_encoding::Serialize for AppendEntriesRequest {
                     fn size_bits(&self) -> usize {
-                        32 + 32
-                            + 16
-                            + 16
-                            + 8
-                            + (self.entries).iter().map(|element| 176).sum::<usize>()
-                            + 0
+                        32 + 32 + 16 + 16 + 8 + (self.entries).len() * 176 + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u32(self.term);
@@ -17005,7 +8415,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             prev_log_index: { cursor.read_u16() as _ },
                             leader_commit: { cursor.read_u16() as _ },
                             entries: {
-                                let length = cursor.read_aligned_u8() as _;
+                                let length = cursor.read_u8() as _;
                                 if length <= 1 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
@@ -17026,12 +8436,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Fixed size 5 bytes
                 pub struct AppendEntriesResponse {
-                    /// saturated uint32
+                    /// `saturated uint32`
                     ///
                     /// Always aligned
                     /// Size 32 bits
                     pub term: u32,
-                    /// saturated bool
+                    /// `saturated bool`
                     ///
                     /// Always aligned
                     /// Size 1 bits
@@ -17070,13 +8480,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Size ranges from 2 to 12 bytes
                 pub struct Discovery {
-                    /// saturated uint3
+                    /// `saturated uint3`
                     ///
                     /// Always aligned
                     /// Size 3 bits
                     pub configured_cluster_size: u8,
                     // 5 bits of padding
-                    /// uavcan.node.ID.1.0[<=5]
+                    /// `uavcan.node.ID.1.0[<=5]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 80 bits
@@ -17092,7 +8502,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 }
                 impl ::canadensis_encoding::Serialize for Discovery {
                     fn size_bits(&self) -> usize {
-                        3 + 5 + 8 + (self.known_nodes).iter().map(|element| 16).sum::<usize>() + 0
+                        3 + 5 + 8 + (self.known_nodes).len() * 16 + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_u3(self.configured_cluster_size);
@@ -17114,7 +8524,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             configured_cluster_size: { cursor.read_u3() as _ },
                             known_nodes: {
                                 cursor.skip_5();
-                                let length = cursor.read_aligned_u8() as _;
+                                let length = cursor.read_u8() as _;
                                 if length <= 5 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
@@ -17135,18 +8545,20 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 /// `uavcan.pnp.cluster.Entry.1.0`
                 ///
                 /// Fixed size 22 bytes
+                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[repr(C, packed)]
                 pub struct Entry {
-                    /// saturated uint32
+                    /// `saturated uint32`
                     ///
                     /// Always aligned
                     /// Size 32 bits
                     pub term: u32,
-                    /// saturated uint8[16]
+                    /// `saturated uint8[16]`
                     ///
                     /// Always aligned
                     /// Size 128 bits
                     pub unique_id: [u8; 16],
-                    /// uavcan.node.ID.1.0
+                    /// `uavcan.node.ID.1.0`
                     ///
                     /// Always aligned
                     /// Size 16 bits
@@ -17162,9 +8574,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         176
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_u32(self.term);
-                        cursor.write_bytes(&(self.unique_id)[..]);
-                        cursor.write_composite(&self.node_id);
+                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for Entry {
@@ -17174,49 +8584,35 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     where
                         Self: Sized,
                     {
-                        Ok(Entry {
-                            term: { cursor.read_u32() as _ },
-                            unique_id: {
-                                [
-                                    cursor.read_u8() as _,
-                                    cursor.read_u8() as _,
-                                    cursor.read_u8() as _,
-                                    cursor.read_u8() as _,
-                                    cursor.read_u8() as _,
-                                    cursor.read_u8() as _,
-                                    cursor.read_u8() as _,
-                                    cursor.read_u8() as _,
-                                    cursor.read_u8() as _,
-                                    cursor.read_u8() as _,
-                                    cursor.read_u8() as _,
-                                    cursor.read_u8() as _,
-                                    cursor.read_u8() as _,
-                                    cursor.read_u8() as _,
-                                    cursor.read_u8() as _,
-                                    cursor.read_u8() as _,
-                                ]
-                            },
-                            node_id: { cursor.read_composite()? },
-                        })
+                        Ok(Self::deserialize_zero_copy(cursor))
                     }
+                }
+                #[test]
+                fn test_layout() {
+                    assert_eq!(::core::mem::size_of::<Entry>() * 8, 176);
+                    assert_eq!(::memoffset::offset_of!(Entry, term) * 8, 0);
+                    assert_eq!(::memoffset::offset_of!(Entry, unique_id) * 8, 32);
+                    assert_eq!(::memoffset::offset_of!(Entry, node_id) * 8, 160);
                 }
             }
             pub mod request_vote_1_0 {
                 /// `uavcan.pnp.cluster.RequestVote.1.0`
                 ///
                 /// Fixed size 10 bytes
+                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[repr(C, packed)]
                 pub struct RequestVoteRequest {
-                    /// saturated uint32
+                    /// `saturated uint32`
                     ///
                     /// Always aligned
                     /// Size 32 bits
                     pub term: u32,
-                    /// saturated uint32
+                    /// `saturated uint32`
                     ///
                     /// Always aligned
                     /// Size 32 bits
                     pub last_log_term: u32,
-                    /// saturated uint16
+                    /// `saturated uint16`
                     ///
                     /// Always aligned
                     /// Size 16 bits
@@ -17232,9 +8628,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         80
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_u32(self.term);
-                        cursor.write_aligned_u32(self.last_log_term);
-                        cursor.write_aligned_u16(self.last_log_index);
+                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for RequestVoteRequest {
@@ -17244,24 +8638,33 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     where
                         Self: Sized,
                     {
-                        Ok(RequestVoteRequest {
-                            term: { cursor.read_u32() as _ },
-                            last_log_term: { cursor.read_u32() as _ },
-                            last_log_index: { cursor.read_u16() as _ },
-                        })
+                        Ok(Self::deserialize_zero_copy(cursor))
                     }
+                }
+                #[test]
+                fn test_layout() {
+                    assert_eq!(::core::mem::size_of::<RequestVoteRequest>() * 8, 80);
+                    assert_eq!(::memoffset::offset_of!(RequestVoteRequest, term) * 8, 0);
+                    assert_eq!(
+                        ::memoffset::offset_of!(RequestVoteRequest, last_log_term) * 8,
+                        32
+                    );
+                    assert_eq!(
+                        ::memoffset::offset_of!(RequestVoteRequest, last_log_index) * 8,
+                        64
+                    );
                 }
 
                 /// `uavcan.pnp.cluster.RequestVote.1.0`
                 ///
                 /// Fixed size 5 bytes
                 pub struct RequestVoteResponse {
-                    /// saturated uint32
+                    /// `saturated uint32`
                     ///
                     /// Always aligned
                     /// Size 32 bits
                     pub term: u32,
-                    /// saturated bool
+                    /// `saturated bool`
                     ///
                     /// Always aligned
                     /// Size 1 bits
@@ -17301,12 +8704,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             /// Size ranges from 7 to 9 bytes
             pub struct NodeIDAllocationData {
-                /// truncated uint48
+                /// `truncated uint48`
                 ///
                 /// Always aligned
                 /// Size 48 bits
                 pub unique_id_hash: u64,
-                /// uavcan.node.ID.1.0[<=1]
+                /// `uavcan.node.ID.1.0[<=1]`
                 ///
                 /// Always aligned
                 /// Size ranges from 0 to 16 bits
@@ -17319,12 +8722,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             impl NodeIDAllocationData {}
             impl ::canadensis_encoding::Serialize for NodeIDAllocationData {
                 fn size_bits(&self) -> usize {
-                    48 + 8
-                        + (self.allocated_node_id)
-                            .iter()
-                            .map(|element| 16)
-                            .sum::<usize>()
-                        + 0
+                    48 + 8 + (self.allocated_node_id).len() * 16 + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_u48(self.unique_id_hash);
@@ -17344,7 +8742,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     Ok(NodeIDAllocationData {
                         unique_id_hash: { cursor.read_u48() as _ },
                         allocated_node_id: {
-                            let length = cursor.read_aligned_u8() as _;
+                            let length = cursor.read_u8() as _;
                             if length <= 1 {
                                 let mut elements = ::heapless::Vec::new();
                                 for _ in 0..length {
@@ -17363,13 +8761,15 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             /// `uavcan.pnp.NodeIDAllocationData.2.0`
             ///
             /// Fixed size 18 bytes
+            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[repr(C, packed)]
             pub struct NodeIDAllocationData {
-                /// uavcan.node.ID.1.0
+                /// `uavcan.node.ID.1.0`
                 ///
                 /// Always aligned
                 /// Size 16 bits
                 pub node_id: crate::uavcan::node::id_1_0::ID,
-                /// saturated uint8[16]
+                /// `saturated uint8[16]`
                 ///
                 /// Always aligned
                 /// Size 128 bits
@@ -17385,8 +8785,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     144
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_composite(&self.node_id);
-                    cursor.write_bytes(&(self.unique_id)[..]);
+                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for NodeIDAllocationData {
@@ -17396,30 +8795,20 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 where
                     Self: Sized,
                 {
-                    Ok(NodeIDAllocationData {
-                        node_id: { cursor.read_composite()? },
-                        unique_id: {
-                            [
-                                cursor.read_u8() as _,
-                                cursor.read_u8() as _,
-                                cursor.read_u8() as _,
-                                cursor.read_u8() as _,
-                                cursor.read_u8() as _,
-                                cursor.read_u8() as _,
-                                cursor.read_u8() as _,
-                                cursor.read_u8() as _,
-                                cursor.read_u8() as _,
-                                cursor.read_u8() as _,
-                                cursor.read_u8() as _,
-                                cursor.read_u8() as _,
-                                cursor.read_u8() as _,
-                                cursor.read_u8() as _,
-                                cursor.read_u8() as _,
-                                cursor.read_u8() as _,
-                            ]
-                        },
-                    })
+                    Ok(Self::deserialize_zero_copy(cursor))
                 }
+            }
+            #[test]
+            fn test_layout() {
+                assert_eq!(::core::mem::size_of::<NodeIDAllocationData>() * 8, 144);
+                assert_eq!(
+                    ::memoffset::offset_of!(NodeIDAllocationData, node_id) * 8,
+                    0
+                );
+                assert_eq!(
+                    ::memoffset::offset_of!(NodeIDAllocationData, unique_id) * 8,
+                    16
+                );
             }
         }
     }
@@ -17430,11 +8819,11 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Size ranges from 2 to 258 bytes
                 pub struct Bit {
-                    /// saturated bool[<=2048]
+                    /// `saturated bool[<=2048]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 2048 bits
-                    pub value: ::heapless::Vec<bool, 2048>,
+                    pub value: ::canadensis_encoding::bits::BitArray<256>,
                 }
                 impl ::canadensis_encoding::DataType for Bit {
                     const EXTENT_BYTES: Option<u32> = None;
@@ -17443,13 +8832,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 impl Bit {}
                 impl ::canadensis_encoding::Serialize for Bit {
                     fn size_bits(&self) -> usize {
-                        16 + (self.value).iter().map(|element| 1).sum::<usize>() + 0
+                        16 + (self.value).len() * 1 + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_u16((self.value).len() as u16);
-                        for value in (self.value).iter() {
-                            cursor.write_bool(*value);
-                        }
+                        (self.value).serialize(cursor);
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for Bit {
@@ -17461,17 +8847,11 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     {
                         Ok(Bit {
                             value: {
-                                let length = cursor.read_aligned_u16() as _;
-                                if length <= 2048 {
-                                    let mut elements = ::heapless::Vec::new();
-                                    for _ in 0..length {
-                                        let _ = elements.push(cursor.read_bool());
-                                    }
-                                    elements
-                                } else {
-                                    return Err(
-                                        ::canadensis_encoding::DeserializeError::ArrayLength,
-                                    );
+                                {
+                                    let length = cursor.read_u16() as _;
+                                    ::canadensis_encoding::bits::BitArray::deserialize(
+                                        length, cursor,
+                                    )
                                 }
                             },
                         })
@@ -17483,7 +8863,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Size ranges from 1 to 257 bytes
                 pub struct Integer16 {
-                    /// saturated int16[<=128]
+                    /// `saturated int16[<=128]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 2048 bits
@@ -17496,7 +8876,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 impl Integer16 {}
                 impl ::canadensis_encoding::Serialize for Integer16 {
                     fn size_bits(&self) -> usize {
-                        8 + (self.value).iter().map(|element| 16).sum::<usize>() + 0
+                        8 + (self.value).len() * 16 + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u8((self.value).len() as u8);
@@ -17514,7 +8894,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     {
                         Ok(Integer16 {
                             value: {
-                                let length = cursor.read_aligned_u8() as _;
+                                let length = cursor.read_u8() as _;
                                 if length <= 128 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
@@ -17536,7 +8916,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Size ranges from 1 to 257 bytes
                 pub struct Integer32 {
-                    /// saturated int32[<=64]
+                    /// `saturated int32[<=64]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 2048 bits
@@ -17549,7 +8929,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 impl Integer32 {}
                 impl ::canadensis_encoding::Serialize for Integer32 {
                     fn size_bits(&self) -> usize {
-                        8 + (self.value).iter().map(|element| 32).sum::<usize>() + 0
+                        8 + (self.value).len() * 32 + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u8((self.value).len() as u8);
@@ -17567,7 +8947,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     {
                         Ok(Integer32 {
                             value: {
-                                let length = cursor.read_aligned_u8() as _;
+                                let length = cursor.read_u8() as _;
                                 if length <= 64 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
@@ -17589,7 +8969,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Size ranges from 1 to 257 bytes
                 pub struct Integer64 {
-                    /// saturated int64[<=32]
+                    /// `saturated int64[<=32]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 2048 bits
@@ -17602,7 +8982,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 impl Integer64 {}
                 impl ::canadensis_encoding::Serialize for Integer64 {
                     fn size_bits(&self) -> usize {
-                        8 + (self.value).iter().map(|element| 64).sum::<usize>() + 0
+                        8 + (self.value).len() * 64 + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u8((self.value).len() as u8);
@@ -17620,7 +9000,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     {
                         Ok(Integer64 {
                             value: {
-                                let length = cursor.read_aligned_u8() as _;
+                                let length = cursor.read_u8() as _;
                                 if length <= 32 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
@@ -17642,7 +9022,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Size ranges from 2 to 258 bytes
                 pub struct Integer8 {
-                    /// saturated int8[<=256]
+                    /// `saturated int8[<=256]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 2048 bits
@@ -17655,7 +9035,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 impl Integer8 {}
                 impl ::canadensis_encoding::Serialize for Integer8 {
                     fn size_bits(&self) -> usize {
-                        16 + (self.value).iter().map(|element| 8).sum::<usize>() + 0
+                        16 + (self.value).len() * 8 + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u16((self.value).len() as u16);
@@ -17673,7 +9053,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     {
                         Ok(Integer8 {
                             value: {
-                                let length = cursor.read_aligned_u16() as _;
+                                let length = cursor.read_u16() as _;
                                 if length <= 256 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
@@ -17695,7 +9075,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Size ranges from 1 to 257 bytes
                 pub struct Natural16 {
-                    /// saturated uint16[<=128]
+                    /// `saturated uint16[<=128]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 2048 bits
@@ -17708,7 +9088,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 impl Natural16 {}
                 impl ::canadensis_encoding::Serialize for Natural16 {
                     fn size_bits(&self) -> usize {
-                        8 + (self.value).iter().map(|element| 16).sum::<usize>() + 0
+                        8 + (self.value).len() * 16 + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u8((self.value).len() as u8);
@@ -17726,7 +9106,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     {
                         Ok(Natural16 {
                             value: {
-                                let length = cursor.read_aligned_u8() as _;
+                                let length = cursor.read_u8() as _;
                                 if length <= 128 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
@@ -17748,7 +9128,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Size ranges from 1 to 257 bytes
                 pub struct Natural32 {
-                    /// saturated uint32[<=64]
+                    /// `saturated uint32[<=64]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 2048 bits
@@ -17761,7 +9141,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 impl Natural32 {}
                 impl ::canadensis_encoding::Serialize for Natural32 {
                     fn size_bits(&self) -> usize {
-                        8 + (self.value).iter().map(|element| 32).sum::<usize>() + 0
+                        8 + (self.value).len() * 32 + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u8((self.value).len() as u8);
@@ -17779,7 +9159,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     {
                         Ok(Natural32 {
                             value: {
-                                let length = cursor.read_aligned_u8() as _;
+                                let length = cursor.read_u8() as _;
                                 if length <= 64 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
@@ -17801,7 +9181,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Size ranges from 1 to 257 bytes
                 pub struct Natural64 {
-                    /// saturated uint64[<=32]
+                    /// `saturated uint64[<=32]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 2048 bits
@@ -17814,7 +9194,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 impl Natural64 {}
                 impl ::canadensis_encoding::Serialize for Natural64 {
                     fn size_bits(&self) -> usize {
-                        8 + (self.value).iter().map(|element| 64).sum::<usize>() + 0
+                        8 + (self.value).len() * 64 + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u8((self.value).len() as u8);
@@ -17832,7 +9212,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     {
                         Ok(Natural64 {
                             value: {
-                                let length = cursor.read_aligned_u8() as _;
+                                let length = cursor.read_u8() as _;
                                 if length <= 32 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
@@ -17854,7 +9234,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Size ranges from 2 to 258 bytes
                 pub struct Natural8 {
-                    /// saturated uint8[<=256]
+                    /// `saturated uint8[<=256]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 2048 bits
@@ -17867,7 +9247,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 impl Natural8 {}
                 impl ::canadensis_encoding::Serialize for Natural8 {
                     fn size_bits(&self) -> usize {
-                        16 + (self.value).iter().map(|element| 8).sum::<usize>() + 0
+                        16 + (self.value).len() * 8 + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u16((self.value).len() as u16);
@@ -17883,7 +9263,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     {
                         Ok(Natural8 {
                             value: {
-                                let length = cursor.read_aligned_u16() as _;
+                                let length = cursor.read_u16() as _;
                                 if length <= 256 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
@@ -17905,11 +9285,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Size ranges from 1 to 257 bytes
                 pub struct Real16 {
-                    /// saturated float16[<=128]
+                    /// `saturated float16[<=128]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 2048 bits
-                    pub value: ::heapless::Vec<::half::f16, 128>,
+                    pub value:
+                        ::heapless::Vec<::canadensis_encoding::f16_zerocopy::ZeroCopyF16, 128>,
                 }
                 impl ::canadensis_encoding::DataType for Real16 {
                     const EXTENT_BYTES: Option<u32> = None;
@@ -17918,12 +9299,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 impl Real16 {}
                 impl ::canadensis_encoding::Serialize for Real16 {
                     fn size_bits(&self) -> usize {
-                        8 + (self.value).iter().map(|element| 16).sum::<usize>() + 0
+                        8 + (self.value).len() * 16 + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u8((self.value).len() as u8);
                         for value in (self.value).iter() {
-                            cursor.write_f16(*value);
+                            cursor.write_f16((*value).into());
                         }
                     }
                 }
@@ -17936,11 +9317,11 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     {
                         Ok(Real16 {
                             value: {
-                                let length = cursor.read_aligned_u8() as _;
+                                let length = cursor.read_u8() as _;
                                 if length <= 128 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
-                                        let _ = elements.push(cursor.read_f16());
+                                        let _ = elements.push(cursor.read_f16().into());
                                     }
                                     elements
                                 } else {
@@ -17958,7 +9339,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Size ranges from 1 to 257 bytes
                 pub struct Real32 {
-                    /// saturated float32[<=64]
+                    /// `saturated float32[<=64]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 2048 bits
@@ -17971,7 +9352,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 impl Real32 {}
                 impl ::canadensis_encoding::Serialize for Real32 {
                     fn size_bits(&self) -> usize {
-                        8 + (self.value).iter().map(|element| 32).sum::<usize>() + 0
+                        8 + (self.value).len() * 32 + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u8((self.value).len() as u8);
@@ -17989,7 +9370,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     {
                         Ok(Real32 {
                             value: {
-                                let length = cursor.read_aligned_u8() as _;
+                                let length = cursor.read_u8() as _;
                                 if length <= 64 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
@@ -18011,7 +9392,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Size ranges from 1 to 257 bytes
                 pub struct Real64 {
-                    /// saturated float64[<=32]
+                    /// `saturated float64[<=32]`
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 2048 bits
@@ -18024,7 +9405,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 impl Real64 {}
                 impl ::canadensis_encoding::Serialize for Real64 {
                     fn size_bits(&self) -> usize {
-                        8 + (self.value).iter().map(|element| 64).sum::<usize>() + 0
+                        8 + (self.value).len() * 64 + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u8((self.value).len() as u8);
@@ -18042,7 +9423,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     {
                         Ok(Real64 {
                             value: {
-                                let length = cursor.read_aligned_u8() as _;
+                                let length = cursor.read_u8() as _;
                                 if length <= 32 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
@@ -18064,6 +9445,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             /// `uavcan.primitive.Empty.1.0`
             ///
             /// Fixed size 0 bytes
+            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[repr(C, packed)]
             pub struct Empty {}
             impl ::canadensis_encoding::DataType for Empty {
                 const EXTENT_BYTES: Option<u32> = None;
@@ -18074,7 +9457,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 fn size_bits(&self) -> usize {
                     0
                 }
-                fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {}
+                fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                }
             }
             impl ::canadensis_encoding::Deserialize for Empty {
                 fn deserialize(
@@ -18083,8 +9468,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 where
                     Self: Sized,
                 {
-                    Ok(Empty {})
+                    Ok(Self::deserialize_zero_copy(cursor))
                 }
+            }
+            #[test]
+            fn test_layout() {
+                assert_eq!(::core::mem::size_of::<Empty>() * 8, 0);
             }
         }
         pub mod scalar {
@@ -18093,7 +9482,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Fixed size 1 bytes
                 pub struct Bit {
-                    /// saturated bool
+                    /// `saturated bool`
                     ///
                     /// Always aligned
                     /// Size 1 bits
@@ -18129,8 +9518,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 /// `uavcan.primitive.scalar.Integer16.1.0`
                 ///
                 /// Fixed size 2 bytes
+                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[repr(C, packed)]
                 pub struct Integer16 {
-                    /// saturated int16
+                    /// `saturated int16`
                     ///
                     /// Always aligned
                     /// Size 16 bits
@@ -18146,7 +9537,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         16
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_u16(self.value as u16);
+                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for Integer16 {
@@ -18156,18 +9547,23 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     where
                         Self: Sized,
                     {
-                        Ok(Integer16 {
-                            value: { cursor.read_u16() as _ },
-                        })
+                        Ok(Self::deserialize_zero_copy(cursor))
                     }
+                }
+                #[test]
+                fn test_layout() {
+                    assert_eq!(::core::mem::size_of::<Integer16>() * 8, 16);
+                    assert_eq!(::memoffset::offset_of!(Integer16, value) * 8, 0);
                 }
             }
             pub mod integer32_1_0 {
                 /// `uavcan.primitive.scalar.Integer32.1.0`
                 ///
                 /// Fixed size 4 bytes
+                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[repr(C, packed)]
                 pub struct Integer32 {
-                    /// saturated int32
+                    /// `saturated int32`
                     ///
                     /// Always aligned
                     /// Size 32 bits
@@ -18183,7 +9579,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         32
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_u32(self.value as u32);
+                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for Integer32 {
@@ -18193,18 +9589,23 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     where
                         Self: Sized,
                     {
-                        Ok(Integer32 {
-                            value: { cursor.read_u32() as _ },
-                        })
+                        Ok(Self::deserialize_zero_copy(cursor))
                     }
+                }
+                #[test]
+                fn test_layout() {
+                    assert_eq!(::core::mem::size_of::<Integer32>() * 8, 32);
+                    assert_eq!(::memoffset::offset_of!(Integer32, value) * 8, 0);
                 }
             }
             pub mod integer64_1_0 {
                 /// `uavcan.primitive.scalar.Integer64.1.0`
                 ///
                 /// Fixed size 8 bytes
+                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[repr(C, packed)]
                 pub struct Integer64 {
-                    /// saturated int64
+                    /// `saturated int64`
                     ///
                     /// Always aligned
                     /// Size 64 bits
@@ -18220,7 +9621,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         64
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_u64(self.value as u64);
+                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for Integer64 {
@@ -18230,18 +9631,23 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     where
                         Self: Sized,
                     {
-                        Ok(Integer64 {
-                            value: { cursor.read_u64() as _ },
-                        })
+                        Ok(Self::deserialize_zero_copy(cursor))
                     }
+                }
+                #[test]
+                fn test_layout() {
+                    assert_eq!(::core::mem::size_of::<Integer64>() * 8, 64);
+                    assert_eq!(::memoffset::offset_of!(Integer64, value) * 8, 0);
                 }
             }
             pub mod integer8_1_0 {
                 /// `uavcan.primitive.scalar.Integer8.1.0`
                 ///
                 /// Fixed size 1 bytes
+                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[repr(C, packed)]
                 pub struct Integer8 {
-                    /// saturated int8
+                    /// `saturated int8`
                     ///
                     /// Always aligned
                     /// Size 8 bits
@@ -18257,7 +9663,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         8
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_u8(self.value as u8);
+                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for Integer8 {
@@ -18267,18 +9673,23 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     where
                         Self: Sized,
                     {
-                        Ok(Integer8 {
-                            value: { cursor.read_u8() as _ },
-                        })
+                        Ok(Self::deserialize_zero_copy(cursor))
                     }
+                }
+                #[test]
+                fn test_layout() {
+                    assert_eq!(::core::mem::size_of::<Integer8>() * 8, 8);
+                    assert_eq!(::memoffset::offset_of!(Integer8, value) * 8, 0);
                 }
             }
             pub mod natural16_1_0 {
                 /// `uavcan.primitive.scalar.Natural16.1.0`
                 ///
                 /// Fixed size 2 bytes
+                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[repr(C, packed)]
                 pub struct Natural16 {
-                    /// saturated uint16
+                    /// `saturated uint16`
                     ///
                     /// Always aligned
                     /// Size 16 bits
@@ -18294,7 +9705,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         16
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_u16(self.value);
+                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for Natural16 {
@@ -18304,18 +9715,23 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     where
                         Self: Sized,
                     {
-                        Ok(Natural16 {
-                            value: { cursor.read_u16() as _ },
-                        })
+                        Ok(Self::deserialize_zero_copy(cursor))
                     }
+                }
+                #[test]
+                fn test_layout() {
+                    assert_eq!(::core::mem::size_of::<Natural16>() * 8, 16);
+                    assert_eq!(::memoffset::offset_of!(Natural16, value) * 8, 0);
                 }
             }
             pub mod natural32_1_0 {
                 /// `uavcan.primitive.scalar.Natural32.1.0`
                 ///
                 /// Fixed size 4 bytes
+                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[repr(C, packed)]
                 pub struct Natural32 {
-                    /// saturated uint32
+                    /// `saturated uint32`
                     ///
                     /// Always aligned
                     /// Size 32 bits
@@ -18331,7 +9747,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         32
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_u32(self.value);
+                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for Natural32 {
@@ -18341,18 +9757,23 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     where
                         Self: Sized,
                     {
-                        Ok(Natural32 {
-                            value: { cursor.read_u32() as _ },
-                        })
+                        Ok(Self::deserialize_zero_copy(cursor))
                     }
+                }
+                #[test]
+                fn test_layout() {
+                    assert_eq!(::core::mem::size_of::<Natural32>() * 8, 32);
+                    assert_eq!(::memoffset::offset_of!(Natural32, value) * 8, 0);
                 }
             }
             pub mod natural64_1_0 {
                 /// `uavcan.primitive.scalar.Natural64.1.0`
                 ///
                 /// Fixed size 8 bytes
+                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[repr(C, packed)]
                 pub struct Natural64 {
-                    /// saturated uint64
+                    /// `saturated uint64`
                     ///
                     /// Always aligned
                     /// Size 64 bits
@@ -18368,7 +9789,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         64
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_u64(self.value);
+                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for Natural64 {
@@ -18378,18 +9799,23 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     where
                         Self: Sized,
                     {
-                        Ok(Natural64 {
-                            value: { cursor.read_u64() as _ },
-                        })
+                        Ok(Self::deserialize_zero_copy(cursor))
                     }
+                }
+                #[test]
+                fn test_layout() {
+                    assert_eq!(::core::mem::size_of::<Natural64>() * 8, 64);
+                    assert_eq!(::memoffset::offset_of!(Natural64, value) * 8, 0);
                 }
             }
             pub mod natural8_1_0 {
                 /// `uavcan.primitive.scalar.Natural8.1.0`
                 ///
                 /// Fixed size 1 bytes
+                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[repr(C, packed)]
                 pub struct Natural8 {
-                    /// saturated uint8
+                    /// `saturated uint8`
                     ///
                     /// Always aligned
                     /// Size 8 bits
@@ -18405,7 +9831,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         8
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_u8(self.value);
+                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for Natural8 {
@@ -18415,22 +9841,27 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     where
                         Self: Sized,
                     {
-                        Ok(Natural8 {
-                            value: { cursor.read_u8() as _ },
-                        })
+                        Ok(Self::deserialize_zero_copy(cursor))
                     }
+                }
+                #[test]
+                fn test_layout() {
+                    assert_eq!(::core::mem::size_of::<Natural8>() * 8, 8);
+                    assert_eq!(::memoffset::offset_of!(Natural8, value) * 8, 0);
                 }
             }
             pub mod real16_1_0 {
                 /// `uavcan.primitive.scalar.Real16.1.0`
                 ///
                 /// Fixed size 2 bytes
+                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[repr(C, packed)]
                 pub struct Real16 {
-                    /// saturated float16
+                    /// `saturated float16`
                     ///
                     /// Always aligned
                     /// Size 16 bits
-                    pub value: ::half::f16,
+                    pub value: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
                 }
                 impl ::canadensis_encoding::DataType for Real16 {
                     const EXTENT_BYTES: Option<u32> = None;
@@ -18442,7 +9873,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         16
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_f16(self.value);
+                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for Real16 {
@@ -18452,18 +9883,23 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     where
                         Self: Sized,
                     {
-                        Ok(Real16 {
-                            value: { cursor.read_f16() },
-                        })
+                        Ok(Self::deserialize_zero_copy(cursor))
                     }
+                }
+                #[test]
+                fn test_layout() {
+                    assert_eq!(::core::mem::size_of::<Real16>() * 8, 16);
+                    assert_eq!(::memoffset::offset_of!(Real16, value) * 8, 0);
                 }
             }
             pub mod real32_1_0 {
                 /// `uavcan.primitive.scalar.Real32.1.0`
                 ///
                 /// Fixed size 4 bytes
+                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[repr(C, packed)]
                 pub struct Real32 {
-                    /// saturated float32
+                    /// `saturated float32`
                     ///
                     /// Always aligned
                     /// Size 32 bits
@@ -18479,7 +9915,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         32
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_f32(self.value);
+                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for Real32 {
@@ -18489,18 +9925,23 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     where
                         Self: Sized,
                     {
-                        Ok(Real32 {
-                            value: { cursor.read_f32() },
-                        })
+                        Ok(Self::deserialize_zero_copy(cursor))
                     }
+                }
+                #[test]
+                fn test_layout() {
+                    assert_eq!(::core::mem::size_of::<Real32>() * 8, 32);
+                    assert_eq!(::memoffset::offset_of!(Real32, value) * 8, 0);
                 }
             }
             pub mod real64_1_0 {
                 /// `uavcan.primitive.scalar.Real64.1.0`
                 ///
                 /// Fixed size 8 bytes
+                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[repr(C, packed)]
                 pub struct Real64 {
-                    /// saturated float64
+                    /// `saturated float64`
                     ///
                     /// Always aligned
                     /// Size 64 bits
@@ -18516,7 +9957,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         64
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_f64(self.value);
+                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for Real64 {
@@ -18526,10 +9967,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     where
                         Self: Sized,
                     {
-                        Ok(Real64 {
-                            value: { cursor.read_f64() },
-                        })
+                        Ok(Self::deserialize_zero_copy(cursor))
                     }
+                }
+                #[test]
+                fn test_layout() {
+                    assert_eq!(::core::mem::size_of::<Real64>() * 8, 64);
+                    assert_eq!(::memoffset::offset_of!(Real64, value) * 8, 0);
                 }
             }
         }
@@ -18538,7 +9982,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             /// Size ranges from 2 to 258 bytes
             pub struct String {
-                /// saturated uint8[<=256]
+                /// `saturated uint8[<=256]`
                 ///
                 /// Always aligned
                 /// Size ranges from 0 to 2048 bits
@@ -18551,7 +9995,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             impl String {}
             impl ::canadensis_encoding::Serialize for String {
                 fn size_bits(&self) -> usize {
-                    16 + (self.value).iter().map(|element| 8).sum::<usize>() + 0
+                    16 + (self.value).len() * 8 + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_aligned_u16((self.value).len() as u16);
@@ -18567,7 +10011,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 {
                     Ok(String {
                         value: {
-                            let length = cursor.read_aligned_u16() as _;
+                            let length = cursor.read_u16() as _;
                             if length <= 256 {
                                 let mut elements = ::heapless::Vec::new();
                                 for _ in 0..length {
@@ -18587,7 +10031,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             /// Size ranges from 2 to 258 bytes
             pub struct Unstructured {
-                /// saturated uint8[<=256]
+                /// `saturated uint8[<=256]`
                 ///
                 /// Always aligned
                 /// Size ranges from 0 to 2048 bits
@@ -18600,7 +10044,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             impl Unstructured {}
             impl ::canadensis_encoding::Serialize for Unstructured {
                 fn size_bits(&self) -> usize {
-                    16 + (self.value).iter().map(|element| 8).sum::<usize>() + 0
+                    16 + (self.value).len() * 8 + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_aligned_u16((self.value).len() as u16);
@@ -18616,7 +10060,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 {
                     Ok(Unstructured {
                         value: {
-                            let length = cursor.read_aligned_u16() as _;
+                            let length = cursor.read_u16() as _;
                             if length <= 256 {
                                 let mut elements = ::heapless::Vec::new();
                                 for _ in 0..length {
@@ -18638,12 +10082,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             /// Size ranges from 2 to 515 bytes
             pub struct AccessRequest {
-                /// uavcan.register.Name.1.0
+                /// `uavcan.register.Name.1.0`
                 ///
                 /// Always aligned
                 /// Size ranges from 8 to 2048 bits
                 pub name: crate::uavcan::register::name_1_0::Name,
-                /// uavcan.register.Value.1.0
+                /// `uavcan.register.Value.1.0`
                 ///
                 /// Always aligned
                 /// Size ranges from 8 to 2072 bits
@@ -18681,24 +10125,24 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             /// Size ranges from 9 to 267 bytes
             pub struct AccessResponse {
-                /// uavcan.time.SynchronizedTimestamp.1.0
+                /// `uavcan.time.SynchronizedTimestamp.1.0`
                 ///
                 /// Always aligned
                 /// Size 56 bits
                 pub timestamp:
                     crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                /// saturated bool
+                /// `saturated bool`
                 ///
                 /// Always aligned
                 /// Size 1 bits
                 pub mutable: bool,
-                /// saturated bool
+                /// `saturated bool`
                 ///
                 /// Not always aligned
                 /// Size 1 bits
                 pub persistent: bool,
                 // 6 bits of padding
-                /// uavcan.register.Value.1.0
+                /// `uavcan.register.Value.1.0`
                 ///
                 /// Always aligned
                 /// Size ranges from 8 to 2072 bits
@@ -18744,8 +10188,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             /// `uavcan.register.List.1.0`
             ///
             /// Fixed size 2 bytes
+            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[repr(C, packed)]
             pub struct ListRequest {
-                /// saturated uint16
+                /// `saturated uint16`
                 ///
                 /// Always aligned
                 /// Size 16 bits
@@ -18761,7 +10207,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     16
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_aligned_u16(self.index);
+                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for ListRequest {
@@ -18771,17 +10217,20 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 where
                     Self: Sized,
                 {
-                    Ok(ListRequest {
-                        index: { cursor.read_u16() as _ },
-                    })
+                    Ok(Self::deserialize_zero_copy(cursor))
                 }
+            }
+            #[test]
+            fn test_layout() {
+                assert_eq!(::core::mem::size_of::<ListRequest>() * 8, 16);
+                assert_eq!(::memoffset::offset_of!(ListRequest, index) * 8, 0);
             }
 
             /// `uavcan.register.List.1.0`
             ///
             /// Size ranges from 1 to 256 bytes
             pub struct ListResponse {
-                /// uavcan.register.Name.1.0
+                /// `uavcan.register.Name.1.0`
                 ///
                 /// Always aligned
                 /// Size ranges from 8 to 2048 bits
@@ -18818,7 +10267,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             /// Size ranges from 1 to 256 bytes
             pub struct Name {
-                /// saturated uint8[<=255]
+                /// `saturated uint8[<=255]`
                 ///
                 /// Always aligned
                 /// Size ranges from 0 to 2040 bits
@@ -18831,7 +10280,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             impl Name {}
             impl ::canadensis_encoding::Serialize for Name {
                 fn size_bits(&self) -> usize {
-                    8 + (self.name).iter().map(|element| 8).sum::<usize>() + 0
+                    8 + (self.name).len() * 8 + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_aligned_u8((self.name).len() as u8);
@@ -18847,7 +10296,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 {
                     Ok(Name {
                         name: {
-                            let length = cursor.read_aligned_u8() as _;
+                            let length = cursor.read_u8() as _;
                             if length <= 255 {
                                 let mut elements = ::heapless::Vec::new();
                                 for _ in 0..length {
@@ -19025,13 +10474,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 11 bytes
                     pub struct Scalar {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -19070,13 +10519,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 19 bytes
                     pub struct Vector3 {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32[3]
+                        /// `saturated float32[3]`
                         ///
                         /// Always aligned
                         /// Size 96 bits
@@ -19121,13 +10570,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 23 bytes
                     pub struct Quaternion {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32[4]
+                        /// `saturated float32[4]`
                         ///
                         /// Always aligned
                         /// Size 128 bits
@@ -19175,13 +10624,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 11 bytes
                     pub struct Scalar {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -19222,13 +10671,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 11 bytes
                     pub struct Scalar {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -19267,13 +10716,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 19 bytes
                     pub struct Vector3 {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32[3]
+                        /// `saturated float32[3]`
                         ///
                         /// Always aligned
                         /// Size 96 bits
@@ -19318,13 +10767,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 11 bytes
                     pub struct Scalar {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -19363,13 +10812,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 19 bytes
                     pub struct Vector3 {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32[3]
+                        /// `saturated float32[3]`
                         ///
                         /// Always aligned
                         /// Size 96 bits
@@ -19414,13 +10863,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 11 bytes
                     pub struct Scalar {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -19459,13 +10908,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 15 bytes
                     pub struct WideScalar {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float64
+                        /// `saturated float64`
                         ///
                         /// Always aligned
                         /// Size 64 bits
@@ -19506,13 +10955,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 11 bytes
                     pub struct Scalar {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -19553,13 +11002,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 11 bytes
                     pub struct Scalar {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -19600,13 +11049,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 11 bytes
                     pub struct Scalar {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -19647,13 +11096,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 11 bytes
                     pub struct Scalar {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -19692,13 +11141,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 19 bytes
                     pub struct Vector3 {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32[3]
+                        /// `saturated float32[3]`
                         ///
                         /// Always aligned
                         /// Size 96 bits
@@ -19743,13 +11192,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 11 bytes
                     pub struct Scalar {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -19790,13 +11239,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 11 bytes
                     pub struct Scalar {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -19835,13 +11284,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 19 bytes
                     pub struct Vector3 {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32[3]
+                        /// `saturated float32[3]`
                         ///
                         /// Always aligned
                         /// Size 96 bits
@@ -19884,13 +11333,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 15 bytes
                     pub struct WideScalar {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float64
+                        /// `saturated float64`
                         ///
                         /// Always aligned
                         /// Size 64 bits
@@ -19929,13 +11378,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 31 bytes
                     pub struct WideVector3 {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float64[3]
+                        /// `saturated float64[3]`
                         ///
                         /// Always aligned
                         /// Size 192 bits
@@ -19980,13 +11429,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 11 bytes
                     pub struct Scalar {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -20025,13 +11474,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 19 bytes
                     pub struct Vector3 {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32[3]
+                        /// `saturated float32[3]`
                         ///
                         /// Always aligned
                         /// Size 96 bits
@@ -20076,13 +11525,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 11 bytes
                     pub struct Scalar {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -20123,13 +11572,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 11 bytes
                     pub struct Scalar {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -20170,13 +11619,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 11 bytes
                     pub struct Scalar {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -20217,13 +11666,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 11 bytes
                     pub struct Scalar {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -20264,13 +11713,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 11 bytes
                     pub struct Scalar {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -20309,13 +11758,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 19 bytes
                     pub struct Vector3 {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32[3]
+                        /// `saturated float32[3]`
                         ///
                         /// Always aligned
                         /// Size 96 bits
@@ -20360,13 +11809,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 11 bytes
                     pub struct Scalar {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -20405,13 +11854,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 19 bytes
                     pub struct Vector3 {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32[3]
+                        /// `saturated float32[3]`
                         ///
                         /// Always aligned
                         /// Size 96 bits
@@ -20456,13 +11905,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 11 bytes
                     pub struct Scalar {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -20503,13 +11952,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 11 bytes
                     pub struct Scalar {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -20550,13 +11999,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Fixed size 11 bytes
                     pub struct Scalar {
-                        /// uavcan.time.SynchronizedTimestamp.1.0
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
                         /// Always aligned
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -20598,8 +12047,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// `uavcan.si.unit.acceleration.Scalar.1.0`
                     ///
                     /// Fixed size 4 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Scalar {
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -20615,7 +12066,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_f32(self.meter_per_second_per_second);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -20625,18 +12076,26 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Scalar {
-                                meter_per_second_per_second: { cursor.read_f32() },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
+                        assert_eq!(
+                            ::memoffset::offset_of!(Scalar, meter_per_second_per_second) * 8,
+                            0
+                        );
                     }
                 }
                 pub mod vector3_1_0 {
                     /// `uavcan.si.unit.acceleration.Vector3.1.0`
                     ///
                     /// Fixed size 12 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Vector3 {
-                        /// saturated float32[3]
+                        /// `saturated float32[3]`
                         ///
                         /// Always aligned
                         /// Size 96 bits
@@ -20652,9 +12111,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             96
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            for value in (self.meter_per_second_per_second).iter() {
-                                cursor.write_f32(*value);
-                            }
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Vector3 {
@@ -20664,12 +12121,16 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Vector3 {
-                                meter_per_second_per_second: {
-                                    [cursor.read_f32(), cursor.read_f32(), cursor.read_f32()]
-                                },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Vector3>() * 8, 96);
+                        assert_eq!(
+                            ::memoffset::offset_of!(Vector3, meter_per_second_per_second) * 8,
+                            0
+                        );
                     }
                 }
             }
@@ -20678,8 +12139,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// `uavcan.si.unit.angle.Quaternion.1.0`
                     ///
                     /// Fixed size 16 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Quaternion {
-                        /// saturated float32[4]
+                        /// `saturated float32[4]`
                         ///
                         /// Always aligned
                         /// Size 128 bits
@@ -20695,9 +12158,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             128
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            for value in (self.wxyz).iter() {
-                                cursor.write_f32(*value);
-                            }
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Quaternion {
@@ -20707,25 +12168,23 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Quaternion {
-                                wxyz: {
-                                    [
-                                        cursor.read_f32(),
-                                        cursor.read_f32(),
-                                        cursor.read_f32(),
-                                        cursor.read_f32(),
-                                    ]
-                                },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Quaternion>() * 8, 128);
+                        assert_eq!(::memoffset::offset_of!(Quaternion, wxyz) * 8, 0);
                     }
                 }
                 pub mod scalar_1_0 {
                     /// `uavcan.si.unit.angle.Scalar.1.0`
                     ///
                     /// Fixed size 4 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Scalar {
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -20741,7 +12200,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_f32(self.radian);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -20751,10 +12210,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Scalar {
-                                radian: { cursor.read_f32() },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
+                        assert_eq!(::memoffset::offset_of!(Scalar, radian) * 8, 0);
                     }
                 }
             }
@@ -20763,8 +12225,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// `uavcan.si.unit.angular_acceleration.Scalar.1.0`
                     ///
                     /// Fixed size 4 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Scalar {
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -20780,7 +12244,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_f32(self.radian_per_second_per_second);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -20790,18 +12254,26 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Scalar {
-                                radian_per_second_per_second: { cursor.read_f32() },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
+                        assert_eq!(
+                            ::memoffset::offset_of!(Scalar, radian_per_second_per_second) * 8,
+                            0
+                        );
                     }
                 }
                 pub mod vector3_1_0 {
                     /// `uavcan.si.unit.angular_acceleration.Vector3.1.0`
                     ///
                     /// Fixed size 12 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Vector3 {
-                        /// saturated float32[3]
+                        /// `saturated float32[3]`
                         ///
                         /// Always aligned
                         /// Size 96 bits
@@ -20817,9 +12289,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             96
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            for value in (self.radian_per_second_per_second).iter() {
-                                cursor.write_f32(*value);
-                            }
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Vector3 {
@@ -20829,12 +12299,16 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Vector3 {
-                                radian_per_second_per_second: {
-                                    [cursor.read_f32(), cursor.read_f32(), cursor.read_f32()]
-                                },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Vector3>() * 8, 96);
+                        assert_eq!(
+                            ::memoffset::offset_of!(Vector3, radian_per_second_per_second) * 8,
+                            0
+                        );
                     }
                 }
             }
@@ -20843,8 +12317,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// `uavcan.si.unit.angular_velocity.Scalar.1.0`
                     ///
                     /// Fixed size 4 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Scalar {
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -20860,7 +12336,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_f32(self.radian_per_second);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -20870,18 +12346,23 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Scalar {
-                                radian_per_second: { cursor.read_f32() },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
+                        assert_eq!(::memoffset::offset_of!(Scalar, radian_per_second) * 8, 0);
                     }
                 }
                 pub mod vector3_1_0 {
                     /// `uavcan.si.unit.angular_velocity.Vector3.1.0`
                     ///
                     /// Fixed size 12 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Vector3 {
-                        /// saturated float32[3]
+                        /// `saturated float32[3]`
                         ///
                         /// Always aligned
                         /// Size 96 bits
@@ -20897,9 +12378,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             96
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            for value in (self.radian_per_second).iter() {
-                                cursor.write_f32(*value);
-                            }
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Vector3 {
@@ -20909,12 +12388,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Vector3 {
-                                radian_per_second: {
-                                    [cursor.read_f32(), cursor.read_f32(), cursor.read_f32()]
-                                },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Vector3>() * 8, 96);
+                        assert_eq!(::memoffset::offset_of!(Vector3, radian_per_second) * 8, 0);
                     }
                 }
             }
@@ -20923,8 +12403,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// `uavcan.si.unit.duration.Scalar.1.0`
                     ///
                     /// Fixed size 4 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Scalar {
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -20940,7 +12422,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_f32(self.second);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -20950,18 +12432,23 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Scalar {
-                                second: { cursor.read_f32() },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
+                        assert_eq!(::memoffset::offset_of!(Scalar, second) * 8, 0);
                     }
                 }
                 pub mod wide_scalar_1_0 {
                     /// `uavcan.si.unit.duration.WideScalar.1.0`
                     ///
                     /// Fixed size 8 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct WideScalar {
-                        /// saturated float64
+                        /// `saturated float64`
                         ///
                         /// Always aligned
                         /// Size 64 bits
@@ -20977,7 +12464,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             64
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_f64(self.second);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for WideScalar {
@@ -20987,10 +12474,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(WideScalar {
-                                second: { cursor.read_f64() },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<WideScalar>() * 8, 64);
+                        assert_eq!(::memoffset::offset_of!(WideScalar, second) * 8, 0);
                     }
                 }
             }
@@ -20999,8 +12489,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// `uavcan.si.unit.electric_charge.Scalar.1.0`
                     ///
                     /// Fixed size 4 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Scalar {
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -21016,7 +12508,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_f32(self.coulomb);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -21026,10 +12518,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Scalar {
-                                coulomb: { cursor.read_f32() },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
+                        assert_eq!(::memoffset::offset_of!(Scalar, coulomb) * 8, 0);
                     }
                 }
             }
@@ -21038,8 +12533,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// `uavcan.si.unit.electric_current.Scalar.1.0`
                     ///
                     /// Fixed size 4 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Scalar {
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -21055,7 +12552,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_f32(self.ampere);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -21065,10 +12562,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Scalar {
-                                ampere: { cursor.read_f32() },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
+                        assert_eq!(::memoffset::offset_of!(Scalar, ampere) * 8, 0);
                     }
                 }
             }
@@ -21077,8 +12577,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// `uavcan.si.unit.energy.Scalar.1.0`
                     ///
                     /// Fixed size 4 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Scalar {
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -21094,7 +12596,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_f32(self.joule);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -21104,10 +12606,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Scalar {
-                                joule: { cursor.read_f32() },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
+                        assert_eq!(::memoffset::offset_of!(Scalar, joule) * 8, 0);
                     }
                 }
             }
@@ -21116,8 +12621,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// `uavcan.si.unit.force.Scalar.1.0`
                     ///
                     /// Fixed size 4 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Scalar {
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -21133,7 +12640,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_f32(self.newton);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -21143,18 +12650,23 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Scalar {
-                                newton: { cursor.read_f32() },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
+                        assert_eq!(::memoffset::offset_of!(Scalar, newton) * 8, 0);
                     }
                 }
                 pub mod vector3_1_0 {
                     /// `uavcan.si.unit.force.Vector3.1.0`
                     ///
                     /// Fixed size 12 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Vector3 {
-                        /// saturated float32[3]
+                        /// `saturated float32[3]`
                         ///
                         /// Always aligned
                         /// Size 96 bits
@@ -21170,9 +12682,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             96
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            for value in (self.newton).iter() {
-                                cursor.write_f32(*value);
-                            }
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Vector3 {
@@ -21182,12 +12692,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Vector3 {
-                                newton: {
-                                    [cursor.read_f32(), cursor.read_f32(), cursor.read_f32()]
-                                },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Vector3>() * 8, 96);
+                        assert_eq!(::memoffset::offset_of!(Vector3, newton) * 8, 0);
                     }
                 }
             }
@@ -21196,8 +12707,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// `uavcan.si.unit.frequency.Scalar.1.0`
                     ///
                     /// Fixed size 4 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Scalar {
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -21213,7 +12726,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_f32(self.hertz);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -21223,10 +12736,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Scalar {
-                                hertz: { cursor.read_f32() },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
+                        assert_eq!(::memoffset::offset_of!(Scalar, hertz) * 8, 0);
                     }
                 }
             }
@@ -21235,8 +12751,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// `uavcan.si.unit.length.Scalar.1.0`
                     ///
                     /// Fixed size 4 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Scalar {
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -21252,7 +12770,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_f32(self.meter);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -21262,18 +12780,23 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Scalar {
-                                meter: { cursor.read_f32() },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
+                        assert_eq!(::memoffset::offset_of!(Scalar, meter) * 8, 0);
                     }
                 }
                 pub mod vector3_1_0 {
                     /// `uavcan.si.unit.length.Vector3.1.0`
                     ///
                     /// Fixed size 12 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Vector3 {
-                        /// saturated float32[3]
+                        /// `saturated float32[3]`
                         ///
                         /// Always aligned
                         /// Size 96 bits
@@ -21289,9 +12812,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             96
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            for value in (self.meter).iter() {
-                                cursor.write_f32(*value);
-                            }
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Vector3 {
@@ -21301,20 +12822,23 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Vector3 {
-                                meter: {
-                                    [cursor.read_f32(), cursor.read_f32(), cursor.read_f32()]
-                                },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Vector3>() * 8, 96);
+                        assert_eq!(::memoffset::offset_of!(Vector3, meter) * 8, 0);
                     }
                 }
                 pub mod wide_scalar_1_0 {
                     /// `uavcan.si.unit.length.WideScalar.1.0`
                     ///
                     /// Fixed size 8 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct WideScalar {
-                        /// saturated float64
+                        /// `saturated float64`
                         ///
                         /// Always aligned
                         /// Size 64 bits
@@ -21330,7 +12854,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             64
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_f64(self.meter);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for WideScalar {
@@ -21340,18 +12864,23 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(WideScalar {
-                                meter: { cursor.read_f64() },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<WideScalar>() * 8, 64);
+                        assert_eq!(::memoffset::offset_of!(WideScalar, meter) * 8, 0);
                     }
                 }
                 pub mod wide_vector3_1_0 {
                     /// `uavcan.si.unit.length.WideVector3.1.0`
                     ///
                     /// Fixed size 24 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct WideVector3 {
-                        /// saturated float64[3]
+                        /// `saturated float64[3]`
                         ///
                         /// Always aligned
                         /// Size 192 bits
@@ -21367,9 +12896,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             192
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            for value in (self.meter).iter() {
-                                cursor.write_f64(*value);
-                            }
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for WideVector3 {
@@ -21379,12 +12906,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(WideVector3 {
-                                meter: {
-                                    [cursor.read_f64(), cursor.read_f64(), cursor.read_f64()]
-                                },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<WideVector3>() * 8, 192);
+                        assert_eq!(::memoffset::offset_of!(WideVector3, meter) * 8, 0);
                     }
                 }
             }
@@ -21393,8 +12921,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// `uavcan.si.unit.magnetic_field_strength.Scalar.1.0`
                     ///
                     /// Fixed size 4 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Scalar {
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -21410,7 +12940,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_f32(self.tesla);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -21420,18 +12950,23 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Scalar {
-                                tesla: { cursor.read_f32() },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
+                        assert_eq!(::memoffset::offset_of!(Scalar, tesla) * 8, 0);
                     }
                 }
                 pub mod vector3_1_0 {
                     /// `uavcan.si.unit.magnetic_field_strength.Vector3.1.0`
                     ///
                     /// Fixed size 12 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Vector3 {
-                        /// saturated float32[3]
+                        /// `saturated float32[3]`
                         ///
                         /// Always aligned
                         /// Size 96 bits
@@ -21447,9 +12982,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             96
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            for value in (self.tesla).iter() {
-                                cursor.write_f32(*value);
-                            }
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Vector3 {
@@ -21459,12 +12992,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Vector3 {
-                                tesla: {
-                                    [cursor.read_f32(), cursor.read_f32(), cursor.read_f32()]
-                                },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Vector3>() * 8, 96);
+                        assert_eq!(::memoffset::offset_of!(Vector3, tesla) * 8, 0);
                     }
                 }
             }
@@ -21473,8 +13007,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// `uavcan.si.unit.mass.Scalar.1.0`
                     ///
                     /// Fixed size 4 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Scalar {
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -21490,7 +13026,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_f32(self.kilogram);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -21500,10 +13036,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Scalar {
-                                kilogram: { cursor.read_f32() },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
+                        assert_eq!(::memoffset::offset_of!(Scalar, kilogram) * 8, 0);
                     }
                 }
             }
@@ -21512,8 +13051,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// `uavcan.si.unit.power.Scalar.1.0`
                     ///
                     /// Fixed size 4 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Scalar {
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -21529,7 +13070,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_f32(self.watt);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -21539,10 +13080,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Scalar {
-                                watt: { cursor.read_f32() },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
+                        assert_eq!(::memoffset::offset_of!(Scalar, watt) * 8, 0);
                     }
                 }
             }
@@ -21551,8 +13095,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// `uavcan.si.unit.pressure.Scalar.1.0`
                     ///
                     /// Fixed size 4 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Scalar {
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -21568,7 +13114,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_f32(self.pascal);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -21578,10 +13124,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Scalar {
-                                pascal: { cursor.read_f32() },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
+                        assert_eq!(::memoffset::offset_of!(Scalar, pascal) * 8, 0);
                     }
                 }
             }
@@ -21590,8 +13139,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// `uavcan.si.unit.temperature.Scalar.1.0`
                     ///
                     /// Fixed size 4 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Scalar {
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -21607,7 +13158,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_f32(self.kelvin);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -21617,10 +13168,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Scalar {
-                                kelvin: { cursor.read_f32() },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
+                        assert_eq!(::memoffset::offset_of!(Scalar, kelvin) * 8, 0);
                     }
                 }
             }
@@ -21629,8 +13183,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// `uavcan.si.unit.torque.Scalar.1.0`
                     ///
                     /// Fixed size 4 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Scalar {
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -21646,7 +13202,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_f32(self.newton_meter);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -21656,18 +13212,23 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Scalar {
-                                newton_meter: { cursor.read_f32() },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
+                        assert_eq!(::memoffset::offset_of!(Scalar, newton_meter) * 8, 0);
                     }
                 }
                 pub mod vector3_1_0 {
                     /// `uavcan.si.unit.torque.Vector3.1.0`
                     ///
                     /// Fixed size 12 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Vector3 {
-                        /// saturated float32[3]
+                        /// `saturated float32[3]`
                         ///
                         /// Always aligned
                         /// Size 96 bits
@@ -21683,9 +13244,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             96
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            for value in (self.newton_meter).iter() {
-                                cursor.write_f32(*value);
-                            }
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Vector3 {
@@ -21695,12 +13254,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Vector3 {
-                                newton_meter: {
-                                    [cursor.read_f32(), cursor.read_f32(), cursor.read_f32()]
-                                },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Vector3>() * 8, 96);
+                        assert_eq!(::memoffset::offset_of!(Vector3, newton_meter) * 8, 0);
                     }
                 }
             }
@@ -21709,8 +13269,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// `uavcan.si.unit.velocity.Scalar.1.0`
                     ///
                     /// Fixed size 4 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Scalar {
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -21726,7 +13288,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_f32(self.meter_per_second);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -21736,18 +13298,23 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Scalar {
-                                meter_per_second: { cursor.read_f32() },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
+                        assert_eq!(::memoffset::offset_of!(Scalar, meter_per_second) * 8, 0);
                     }
                 }
                 pub mod vector3_1_0 {
                     /// `uavcan.si.unit.velocity.Vector3.1.0`
                     ///
                     /// Fixed size 12 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Vector3 {
-                        /// saturated float32[3]
+                        /// `saturated float32[3]`
                         ///
                         /// Always aligned
                         /// Size 96 bits
@@ -21763,9 +13330,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             96
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            for value in (self.meter_per_second).iter() {
-                                cursor.write_f32(*value);
-                            }
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Vector3 {
@@ -21775,12 +13340,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Vector3 {
-                                meter_per_second: {
-                                    [cursor.read_f32(), cursor.read_f32(), cursor.read_f32()]
-                                },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Vector3>() * 8, 96);
+                        assert_eq!(::memoffset::offset_of!(Vector3, meter_per_second) * 8, 0);
                     }
                 }
             }
@@ -21789,8 +13355,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// `uavcan.si.unit.voltage.Scalar.1.0`
                     ///
                     /// Fixed size 4 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Scalar {
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -21806,7 +13374,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_f32(self.volt);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -21816,10 +13384,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Scalar {
-                                volt: { cursor.read_f32() },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
+                        assert_eq!(::memoffset::offset_of!(Scalar, volt) * 8, 0);
                     }
                 }
             }
@@ -21828,8 +13399,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// `uavcan.si.unit.volume.Scalar.1.0`
                     ///
                     /// Fixed size 4 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Scalar {
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -21845,7 +13418,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_f32(self.cubic_meter);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -21855,10 +13428,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Scalar {
-                                cubic_meter: { cursor.read_f32() },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
+                        assert_eq!(::memoffset::offset_of!(Scalar, cubic_meter) * 8, 0);
                     }
                 }
             }
@@ -21867,8 +13443,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// `uavcan.si.unit.volumetric_flow_rate.Scalar.1.0`
                     ///
                     /// Fixed size 4 bytes
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
                     pub struct Scalar {
-                        /// saturated float32
+                        /// `saturated float32`
                         ///
                         /// Always aligned
                         /// Size 32 bits
@@ -21884,7 +13462,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_f32(self.cubic_meter_per_second);
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -21894,10 +13472,16 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         where
                             Self: Sized,
                         {
-                            Ok(Scalar {
-                                cubic_meter_per_second: { cursor.read_f32() },
-                            })
+                            Ok(Self::deserialize_zero_copy(cursor))
                         }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
+                        assert_eq!(
+                            ::memoffset::offset_of!(Scalar, cubic_meter_per_second) * 8,
+                            0
+                        );
                     }
                 }
             }
@@ -21908,6 +13492,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             /// `uavcan.time.GetSynchronizationMasterInfo.0.1`
             ///
             /// Fixed size 0 bytes
+            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[repr(C, packed)]
             pub struct GetSynchronizationMasterInfoRequest {}
             impl ::canadensis_encoding::DataType for GetSynchronizationMasterInfoRequest {
                 const EXTENT_BYTES: Option<u32> = Some(48);
@@ -21918,7 +13504,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 fn size_bits(&self) -> usize {
                     0
                 }
-                fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {}
+                fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                }
             }
             impl ::canadensis_encoding::Deserialize for GetSynchronizationMasterInfoRequest {
                 fn deserialize(
@@ -21927,25 +13515,32 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 where
                     Self: Sized,
                 {
-                    Ok(GetSynchronizationMasterInfoRequest {})
+                    Ok(Self::deserialize_zero_copy(cursor))
                 }
+            }
+            #[test]
+            fn test_layout() {
+                assert_eq!(
+                    ::core::mem::size_of::<GetSynchronizationMasterInfoRequest>() * 8,
+                    0
+                );
             }
 
             /// `uavcan.time.GetSynchronizationMasterInfo.0.1`
             ///
             /// Fixed size 7 bytes
             pub struct GetSynchronizationMasterInfoResponse {
-                /// saturated float32
+                /// `saturated float32`
                 ///
                 /// Always aligned
                 /// Size 32 bits
                 pub error_variance: f32,
-                /// uavcan.time.TimeSystem.0.1
+                /// `uavcan.time.TimeSystem.0.1`
                 ///
                 /// Always aligned
                 /// Size 8 bits
                 pub time_system: crate::uavcan::time::time_system_0_1::TimeSystem,
-                /// uavcan.time.TAIInfo.0.1
+                /// `uavcan.time.TAIInfo.0.1`
                 ///
                 /// Always aligned
                 /// Size 16 bits
@@ -21986,7 +13581,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             /// Fixed size 7 bytes
             pub struct Synchronization {
-                /// truncated uint56
+                /// `truncated uint56`
                 ///
                 /// Always aligned
                 /// Size 56 bits
@@ -22026,7 +13621,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             /// Fixed size 7 bytes
             pub struct SynchronizedTimestamp {
-                /// truncated uint56
+                /// `truncated uint56`
                 ///
                 /// Always aligned
                 /// Size 56 bits
@@ -22065,7 +13660,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             /// Fixed size 2 bytes
             pub struct TAIInfo {
-                /// saturated uint10
+                /// `saturated uint10`
                 ///
                 /// Always aligned
                 /// Size 10 bits
@@ -22105,7 +13700,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             /// Fixed size 1 bytes
             pub struct TimeSystem {
-                /// truncated uint4
+                /// `truncated uint4`
                 ///
                 /// Always aligned
                 /// Size 4 bits

@@ -8,21 +8,24 @@ use canadensis_dsdl_frontend::types::{
 use std::fmt::{Display, Formatter, Result};
 
 /// Implements Serialize for a type
-pub(crate) struct ImplementSerialize<'t>(pub &'t GeneratedType);
+pub(crate) struct ImplementSerialize<'t> {
+    pub ty: &'t GeneratedType,
+    pub zero_copy: bool,
+}
 
 impl Display for ImplementSerialize<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         writeln!(
             f,
             "impl ::canadensis_encoding::Serialize for {} {{",
-            self.0.name.type_name
+            self.ty.name.type_name
         )?;
 
         // Size
         writeln!(
             f,
             "fn size_bits(&self) -> usize {{ {} }}",
-            SizeBitsExpr(&self.0)
+            SizeBitsExpr(&self.ty)
         )?;
 
         // Serialize
@@ -31,10 +34,17 @@ impl Display for ImplementSerialize<'_> {
             "fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {{"
         )?;
 
-        match &self.0.kind {
+        match &self.ty.kind {
             GeneratedTypeKind::Struct(gstruct) => {
-                for field in &gstruct.fields {
-                    Display::fmt(&SerializeField(field), f)?;
+                if self.zero_copy {
+                    writeln!(
+                        f,
+                        "cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));"
+                    )?;
+                } else {
+                    for field in &gstruct.fields {
+                        Display::fmt(&SerializeField(field), f)?;
+                    }
                 }
             }
             GeneratedTypeKind::Enum(genum) => {
@@ -45,7 +55,7 @@ impl Display for ImplementSerialize<'_> {
                     writeln!(
                         f,
                         "{}::{}(inner) => {{",
-                        self.0.name.type_name, variant.name
+                        self.ty.name.type_name, variant.name
                     )?;
                     // Write discriminant
                     writeln!(
@@ -176,7 +186,7 @@ impl<'t> Display for WriteAlignedField<'_> {
                         )?;
                     }
                     PrimitiveType::Float16 { .. } => {
-                        writeln!(f, "cursor.write_f16({});", self.field_expr)?
+                        writeln!(f, "cursor.write_f16(({}).into());", self.field_expr)?
                     }
                     PrimitiveType::Float32 { .. } => {
                         writeln!(f, "cursor.write_f32({});", self.field_expr)?
@@ -187,6 +197,17 @@ impl<'t> Display for WriteAlignedField<'_> {
                 },
                 ResolvedScalarType::Void { bits } => writeln!(f, "cursor.skip_{}();", *bits)?,
             },
+            ResolvedType::FixedArray {
+                inner: ResolvedScalarType::Primitive(PrimitiveType::Boolean),
+                ..
+            }
+            | ResolvedType::VariableArray {
+                inner: ResolvedScalarType::Primitive(PrimitiveType::Boolean),
+                ..
+            } => {
+                // Use BitArray
+                writeln!(f, "({}).serialize(cursor);", self.field_expr)?;
+            }
             ResolvedType::FixedArray { inner, .. } => {
                 Display::fmt(
                     &WriteArrayElements {
@@ -257,7 +278,7 @@ impl Display for WriteUnalignedField<'_> {
                         f,
                     )?,
                     PrimitiveType::Float16 { .. } => {
-                        writeln!(f, "cursor.write_f16({});", self.field_expr)?
+                        writeln!(f, "cursor.write_f16(({}).into());", self.field_expr)?
                     }
                     PrimitiveType::Float32 { .. } => {
                         writeln!(f, "cursor.write_f32({});", self.field_expr)?
@@ -268,6 +289,17 @@ impl Display for WriteUnalignedField<'_> {
                 },
                 ResolvedScalarType::Void { bits } => writeln!(f, "cursor.skip_{}();", *bits)?,
             },
+            ResolvedType::FixedArray {
+                inner: ResolvedScalarType::Primitive(PrimitiveType::Boolean),
+                ..
+            }
+            | ResolvedType::VariableArray {
+                inner: ResolvedScalarType::Primitive(PrimitiveType::Boolean),
+                ..
+            } => {
+                // Use BitArray
+                writeln!(f, "({}).serialize(cursor);", self.field_expr)?;
+            }
             ResolvedType::FixedArray { inner, .. } => {
                 Display::fmt(
                     &WriteArrayElements {
@@ -360,7 +392,7 @@ impl Display for WriteArrayElements<'_> {
                 PrimitiveType::Float16 { .. } => {
                     writeln!(
                         f,
-                        "for value in ({}).iter() {{ cursor.write_f16(*value); }}",
+                        "for value in ({}).iter() {{ cursor.write_f16((*value).into()); }}",
                         self.array_expr
                     )
                 }

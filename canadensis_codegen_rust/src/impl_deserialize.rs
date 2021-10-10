@@ -9,20 +9,25 @@ use crate::{
     GeneratedEnum, GeneratedField, GeneratedStruct, GeneratedType, GeneratedTypeKind, RustTypeName,
 };
 
-pub(crate) struct ImplementDeserialize<'t>(pub &'t GeneratedType);
+pub(crate) struct ImplementDeserialize<'t> {
+    pub ty: &'t GeneratedType,
+    pub zero_copy: bool,
+}
 
 impl Display for ImplementDeserialize<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         writeln!(
             f,
             "impl ::canadensis_encoding::Deserialize for {} {{",
-            self.0.name.type_name
+            self.ty.name.type_name
         )?;
         writeln!(f, "fn deserialize(cursor: &mut ::canadensis_encoding::ReadCursor<'_>) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError> where Self: Sized {{")?;
 
-        match &self.0.kind {
-            GeneratedTypeKind::Struct(gstruct) => deserialize_struct(f, &self.0.name, gstruct)?,
-            GeneratedTypeKind::Enum(genum) => deserialize_enum(f, &self.0.name, &genum)?,
+        match &self.ty.kind {
+            GeneratedTypeKind::Struct(gstruct) => {
+                deserialize_struct(f, &self.ty.name, gstruct, self.zero_copy)?
+            }
+            GeneratedTypeKind::Enum(genum) => deserialize_enum(f, &self.ty.name, &genum)?,
         }
 
         // End function
@@ -33,37 +38,46 @@ impl Display for ImplementDeserialize<'_> {
     }
 }
 
-fn deserialize_struct(f: &mut Formatter, name: &RustTypeName, gstruct: &GeneratedStruct) -> Result {
-    writeln!(f, "Ok( {} {{", name.type_name)?;
+fn deserialize_struct(
+    f: &mut Formatter,
+    name: &RustTypeName,
+    gstruct: &GeneratedStruct,
+    zero_copy: bool,
+) -> Result {
+    if zero_copy {
+        writeln!(f, "Ok(Self::deserialize_zero_copy(cursor))")
+    } else {
+        writeln!(f, "Ok( {} {{", name.type_name)?;
 
-    // The padding from all padding fields before the next data field
-    let mut padding_before_data: Vec<u8> = Vec::new();
-    for field in &gstruct.fields {
-        match field {
-            GeneratedField::Data(field) => {
-                // Generate: field_name: { skip_bits(); field_value_expr }
-                write!(f, "{}: {{", field.name)?;
-                for padding in padding_before_data.drain(..) {
-                    writeln!(f, "cursor.skip_{}();", padding)?;
-                }
-                // TODO: Use aligned if field is always aligned
-                writeln!(
-                    f,
-                    "{} }},",
-                    ReadUnalignedField {
-                        ty: &field.uavcan_ty
+        // The padding from all padding fields before the next data field
+        let mut padding_before_data: Vec<u8> = Vec::new();
+        for field in &gstruct.fields {
+            match field {
+                GeneratedField::Data(field) => {
+                    // Generate: field_name: { skip_bits(); field_value_expr }
+                    write!(f, "{}: {{", field.name)?;
+                    for padding in padding_before_data.drain(..) {
+                        writeln!(f, "cursor.skip_{}();", padding)?;
                     }
-                )?;
-            }
-            GeneratedField::Padding(bits) => {
-                // Store the padding, which will be put before the next data field
-                padding_before_data.push(*bits);
+                    // TODO: Use aligned if field is always aligned
+                    writeln!(
+                        f,
+                        "{} }},",
+                        ReadUnalignedField {
+                            ty: &field.uavcan_ty
+                        }
+                    )?;
+                }
+                GeneratedField::Padding(bits) => {
+                    // Store the padding, which will be put before the next data field
+                    padding_before_data.push(*bits);
+                }
             }
         }
-    }
 
-    writeln!(f, "}} )")?;
-    Ok(())
+        writeln!(f, "}} )")?;
+        Ok(())
+    }
 }
 
 fn deserialize_enum(f: &mut Formatter<'_>, name: &RustTypeName, genum: &GeneratedEnum) -> Result {
@@ -122,12 +136,38 @@ impl<'t> Display for ReadUnalignedField<'_> {
                     PrimitiveType::UInt { bits, .. } => {
                         Display::fmt(&CallRead { bits: *bits }, f)?;
                     }
-                    PrimitiveType::Float16 { .. } => writeln!(f, "cursor.read_f16()")?,
+                    PrimitiveType::Float16 { .. } => writeln!(f, "cursor.read_f16().into()")?,
                     PrimitiveType::Float32 { .. } => writeln!(f, "cursor.read_f32()")?,
                     PrimitiveType::Float64 { .. } => writeln!(f, "cursor.read_f64()")?,
                 },
                 ResolvedScalarType::Void { bits } => writeln!(f, "cursor.skip_{}();", *bits)?,
             },
+            ResolvedType::FixedArray {
+                inner: ResolvedScalarType::Primitive(PrimitiveType::Boolean),
+                len,
+            } => {
+                // Use BitArray
+                writeln!(
+                    f,
+                    "::canadensis_encoding::bits::BitArray::deserialize({}_usize, cursor)",
+                    *len
+                )?;
+            }
+            ResolvedType::VariableArray {
+                inner: ResolvedScalarType::Primitive(PrimitiveType::Boolean),
+                ..
+            } => {
+                // Use BitArray
+                let length_bits = match &self.ty.implicit_field() {
+                    Some(ImplicitField::ArrayLength { bits }) => *bits,
+                    _ => unreachable!("Variable-length array does not have a length field"),
+                };
+                writeln!(f, "{{ let length = {};", CallRead { bits: length_bits })?;
+                writeln!(
+                    f,
+                    "::canadensis_encoding::bits::BitArray::deserialize(length, cursor) }}"
+                )?;
+            }
             ResolvedType::FixedArray { inner, len } => {
                 // Make an array literal
                 writeln!(f, "[")?;
@@ -144,7 +184,7 @@ impl<'t> Display for ReadUnalignedField<'_> {
                     Some(ImplicitField::ArrayLength { bits }) => *bits,
                     _ => unreachable!("Variable-length array does not have a length field"),
                 };
-                writeln!(f, "let length = {};", CallReadAligned { bits: length_bits })?;
+                writeln!(f, "let length = {};", CallRead { bits: length_bits })?;
                 writeln!(f, "if length <= {} {{", *max_len)?;
 
                 writeln!(f, "let mut elements = ::heapless::Vec::new();")?;
@@ -188,7 +228,7 @@ impl Display for ReadUnalignedScalar<'_> {
                 PrimitiveType::Boolean => write!(f, "cursor.read_bool()")?,
                 PrimitiveType::Int { bits } => Display::fmt(&CallRead { bits: *bits }, f)?,
                 PrimitiveType::UInt { bits, .. } => Display::fmt(&CallRead { bits: *bits }, f)?,
-                PrimitiveType::Float16 { .. } => write!(f, "cursor.read_f16()")?,
+                PrimitiveType::Float16 { .. } => write!(f, "cursor.read_f16().into()")?,
                 PrimitiveType::Float32 { .. } => write!(f, "cursor.read_f32()")?,
                 PrimitiveType::Float64 { .. } => write!(f, "cursor.read_f64()")?,
             },
