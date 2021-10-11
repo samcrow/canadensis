@@ -6,11 +6,10 @@ use core::marker::PhantomData;
 
 use crate::serialize::do_serialize;
 use crate::Clock;
-use canadensis_can::queue::FrameSink;
-use canadensis_can::{Mtu, OutOfMemoryError, Transmitter};
 use canadensis_core::time::Instant;
 use canadensis_core::transfer::{Header, MessageHeader, Transfer};
-use canadensis_core::{Priority, SubjectId, TransferId};
+use canadensis_core::transport::{TransferId, Transmitter, Transport};
+use canadensis_core::SubjectId;
 use canadensis_encoding::{Message, Serialize};
 
 /// A transmitter that sends anonymous messages and does not require a node ID
@@ -18,40 +17,37 @@ use canadensis_encoding::{Message, Serialize};
 /// Anonymous nodes have some limitations:
 /// * They can only send messages, not service requests or responses
 /// * They cannot send multi-frame messages
-pub struct AnonymousPublisher<C: Clock, T> {
+pub struct AnonymousPublisher<C: Clock, M, T: Transmitter<C::Instant>> {
     /// The priority of transfers from this transmitter
-    priority: Priority,
+    priority: <T::Transport as Transport>::Priority,
     /// The subject to transmit on
     subject: SubjectId,
     /// The ID of the next transfer sent
-    next_transfer_id: TransferId,
+    next_transfer_id: <T::Transport as Transport>::TransferId,
     /// Frame transmit timeout
     timeout: <C::Instant as Instant>::Duration,
-    /// Transport MTU (used to check that transfers are single-frame)
-    mtu: Mtu,
-    /// Message type phantom
-    message: PhantomData<T>,
+    /// Message type phantom data
+    _message_phantom: PhantomData<M>,
 }
 
-impl<C, T> AnonymousPublisher<C, T>
+impl<C, M, T> AnonymousPublisher<C, M, T>
 where
     C: Clock,
-    T: Message + Serialize,
+    M: Message + Serialize,
+    T: Transmitter<C::Instant>,
 {
     /// Creates an anonymous message publisher
     pub fn new(
         subject: SubjectId,
-        priority: Priority,
+        priority: <T::Transport as Transport>::Priority,
         timeout: <C::Instant as Instant>::Duration,
-        mtu: Mtu,
     ) -> Self {
         AnonymousPublisher {
             priority,
             subject,
-            next_transfer_id: TransferId::const_default(),
+            next_transfer_id: <T::Transport as Transport>::TransferId::default(),
             timeout,
-            mtu,
-            message: PhantomData,
+            _message_phantom: PhantomData,
         }
     }
 
@@ -59,19 +55,16 @@ where
     ///
     /// This function returns an error if the message is too long to fit into one frame, or if
     /// memory allocation fails.
-    pub fn send<Q>(
+    pub fn send(
         &mut self,
-        payload: &T,
+        payload: &M,
         now: C::Instant,
-        transmitter: &mut Transmitter<Q>,
-    ) -> Result<(), AnonymousPublishError>
-    where
-        Q: FrameSink<C::Instant>,
-    {
+        transmitter: &mut T,
+    ) -> Result<(), AnonymousPublishError<<T::Transport as Transport>::Error>> {
         // Check that the message fits into one frame
-        // (subtract one byte to leave room for the tail byte)
-        let mtu_bits = (self.mtu.as_bytes() - 1) * 8;
-        if payload.size_bits() > mtu_bits {
+        // Convert to bites, rounding up
+        let payload_size_bytes = (payload.size_bits() + 7) / 8;
+        if payload_size_bytes > transmitter.mtu() {
             return Err(AnonymousPublishError::Length);
         }
         // Part 1: Serialize
@@ -82,27 +75,24 @@ where
         Ok(())
     }
 
-    fn send_payload<Q>(
+    fn send_payload(
         &mut self,
         payload: &[u8],
         deadline: C::Instant,
-        transmitter: &mut Transmitter<Q>,
-    ) -> Result<(), OutOfMemoryError>
-    where
-        Q: FrameSink<C::Instant>,
-    {
+        transmitter: &mut T,
+    ) -> Result<(), <T::Transport as Transport>::Error> {
         // Assemble the transfer
-        let transfer: Transfer<&[u8], C::Instant> = Transfer {
+        let transfer = Transfer {
             header: Header::Message(MessageHeader {
                 timestamp: deadline,
-                transfer_id: self.next_transfer_id,
-                priority: self.priority,
+                transfer_id: self.next_transfer_id.clone(),
+                priority: self.priority.clone(),
                 subject: self.subject,
                 source: None,
             }),
             payload,
         };
-        self.next_transfer_id = self.next_transfer_id.increment();
+        self.next_transfer_id = self.next_transfer_id.clone().increment();
 
         transmitter.push(transfer)?;
         Ok(())
@@ -111,15 +101,15 @@ where
 
 /// Errors that can occur when publishing an anonymous message
 #[derive(Debug)]
-pub enum AnonymousPublishError {
+pub enum AnonymousPublishError<E> {
     /// The message was too long to fit into one frame
     Length,
-    /// Not enough memory was available
-    Memory(OutOfMemoryError),
+    /// The transport returned an error
+    Transport(E),
 }
 
-impl From<OutOfMemoryError> for AnonymousPublishError {
-    fn from(inner: OutOfMemoryError) -> Self {
-        AnonymousPublishError::Memory(inner)
+impl<E> From<E> for AnonymousPublishError<E> {
+    fn from(inner: E) -> Self {
+        AnonymousPublishError::Transport(inner)
     }
 }

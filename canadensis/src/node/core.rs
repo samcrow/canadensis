@@ -1,15 +1,13 @@
 use alloc::vec::Vec;
 use core::marker::PhantomData;
 
-use canadensis_can::queue::{FrameQueueSource, FrameSink};
-use canadensis_can::{Frame, Mtu, OutOfMemoryError, Receiver, ServiceSubscribeError, Transmitter};
 use canadensis_core::time::{Clock, Instant};
 use canadensis_core::transfer::{
     Header, MessageTransfer, ServiceHeader, ServiceTransfer, Transfer,
 };
-use canadensis_core::{NodeId, Priority, ServiceId, SubjectId, TransferId};
+use canadensis_core::transport::{Receiver, Transmitter, Transport};
+use canadensis_core::{OutOfMemoryError, ServiceId, ServiceSubscribeError, SubjectId};
 use canadensis_encoding::{Message, Request, Response, Serialize};
-use canadensis_filter_config::Filter;
 
 use crate::hash::TrivialIndexMap;
 use crate::publisher::Publisher;
@@ -25,34 +23,43 @@ use crate::{Node, PublishToken, ResponseToken, ServiceToken, StartSendError, Tra
 /// * `P`: The maximum number of topics that can be published
 /// * `R`: The maximum number of services for which requests can be sent
 ///
-pub struct CoreNode<C, Q, const P: usize, const R: usize>
+pub struct CoreNode<C, T, U, const P: usize, const R: usize>
 where
     C: Clock,
+    U: Receiver<C::Instant>,
+    T: Transmitter<C::Instant>,
 {
     clock: C,
-    transmitter: Transmitter<Q>,
-    receiver: Receiver<C::Instant>,
-    node_id: NodeId,
-    publishers: TrivialIndexMap<SubjectId, Publisher<C::Instant>, P>,
-    requesters: TrivialIndexMap<ServiceId, Requester<C::Instant>, R>,
+    transmitter: T,
+    receiver: U,
+    node_id: <T::Transport as Transport>::NodeId,
+    publishers: TrivialIndexMap<SubjectId, Publisher<C::Instant, T>, P>,
+    requesters: TrivialIndexMap<ServiceId, Requester<C::Instant, T>, R>,
 }
 
-impl<C, Q, const P: usize, const R: usize> CoreNode<C, Q, P, R>
+impl<C, T, U, N, const P: usize, const R: usize> CoreNode<C, T, U, P, R>
 where
     C: Clock,
-    Q: FrameSink<C::Instant>,
+    N: Transport,
+    U: Receiver<C::Instant, Transport = N>,
+    T: Transmitter<C::Instant, Transport = N>,
 {
     /// Creates a node
     ///
     /// * `clock`: A clock to use for frame deadlines and timeouts
     /// * `node_id`: The ID of this node
-    /// * `mtu`: The maximum transmission unit size to use when sending CAN frames
-    /// * `transmit_queue`: A queue to hold outgoing frames
-    pub fn new(clock: C, node_id: NodeId, mtu: Mtu, transmit_queue: Q) -> Self {
+    /// * `transmitter`: A transport transmitter
+    /// * `receiver`: A transport receiver
+    pub fn new(
+        clock: C,
+        node_id: <T::Transport as Transport>::NodeId,
+        transmitter: T,
+        receiver: U,
+    ) -> Self {
         CoreNode {
             clock,
-            transmitter: Transmitter::new(mtu, transmit_queue),
-            receiver: Receiver::new(node_id, mtu),
+            transmitter,
+            receiver,
             node_id,
             publishers: TrivialIndexMap::new(),
             requesters: TrivialIndexMap::new(),
@@ -61,10 +68,10 @@ where
 
     fn handle_incoming_transfer<H>(
         &mut self,
-        transfer: Transfer<Vec<u8>, C::Instant>,
+        transfer: Transfer<Vec<u8>, C::Instant, U::Transport>,
         handler: &mut H,
     ) where
-        H: TransferHandler<<Self as Node>::Instant>,
+        H: TransferHandler<<Self as Node>::Instant, U::Transport>,
     {
         match transfer.header {
             Header::Message(message_header) => {
@@ -76,10 +83,10 @@ where
             }
             Header::Request(service_header) => {
                 let token = ResponseToken {
-                    service: service_header.service,
-                    client: service_header.source,
-                    transfer: service_header.transfer_id,
-                    priority: service_header.priority,
+                    service: service_header.service.clone(),
+                    client: service_header.source.clone(),
+                    transfer: service_header.transfer_id.clone(),
+                    priority: service_header.priority.clone(),
                 };
                 let service_transfer = ServiceTransfer {
                     header: service_header,
@@ -99,17 +106,17 @@ where
 
     fn send_response_payload(
         &mut self,
-        token: ResponseToken,
+        token: ResponseToken<T::Transport>,
         deadline: C::Instant,
         payload: &[u8],
-    ) -> Result<(), OutOfMemoryError> {
+    ) -> Result<(), <T::Transport as Transport>::Error> {
         let transfer_out = Transfer {
             header: Header::Response(ServiceHeader {
                 timestamp: deadline,
                 transfer_id: token.transfer,
                 priority: token.priority,
                 service: token.service,
-                source: self.node_id,
+                source: self.node_id.clone(),
                 destination: token.client,
             }),
             payload,
@@ -118,22 +125,26 @@ where
     }
 }
 
-impl<C, Q, const P: usize, const R: usize> Node for CoreNode<C, Q, P, R>
+impl<C, T, U, N, const P: usize, const R: usize> Node for CoreNode<C, T, U, P, R>
 where
     C: Clock,
-    Q: FrameSink<C::Instant>,
+    N: Transport,
+    T: Transmitter<<C as Clock>::Instant, Transport = N>,
+    U: Receiver<<C as Clock>::Instant, Transport = N>,
 {
     type Clock = C;
     type Instant = <C as Clock>::Instant;
-    type FrameQueue = Q;
+    type Transport = N;
+    type Transmitter = T;
+    type Receiver = U;
 
     fn accept_frame<H>(
         &mut self,
-        frame: Frame<C::Instant>,
+        frame: N::Frame,
         handler: &mut H,
-    ) -> Result<(), OutOfMemoryError>
+    ) -> Result<(), <Self::Transport as Transport>::Error>
     where
-        H: TransferHandler<Self::Instant>,
+        H: TransferHandler<Self::Instant, Self::Transport>,
     {
         if let Some(transfer) = self.receiver.accept(frame)? {
             self.handle_incoming_transfer(transfer, handler)
@@ -141,36 +152,39 @@ where
         Ok(())
     }
 
-    fn start_publishing<T>(
+    fn start_publishing<M>(
         &mut self,
         subject: SubjectId,
         timeout: <C::Instant as Instant>::Duration,
-        priority: Priority,
-    ) -> Result<PublishToken<T>, StartSendError>
+        priority: N::Priority,
+    ) -> Result<PublishToken<M>, StartSendError<N::Error>>
     where
-        T: Message,
+        M: Message,
     {
         let token = PublishToken(subject, PhantomData);
         if self.publishers.contains_key(&subject) {
             Err(StartSendError::Duplicate)
         } else {
             self.publishers
-                .insert(subject, Publisher::new(self.node_id, timeout, priority))
+                .insert(
+                    subject,
+                    Publisher::new(self.node_id.clone(), timeout, priority),
+                )
                 .map(|_| token)
                 .map_err(|_| StartSendError::Memory(OutOfMemoryError))
         }
     }
 
-    fn stop_publishing<T>(&mut self, token: PublishToken<T>)
+    fn stop_publishing<M>(&mut self, token: PublishToken<M>)
     where
-        T: Message,
+        M: Message,
     {
         self.publishers.remove(&token.0);
     }
 
-    fn publish<T>(&mut self, token: &PublishToken<T>, payload: &T) -> Result<(), OutOfMemoryError>
+    fn publish<M>(&mut self, token: &PublishToken<M>, payload: &M) -> Result<(), N::Error>
     where
-        T: Message + Serialize,
+        M: Message + Serialize,
     {
         let publisher = self
             .publishers
@@ -182,15 +196,15 @@ where
     /// Sets up to send requests for a service
     ///
     /// This also subscribes to the corresponding responses.
-    fn start_sending_requests<T>(
+    fn start_sending_requests<M>(
         &mut self,
         service: ServiceId,
         receive_timeout: <C::Instant as Instant>::Duration,
         response_payload_size_max: usize,
-        priority: Priority,
-    ) -> Result<ServiceToken<T>, StartSendError>
+        priority: N::Priority,
+    ) -> Result<ServiceToken<M>, StartSendError<N::Error>>
     where
-        T: Request,
+        M: Request,
     {
         let token = ServiceToken(service, PhantomData);
         if self.requesters.contains_key(&service) {
@@ -199,7 +213,7 @@ where
             self.requesters
                 .insert(
                     service,
-                    Requester::new(self.node_id, receive_timeout, priority),
+                    Requester::new(self.node_id.clone(), receive_timeout, priority),
                 )
                 .map_err(|_| StartSendError::Memory(OutOfMemoryError))?;
             match self.receiver.subscribe_response(
@@ -213,7 +227,7 @@ where
                     self.requesters.remove(&service);
                     // Because a CoreNode can't be anonymous, the above function can't return an Anonymous error.
                     match e {
-                        ServiceSubscribeError::Memory(e) => Err(e.into()),
+                        ServiceSubscribeError::Transport(e) => Err(StartSendError::Transport(e)),
                         ServiceSubscribeError::Anonymous => {
                             unreachable!("CoreNode is never anonymous")
                         }
@@ -223,21 +237,21 @@ where
         }
     }
 
-    fn stop_sending_requests<T>(&mut self, token: ServiceToken<T>)
+    fn stop_sending_requests<M>(&mut self, token: ServiceToken<M>)
     where
-        T: Request,
+        M: Request,
     {
         self.requesters.remove(&token.0);
     }
 
-    fn send_request<T>(
+    fn send_request<M>(
         &mut self,
-        token: &ServiceToken<T>,
-        payload: &T,
-        destination: NodeId,
-    ) -> Result<TransferId, OutOfMemoryError>
+        token: &ServiceToken<M>,
+        payload: &M,
+        destination: N::NodeId,
+    ) -> Result<N::TransferId, <N as Transport>::Error>
     where
-        T: Request + Serialize,
+        M: Serialize,
     {
         let requester = self
             .requesters
@@ -257,7 +271,7 @@ where
         subject: SubjectId,
         payload_size_max: usize,
         timeout: <C::Instant as Instant>::Duration,
-    ) -> Result<(), OutOfMemoryError> {
+    ) -> Result<(), <Self::Transport as Transport>::Error> {
         self.receiver
             .subscribe_message(subject, payload_size_max, timeout)
     }
@@ -267,25 +281,25 @@ where
         service: ServiceId,
         payload_size_max: usize,
         timeout: <C::Instant as Instant>::Duration,
-    ) -> Result<(), OutOfMemoryError> {
+    ) -> Result<(), <Self::Transport as Transport>::Error> {
         let status = self
             .receiver
             .subscribe_request(service, payload_size_max, timeout);
         // Because a CoreNode can't be anonymous, the above function can't return an Anonymous error.
         status.map_err(|e| match e {
-            ServiceSubscribeError::Memory(e) => e,
+            ServiceSubscribeError::Transport(e) => e,
             ServiceSubscribeError::Anonymous => unreachable!("CoreNode is never anonymous"),
         })
     }
 
-    fn send_response<T>(
+    fn send_response<M>(
         &mut self,
-        token: ResponseToken,
+        token: ResponseToken<Self::Transport>,
         timeout: <C::Instant as Instant>::Duration,
-        payload: &T,
-    ) -> Result<(), OutOfMemoryError>
+        payload: &M,
+    ) -> Result<(), <Self::Transport as Transport>::Error>
     where
-        T: Response + Serialize,
+        M: Response + Serialize,
     {
         let now = self.clock.now();
         let deadline = timeout + now;
@@ -303,41 +317,50 @@ where
         &mut self.clock
     }
 
-    fn frame_queue(&self) -> &Self::FrameQueue {
-        self.transmitter.frame_queue()
+    /// TODO: Move to CanReceiver (this is CAN-specific)
+    // fn frame_filters(&self) -> Result<Vec<Filter>, OutOfMemoryError> {
+    //     self.receiver.frame_filters()
+    // }
+
+    fn transmitter(&self) -> &Self::Transmitter {
+        &self.transmitter
+    }
+    fn transmitter_mut(&mut self) -> &mut Self::Transmitter {
+        &mut self.transmitter
     }
 
-    fn frame_queue_mut(&mut self) -> &mut Self::FrameQueue {
-        self.transmitter.frame_queue_mut()
+    fn receiver(&self) -> &Self::Receiver {
+        &self.receiver
+    }
+    fn receiver_mut(&mut self) -> &mut Self::Receiver {
+        &mut self.receiver
     }
 
     /// Returns the identifier of this node
-    fn node_id(&self) -> NodeId {
-        self.node_id
-    }
-
-    fn frame_filters(&self) -> Result<Vec<Filter>, OutOfMemoryError> {
-        self.receiver.frame_filters()
+    fn node_id(&self) -> <Self::Transport as Transport>::NodeId {
+        self.node_id.clone()
     }
 }
 
-impl<C, Q, const P: usize, const R: usize> CoreNode<C, Q, P, R>
-where
-    C: Clock,
-    Q: FrameQueueSource<C::Instant>,
-{
-    /// Removes an outgoing frame from the queue and returns it
-    pub fn pop_frame(&mut self) -> Option<Frame<C::Instant>> {
-        self.transmitter.frame_queue_mut().pop_frame()
-    }
-
-    /// Returns a reference to the next outgoing frame in the queue, and does not remove it
-    pub fn peek_frame(&mut self) -> Option<&Frame<C::Instant>> {
-        self.transmitter.frame_queue_mut().peek_frame()
-    }
-
-    /// Returns an outgoing frame to the queue so that it can be transmitted later
-    pub fn return_frame(&mut self, frame: Frame<C::Instant>) -> Result<(), OutOfMemoryError> {
-        self.transmitter.frame_queue_mut().return_frame(frame)
-    }
-}
+// TODO: Move this to CanTransmitter
+// impl<C, T, U, const P: usize, const R: usize> CoreNode<C, T, U, P, R>
+// where
+//     C: Clock,
+//     T: Transmitter<C::Instant>,
+//     U: Receiver<C::Instant>,
+// {
+//     /// Removes an outgoing frame from the queue and returns it
+//     pub fn pop_frame(&mut self) -> Option<Frame<C::Instant>> {
+//         self.transmitter.frame_queue_mut().pop_frame()
+//     }
+//
+//     /// Returns a reference to the next outgoing frame in the queue, and does not remove it
+//     pub fn peek_frame(&mut self) -> Option<&Frame<C::Instant>> {
+//         self.transmitter.frame_queue_mut().peek_frame()
+//     }
+//
+//     /// Returns an outgoing frame to the queue so that it can be transmitted later
+//     pub fn return_frame(&mut self, frame: Frame<C::Instant>) -> Result<(), OutOfMemoryError> {
+//         self.transmitter.frame_queue_mut().return_frame(frame)
+//     }
+// }

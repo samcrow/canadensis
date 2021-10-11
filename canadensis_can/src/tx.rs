@@ -4,26 +4,29 @@
 
 use core::convert::TryFrom;
 use core::iter;
+use core::marker::PhantomData;
 
+use canadensis_core::time::Instant;
 use canadensis_core::transfer::{Header, ServiceHeader, Transfer};
-use canadensis_core::NodeId;
+use canadensis_core::transport::Transmitter;
 
 use crate::crc::TransferCrc;
 use crate::data::Frame;
-use crate::error::OutOfMemoryError;
 use crate::queue::FrameSink;
 use crate::tx::breakdown::Breakdown;
+use crate::types::{CanNodeId, CanTransport};
 use crate::{CanId, Mtu};
+use canadensis_core::OutOfMemoryError;
 
 mod breakdown;
 #[cfg(test)]
 mod tx_test;
 
 /// Splits outgoing transfers into frames
-pub struct Transmitter<Q> {
+pub struct CanTransmitter<I, Q> {
     /// Queue of frames waiting to be sent
     frame_queue: Q,
-    /// Transport MTU
+    /// Transport MTU (including the tail byte)
     mtu: usize,
     /// Number of transfers successfully transmitted
     ///
@@ -34,27 +37,15 @@ pub struct Transmitter<Q> {
     ///
     /// A failure to allocate memory is considered an error. CAN bus errors are ignored.
     error_count: u64,
+    _instant: PhantomData<I>,
 }
 
-impl<Q> Transmitter<Q> {
-    /// Creates a transmitter
-    ///
-    /// mtu: The maximum number of bytes in a frame
-    pub fn new(mtu: Mtu, frame_queue: Q) -> Self {
-        Transmitter {
-            frame_queue,
-            mtu: mtu as usize,
-            transfer_count: 0,
-            error_count: 0,
-        }
-    }
-
-    /// Sets the MTU
-    ///
-    /// This will take effect on the next call to push().
-    pub fn set_mtu(&mut self, mtu: Mtu) {
-        self.mtu = mtu as usize;
-    }
+impl<I, Q> Transmitter<I> for CanTransmitter<I, Q>
+where
+    I: Instant,
+    Q: FrameSink<I>,
+{
+    type Transport = CanTransport<I>;
 
     /// Breaks a transfer into frames
     ///
@@ -62,11 +53,9 @@ impl<Q> Transmitter<Q> {
     ///
     /// This function returns an error if the queue does not have enough space to hold all
     /// the required frames.
-    pub fn push<P, I>(&mut self, transfer: Transfer<P, I>) -> Result<(), OutOfMemoryError>
+    fn push<A>(&mut self, transfer: Transfer<A, I, CanTransport<I>>) -> Result<(), OutOfMemoryError>
     where
-        P: AsRef<[u8]>,
-        Q: FrameSink<I>,
-        I: Clone,
+        A: AsRef<[u8]>,
     {
         // Convert the transfer payload into borrowed form
         let transfer = Transfer {
@@ -86,7 +75,37 @@ impl<Q> Transmitter<Q> {
         }
     }
 
-    fn push_inner<I>(&mut self, transfer: Transfer<&[u8], I>) -> Result<(), OutOfMemoryError>
+    fn mtu(&self) -> usize {
+        // Subtract 1 for the tail byte
+        self.mtu - 1
+    }
+}
+
+impl<I, Q> CanTransmitter<I, Q> {
+    /// Creates a transmitter
+    ///
+    /// mtu: The maximum number of bytes in a frame
+    pub fn new(mtu: Mtu, frame_queue: Q) -> Self {
+        CanTransmitter {
+            frame_queue,
+            mtu: mtu as usize,
+            transfer_count: 0,
+            error_count: 0,
+            _instant: PhantomData,
+        }
+    }
+
+    /// Sets the MTU
+    ///
+    /// This will take effect on the next call to push().
+    pub fn set_mtu(&mut self, mtu: Mtu) {
+        self.mtu = mtu as usize;
+    }
+
+    fn push_inner(
+        &mut self,
+        transfer: Transfer<&[u8], I, CanTransport<I>>,
+    ) -> Result<(), OutOfMemoryError>
     where
         Q: FrameSink<I>,
         I: Clone,
@@ -106,7 +125,7 @@ impl<Q> Transmitter<Q> {
             .inspect(|byte| crc.add(*byte));
         // Break into frames
         let can_id = make_can_id(&transfer.header, &transfer.payload);
-        let mut breakdown = Breakdown::new(self.mtu, transfer.header.transfer_id());
+        let mut breakdown = Breakdown::new(self.mtu, transfer.header.transfer_id().clone());
         let mut frames = 0;
         // Do the non-last frames
         for byte in payload_and_padding {
@@ -135,7 +154,7 @@ impl<Q> Transmitter<Q> {
     }
 
     /// Creates a frame and adds it to a transaction
-    fn push_frame<I>(
+    fn push_frame(
         &mut self,
         timestamp: I,
         id: CanId,
@@ -177,12 +196,15 @@ impl<Q> Transmitter<Q> {
     }
 }
 
-fn make_can_id<I>(header: &Header<I>, payload: &[u8]) -> CanId {
+fn make_can_id<I>(header: &Header<I, CanTransport<I>>, payload: &[u8]) -> CanId {
     let mut bits = 0u32;
 
     // Common fields for all transfer types
-    bits |= (header.priority() as u32) << 26;
-    let source_node = header.source().unwrap_or_else(|| make_pseudo_id(payload));
+    bits |= (header.priority().clone() as u32) << 26;
+    let source_node = header
+        .source()
+        .cloned()
+        .unwrap_or_else(|| make_pseudo_id(payload));
     bits |= u32::from(source_node);
 
     match header {
@@ -212,7 +234,7 @@ fn make_can_id<I>(header: &Header<I>, payload: &[u8]) -> CanId {
 
 /// Encodes the service ID, destination ID, and service flag into a 29-bit CAN ID, and returns
 /// it
-fn encode_common_service_fields<I>(header: &ServiceHeader<I>) -> u32 {
+fn encode_common_service_fields<I>(header: &ServiceHeader<I, CanTransport<I>>) -> u32 {
     // Service ID
     (u32::from(u16::from(header.service)) << 14)
         // Destination node ID
@@ -222,14 +244,14 @@ fn encode_common_service_fields<I>(header: &ServiceHeader<I>) -> u32 {
 }
 
 /// Generates a non-reserved node pseudo-ID based on the provided transfer payload
-fn make_pseudo_id(payload: &[u8]) -> NodeId {
+fn make_pseudo_id(payload: &[u8]) -> CanNodeId {
     // Just XOR the payload
     let bits = payload
         .iter()
         .fold(0x55u8, |state, payload_byte| state ^ *payload_byte);
-    let mut id = NodeId::from_truncating(bits);
+    let mut id = CanNodeId::from_truncating(bits);
     while id.is_diagnostic_reserved() {
-        id = NodeId::from_truncating(u8::from(id) - 1);
+        id = CanNodeId::from_truncating(u8::from(id) - 1);
     }
     id
 }

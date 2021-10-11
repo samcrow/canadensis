@@ -1,5 +1,6 @@
 use crate::queue::FrameSink;
-use crate::{Frame, OutOfMemoryError};
+use crate::Frame;
+use canadensis_core::OutOfMemoryError;
 
 /// An aggregation of two outgoing frame queues that can be used for double-redundant transports
 ///

@@ -1,10 +1,10 @@
 use crate::node::MinimalNode;
 use crate::{Node, PublishToken, ResponseToken, ServiceToken, StartSendError, TransferHandler};
 use alloc::vec::Vec;
-use canadensis_can::{Frame, OutOfMemoryError};
 use canadensis_core::time::{milliseconds, Clock, Instant};
 use canadensis_core::transfer::{MessageTransfer, ServiceTransfer};
-use canadensis_core::{NodeId, Priority, ServiceId, SubjectId, TransferId};
+use canadensis_core::transport::Transport;
+use canadensis_core::{Priority, ServiceId, SubjectId};
 use canadensis_data_types::uavcan::node::get_info_1_0::{self, GetInfoResponse};
 use canadensis_data_types::uavcan::node::health_1_0::Health;
 use canadensis_data_types::uavcan::node::heartbeat_1_0;
@@ -15,7 +15,6 @@ use canadensis_data_types::uavcan::node::port::subject_id_1_0;
 use canadensis_data_types::uavcan::node::port::subject_id_list_0_1::SubjectIDList;
 use canadensis_encoding::bits::BitArray;
 use canadensis_encoding::{Message, Request, Response, Serialize};
-use canadensis_filter_config::Filter;
 
 /// A node that provides all basic application-layer functionality
 ///
@@ -47,13 +46,19 @@ where
     ///
     /// * `node`: The underlying node (this is usually a [`CoreNode`](crate::node::CoreNode))
     /// * `node_info`: The information that should be returned when handling node information requests
-    pub fn new(mut node: N, node_info: GetInfoResponse) -> Result<Self, StartSendError> {
+    pub fn new(
+        mut node: N,
+        node_info: GetInfoResponse,
+    ) -> Result<Self, StartSendError<<N::Transport as Transport>::Error>> {
         // The MinimalNode takes care of heartbeats.
         // Do node info and port list here.
 
         node.subscribe_request(get_info_1_0::SERVICE, 0, milliseconds(1000))?;
-        let port_list_token =
-            node.start_publishing(list_0_1::SUBJECT, milliseconds(1000), Priority::Optional)?;
+        let port_list_token = node.start_publishing(
+            list_0_1::SUBJECT,
+            milliseconds(1000),
+            Priority::Optional.into(),
+        )?;
 
         let minimal = MinimalNode::new(node)?;
 
@@ -96,7 +101,7 @@ where
     }
 
     /// This function must be called once per second to send heartbeat and port list messages
-    pub fn run_per_second_tasks(&mut self) -> Result<(), OutOfMemoryError> {
+    pub fn run_per_second_tasks(&mut self) -> Result<(), <N::Transport as Transport>::Error> {
         self.node.run_per_second_tasks()?;
         if self.seconds_since_port_list_published == 10 {
             self.seconds_since_port_list_published = 1;
@@ -107,7 +112,7 @@ where
         Ok(())
     }
 
-    fn publish_port_list(&mut self) -> Result<(), OutOfMemoryError> {
+    fn publish_port_list(&mut self) -> Result<(), <N::Transport as Transport>::Error> {
         self.node
             .node_mut()
             .publish(&self.port_list_token, &self.port_list)
@@ -133,15 +138,17 @@ where
 {
     type Clock = N::Clock;
     type Instant = N::Instant;
-    type FrameQueue = N::FrameQueue;
+    type Transport = N::Transport;
+    type Transmitter = N::Transmitter;
+    type Receiver = N::Receiver;
 
     fn accept_frame<H>(
         &mut self,
-        frame: Frame<<N::Clock as Clock>::Instant>,
+        frame: <Self::Transport as Transport>::Frame,
         handler: &mut H,
-    ) -> Result<(), OutOfMemoryError>
+    ) -> Result<(), <Self::Transport as Transport>::Error>
     where
-        H: TransferHandler<Self::Instant>,
+        H: TransferHandler<Self::Instant, Self::Transport>,
     {
         let mut responder = NodeInfoResponder {
             info: &self.node_info,
@@ -155,8 +162,8 @@ where
         &mut self,
         subject: SubjectId,
         timeout: <<N::Clock as Clock>::Instant as Instant>::Duration,
-        priority: Priority,
-    ) -> Result<PublishToken<T>, StartSendError>
+        priority: <Self::Transport as Transport>::Priority,
+    ) -> Result<PublishToken<T>, StartSendError<<Self::Transport as Transport>::Error>>
     where
         T: Message,
     {
@@ -178,7 +185,11 @@ where
         remove_from_list(&mut self.port_list.publishers, subject);
     }
 
-    fn publish<T>(&mut self, token: &PublishToken<T>, payload: &T) -> Result<(), OutOfMemoryError>
+    fn publish<T>(
+        &mut self,
+        token: &PublishToken<T>,
+        payload: &T,
+    ) -> Result<(), <Self::Transport as Transport>::Error>
     where
         T: Message + Serialize,
     {
@@ -190,8 +201,8 @@ where
         service: ServiceId,
         receive_timeout: <<N::Clock as Clock>::Instant as Instant>::Duration,
         response_payload_size_max: usize,
-        priority: Priority,
-    ) -> Result<ServiceToken<T>, StartSendError>
+        priority: <Self::Transport as Transport>::Priority,
+    ) -> Result<ServiceToken<T>, StartSendError<<Self::Transport as Transport>::Error>>
     where
         T: Request,
     {
@@ -220,8 +231,8 @@ where
         &mut self,
         token: &ServiceToken<T>,
         payload: &T,
-        destination: NodeId,
-    ) -> Result<TransferId, OutOfMemoryError>
+        destination: <Self::Transport as Transport>::NodeId,
+    ) -> Result<<Self::Transport as Transport>::TransferId, <Self::Transport as Transport>::Error>
     where
         T: Request + Serialize,
     {
@@ -235,7 +246,7 @@ where
         subject: SubjectId,
         payload_size_max: usize,
         timeout: <<N::Clock as Clock>::Instant as Instant>::Duration,
-    ) -> Result<(), OutOfMemoryError> {
+    ) -> Result<(), <Self::Transport as Transport>::Error> {
         self.node
             .node_mut()
             .subscribe_message(subject, payload_size_max, timeout)?;
@@ -251,7 +262,7 @@ where
         service: ServiceId,
         payload_size_max: usize,
         timeout: <<N::Clock as Clock>::Instant as Instant>::Duration,
-    ) -> Result<(), OutOfMemoryError> {
+    ) -> Result<(), <Self::Transport as Transport>::Error> {
         self.node
             .node_mut()
             .subscribe_request(service, payload_size_max, timeout)?;
@@ -264,10 +275,10 @@ where
 
     fn send_response<T>(
         &mut self,
-        token: ResponseToken,
+        token: ResponseToken<Self::Transport>,
         timeout: <<N::Clock as Clock>::Instant as Instant>::Duration,
         payload: &T,
-    ) -> Result<(), OutOfMemoryError>
+    ) -> Result<(), <Self::Transport as Transport>::Error>
     where
         T: Response + Serialize,
     {
@@ -282,38 +293,44 @@ where
         self.node.node_mut().clock_mut()
     }
 
-    fn frame_queue(&self) -> &Self::FrameQueue {
-        self.node.node().frame_queue()
+    fn transmitter(&self) -> &Self::Transmitter {
+        self.node.node().transmitter()
     }
 
-    fn frame_queue_mut(&mut self) -> &mut Self::FrameQueue {
-        self.node.node_mut().frame_queue_mut()
+    fn transmitter_mut(&mut self) -> &mut Self::Transmitter {
+        self.node.node_mut().transmitter_mut()
     }
 
-    fn node_id(&self) -> NodeId {
+    fn receiver(&self) -> &Self::Receiver {
+        self.node.node().receiver()
+    }
+
+    fn receiver_mut(&mut self) -> &mut Self::Receiver {
+        self.node.node_mut().receiver_mut()
+    }
+
+    fn node_id(&self) -> <Self::Transport as Transport>::NodeId {
         self.node.node().node_id()
-    }
-
-    fn frame_filters(&self) -> Result<Vec<Filter>, OutOfMemoryError> {
-        self.node.node().frame_filters()
     }
 }
 
-/// A transfer handler that
+/// A transfer handler that responds to node information requests
 struct NodeInfoResponder<'r, 'h, H> {
     /// The response to send
     info: &'r GetInfoResponse,
+    /// The inner handler that will process any other incoming transfers
     inner: &'h mut H,
 }
 
-impl<'r, 'h, I, H> TransferHandler<I> for NodeInfoResponder<'r, 'h, H>
+impl<'r, 'h, I, H, T> TransferHandler<I, T> for NodeInfoResponder<'r, 'h, H>
 where
     I: Instant,
-    H: TransferHandler<I>,
+    H: TransferHandler<I, T>,
+    T: Transport,
 {
-    fn handle_message<N>(&mut self, node: &mut N, transfer: &MessageTransfer<Vec<u8>, I>) -> bool
+    fn handle_message<N>(&mut self, node: &mut N, transfer: &MessageTransfer<Vec<u8>, I, T>) -> bool
     where
-        N: Node<Instant = I>,
+        N: Node<Instant = I, Transport = T>,
     {
         // Forward to inner handler
         self.inner.handle_message(node, transfer)
@@ -322,11 +339,11 @@ where
     fn handle_request<N>(
         &mut self,
         node: &mut N,
-        token: ResponseToken,
-        transfer: &ServiceTransfer<Vec<u8>, I>,
+        token: ResponseToken<T>,
+        transfer: &ServiceTransfer<Vec<u8>, I, T>,
     ) -> bool
     where
-        N: Node<Instant = I>,
+        N: Node<Instant = I, Transport = T>,
     {
         if transfer.header.service == get_info_1_0::SERVICE {
             // Ignore out-of-memory errors
@@ -339,9 +356,13 @@ where
         }
     }
 
-    fn handle_response<N>(&mut self, node: &mut N, transfer: &ServiceTransfer<Vec<u8>, I>) -> bool
+    fn handle_response<N>(
+        &mut self,
+        node: &mut N,
+        transfer: &ServiceTransfer<Vec<u8>, I, T>,
+    ) -> bool
     where
-        N: Node<Instant = I>,
+        N: Node<Instant = I, Transport = T>,
     {
         // Forward to inner handler
         self.inner.handle_response(node, transfer)

@@ -15,10 +15,11 @@ use std::error::Error;
 use std::process;
 use std::time::Instant;
 
-use canadensis::can::{CanId, Frame, Mtu, Receiver};
 use canadensis::core::time::{Clock, MicrosecondDuration64, Microseconds64};
+use canadensis::core::transport::Receiver;
 use canadensis::core::SubjectId;
 use canadensis::encoding::{DataType, Deserialize, DeserializeError, Message, ReadCursor};
+use canadensis_can::{CanId, CanReceiver, Frame, Mtu};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut args = env::args().skip(1);
@@ -36,7 +37,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let can = socketcan::CANSocket::open(&interface)?;
 
     let mut clock = SystemClock::new();
-    let mut receiver = Receiver::new_anonymous(Mtu::Can8);
+    let mut receiver = CanReceiver::new_anonymous(Mtu::Can8);
     receiver
         .subscribe_message(subject, 7, MicrosecondDuration64::new(1_000_000))
         .unwrap();

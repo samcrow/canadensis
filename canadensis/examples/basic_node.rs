@@ -1,4 +1,5 @@
 extern crate canadensis;
+extern crate canadensis_can;
 extern crate canadensis_linux;
 extern crate rand;
 extern crate socketcan;
@@ -9,13 +10,14 @@ use std::time::Duration;
 
 use socketcan::CANSocket;
 
-use canadensis::can::queue::{ArrayQueue, FrameQueueSource};
-use canadensis::can::Mtu;
 use canadensis::core::time::{Instant, Microseconds64};
 use canadensis::core::transfer::{MessageTransfer, ServiceTransfer};
-use canadensis::core::NodeId;
+use canadensis::core::transport::Transport;
 use canadensis::node::{BasicNode, CoreNode};
 use canadensis::{Node, ResponseToken, TransferHandler};
+use canadensis_can::queue::{ArrayQueue, FrameQueueSource};
+use canadensis_can::types::CanNodeId;
+use canadensis_can::{CanReceiver, CanTransmitter, Mtu};
 use canadensis_data_types::uavcan::node::get_info_1_0::GetInfoResponse;
 use canadensis_data_types::uavcan::node::version_1_0::Version;
 use canadensis_linux::{LinuxCan, SystemClock};
@@ -54,7 +56,7 @@ use std::io::ErrorKind;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);
     let can_interface = args.next().expect("Expected CAN interface name");
-    let node_id = NodeId::try_from(
+    let node_id = CanNodeId::try_from(
         args.next()
             .expect("Expected node ID")
             .parse::<u8>()
@@ -85,16 +87,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // Create a node with capacity for 8 publishers and 8 requesters
-    let core_node: CoreNode<_, _, 8, 8> = CoreNode::new(
-        SystemClock::new(),
-        node_id,
-        Mtu::Can8,
-        ArrayQueue::<Microseconds64, 1210>::new(),
-    );
+    let transmitter = CanTransmitter::new(Mtu::Can8, ArrayQueue::<Microseconds64, 1210>::new());
+    let receiver = CanReceiver::new(node_id, Mtu::Can8);
+    let core_node: CoreNode<_, _, _, 8, 8> =
+        CoreNode::new(SystemClock::new(), node_id, transmitter, receiver);
     let mut node = BasicNode::new(core_node, node_info).unwrap();
 
     // Now that the node has subscribed to everything it wants, set up the frame acceptance filters
-    let frame_filters = node.frame_filters().unwrap();
+    let frame_filters = node.receiver().frame_filters().unwrap();
     println!("Filters: {:?}", frame_filters);
     can.set_filters(&frame_filters)?;
 
@@ -121,7 +121,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             node.run_per_second_tasks().unwrap();
         }
 
-        while let Some(frame_out) = node.frame_queue_mut().pop_frame() {
+        while let Some(frame_out) = node.transmitter_mut().frame_queue_mut().pop_frame() {
             can.send(frame_out)?;
         }
     }
@@ -129,10 +129,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 struct EmptyHandler;
 
-impl<I: Instant> TransferHandler<I> for EmptyHandler {
-    fn handle_message<N>(&mut self, _node: &mut N, transfer: &MessageTransfer<Vec<u8>, I>) -> bool
+impl<I: Instant, T: Transport> TransferHandler<I, T> for EmptyHandler {
+    fn handle_message<N>(
+        &mut self,
+        _node: &mut N,
+        transfer: &MessageTransfer<Vec<u8>, I, T>,
+    ) -> bool
     where
-        N: Node<Instant = I>,
+        N: Node<Instant = I, Transport = T>,
     {
         println!("Got message {:?}", transfer);
         false
@@ -141,19 +145,23 @@ impl<I: Instant> TransferHandler<I> for EmptyHandler {
     fn handle_request<N>(
         &mut self,
         _node: &mut N,
-        _token: ResponseToken,
-        transfer: &ServiceTransfer<Vec<u8>, I>,
+        _token: ResponseToken<T>,
+        transfer: &ServiceTransfer<Vec<u8>, I, T>,
     ) -> bool
     where
-        N: Node<Instant = I>,
+        N: Node<Instant = I, Transport = T>,
     {
         println!("Got request {:?}", transfer);
         false
     }
 
-    fn handle_response<N>(&mut self, _node: &mut N, transfer: &ServiceTransfer<Vec<u8>, I>) -> bool
+    fn handle_response<N>(
+        &mut self,
+        _node: &mut N,
+        transfer: &ServiceTransfer<Vec<u8>, I, T>,
+    ) -> bool
     where
-        N: Node<Instant = I>,
+        N: Node<Instant = I, Transport = T>,
     {
         println!("Got response {:?}", transfer);
         false

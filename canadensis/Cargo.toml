@@ -16,10 +16,7 @@ heapless = "0.7.0"
 half = "1.7.1"
 log = "0.4"
 
-# Depend on all the other canadensis crates, except canadensis_data_types and the less-commonly-used ones
-[dependencies.canadensis_can]
-version = "0.1.0"
-path = "../canadensis_can"
+# Depend on all the other canadensis crates, except canadensis_can, canadensis_data_types, and the less-commonly-used ones
 [dependencies.canadensis_core]
 version = "0.1.0"
 path = "../canadensis_core"
@@ -54,6 +51,9 @@ rand = "0.7.3"
 [dev-dependencies.canadensis_linux]
 version = "0.1.0"
 path = "../canadensis_linux"
+[dev-dependencies.canadensis_can]
+version = "0.1.0"
+path = "../canadensis_can"
 
 
 [features]

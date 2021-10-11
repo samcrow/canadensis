@@ -11,14 +11,15 @@ use std::time::Duration;
 
 use socketcan::CANSocket;
 
-use canadensis::can::queue::{ArrayQueue, FrameQueueSource};
-use canadensis::can::Mtu;
 use canadensis::core::time::{milliseconds, Clock, Microseconds64};
 use canadensis::core::transfer::ServiceTransfer;
-use canadensis::core::{NodeId, Priority, TransferId};
+use canadensis::core::Priority;
 use canadensis::encoding::Deserialize;
 use canadensis::node::{BasicNode, CoreNode};
 use canadensis::{Node, ServiceToken, TransferHandler};
+use canadensis_can::queue::{ArrayQueue, FrameQueueSource};
+use canadensis_can::types::{CanNodeId, CanTransferId, CanTransport};
+use canadensis_can::{CanReceiver, CanTransmitter, Mtu};
 use canadensis_data_types::uavcan::node::get_info_1_0::GetInfoResponse;
 use canadensis_data_types::uavcan::node::version_1_0::Version;
 use canadensis_data_types::uavcan::primitive::empty_1_0::Empty;
@@ -52,14 +53,14 @@ use std::io::ErrorKind;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);
     let can_interface = args.next().expect("Expected CAN interface name");
-    let node_id = NodeId::try_from(
+    let node_id = CanNodeId::try_from(
         args.next()
             .expect("Expected node ID")
             .parse::<u8>()
             .expect("Invalid node ID format"),
     )
     .expect("Node ID too large");
-    let target_node_id = NodeId::try_from(
+    let target_node_id = CanNodeId::try_from(
         args.next()
             .expect("Expected target node ID")
             .parse::<u8>()
@@ -85,12 +86,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // Create a node with capacity for 8 publishers and 8 requesters
-    let core_node: CoreNode<_, _, 8, 8> = CoreNode::new(
-        SystemClock::new(),
-        node_id,
-        Mtu::Can8,
-        ArrayQueue::<Microseconds64, 128>::new(),
-    );
+    let frame_queue = ArrayQueue::<Microseconds64, 64>::new();
+    let transmitter = CanTransmitter::new(Mtu::Can8, frame_queue);
+    let receiver = CanReceiver::new(node_id, Mtu::Can8);
+    let core_node: CoreNode<_, _, _, 8, 8> =
+        CoreNode::new(SystemClock::new(), node_id, transmitter, receiver);
     let mut node = BasicNode::new(core_node, node_info).unwrap();
     let list_request_token: ServiceToken<ListRequest> = node
         .start_sending_requests(list_1_0::SERVICE, milliseconds(1000), 256, Priority::Low)
@@ -100,7 +100,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap();
 
     // Now that the node has subscribed to everything it wants, set up the frame acceptance filters
-    let frame_filters = node.frame_filters().unwrap();
+    let frame_filters = node.receiver().frame_filters().unwrap();
     can.set_filters(&frame_filters)?;
 
     // Send a register list request for the register at index 0
@@ -143,7 +143,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             node.run_per_second_tasks().unwrap();
         }
 
-        while let Some(frame_out) = node.frame_queue_mut().pop_frame() {
+        while let Some(frame_out) = node.transmitter_mut().frame_queue_mut().pop_frame() {
             can.send(frame_out)?;
         }
     }
@@ -171,7 +171,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 struct RegisterHandler {
     /// The ID of the node to query
-    target_node_id: NodeId,
+    target_node_id: CanNodeId,
     /// The index of the next register to query
     next_register_index: u16,
     /// Each known register and its value
@@ -188,14 +188,23 @@ struct RegisterHandler {
     timeout: std::time::Instant,
 }
 
-impl TransferHandler<<SystemClock as Clock>::Instant> for RegisterHandler {
+impl TransferHandler<<SystemClock as Clock>::Instant, CanTransport<<SystemClock as Clock>::Instant>>
+    for RegisterHandler
+{
     fn handle_response<N>(
         &mut self,
         node: &mut N,
-        transfer: &ServiceTransfer<Vec<u8>, <SystemClock as Clock>::Instant>,
+        transfer: &ServiceTransfer<
+            Vec<u8>,
+            <SystemClock as Clock>::Instant,
+            CanTransport<<SystemClock as Clock>::Instant>,
+        >,
     ) -> bool
     where
-        N: Node<Instant = <SystemClock as Clock>::Instant>,
+        N: Node<
+            Instant = <SystemClock as Clock>::Instant,
+            Transport = CanTransport<<SystemClock as Clock>::Instant>,
+        >,
     {
         match transfer.header.service {
             list_1_0::SERVICE => {
@@ -218,7 +227,7 @@ impl TransferHandler<<SystemClock as Clock>::Instant> for RegisterHandler {
                                             },
                                             value: Value::Empty(Empty {}),
                                         },
-                                        self.target_node_id,
+                                        self.target_node_id.clone(),
                                     )
                                     .unwrap();
 
@@ -296,7 +305,11 @@ impl RegisterHandler {
 }
 
 enum RegisterState {
-    Waiting(TransferId),
+    /// Waiting for a response with the register value
+    ///
+    /// The response will match the enclosed transfer ID
+    Waiting(CanTransferId),
+    /// The register value has been received
     Done(Value),
 }
 

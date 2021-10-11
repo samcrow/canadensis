@@ -9,15 +9,16 @@ use std::time::Duration;
 
 use socketcan::CANSocket;
 
-use canadensis::can::queue::{ArrayQueue, FrameQueueSource};
-use canadensis::can::Mtu;
 use canadensis::core::time::{Clock, Microseconds64};
 use canadensis::core::transfer::{MessageTransfer, ServiceTransfer};
-use canadensis::core::NodeId;
+use canadensis::core::transport::Transport;
 use canadensis::node::{BasicNode, CoreNode};
 use canadensis::register::basic::{RegisterString, SimpleRegister};
 use canadensis::register::{RegisterBlock, RegisterHandler};
-use canadensis::{Node, ResponseToken, TransferHandler};
+use canadensis::{Node, ResponseToken, TransferHandler, TransferHandlerChain};
+use canadensis_can::queue::{ArrayQueue, FrameQueueSource};
+use canadensis_can::types::CanNodeId;
+use canadensis_can::{CanReceiver, CanTransmitter, Mtu};
 use canadensis_data_types::uavcan::node::get_info_1_0::GetInfoResponse;
 use canadensis_data_types::uavcan::node::version_1_0::Version;
 use canadensis_linux::{LinuxCan, SystemClock};
@@ -68,7 +69,7 @@ use std::io::ErrorKind;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);
     let can_interface = args.next().expect("Expected CAN interface name");
-    let node_id = NodeId::try_from(
+    let node_id = CanNodeId::try_from(
         args.next()
             .expect("Expected node ID")
             .parse::<u8>()
@@ -99,12 +100,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // Create a node with capacity for 8 publishers and 8 requesters
-    let core_node: CoreNode<_, _, 8, 8> = CoreNode::new(
-        SystemClock::new(),
-        node_id,
-        Mtu::Can8,
-        ArrayQueue::<Microseconds64, 1210>::new(),
-    );
+    let frame_queue = ArrayQueue::<Microseconds64, 64>::new();
+    let transmitter = CanTransmitter::new(Mtu::Can8, frame_queue);
+    let receiver = CanReceiver::new(node_id, Mtu::Can8);
+    let core_node: CoreNode<_, _, _, 8, 8> =
+        CoreNode::new(SystemClock::new(), node_id, transmitter, receiver);
     let mut node = BasicNode::new(core_node, node_info).unwrap();
 
     // Define the registers that can be accessed
@@ -121,11 +121,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     RegisterHandler::<Registers>::subscribe_requests(&mut node).unwrap();
 
     // Now that the node has subscribed to everything it wants, set up the frame acceptance filters
-    let frame_filters = node.frame_filters().unwrap();
+    let frame_filters = node.receiver().frame_filters().unwrap();
     println!("Filters: {:?}", frame_filters);
     can.set_filters(&frame_filters)?;
 
-    let mut handler = registers.chain(EmptyHandler);
+    let mut handler: TransferHandlerChain<RegisterHandler<Registers>, EmptyHandler> =
+        registers.chain(EmptyHandler);
 
     println!("Node size: {} bytes", std::mem::size_of_val(&node));
 
@@ -150,7 +151,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             node.run_per_second_tasks().unwrap();
         }
 
-        while let Some(frame_out) = node.frame_queue_mut().pop_frame() {
+        while let Some(frame_out) = node.transmitter_mut().frame_queue_mut().pop_frame() {
             can.send(frame_out)?;
         }
     }
@@ -158,14 +159,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 struct EmptyHandler;
 
-impl TransferHandler<<SystemClock as Clock>::Instant> for EmptyHandler {
+impl<T: Transport> TransferHandler<<SystemClock as Clock>::Instant, T> for EmptyHandler {
     fn handle_message<N>(
         &mut self,
         _node: &mut N,
-        transfer: &MessageTransfer<Vec<u8>, <SystemClock as Clock>::Instant>,
+        transfer: &MessageTransfer<Vec<u8>, <SystemClock as Clock>::Instant, T>,
     ) -> bool
     where
-        N: Node<Instant = <SystemClock as Clock>::Instant>,
+        N: Node<Instant = <SystemClock as Clock>::Instant, Transport = T>,
     {
         println!("Got message {:?}", transfer);
         false
@@ -174,11 +175,11 @@ impl TransferHandler<<SystemClock as Clock>::Instant> for EmptyHandler {
     fn handle_request<N>(
         &mut self,
         _node: &mut N,
-        _token: ResponseToken,
-        transfer: &ServiceTransfer<Vec<u8>, <SystemClock as Clock>::Instant>,
+        _token: ResponseToken<T>,
+        transfer: &ServiceTransfer<Vec<u8>, <SystemClock as Clock>::Instant, T>,
     ) -> bool
     where
-        N: Node<Instant = <SystemClock as Clock>::Instant>,
+        N: Node<Instant = <SystemClock as Clock>::Instant, Transport = T>,
     {
         println!("Got request {:?}", transfer);
         false
@@ -187,10 +188,10 @@ impl TransferHandler<<SystemClock as Clock>::Instant> for EmptyHandler {
     fn handle_response<N>(
         &mut self,
         _node: &mut N,
-        transfer: &ServiceTransfer<Vec<u8>, <SystemClock as Clock>::Instant>,
+        transfer: &ServiceTransfer<Vec<u8>, <SystemClock as Clock>::Instant, T>,
     ) -> bool
     where
-        N: Node<Instant = <SystemClock as Clock>::Instant>,
+        N: Node<Instant = <SystemClock as Clock>::Instant, Transport = T>,
     {
         println!("Got response {:?}", transfer);
         false

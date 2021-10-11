@@ -7,10 +7,12 @@ extern crate canadensis_core;
 
 use core::convert::{TryFrom, TryInto};
 
-use canadensis_can::{CanId, Frame, Mtu, OutOfMemoryError, Receiver, ServiceSubscribeError};
+use canadensis_can::types::CanNodeId;
+use canadensis_can::{CanId, CanReceiver, Frame, Mtu, OutOfMemoryError, ServiceSubscribeError};
 use canadensis_core::time::{Instant, MicrosecondDuration32, Microseconds32};
 use canadensis_core::transfer::*;
-use canadensis_core::{NodeId, Priority, ServiceId, SubjectId};
+use canadensis_core::transport::Receiver;
+use canadensis_core::{Priority, ServiceId, SubjectId};
 
 type TestInstant = Microseconds32;
 type TestDuration = <TestInstant as Instant>::Duration;
@@ -24,7 +26,7 @@ fn duration(ticks: u32) -> TestDuration {
 
 #[test]
 fn test_heartbeat() -> Result<(), OutOfMemoryError> {
-    let mut rx = Receiver::new(0.try_into().unwrap(), Mtu::Can8);
+    let mut rx = CanReceiver::new(0.try_into().unwrap(), Mtu::Can8);
 
     let heartbeat_subject = SubjectId::try_from(7509).unwrap();
     rx.subscribe_message(heartbeat_subject, 7, duration(0))?;
@@ -54,7 +56,7 @@ fn test_heartbeat() -> Result<(), OutOfMemoryError> {
 #[test]
 #[cfg(feature = "can-fd")]
 fn test_string() -> Result<(), OutOfMemoryError> {
-    let mut rx = Receiver::new(0.try_into().unwrap(), Mtu::Can8);
+    let mut rx = CanReceiver::new(0.try_into().unwrap(), Mtu::Can8);
 
     let string_subject = SubjectId::try_from(4919).unwrap();
     rx.subscribe_message(string_subject, 15, duration(0))?;
@@ -83,7 +85,7 @@ fn test_string() -> Result<(), OutOfMemoryError> {
 }
 #[test]
 fn test_node_info_request() -> Result<(), ServiceSubscribeError> {
-    let mut rx = Receiver::new(42.try_into().unwrap(), Mtu::Can8);
+    let mut rx = CanReceiver::new(42.try_into().unwrap(), Mtu::Can8);
 
     let service = ServiceId::try_from(430).unwrap();
     rx.subscribe_request(service, 0, duration(0))?;
@@ -113,7 +115,7 @@ fn test_node_info_request() -> Result<(), ServiceSubscribeError> {
 }
 #[test]
 fn test_node_info_response() -> Result<(), ServiceSubscribeError> {
-    let mut rx = Receiver::new(123.try_into().unwrap(), Mtu::Can8);
+    let mut rx = CanReceiver::new(123.try_into().unwrap(), Mtu::Can8);
 
     let service = ServiceId::try_from(430).unwrap();
     rx.subscribe_response(service, 69, duration(100))?;
@@ -181,7 +183,7 @@ fn test_node_info_response() -> Result<(), ServiceSubscribeError> {
 }
 #[test]
 fn test_node_info_response_timeout() -> Result<(), ServiceSubscribeError> {
-    let mut rx = Receiver::new(123.try_into().unwrap(), Mtu::Can8);
+    let mut rx = CanReceiver::new(123.try_into().unwrap(), Mtu::Can8);
 
     let service = ServiceId::try_from(430).unwrap();
     rx.subscribe_response(service, 69, duration(100))?;
@@ -217,7 +219,7 @@ fn test_node_info_response_timeout() -> Result<(), ServiceSubscribeError> {
 #[test]
 #[cfg(feature = "can-fd")]
 fn test_array() -> Result<(), ServiceSubscribeError> {
-    let mut rx = Receiver::new(0.try_into().unwrap(), Mtu::CanFd64);
+    let mut rx = CanReceiver::new(0.try_into().unwrap(), Mtu::CanFd64);
 
     let subject = SubjectId::try_from(4919).unwrap();
     rx.subscribe_message(subject, 94, duration(1))?;
@@ -283,7 +285,8 @@ fn test_array() -> Result<(), ServiceSubscribeError> {
 #[test]
 fn test_multi_frame_anonymous() {
     // Multi-frame anonymous transfers must be ignored
-    let mut receiver = Receiver::<Microseconds32>::new(NodeId::try_from(3).unwrap(), Mtu::Can8);
+    let mut receiver =
+        CanReceiver::<Microseconds32>::new(CanNodeId::try_from(3).unwrap(), Mtu::Can8);
     let subject_id = SubjectId::try_from(10).unwrap();
     receiver
         .subscribe_message(subject_id, 8, MicrosecondDuration32::new(100))
@@ -342,7 +345,7 @@ fn test_multi_frame_anonymous() {
 /// Tests an anonymous receiver receiving a multi-frame non-anonymous transfer
 #[test]
 fn test_anonymous_receive_multi_frame() {
-    let mut rx: Receiver<TestInstant> = Receiver::new_anonymous(Mtu::Can8);
+    let mut rx: CanReceiver<TestInstant> = CanReceiver::new_anonymous(Mtu::Can8);
     rx.subscribe_message(8166.try_into().unwrap(), 9, duration(1_000_000))
         .unwrap();
 
@@ -372,7 +375,7 @@ fn test_anonymous_receive_multi_frame() {
 
 #[test]
 fn test_ignore_request_to_other_node() {
-    let mut rx = Receiver::new(43.try_into().unwrap(), Mtu::Can8);
+    let mut rx = CanReceiver::new(43.try_into().unwrap(), Mtu::Can8);
 
     let service = ServiceId::try_from(430).unwrap();
     rx.subscribe_request(service, 0, duration(0)).unwrap();

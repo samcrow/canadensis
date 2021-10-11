@@ -4,7 +4,8 @@ mod array_queue;
 
 pub use self::array_queue::ArrayQueue;
 
-use crate::{Frame, OutOfMemoryError};
+use crate::Frame;
+use canadensis_core::OutOfMemoryError;
 
 /// A queue of outgoing frames that a transmitter uses to send transfers
 pub trait FrameSink<I> {

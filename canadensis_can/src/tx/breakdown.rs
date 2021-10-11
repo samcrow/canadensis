@@ -1,6 +1,5 @@
+use crate::types::CanTransferId;
 use core::mem;
-
-use canadensis_core::TransferId;
 
 /// Toggle is set to 1 for the first frame in a transfer
 const TOGGLE_INIT: bool = true;
@@ -16,7 +15,7 @@ pub struct Breakdown {
     /// Maximum transmission unit of the transport (this includes space for the tail byte)
     mtu: usize,
     /// The ID of this transfer
-    transfer_id: TransferId,
+    transfer_id: CanTransferId,
     /// If the current frame is the first frame in the transfer
     start: bool,
     /// Toggle bit to assign to the next frame
@@ -28,7 +27,7 @@ pub struct Breakdown {
 }
 
 impl Breakdown {
-    pub fn new(mtu: usize, transfer_id: TransferId) -> Self {
+    pub fn new(mtu: usize, transfer_id: CanTransferId) -> Self {
         Breakdown {
             mtu,
             transfer_id,
@@ -86,7 +85,7 @@ impl Breakdown {
 }
 
 /// Encodes a tail byte
-fn make_tail_byte(start: bool, end: bool, toggle: bool, transfer_id: TransferId) -> u8 {
+fn make_tail_byte(start: bool, end: bool, toggle: bool, transfer_id: CanTransferId) -> u8 {
     ((start as u8) << 7) | ((end as u8) << 6) | ((toggle as u8) << 5) | u8::from(transfer_id)
 }
 
@@ -100,7 +99,7 @@ mod test {
     fn test_breakdown_heartbeat() {
         // Heartbeat example from specification section 4.2.3
         for transfer_id in 0u8..=31 {
-            let mut breakdown = Breakdown::new(8, TransferId::try_from(transfer_id).unwrap());
+            let mut breakdown = Breakdown::new(8, CanTransferId::try_from(transfer_id).unwrap());
             let payload = make_heartbeat_payload(u32::from(transfer_id));
 
             // Expect a frame with 7 bytes of payload and a tail byte with first 1, last 1,
@@ -147,7 +146,7 @@ mod test {
             ];
             let frame = make_frame(&payload, transfer_id);
 
-            let mut breakdown = Breakdown::new(64, TransferId::try_from(transfer_id).unwrap());
+            let mut breakdown = Breakdown::new(64, CanTransferId::try_from(transfer_id).unwrap());
 
             // Put in the payload bytes
             for payload_byte in payload.iter() {
@@ -171,7 +170,7 @@ mod test {
 
     #[test]
     fn test_node_info_request() {
-        let breakdown = Breakdown::new(8, TransferId::try_from(1).unwrap());
+        let breakdown = Breakdown::new(8, CanTransferId::try_from(1).unwrap());
         // With no payload, the breakdown produces only one frame containing only a tail byte
         assert_eq!(&[0xe1], &*breakdown.finish());
     }
@@ -209,7 +208,7 @@ mod test {
             &[0xe7, 0x61],
         ];
 
-        let mut breakdown = Breakdown::new(8, TransferId::try_from(1).unwrap());
+        let mut breakdown = Breakdown::new(8, CanTransferId::try_from(1).unwrap());
 
         let mut frames: Vec<heapless::Vec<u8, 64>> = payload
             .iter()
@@ -255,7 +254,7 @@ mod test {
                 0x00, 0x00, 0x00, 0xc0, 0x48, 0x40,
             ],
         ];
-        let mut breakdown = Breakdown::new(64, TransferId::try_from(0).unwrap());
+        let mut breakdown = Breakdown::new(64, CanTransferId::try_from(0).unwrap());
 
         let mut frames: Vec<heapless::Vec<u8, 64>> = payload
             .iter()

@@ -1,51 +1,53 @@
 use crate::serialize::do_serialize;
-use canadensis_can::queue::FrameSink;
-use canadensis_can::{OutOfMemoryError, Transmitter};
 use canadensis_core::time::Instant;
 use canadensis_core::transfer::{Header, MessageHeader, Transfer};
-use canadensis_core::{NodeId, Priority, SubjectId, TransferId};
-use canadensis_encoding::Serialize;
+use canadensis_core::transport::{TransferId, Transmitter, Transport};
+use canadensis_core::SubjectId;
+use canadensis_encoding::{Message, Serialize};
 
 /// Assembles transfers and manages transfer IDs to send messages
 ///
 /// The subject ID is not part of this struct because it is used as a key in the map of publishers.
-pub struct Publisher<I: Instant> {
+pub struct Publisher<I: Instant, T: Transmitter<I>> {
     /// The ID of the next transfer sent
-    next_transfer_id: TransferId,
+    next_transfer_id: <T::Transport as Transport>::TransferId,
     /// Timeout for sending a transfer, measured from the time the payload is serialized
     timeout: I::Duration,
     /// Priority for transfers
-    priority: Priority,
+    priority: <T::Transport as Transport>::Priority,
     /// ID of this node
-    source: NodeId,
+    source: <T::Transport as Transport>::NodeId,
 }
 
-impl<I: Instant> Publisher<I> {
+impl<I: Instant, T: Transmitter<I>> Publisher<I, T> {
     /// Creates a message transmitter
     ///
     /// node: The ID of this node
     ///
     /// priority: The priority to use for messages
-    pub fn new(node_id: NodeId, timeout: I::Duration, priority: Priority) -> Self {
+    pub fn new(
+        node_id: <T::Transport as Transport>::NodeId,
+        timeout: I::Duration,
+        priority: <T::Transport as Transport>::Priority,
+    ) -> Self {
         Publisher {
-            next_transfer_id: TransferId::const_default(),
+            next_transfer_id: <T::Transport as Transport>::TransferId::default(),
             timeout,
             priority,
             source: node_id,
         }
     }
 
-    pub fn publish<T, Q>(
+    pub fn publish<M>(
         &mut self,
         now: I,
         subject: SubjectId,
-        payload: &T,
-        transmitter: &mut Transmitter<Q>,
-    ) -> Result<(), OutOfMemoryError>
+        payload: &M,
+        transmitter: &mut T,
+    ) -> Result<(), <T::Transport as Transport>::Error>
     where
-        T: Serialize,
+        M: Message + Serialize,
         I: Instant,
-        Q: FrameSink<I>,
     {
         let deadline = self.timeout + now;
         // Part 1: Serialize
@@ -55,29 +57,28 @@ impl<I: Instant> Publisher<I> {
         })
     }
 
-    pub fn send_payload<Q>(
+    pub fn send_payload(
         &mut self,
         subject: SubjectId,
         payload: &[u8],
         deadline: I,
-        transmitter: &mut Transmitter<Q>,
-    ) -> Result<(), OutOfMemoryError>
+        transmitter: &mut T,
+    ) -> Result<(), <T::Transport as Transport>::Error>
     where
         I: Clone,
-        Q: FrameSink<I>,
     {
         // Assemble the transfer
-        let transfer: Transfer<&[u8], I> = Transfer {
+        let transfer = Transfer {
             header: Header::Message(MessageHeader {
                 timestamp: deadline,
-                transfer_id: self.next_transfer_id,
-                priority: self.priority,
+                transfer_id: self.next_transfer_id.clone(),
+                priority: self.priority.clone(),
                 subject,
-                source: Some(self.source),
+                source: Some(self.source.clone()),
             }),
             payload,
         };
-        self.next_transfer_id = self.next_transfer_id.increment();
+        self.next_transfer_id = self.next_transfer_id.clone().increment();
 
         transmitter.push(transfer)
     }

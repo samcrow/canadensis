@@ -1,24 +1,27 @@
+use crate::core::transport::{NodeId, TransferId};
 use crate::serialize::do_serialize;
-use canadensis_can::queue::FrameSink;
-use canadensis_can::{OutOfMemoryError, Transmitter};
 use canadensis_core::time::Instant;
 use canadensis_core::transfer::{Header, ServiceHeader, Transfer};
-use canadensis_core::{NodeId, Priority, ServiceId, TransferId};
+use canadensis_core::transport::{Transmitter, Transport};
+use canadensis_core::ServiceId;
 use canadensis_encoding::Serialize;
 
 /// Assembles transfers and manages transfer IDs to send service requests
-pub struct Requester<I: Instant> {
+pub struct Requester<I: Instant, T: Transmitter<I>> {
     /// The ID of this node
-    this_node: NodeId,
+    this_node: <T::Transport as Transport>::NodeId,
     /// The priority of transfers from this transmitter
-    priority: Priority,
+    priority: <T::Transport as Transport>::Priority,
     /// The timeout for sending transfers
     timeout: I::Duration,
     /// The ID of the next transfer to send, for each destination node
-    next_transfer_ids: NextTransferIds,
+    next_transfer_ids: NextTransferIds<
+        <T::Transport as Transport>::TransferId,
+        <T::Transport as Transport>::NodeId,
+    >,
 }
 
-impl<I: Instant> Requester<I> {
+impl<I: Instant, T: Transmitter<I>> Requester<I, T> {
     /// Creates a service request transmitter
     ///
     /// this_node: The ID of this node
@@ -26,7 +29,11 @@ impl<I: Instant> Requester<I> {
     /// priority: The priority to use for messages
     ///
     /// service: The service ID to request
-    pub fn new(this_node: NodeId, timeout: I::Duration, priority: Priority) -> Self {
+    pub fn new(
+        this_node: <T::Transport as Transport>::NodeId,
+        timeout: I::Duration,
+        priority: <T::Transport as Transport>::Priority,
+    ) -> Self {
         Requester {
             this_node,
             priority,
@@ -35,17 +42,17 @@ impl<I: Instant> Requester<I> {
         }
     }
 
-    pub fn send<T, Q>(
+    /// Sends a service request and returns its transfer ID
+    pub fn send<R>(
         &mut self,
         now: I,
         service: ServiceId,
-        payload: &T,
-        destination: NodeId,
-        transmitter: &mut Transmitter<Q>,
-    ) -> Result<TransferId, OutOfMemoryError>
+        payload: &R,
+        destination: <T::Transport as Transport>::NodeId,
+        transmitter: &mut T,
+    ) -> Result<<T::Transport as Transport>::TransferId, <T::Transport as Transport>::Error>
     where
-        T: Serialize,
-        Q: FrameSink<I>,
+        R: Serialize,
     {
         // Part 1: Serialize
         let deadline = self.timeout + now;
@@ -55,26 +62,25 @@ impl<I: Instant> Requester<I> {
         })
     }
 
-    fn send_payload<Q>(
+    fn send_payload(
         &mut self,
         payload: &[u8],
         service: ServiceId,
-        destination: NodeId,
+        destination: <T::Transport as Transport>::NodeId,
         deadline: I,
-        transmitter: &mut Transmitter<Q>,
-    ) -> Result<TransferId, OutOfMemoryError>
-    where
-        Q: FrameSink<I>,
-    {
+        transmitter: &mut T,
+    ) -> Result<<T::Transport as Transport>::TransferId, <T::Transport as Transport>::Error> {
         // Assemble the transfer
-        let transfer_id = self.next_transfer_ids.get_and_increment(destination);
-        let transfer: Transfer<&[u8], I> = Transfer {
+        let transfer_id = self
+            .next_transfer_ids
+            .get_and_increment(destination.clone());
+        let transfer = Transfer {
             header: Header::Request(ServiceHeader {
                 timestamp: deadline,
-                transfer_id,
-                priority: self.priority,
+                transfer_id: transfer_id.clone(),
+                priority: self.priority.clone(),
                 service,
-                source: self.this_node,
+                source: self.this_node.clone(),
                 destination,
             }),
             payload,
@@ -85,26 +91,29 @@ impl<I: Instant> Requester<I> {
     }
 }
 
-const NUM_TRANSFER_IDS: usize = (NodeId::MAX.to_u8() as usize) + 1;
-
 /// A map from destination node IDs to transfer IDs of the next transfer
-struct NextTransferIds {
-    ids: [TransferId; NUM_TRANSFER_IDS],
+struct NextTransferIds<I, N: NodeId<I>> {
+    // Because we can't do [I; N::MAX + 1], there's a separate field for the last transfer ID.
+    ids: N::TransferIds,
 }
 
-impl NextTransferIds {
+impl<I, N> NextTransferIds<I, N>
+where
+    I: TransferId,
+    N: NodeId<I>,
+{
     /// Creates a new transfer ID map with the default transfer ID for each node
     pub fn new() -> Self {
         NextTransferIds {
-            ids: [TransferId::default(); NUM_TRANSFER_IDS],
+            ids: N::TransferIds::default(),
         }
     }
     /// Returns the next transfer ID for the provided node, and increments the stored transfer
     /// ID
-    pub fn get_and_increment(&mut self, destination: NodeId) -> TransferId {
-        let entry = &mut self.ids[usize::from(destination)];
-        let current = *entry;
-        *entry = entry.increment();
+    pub fn get_and_increment(&mut self, destination: N) -> I {
+        let entry = &mut self.ids.as_mut()[destination.into()];
+        let current = entry.clone();
+        *entry = entry.clone().increment();
         current
     }
 }

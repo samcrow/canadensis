@@ -8,10 +8,12 @@ extern crate canadensis_core;
 use core::convert::TryFrom;
 
 use canadensis_can::queue::{ArrayQueue, FrameQueueSource};
-use canadensis_can::{CanId, Frame, Mtu, Transmitter};
+use canadensis_can::types::{CanNodeId, CanTransferId};
+use canadensis_can::{CanId, CanTransmitter, Frame, Mtu};
 use canadensis_core::time::Microseconds32;
 use canadensis_core::transfer::*;
-use canadensis_core::{NodeId, Priority, ServiceId, SubjectId, TransferId};
+use canadensis_core::transport::Transmitter;
+use canadensis_core::{Priority, ServiceId, SubjectId};
 
 fn instant(ticks: u32) -> Microseconds32 {
     Microseconds32::new(ticks)
@@ -21,14 +23,14 @@ type TestQueue = ArrayQueue<Microseconds32, 64>;
 
 #[test]
 fn test_heartbeat() {
-    let mut tx = Transmitter::new(Mtu::Can8, TestQueue::new());
+    let mut tx = CanTransmitter::new(Mtu::Can8, TestQueue::new());
     tx.push(Transfer {
         header: Header::Message(MessageHeader {
             timestamp: instant(0),
-            transfer_id: TransferId::try_from(0).unwrap(),
+            transfer_id: CanTransferId::try_from(0).unwrap(),
             priority: Priority::Nominal,
             subject: SubjectId::try_from(7509).unwrap(),
-            source: Some(NodeId::try_from(42).unwrap()),
+            source: Some(CanNodeId::try_from(42).unwrap()),
         }),
         payload: &[0x00, 0x00, 0x00, 0x00, 0x04, 0x78, 0x68],
     })
@@ -48,10 +50,10 @@ fn test_heartbeat() {
     tx.push(Transfer {
         header: Header::Message(MessageHeader {
             timestamp: instant(0),
-            transfer_id: TransferId::try_from(1).unwrap(),
+            transfer_id: CanTransferId::try_from(1).unwrap(),
             priority: Priority::Nominal,
             subject: SubjectId::try_from(7509).unwrap(),
-            source: Some(NodeId::try_from(42).unwrap()),
+            source: Some(CanNodeId::try_from(42).unwrap()),
         }),
         payload: &[0x01, 0x00, 0x00, 0x00, 0x04, 0x78, 0x68],
     })
@@ -71,11 +73,11 @@ fn test_heartbeat() {
 #[test]
 #[cfg(feature = "can-fd")]
 fn test_string() {
-    let mut tx = Transmitter::new(Mtu::CanFd64, TestQueue::new());
+    let mut tx = CanTransmitter::new(Mtu::CanFd64, TestQueue::new());
     tx.push(Transfer {
         header: Header::Message(MessageHeader {
             timestamp: instant(0),
-            transfer_id: TransferId::try_from(0).unwrap(),
+            transfer_id: CanTransferId::try_from(0).unwrap(),
             priority: Priority::Nominal,
             subject: SubjectId::try_from(4919).unwrap(),
             source: None,
@@ -102,15 +104,15 @@ fn test_string() {
 
 #[test]
 fn test_node_info_request() {
-    let mut tx = Transmitter::new(Mtu::Can8, TestQueue::new());
+    let mut tx = CanTransmitter::new(Mtu::Can8, TestQueue::new());
     tx.push(Transfer {
         header: Header::Request(ServiceHeader {
             timestamp: instant(0),
-            transfer_id: TransferId::try_from(1).unwrap(),
+            transfer_id: CanTransferId::try_from(1).unwrap(),
             priority: Priority::Nominal,
             service: ServiceId::try_from(430).unwrap(),
-            source: NodeId::try_from(123).unwrap(),
-            destination: NodeId::try_from(42).unwrap(),
+            source: CanNodeId::try_from(123).unwrap(),
+            destination: CanNodeId::try_from(42).unwrap(),
         }),
         payload: &[],
     })
@@ -129,15 +131,15 @@ fn test_node_info_request() {
 
 #[test]
 fn test_node_info_response() {
-    let mut tx = Transmitter::new(Mtu::Can8, TestQueue::new());
+    let mut tx = CanTransmitter::new(Mtu::Can8, TestQueue::new());
     tx.push(Transfer {
         header: Header::Response(ServiceHeader {
             timestamp: instant(0),
-            transfer_id: TransferId::try_from(1).unwrap(),
+            transfer_id: CanTransferId::try_from(1).unwrap(),
             priority: Priority::Nominal,
             service: ServiceId::try_from(430).unwrap(),
-            source: NodeId::try_from(42).unwrap(),
-            destination: NodeId::try_from(123).unwrap(),
+            source: CanNodeId::try_from(42).unwrap(),
+            destination: CanNodeId::try_from(123).unwrap(),
         }),
         payload: &b"\x01\x00\x00\x00\x01\x00\x00\
                     \x00\x00\x00\x00\x00\x00\x00\
@@ -177,14 +179,14 @@ fn test_node_info_response() {
 #[test]
 #[cfg(feature = "can-fd")]
 fn test_array() {
-    let mut tx = Transmitter::new(Mtu::CanFd64, TestQueue::new());
+    let mut tx = CanTransmitter::new(Mtu::CanFd64, TestQueue::new());
     tx.push(Transfer {
         header: Header::Message(MessageHeader {
             timestamp: instant(0),
-            transfer_id: TransferId::try_from(0).unwrap(),
+            transfer_id: CanTransferId::try_from(0).unwrap(),
             priority: Priority::Nominal,
             subject: SubjectId::try_from(4919).unwrap(),
-            source: Some(NodeId::try_from(59).unwrap()),
+            source: Some(CanNodeId::try_from(59).unwrap()),
         }),
         payload: &[
             0x00, 0xb8, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,

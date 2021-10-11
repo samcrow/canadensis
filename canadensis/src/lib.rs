@@ -13,16 +13,11 @@ extern crate fallible_collections;
 extern crate hash32;
 extern crate heapless;
 
-extern crate canadensis_can;
 extern crate canadensis_core;
 extern crate canadensis_encoding;
 extern crate canadensis_filter_config;
 
 // Re-exports from other crates
-pub mod can {
-    //! CAN bus and UAVCAN/CAN types
-    pub use canadensis_can::*;
-}
 pub mod core {
     //! Basic UAVCAN types
     pub use canadensis_core::*;
@@ -45,41 +40,73 @@ pub mod register;
 mod requester;
 mod serialize;
 
+use ::core::fmt::{Debug, Formatter};
 use ::core::marker::PhantomData;
 use alloc::vec::Vec;
+use canadensis_core::OutOfMemoryError;
 
-use canadensis_can::{Frame, OutOfMemoryError};
+use crate::core::transport::Transport;
 use canadensis_core::time::{Clock, Instant};
 use canadensis_core::transfer::*;
-use canadensis_core::{NodeId, Priority, ServiceId, SubjectId, TransferId};
+use canadensis_core::transport::{Receiver, Transmitter};
+use canadensis_core::{ServiceId, SubjectId};
 use canadensis_encoding::{Message, Request, Response, Serialize};
-use canadensis_filter_config::Filter;
 
 /// A token from a request that is needed to send a response
-#[derive(Debug, Clone)]
-pub struct ResponseToken {
+pub struct ResponseToken<T: Transport> {
     /// ID of the service that this is a response for
     service: ServiceId,
     /// ID of the node that sent the request
-    client: NodeId,
+    client: T::NodeId,
     /// Transfer ID of the request transfer (and also the response transfer)
-    transfer: TransferId,
+    transfer: T::TransferId,
     /// Priority of the request transfer (and also the response transfer)
-    priority: Priority,
+    priority: T::Priority,
+}
+
+impl<T: Transport> Clone for ResponseToken<T>
+where
+    T::NodeId: Clone,
+    T::TransferId: Clone,
+    T::Priority: Clone,
+{
+    fn clone(&self) -> Self {
+        ResponseToken {
+            service: self.service.clone(),
+            client: self.client.clone(),
+            transfer: self.transfer.clone(),
+            priority: self.priority.clone(),
+        }
+    }
+}
+impl<T: Transport> Debug for ResponseToken<T>
+where
+    T::NodeId: Debug,
+    T::TransferId: Debug,
+    T::Priority: Debug,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("ResponseToken")
+            .field("service", &self.service)
+            .field("client", &self.client)
+            .field("transfer", &self.transfer)
+            .field("priority", &self.priority)
+            .finish()
+    }
 }
 
 /// Something that may be able to handle incoming transfers
-pub trait TransferHandler<I: Instant> {
+pub trait TransferHandler<I: Instant, T: Transport> {
     /// Potentially handles an incoming message transfer
     ///
     /// This function returns true if the message was handled and should not be sent on to other
     /// handlers.
     ///
     /// The default implementation does nothing and returns false.
-    fn handle_message<N: Node<Instant = I>>(
+    fn handle_message<N: Node<Instant = I, Transport = T>>(
         &mut self,
         node: &mut N,
-        transfer: &MessageTransfer<Vec<u8>, I>,
+        transfer: &MessageTransfer<Vec<u8>, I, T>,
     ) -> bool {
         drop((node, transfer));
         false
@@ -91,11 +118,11 @@ pub trait TransferHandler<I: Instant> {
     /// handlers.
     ///
     /// The default implementation does nothing and returns false.
-    fn handle_request<N: Node<Instant = I>>(
+    fn handle_request<N: Node<Instant = I, Transport = T>>(
         &mut self,
         node: &mut N,
-        token: ResponseToken,
-        transfer: &ServiceTransfer<Vec<u8>, I>,
+        token: ResponseToken<T>,
+        transfer: &ServiceTransfer<Vec<u8>, I, T>,
     ) -> bool {
         drop((node, token, transfer));
         false
@@ -107,10 +134,10 @@ pub trait TransferHandler<I: Instant> {
     /// handlers.
     ///
     /// The default implementation does nothing and returns false.
-    fn handle_response<N: Node<Instant = I>>(
+    fn handle_response<N: Node<Instant = I, Transport = T>>(
         &mut self,
         node: &mut N,
-        transfer: &ServiceTransfer<Vec<u8>, I>,
+        transfer: &ServiceTransfer<Vec<u8>, I, T>,
     ) -> bool {
         drop((node, transfer));
         false
@@ -122,7 +149,7 @@ pub trait TransferHandler<I: Instant> {
     fn chain<H>(self, next: H) -> TransferHandlerChain<Self, H>
     where
         Self: Sized,
-        H: TransferHandler<I>,
+        H: TransferHandler<I, T>,
     {
         TransferHandlerChain::new(self, next)
     }
@@ -144,16 +171,17 @@ impl<H0, H1> TransferHandlerChain<H0, H1> {
     }
 }
 
-impl<I, H0, H1> TransferHandler<I> for TransferHandlerChain<H0, H1>
+impl<I, T, H0, H1> TransferHandler<I, T> for TransferHandlerChain<H0, H1>
 where
     I: Instant,
-    H0: TransferHandler<I>,
-    H1: TransferHandler<I>,
+    T: Transport,
+    H0: TransferHandler<I, T>,
+    H1: TransferHandler<I, T>,
 {
-    fn handle_message<N: Node<Instant = I>>(
+    fn handle_message<N: Node<Instant = I, Transport = T>>(
         &mut self,
         node: &mut N,
-        transfer: &MessageTransfer<Vec<u8>, I>,
+        transfer: &MessageTransfer<Vec<u8>, I, T>,
     ) -> bool {
         let handled = self.handler0.handle_message(node, transfer);
         if handled {
@@ -163,11 +191,11 @@ where
         }
     }
 
-    fn handle_request<N: Node<Instant = I>>(
+    fn handle_request<N: Node<Instant = I, Transport = T>>(
         &mut self,
         node: &mut N,
-        token: ResponseToken,
-        transfer: &ServiceTransfer<Vec<u8>, I>,
+        token: ResponseToken<T>,
+        transfer: &ServiceTransfer<Vec<u8>, I, T>,
     ) -> bool {
         let handled = self.handler0.handle_request(node, token.clone(), transfer);
         if handled {
@@ -177,10 +205,10 @@ where
         }
     }
 
-    fn handle_response<N: Node<Instant = I>>(
+    fn handle_response<N: Node<Instant = I, Transport = T>>(
         &mut self,
         node: &mut N,
-        transfer: &ServiceTransfer<Vec<u8>, I>,
+        transfer: &ServiceTransfer<Vec<u8>, I, T>,
     ) -> bool {
         let handled = self.handler0.handle_response(node, transfer);
         if handled {
@@ -200,8 +228,12 @@ pub trait Node {
     type Clock: Clock<Instant = Self::Instant>;
     /// The instant that this node's clock produces
     type Instant: Instant;
-    /// The queue of outgoing frames that this node uses
-    type FrameQueue;
+    /// The transport that this node uses
+    type Transport: Transport;
+    /// The transmitter that this node uses
+    type Transmitter: Transmitter<Self::Instant, Transport = Self::Transport>;
+    /// The receiver that this node uses
+    type Receiver: Receiver<Self::Instant, Transport = Self::Transport>;
 
     /// Handles an incoming frame
     ///
@@ -212,11 +244,11 @@ pub trait Node {
     /// may cause transfers to be lost but are not reported as errors here.
     fn accept_frame<H>(
         &mut self,
-        frame: Frame<<Self::Clock as Clock>::Instant>,
+        frame: <Self::Transport as Transport>::Frame,
         handler: &mut H,
-    ) -> Result<(), OutOfMemoryError>
+    ) -> Result<(), <Self::Transport as Transport>::Error>
     where
-        H: TransferHandler<Self::Instant>;
+        H: TransferHandler<Self::Instant, Self::Transport>;
 
     /// Starts publishing messages on subject
     ///
@@ -229,8 +261,8 @@ pub trait Node {
         &mut self,
         subject: SubjectId,
         timeout: <<<Self as Node>::Clock as Clock>::Instant as Instant>::Duration,
-        priority: Priority,
-    ) -> Result<PublishToken<T>, StartSendError>
+        priority: <Self::Transport as Transport>::Priority,
+    ) -> Result<PublishToken<T>, StartSendError<<Self::Transport as Transport>::Error>>
     where
         T: Message;
 
@@ -242,7 +274,11 @@ pub trait Node {
     /// Publishes a message
     ///
     /// A token can be created by calling [`start_publishing`](#tymethod.start_publishing).
-    fn publish<T>(&mut self, token: &PublishToken<T>, payload: &T) -> Result<(), OutOfMemoryError>
+    fn publish<T>(
+        &mut self,
+        token: &PublishToken<T>,
+        payload: &T,
+    ) -> Result<(), <Self::Transport as Transport>::Error>
     where
         T: Message + Serialize;
 
@@ -257,8 +293,8 @@ pub trait Node {
         service: ServiceId,
         receive_timeout: <<<Self as Node>::Clock as Clock>::Instant as Instant>::Duration,
         response_payload_size_max: usize,
-        priority: Priority,
-    ) -> Result<ServiceToken<T>, StartSendError>
+        priority: <Self::Transport as Transport>::Priority,
+    ) -> Result<ServiceToken<T>, StartSendError<<Self::Transport as Transport>::Error>>
     where
         T: Request;
 
@@ -274,8 +310,8 @@ pub trait Node {
         &mut self,
         token: &ServiceToken<T>,
         payload: &T,
-        destination: NodeId,
-    ) -> Result<TransferId, OutOfMemoryError>
+        destination: <Self::Transport as Transport>::NodeId,
+    ) -> Result<<Self::Transport as Transport>::TransferId, <Self::Transport as Transport>::Error>
     where
         T: Request + Serialize;
 
@@ -285,7 +321,7 @@ pub trait Node {
         subject: SubjectId,
         payload_size_max: usize,
         timeout: <<<Self as Node>::Clock as Clock>::Instant as Instant>::Duration,
-    ) -> Result<(), OutOfMemoryError>;
+    ) -> Result<(), <Self::Transport as Transport>::Error>;
 
     /// Subscribes to requests for a service
     fn subscribe_request(
@@ -293,7 +329,7 @@ pub trait Node {
         service: ServiceId,
         payload_size_max: usize,
         timeout: <<<Self as Node>::Clock as Clock>::Instant as Instant>::Duration,
-    ) -> Result<(), OutOfMemoryError>;
+    ) -> Result<(), <Self::Transport as Transport>::Error>;
 
     /// Responds to a service request
     ///
@@ -302,10 +338,10 @@ pub trait Node {
     /// can send a response.
     fn send_response<T>(
         &mut self,
-        token: ResponseToken,
+        token: ResponseToken<Self::Transport>,
         timeout: <<<Self as Node>::Clock as Clock>::Instant as Instant>::Duration,
         payload: &T,
-    ) -> Result<(), OutOfMemoryError>
+    ) -> Result<(), <Self::Transport as Transport>::Error>
     where
         T: Response + Serialize;
 
@@ -316,17 +352,18 @@ pub trait Node {
     /// Returns a mutable reference to the enclosed clock
     fn clock_mut(&mut self) -> &mut Self::Clock;
 
-    /// Returns a reference to this node's queue of outgoing frames
-    fn frame_queue(&self) -> &Self::FrameQueue;
+    /// Returns a reference to the transport transmitter
+    fn transmitter(&self) -> &Self::Transmitter;
+    /// Returns a mutable reference to the transport transmitter
+    fn transmitter_mut(&mut self) -> &mut Self::Transmitter;
 
-    /// Returns a mutable reference to this node's queue of outgoing frames
-    fn frame_queue_mut(&mut self) -> &mut Self::FrameQueue;
+    /// Returns a reference to the transport receiver
+    fn receiver(&self) -> &Self::Receiver;
+    /// Returns a mutable reference to the transport receiver
+    fn receiver_mut(&mut self) -> &mut Self::Receiver;
 
     /// Returns the identifier of this node
-    fn node_id(&self) -> NodeId;
-
-    /// Returns a set of filters that accept the frames this node is subscribed to
-    fn frame_filters(&self) -> Result<Vec<Filter>, OutOfMemoryError>;
+    fn node_id(&self) -> <Self::Transport as Transport>::NodeId;
 }
 
 /// A token returned from [`Node::start_publishing`](Node#tymethod.start_publishing) that can be
@@ -357,15 +394,17 @@ impl<T> ServiceToken<T> {
 
 /// Errors that may occur when starting to send messages or requests
 #[derive(Debug)]
-pub enum StartSendError {
-    /// Memory could not be allocated
+pub enum StartSendError<E> {
+    /// Memory to store the publisher was not available
     Memory(OutOfMemoryError),
+    /// Tne transport returned an error
+    Transport(E),
     /// The provided subject ID or service ID is already in use
     Duplicate,
 }
 
-impl From<OutOfMemoryError> for StartSendError {
-    fn from(inner: OutOfMemoryError) -> Self {
-        StartSendError::Memory(inner)
+impl<E> From<E> for StartSendError<E> {
+    fn from(inner: E) -> Self {
+        StartSendError::Transport(inner)
     }
 }

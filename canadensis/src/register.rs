@@ -7,9 +7,9 @@ use alloc::vec::Vec;
 use core::str;
 
 use crate::{Node, ResponseToken, TransferHandler};
-use canadensis_can::OutOfMemoryError;
 use canadensis_core::time::{milliseconds, Instant};
 use canadensis_core::transfer::ServiceTransfer;
+use canadensis_core::transport::Transport;
 use canadensis_data_types::uavcan::register::access_1_0::{self, AccessRequest, AccessResponse};
 use canadensis_data_types::uavcan::register::list_1_0::{self, ListRequest, ListResponse};
 use canadensis_data_types::uavcan::register::name_1_0::Name;
@@ -137,7 +137,7 @@ where
     ///
     /// This function returns an error if the provided node does not have enough space to listen
     /// for requests.
-    pub fn subscribe_requests<N>(node: &mut N) -> Result<(), OutOfMemoryError>
+    pub fn subscribe_requests<N>(node: &mut N) -> Result<(), <N::Transport as Transport>::Error>
     where
         N: Node,
     {
@@ -242,16 +242,17 @@ fn register_handle_access(register: &mut dyn Register, request: &AccessRequest) 
     }
 }
 
-impl<I, B> TransferHandler<I> for RegisterHandler<B>
+impl<I, B, T> TransferHandler<I, T> for RegisterHandler<B>
 where
     I: Instant,
     B: RegisterBlock,
+    T: Transport,
 {
-    fn handle_request<N: Node<Instant = I>>(
+    fn handle_request<N: Node<Instant = I, Transport = T>>(
         &mut self,
         node: &mut N,
-        token: ResponseToken,
-        transfer: &ServiceTransfer<Vec<u8>, I>,
+        token: ResponseToken<T>,
+        transfer: &ServiceTransfer<Vec<u8>, I, T>,
     ) -> bool {
         match transfer.header.service {
             access_1_0::SERVICE => {

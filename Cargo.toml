@@ -17,5 +17,6 @@ members = [
     "canadensis_linux",
     "canadensis_macro",
     "canadensis_pnp_client",
+    "canadensis_serial",
     "canadensis_write_crc"
 ]

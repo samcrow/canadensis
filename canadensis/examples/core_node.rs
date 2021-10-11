@@ -15,12 +15,15 @@ use std::time::Instant as StdInstant;
 
 use socketcan::CANSocket;
 
-use canadensis::can::queue::ArrayQueue;
-use canadensis::can::{CanId, Frame, Mtu};
 use canadensis::core::time::{Clock, Duration, Instant, MicrosecondDuration64, Microseconds64};
 use canadensis::core::transfer::ServiceTransfer;
-use canadensis::core::{NodeId, Priority};
+use canadensis::core::transport::Transport;
+use canadensis::core::Priority;
+use canadensis::node::CoreNode;
 use canadensis::{Node, ResponseToken, TransferHandler};
+use canadensis_can::queue::{ArrayQueue, FrameQueueSource};
+use canadensis_can::types::CanNodeId;
+use canadensis_can::{CanId, CanReceiver, CanTransmitter, Frame, Mtu};
 use canadensis_data_types::uavcan::node::get_info_1_0::{self, GetInfoResponse};
 use canadensis_data_types::uavcan::node::health_1_0::Health;
 use canadensis_data_types::uavcan::node::heartbeat_1_0::{self, Heartbeat};
@@ -63,7 +66,7 @@ use canadensis_data_types::uavcan::node::version_1_0::Version;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);
     let can_interface = args.next().expect("Expected CAN interface name");
-    let node_id = NodeId::try_from(
+    let node_id = CanNodeId::try_from(
         args.next()
             .expect("Expected node ID")
             .parse::<u8>()
@@ -80,10 +83,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut transfer_handler = BasicTransferHandler { unique_id };
     let mut clock = SystemClock::new();
 
-    let frame_queue = ArrayQueue::<_, 64>::new();
+    let frame_queue = ArrayQueue::<Microseconds64, 64>::new();
 
-    let mut uavcan: canadensis::node::CoreNode<_, _, 4, 4> =
-        canadensis::node::CoreNode::new(clock.clone(), node_id, Mtu::Can8, frame_queue);
+    let transmitter = CanTransmitter::new(Mtu::Can8, frame_queue);
+    let receiver = CanReceiver::new(node_id, Mtu::Can8);
+    let mut uavcan: CoreNode<_, _, _, 8, 8> =
+        CoreNode::new(SystemClock::new(), node_id, transmitter, receiver);
 
     let heartbeat_token = uavcan
         .start_publishing(
@@ -190,7 +195,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         // Send frames
-        while let Some(out_frame) = uavcan.pop_frame() {
+        while let Some(out_frame) = uavcan.transmitter_mut().frame_queue_mut().pop_frame() {
             // Convert to SocketCAN frame format
             let out_frame =
                 socketcan::CANFrame::new(out_frame.id().into(), out_frame.data(), false, false)?;
@@ -203,15 +208,15 @@ struct BasicTransferHandler {
     unique_id: [u8; 16],
 }
 
-impl TransferHandler<Microseconds64> for BasicTransferHandler {
+impl<T: Transport> TransferHandler<Microseconds64, T> for BasicTransferHandler {
     fn handle_request<N>(
         &mut self,
         node: &mut N,
-        token: ResponseToken,
-        transfer: &ServiceTransfer<Vec<u8>, <N::Clock as Clock>::Instant>,
+        token: ResponseToken<T>,
+        transfer: &ServiceTransfer<Vec<u8>, <N::Clock as Clock>::Instant, T>,
     ) -> bool
     where
-        N: Node<Instant = Microseconds64>,
+        N: Node<Instant = Microseconds64, Transport = T>,
     {
         println!("Handling request {:?}", transfer);
         if transfer.header.service == get_info_1_0::SERVICE {

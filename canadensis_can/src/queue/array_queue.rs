@@ -1,5 +1,6 @@
 use crate::queue::{FrameQueueSource, FrameSink};
-use crate::{Frame, OutOfMemoryError};
+use crate::Frame;
+use canadensis_core::OutOfMemoryError;
 use core::mem::{self, MaybeUninit};
 use core::ptr;
 
