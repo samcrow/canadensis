@@ -93,6 +93,18 @@ impl TryFrom<u8> for CanNodeId {
     }
 }
 
+impl TryFrom<u16> for CanNodeId {
+    type Error = InvalidValue;
+
+    fn try_from(value: u16) -> Result<Self, Self::Error> {
+        if value <= u16::from(*VALID_NODE_IDS.end()) {
+            Ok(CanNodeId(value as u8))
+        } else {
+            Err(InvalidValue)
+        }
+    }
+}
+
 impl From<CanNodeId> for u8 {
     #[inline]
     fn from(id: CanNodeId) -> Self {

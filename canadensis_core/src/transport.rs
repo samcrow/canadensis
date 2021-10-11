@@ -5,6 +5,7 @@ use crate::time::Instant;
 use crate::transfer::Transfer;
 use crate::{ServiceId, SubjectId};
 use alloc::vec::Vec;
+use core::convert::TryFrom;
 use core::fmt::Debug;
 
 /// Basic requirements for a transport that can be used to send and receive transfers
@@ -154,7 +155,7 @@ where
 }
 
 /// Required operations for a node ID
-pub trait NodeId<T>: Debug + Clone + Into<usize> {
+pub trait NodeId<T>: Debug + Clone + Into<usize> + TryFrom<u16> {
     /// An array of transfer IDs that contains a transfer ID for each possible node ID value
     ///
     /// This is normally `[T; the maximum node ID value + 1]`.

@@ -578,7 +578,7 @@ mod test {
                 transfer_id: CanTransferId::try_from(0).unwrap(),
                 priority: Priority::Nominal,
                 subject: SubjectId::try_from(7509).unwrap(),
-                source: Some(CanNodeId::try_from(42).unwrap()),
+                source: Some(CanNodeId::try_from(42u8).unwrap()),
             }),
             0x107d552a,
         );
@@ -600,8 +600,8 @@ mod test {
                 transfer_id: CanTransferId::try_from(0).unwrap(),
                 priority: Priority::Nominal,
                 service: ServiceId::try_from(430).unwrap(),
-                source: CanNodeId::try_from(123).unwrap(),
-                destination: CanNodeId::try_from(42).unwrap(),
+                source: CanNodeId::try_from(123u8).unwrap(),
+                destination: CanNodeId::try_from(42u8).unwrap(),
             }),
             0x136b957b,
         );
@@ -612,8 +612,8 @@ mod test {
                 transfer_id: CanTransferId::try_from(0).unwrap(),
                 priority: Priority::Nominal,
                 service: ServiceId::try_from(430).unwrap(),
-                source: CanNodeId::try_from(42).unwrap(),
-                destination: CanNodeId::try_from(123).unwrap(),
+                source: CanNodeId::try_from(42u8).unwrap(),
+                destination: CanNodeId::try_from(123u8).unwrap(),
             }),
             0x126bbdaa,
         );
@@ -624,7 +624,7 @@ mod test {
                 transfer_id: CanTransferId::try_from(0).unwrap(),
                 priority: Priority::Nominal,
                 subject: SubjectId::try_from(4919).unwrap(),
-                source: Some(CanNodeId::try_from(59).unwrap()),
+                source: Some(CanNodeId::try_from(59u8).unwrap()),
             }),
             0x1073373b,
         );

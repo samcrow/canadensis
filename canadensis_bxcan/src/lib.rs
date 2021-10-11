@@ -12,6 +12,7 @@ extern crate alloc;
 
 extern crate bxcan;
 extern crate canadensis;
+extern crate canadensis_can;
 extern crate canadensis_filter_config;
 extern crate canadensis_pnp_client;
 extern crate log;
@@ -21,10 +22,12 @@ pub mod pnp;
 
 use bxcan::filter::{BankConfig, Mask32};
 use bxcan::{Can, ExtendedId, FilterOwner, Instance, Mailbox};
-use canadensis::can::queue::FrameQueueSource;
-use canadensis::can::OutOfMemoryError;
 use canadensis::core::time::{Clock, Instant};
+use canadensis::core::OutOfMemoryError;
 use canadensis::{Node, TransferHandler};
+use canadensis_can::queue::FrameQueueSource;
+use canadensis_can::types::CanTransport;
+use canadensis_can::{CanReceiver, CanTransmitter};
 use canadensis_filter_config::{optimize, Filter};
 use core::cmp::Ordering;
 use core::convert::{Infallible, TryFrom};
@@ -42,10 +45,16 @@ where
     deadlines: DeadlineTracker<N::Instant>,
 }
 
-impl<N, C> BxCanNode<N, C>
+impl<I, N, C, Q> BxCanNode<N, C>
 where
-    N: Node,
-    N::FrameQueue: FrameQueueSource<N::Instant>,
+    I: Instant,
+    N: Node<
+        Instant = I,
+        Transport = CanTransport<I>,
+        Transmitter = CanTransmitter<I, Q>,
+        Receiver = CanReceiver<I>,
+    >,
+    Q: FrameQueueSource<N::Instant>,
     C: Instance,
 {
     /// Creates a node
@@ -74,7 +83,7 @@ where
     /// and passes all completed transfers to the provided handler
     pub fn receive_frames<H>(&mut self, handler: &mut H) -> Result<(), OutOfMemoryError>
     where
-        H: TransferHandler<N::Instant>,
+        H: TransferHandler<N::Instant, CanTransport<N::Instant>>,
     {
         loop {
             match self.can.receive() {
@@ -109,12 +118,13 @@ where
 
 /// Configures filters on a CAN peripheral to accept all frames that the provided node is subscribed
 /// to
-pub fn configure_node_filters<N, I>(node: &N, can: &mut Can<I>) -> Result<(), OutOfMemoryError>
+pub fn configure_node_filters<N, I, S>(node: &N, can: &mut Can<I>) -> Result<(), OutOfMemoryError>
 where
-    N: Node,
+    N: Node<Receiver = CanReceiver<S>>,
     I: Instance + FilterOwner,
+    S: Instant,
 {
-    let mut filters = node.frame_filters()?;
+    let mut filters = node.receiver().frame_filters()?;
     optimize_and_apply_filters(&mut filters, can);
     Ok(())
 }
@@ -125,19 +135,20 @@ where
 ///
 /// This function returns a WouldBlock error if frames are waiting to be transmitted
 /// but no suitable transmit mailbox is open.
-pub fn send_frames<N, C>(
+pub fn send_frames<I, N, C, Q>(
     node: &mut N,
     can: &mut Can<C>,
     deadlines: &mut DeadlineTracker<N::Instant>,
 ) -> nb::Result<(), Infallible>
 where
-    N: Node,
-    N::FrameQueue: FrameQueueSource<N::Instant>,
+    I: Instant,
+    N: Node<Instant = I, Transmitter = CanTransmitter<I, Q>>,
+    Q: FrameQueueSource<I>,
     C: Instance,
 {
     let now = node.clock_mut().now();
     clean_expired_frames(deadlines, can, now);
-    while let Some(frame) = node.frame_queue_mut().pop_frame() {
+    while let Some(frame) = node.transmitter_mut().frame_queue_mut().pop_frame() {
         // Check that the frame's deadline has not passed
         match frame.timestamp().overflow_safe_compare(&now) {
             Ordering::Greater | Ordering::Equal => {
@@ -166,15 +177,16 @@ where
 ///
 /// If all mailboxes are full with frames of equal or greater priority, this function returns
 /// the frame to the outgoing frame queue and returns a WouldBlock error.
-fn send_frame<N, C>(
+fn send_frame<I, N, C, Q>(
     node: &mut N,
     can: &mut Can<C>,
-    deadlines: &mut DeadlineTracker<N::Instant>,
-    frame: canadensis::can::Frame<N::Instant>,
+    deadlines: &mut DeadlineTracker<I>,
+    frame: canadensis_can::Frame<I>,
 ) -> nb::Result<(), Infallible>
 where
-    N: Node,
-    N::FrameQueue: FrameQueueSource<N::Instant>,
+    I: Instant,
+    N: Node<Instant = I, Transmitter = CanTransmitter<I, Q>>,
+    Q: FrameQueueSource<N::Instant>,
     C: Instance,
 {
     // Convert frame to BXCAN format
@@ -196,13 +208,16 @@ where
             // Put the removed frame back in the queue to be transmitted later
             // This may return an error if it runs out of memory, but there's nothing we can
             // do about that.
-            let _ = node.frame_queue_mut().return_frame(removed_frame);
+            let _ = node
+                .transmitter_mut()
+                .frame_queue_mut()
+                .return_frame(removed_frame);
             Ok(())
         }
         Err(nb::Error::WouldBlock) => {
             // No mailbox available for this frame. Put it back.
             // Ignore out of memory
-            let _ = node.frame_queue_mut().return_frame(frame);
+            let _ = node.transmitter_mut().frame_queue_mut().return_frame(frame);
 
             Err(nb::Error::WouldBlock)
         }
@@ -264,7 +279,7 @@ where
 /// # Panics
 ///
 /// This function panics if the provided frame has more than 8 bytes of data.
-pub fn uavcan_frame_to_bxcan<I>(frame: &canadensis::can::Frame<I>) -> bxcan::Frame {
+pub fn uavcan_frame_to_bxcan<I>(frame: &canadensis_can::Frame<I>) -> bxcan::Frame {
     let bxcan_id = bxcan::ExtendedId::new(frame.id().into()).unwrap();
     let bxcan_data = bxcan::Data::new(frame.data()).expect("Frame data more than 8 bytes");
     bxcan::Frame::new_data(bxcan_id, bxcan_data)
@@ -277,14 +292,14 @@ pub fn uavcan_frame_to_bxcan<I>(frame: &canadensis::can::Frame<I>) -> bxcan::Fra
 pub fn bxcan_frame_to_uavcan<I>(
     frame: &bxcan::Frame,
     timestamp: I,
-) -> Result<canadensis::can::Frame<I>, InvalidFrameFormat> {
+) -> Result<canadensis_can::Frame<I>, InvalidFrameFormat> {
     let id_bits = match frame.id() {
         bxcan::Id::Extended(extended_id) => extended_id.as_raw(),
         bxcan::Id::Standard(_) => return Err(InvalidFrameFormat),
     };
-    let uavcan_id = canadensis::can::CanId::try_from(id_bits).map_err(|_| InvalidFrameFormat)?;
+    let uavcan_id = canadensis_can::CanId::try_from(id_bits).map_err(|_| InvalidFrameFormat)?;
     let uavcan_data = frame.data().ok_or(InvalidFrameFormat)?;
-    Ok(canadensis::can::Frame::new(
+    Ok(canadensis_can::Frame::new(
         timestamp,
         uavcan_id,
         uavcan_data.as_ref(),

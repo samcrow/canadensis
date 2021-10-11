@@ -11,13 +11,12 @@ use socketcan::CANSocket;
 
 use canadensis::core::time::{Clock, Microseconds64};
 use canadensis::core::transfer::{MessageTransfer, ServiceTransfer};
-use canadensis::core::transport::Transport;
 use canadensis::node::{BasicNode, CoreNode};
 use canadensis::register::basic::{RegisterString, SimpleRegister};
 use canadensis::register::{RegisterBlock, RegisterHandler};
 use canadensis::{Node, ResponseToken, TransferHandler, TransferHandlerChain};
 use canadensis_can::queue::{ArrayQueue, FrameQueueSource};
-use canadensis_can::types::CanNodeId;
+use canadensis_can::types::{CanNodeId, CanTransport};
 use canadensis_can::{CanReceiver, CanTransmitter, Mtu};
 use canadensis_data_types::uavcan::node::get_info_1_0::GetInfoResponse;
 use canadensis_data_types::uavcan::node::version_1_0::Version;
@@ -159,14 +158,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 struct EmptyHandler;
 
-impl<T: Transport> TransferHandler<<SystemClock as Clock>::Instant, T> for EmptyHandler {
+impl TransferHandler<<SystemClock as Clock>::Instant, CanTransport<<SystemClock as Clock>::Instant>>
+    for EmptyHandler
+{
     fn handle_message<N>(
         &mut self,
         _node: &mut N,
-        transfer: &MessageTransfer<Vec<u8>, <SystemClock as Clock>::Instant, T>,
+        transfer: &MessageTransfer<
+            Vec<u8>,
+            <SystemClock as Clock>::Instant,
+            CanTransport<<SystemClock as Clock>::Instant>,
+        >,
     ) -> bool
     where
-        N: Node<Instant = <SystemClock as Clock>::Instant, Transport = T>,
+        N: Node<
+            Instant = <SystemClock as Clock>::Instant,
+            Transport = CanTransport<<SystemClock as Clock>::Instant>,
+        >,
     {
         println!("Got message {:?}", transfer);
         false
@@ -175,11 +183,18 @@ impl<T: Transport> TransferHandler<<SystemClock as Clock>::Instant, T> for Empty
     fn handle_request<N>(
         &mut self,
         _node: &mut N,
-        _token: ResponseToken<T>,
-        transfer: &ServiceTransfer<Vec<u8>, <SystemClock as Clock>::Instant, T>,
+        _token: ResponseToken<CanTransport<<SystemClock as Clock>::Instant>>,
+        transfer: &ServiceTransfer<
+            Vec<u8>,
+            <SystemClock as Clock>::Instant,
+            CanTransport<<SystemClock as Clock>::Instant>,
+        >,
     ) -> bool
     where
-        N: Node<Instant = <SystemClock as Clock>::Instant, Transport = T>,
+        N: Node<
+            Instant = <SystemClock as Clock>::Instant,
+            Transport = CanTransport<<SystemClock as Clock>::Instant>,
+        >,
     {
         println!("Got request {:?}", transfer);
         false
@@ -188,10 +203,17 @@ impl<T: Transport> TransferHandler<<SystemClock as Clock>::Instant, T> for Empty
     fn handle_response<N>(
         &mut self,
         _node: &mut N,
-        transfer: &ServiceTransfer<Vec<u8>, <SystemClock as Clock>::Instant, T>,
+        transfer: &ServiceTransfer<
+            Vec<u8>,
+            <SystemClock as Clock>::Instant,
+            CanTransport<<SystemClock as Clock>::Instant>,
+        >,
     ) -> bool
     where
-        N: Node<Instant = <SystemClock as Clock>::Instant, Transport = T>,
+        N: Node<
+            Instant = <SystemClock as Clock>::Instant,
+            Transport = CanTransport<<SystemClock as Clock>::Instant>,
+        >,
     {
         println!("Got response {:?}", transfer);
         false

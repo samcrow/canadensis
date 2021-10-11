@@ -1,8 +1,10 @@
 //! Queues of outgoing CAN frames
 
 mod array_queue;
+mod single_frame_queue;
 
 pub use self::array_queue::ArrayQueue;
+pub use self::single_frame_queue::SingleFrameQueue;
 
 use crate::Frame;
 use canadensis_core::OutOfMemoryError;

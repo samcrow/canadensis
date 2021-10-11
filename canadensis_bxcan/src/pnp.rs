@@ -2,10 +2,13 @@
 //! Plug-and-play node ID allocation
 //!
 
+use crate::uavcan_frame_to_bxcan;
 use bxcan::{Can, FilterOwner, Instance};
-use canadensis::can::{Mtu, OutOfMemoryError};
 use canadensis::core::time::Clock;
-use canadensis::core::NodeId;
+use canadensis::core::OutOfMemoryError;
+use canadensis_can::queue::{FrameQueueSource, SingleFrameQueue};
+use canadensis_can::types::{CanNodeId, CanTransport};
+use canadensis_can::{CanReceiver, CanTransmitter, Mtu};
 use canadensis_pnp_client::{AllocationMessage, PnpClient};
 use core::convert::Infallible;
 
@@ -16,18 +19,25 @@ pub struct BxCanPnpClient<C: Clock, M, I: Instance> {
     /// The CAN peripheral
     pub can: Can<I>,
     /// The node ID allocation client
-    pub client: PnpClient<C, M>,
+    pub client: PnpClient<
+        C,
+        M,
+        CanTransmitter<C::Instant, SingleFrameQueue<C::Instant>>,
+        CanReceiver<C::Instant>,
+    >,
 }
 
 impl<C, M, I> BxCanPnpClient<C, M, I>
 where
     C: Clock,
-    M: AllocationMessage,
+    M: AllocationMessage<CanTransport<C::Instant>>,
     I: Instance + FilterOwner,
 {
     /// Creates a node ID allocation client
     pub fn new(clock: C, mut can: Can<I>, unique_id: [u8; 16]) -> Result<Self, OutOfMemoryError> {
-        let client = PnpClient::new(Mtu::Can8, unique_id)?;
+        let transmitter = CanTransmitter::new(Mtu::Can8, SingleFrameQueue::new());
+        let receiver = CanReceiver::new_anonymous(Mtu::Can8);
+        let client = PnpClient::new(transmitter, receiver, unique_id)?;
         configure_pnp_filters(&client, &mut can)?;
         Ok(BxCanPnpClient { clock, can, client })
     }
@@ -40,7 +50,7 @@ where
     }
 
     /// Handles and parses incoming CAN frames, and returns a node ID if one was received
-    pub fn handle_incoming_frames(&mut self) -> Option<NodeId> {
+    pub fn handle_incoming_frames(&mut self) -> Option<CanNodeId> {
         loop {
             // Read a frame, ignore errors
             match self.can.receive() {
@@ -66,15 +76,20 @@ where
 
 /// Configures a CAN interface to accept only node ID allocation messages
 pub fn configure_pnp_filters<C, M, I>(
-    client: &PnpClient<C, M>,
+    client: &PnpClient<
+        C,
+        M,
+        CanTransmitter<C::Instant, SingleFrameQueue<C::Instant>>,
+        CanReceiver<C::Instant>,
+    >,
     can: &mut Can<I>,
 ) -> Result<(), OutOfMemoryError>
 where
     C: Clock,
-    M: AllocationMessage,
+    M: AllocationMessage<CanTransport<C::Instant>>,
     I: Instance + FilterOwner,
 {
-    let mut filters = client.frame_fiters()?;
+    let mut filters = client.receiver().frame_filters()?;
     crate::optimize_and_apply_filters(&mut filters, can);
     Ok(())
 }
@@ -82,17 +97,28 @@ where
 /// Creates a node ID allocation request and sends it using the provided CAN interface
 pub fn publish_request<C, M, I>(
     clock: &mut C,
-    client: &mut PnpClient<C, M>,
+    client: &mut PnpClient<
+        C,
+        M,
+        CanTransmitter<C::Instant, SingleFrameQueue<C::Instant>>,
+        CanReceiver<C::Instant>,
+    >,
     can: &mut Can<I>,
 ) -> nb::Result<(), Infallible>
 where
     C: Clock,
-    M: AllocationMessage,
+    M: AllocationMessage<CanTransport<C::Instant>>,
     I: Instance,
 {
     let now = clock.now();
-    let frame = client.assemble_request(now);
-    let bxcan_frame = crate::uavcan_frame_to_bxcan(&frame);
-    can.transmit(&bxcan_frame)
-        .map(|displaced_frame| drop(displaced_frame))
+    client.assemble_request(now);
+    // Get the frame out and send it
+    if let Some(frame) = client.transmitter_mut().frame_queue_mut().pop_frame() {
+        let frame = uavcan_frame_to_bxcan(&frame);
+        match can.transmit(&frame)? {
+            None => {}
+            Some(_removed_frame) => { /* Nothing we can do */ }
+        }
+    }
+    Ok(())
 }

@@ -15,75 +15,69 @@ extern crate canadensis_filter_config;
 extern crate crc_any;
 extern crate heapless;
 
-use alloc::vec::Vec;
 use canadensis::anonymous::AnonymousPublisher;
-use canadensis::can::queue::{FrameQueueSource, FrameSink};
-use canadensis::can::{Frame, Mtu, OutOfMemoryError, Receiver, Transmitter};
 use canadensis::core::time::{milliseconds, Clock};
-use canadensis::core::{NodeId, Priority, SubjectId};
+use canadensis::core::transport::{Receiver, Transmitter, Transport};
+use canadensis::core::{Priority, SubjectId};
 use canadensis::encoding::{Deserialize, Message, Serialize};
 use canadensis_data_types::uavcan::pnp::node_id_allocation_data_1_0::{self, NodeIDAllocationData};
-use canadensis_filter_config::Filter;
 use core::convert::TryFrom;
 use core::marker::PhantomData;
 use crc_any::CRCu64;
 
 /// A plug-and-play allocation client that can be used to find a node ID
-pub struct PnpClient<C: Clock, M> {
+pub struct PnpClient<C: Clock, M, T: Transmitter<C::Instant>, R: Receiver<C::Instant>> {
     /// The unique ID of this node
     unique_id: [u8; 16],
     /// Publisher used to send messages
-    publisher: AnonymousPublisher<C, M>,
+    publisher: AnonymousPublisher<C, M, T>,
     /// Transmitter used along with the publisher to send messages
-    transmitter: Transmitter<SingleFrameQueue<C::Instant>>,
+    transmitter: T,
     /// Receiver used to receive messages
-    receiver: Receiver<C::Instant>,
+    receiver: R,
     _message: PhantomData<M>,
 }
 
-impl<C, M> PnpClient<C, M>
+impl<C, M, T, R, P> PnpClient<C, M, T, R>
 where
     C: Clock,
-    M: AllocationMessage,
+    M: AllocationMessage<P>,
+    T: Transmitter<C::Instant, Transport = P>,
+    R: Receiver<C::Instant, Transport = P>,
+    P: Transport,
 {
     /// Creates a new plug-and-play client
     ///
     /// * `mtu`: The maximum transmission unit size to use when sending frames
     /// * `unique_id`: The unique ID of this node
-    pub fn new(mtu: Mtu, unique_id: [u8; 16]) -> Result<Self, OutOfMemoryError> {
-        let mut receiver = Receiver::new_anonymous(mtu);
+    pub fn new(transmitter: T, mut receiver: R, unique_id: [u8; 16]) -> Result<Self, P::Error> {
         receiver.subscribe_message(M::SUBJECT, 9, milliseconds(1000))?;
 
         Ok(PnpClient {
             unique_id,
             publisher: AnonymousPublisher::new(
                 M::SUBJECT,
-                Priority::Nominal,
+                Priority::Nominal.into(),
                 milliseconds(1000),
-                mtu,
             ),
-            transmitter: Transmitter::new(mtu, SingleFrameQueue::new()),
+            transmitter,
             receiver,
             _message: PhantomData,
         })
     }
 
-    /// Creates an outgoing node ID allocation message and returns it encoded into one CAN frame
-    pub fn assemble_request(&mut self, now: C::Instant) -> Frame<C::Instant> {
+    /// Creates an outgoing node ID allocation message and gives it to the transmitter
+    pub fn assemble_request(&mut self, now: C::Instant) {
         let message = M::with_unique_id(&self.unique_id);
         self.publisher
             .send(&message, now, &mut self.transmitter)
             .expect("Can't fit message into one frame");
-        self.transmitter
-            .frame_queue_mut()
-            .pop_frame()
-            .expect("Transfer did not produce a frame")
     }
 
     /// Handles an incoming frame and checks if it provides an ID for this node
     ///
     /// This function returns the node ID if one was assigned.
-    pub fn accept(&mut self, frame: Frame<C::Instant>) -> Result<Option<NodeId>, OutOfMemoryError> {
+    pub fn accept(&mut self, frame: P::Frame) -> Result<Option<P::NodeId>, P::Error> {
         if let Some(transfer_in) = self.receiver.accept(frame)? {
             if let Ok(message) = M::deserialize_from_bytes(&transfer_in.payload) {
                 if message.matches_unique_id(&self.unique_id) {
@@ -96,9 +90,21 @@ where
         Ok(None)
     }
 
-    /// Returns the filter(s) that will accept node ID allocation frames
-    pub fn frame_fiters(&self) -> Result<Vec<Filter>, OutOfMemoryError> {
-        self.receiver.frame_filters()
+    /// Returns a reference to the transmitter
+    pub fn transmitter(&self) -> &T {
+        &self.transmitter
+    }
+    /// Returns a mutable reference to the transmitter
+    pub fn transmitter_mut(&mut self) -> &mut T {
+        &mut self.transmitter
+    }
+    /// Returns a reference to the receiver
+    pub fn receiver(&self) -> &R {
+        &self.receiver
+    }
+    /// Returns a mutable reference to the receiver
+    pub fn receiver_mut(&mut self) -> &mut R {
+        &mut self.receiver
     }
 }
 
@@ -106,7 +112,7 @@ where
 ///
 /// This is currently implemented for `uavcan.pnp.NodeIdAllocationData` version 1.0. In the future,
 /// it may also be implemented for version 2.0 of that data type.
-pub trait AllocationMessage: Message + Serialize + Deserialize {
+pub trait AllocationMessage<T: Transport>: Message + Serialize + Deserialize {
     /// The fixed subject ID for this message
     const SUBJECT: SubjectId;
 
@@ -119,10 +125,10 @@ pub trait AllocationMessage: Message + Serialize + Deserialize {
     fn matches_unique_id(&self, id: &[u8; 16]) -> bool;
 
     /// Returns the allocated node ID in this message, if one is specified
-    fn node_id(&self) -> Option<NodeId>;
+    fn node_id(&self) -> Option<T::NodeId>;
 }
 
-impl AllocationMessage for NodeIDAllocationData {
+impl<T: Transport> AllocationMessage<T> for NodeIDAllocationData {
     const SUBJECT: SubjectId = node_id_allocation_data_1_0::SUBJECT;
 
     fn with_unique_id(id: &[u8; 16]) -> Self {
@@ -138,12 +144,11 @@ impl AllocationMessage for NodeIDAllocationData {
         self.unique_id_hash == id_hash
     }
 
-    fn node_id(&self) -> Option<NodeId> {
+    fn node_id(&self) -> Option<T::NodeId> {
         self.allocated_node_id.iter().next().and_then(|id| {
-            // The message allows a wider range of node IDs than the UAVCAN/CAN transport allows.
+            // The message may allow a wider range of node IDs than the transport allows.
             // If the ID is too large, return None.
-            let short_id = u8::try_from(id.value).ok()?;
-            NodeId::try_from(short_id).ok()
+            T::NodeId::try_from(id.value).ok()
         })
     }
 }
@@ -155,57 +160,4 @@ fn crc_64we_48_bits(id: &[u8; 16]) -> u64 {
     crc.digest(id);
     let value = crc.get_crc();
     value & 0x0000_ffff_ffff_ffff
-}
-
-/// An outgoing frame queue that can hold only one frame
-struct SingleFrameQueue<I> {
-    frame: Option<Frame<I>>,
-}
-
-impl<I> SingleFrameQueue<I> {
-    fn new() -> Self {
-        SingleFrameQueue { frame: None }
-    }
-}
-
-impl<I> FrameSink<I> for SingleFrameQueue<I> {
-    fn try_reserve(&mut self, additional: usize) -> Result<(), OutOfMemoryError> {
-        if self.frame.is_none() && additional == 1 {
-            Ok(())
-        } else {
-            Err(OutOfMemoryError)
-        }
-    }
-
-    fn shrink_to_fit(&mut self) {
-        // Nothing to do
-    }
-
-    fn push_frame(&mut self, frame: Frame<I>) -> Result<(), OutOfMemoryError> {
-        if self.frame.is_none() {
-            self.frame = Some(frame);
-            Ok(())
-        } else {
-            Err(OutOfMemoryError)
-        }
-    }
-}
-
-impl<I> FrameQueueSource<I> for SingleFrameQueue<I> {
-    fn peek_frame(&self) -> Option<&Frame<I>> {
-        self.frame.as_ref()
-    }
-
-    fn pop_frame(&mut self) -> Option<Frame<I>> {
-        self.frame.take()
-    }
-
-    fn return_frame(&mut self, frame: Frame<I>) -> Result<(), OutOfMemoryError> {
-        if self.frame.is_some() {
-            Err(OutOfMemoryError)
-        } else {
-            self.frame = Some(frame);
-            Ok(())
-        }
-    }
 }

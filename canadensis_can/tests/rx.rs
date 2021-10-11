@@ -8,11 +8,11 @@ extern crate canadensis_core;
 use core::convert::{TryFrom, TryInto};
 
 use canadensis_can::types::CanNodeId;
-use canadensis_can::{CanId, CanReceiver, Frame, Mtu, OutOfMemoryError, ServiceSubscribeError};
+use canadensis_can::{CanId, CanReceiver, Frame, Mtu};
 use canadensis_core::time::{Instant, MicrosecondDuration32, Microseconds32};
 use canadensis_core::transfer::*;
 use canadensis_core::transport::Receiver;
-use canadensis_core::{Priority, ServiceId, SubjectId};
+use canadensis_core::{OutOfMemoryError, Priority, ServiceId, ServiceSubscribeError, SubjectId};
 
 type TestInstant = Microseconds32;
 type TestDuration = <TestInstant as Instant>::Duration;
@@ -26,7 +26,7 @@ fn duration(ticks: u32) -> TestDuration {
 
 #[test]
 fn test_heartbeat() -> Result<(), OutOfMemoryError> {
-    let mut rx = CanReceiver::new(0.try_into().unwrap(), Mtu::Can8);
+    let mut rx = CanReceiver::new(0u8.try_into().unwrap(), Mtu::Can8);
 
     let heartbeat_subject = SubjectId::try_from(7509).unwrap();
     rx.subscribe_message(heartbeat_subject, 7, duration(0))?;
@@ -45,7 +45,7 @@ fn test_heartbeat() -> Result<(), OutOfMemoryError> {
             transfer_id: 0.try_into().unwrap(),
             priority: Priority::Nominal,
             subject: heartbeat_subject,
-            source: Some(42.try_into().unwrap()),
+            source: Some(42u8.try_into().unwrap()),
         }),
         payload: vec![0x00, 0x00, 0x00, 0x00, 0x04, 0x78, 0x68],
     };
@@ -56,7 +56,7 @@ fn test_heartbeat() -> Result<(), OutOfMemoryError> {
 #[test]
 #[cfg(feature = "can-fd")]
 fn test_string() -> Result<(), OutOfMemoryError> {
-    let mut rx = CanReceiver::new(0.try_into().unwrap(), Mtu::Can8);
+    let mut rx = CanReceiver::new(0u8.try_into().unwrap(), Mtu::Can8);
 
     let string_subject = SubjectId::try_from(4919).unwrap();
     rx.subscribe_message(string_subject, 15, duration(0))?;
@@ -84,8 +84,8 @@ fn test_string() -> Result<(), OutOfMemoryError> {
     Ok(())
 }
 #[test]
-fn test_node_info_request() -> Result<(), ServiceSubscribeError> {
-    let mut rx = CanReceiver::new(42.try_into().unwrap(), Mtu::Can8);
+fn test_node_info_request() -> Result<(), ServiceSubscribeError<OutOfMemoryError>> {
+    let mut rx = CanReceiver::new(42u8.try_into().unwrap(), Mtu::Can8);
 
     let service = ServiceId::try_from(430).unwrap();
     rx.subscribe_request(service, 0, duration(0))?;
@@ -104,8 +104,8 @@ fn test_node_info_request() -> Result<(), ServiceSubscribeError> {
             transfer_id: 1.try_into().unwrap(),
             priority: Priority::Nominal,
             service,
-            source: 123.try_into().unwrap(),
-            destination: 42.try_into().unwrap(),
+            source: 123u8.try_into().unwrap(),
+            destination: 42u8.try_into().unwrap(),
         }),
         payload: vec![],
     };
@@ -114,8 +114,8 @@ fn test_node_info_request() -> Result<(), ServiceSubscribeError> {
     Ok(())
 }
 #[test]
-fn test_node_info_response() -> Result<(), ServiceSubscribeError> {
-    let mut rx = CanReceiver::new(123.try_into().unwrap(), Mtu::Can8);
+fn test_node_info_response() -> Result<(), ServiceSubscribeError<OutOfMemoryError>> {
+    let mut rx = CanReceiver::new(123u8.try_into().unwrap(), Mtu::Can8);
 
     let service = ServiceId::try_from(430).unwrap();
     rx.subscribe_response(service, 69, duration(100))?;
@@ -170,8 +170,8 @@ fn test_node_info_response() -> Result<(), ServiceSubscribeError> {
                     transfer_id: 1.try_into().unwrap(),
                     priority: Priority::Nominal,
                     service,
-                    source: 42.try_into().unwrap(),
-                    destination: 123.try_into().unwrap(),
+                    source: 42u8.try_into().unwrap(),
+                    destination: 123u8.try_into().unwrap(),
                 }),
                 payload: payload.to_vec(),
             };
@@ -182,8 +182,8 @@ fn test_node_info_response() -> Result<(), ServiceSubscribeError> {
     Ok(())
 }
 #[test]
-fn test_node_info_response_timeout() -> Result<(), ServiceSubscribeError> {
-    let mut rx = CanReceiver::new(123.try_into().unwrap(), Mtu::Can8);
+fn test_node_info_response_timeout() -> Result<(), ServiceSubscribeError<OutOfMemoryError>> {
+    let mut rx = CanReceiver::new(123u8.try_into().unwrap(), Mtu::Can8);
 
     let service = ServiceId::try_from(430).unwrap();
     rx.subscribe_response(service, 69, duration(100))?;
@@ -218,8 +218,8 @@ fn test_node_info_response_timeout() -> Result<(), ServiceSubscribeError> {
 }
 #[test]
 #[cfg(feature = "can-fd")]
-fn test_array() -> Result<(), ServiceSubscribeError> {
-    let mut rx = CanReceiver::new(0.try_into().unwrap(), Mtu::CanFd64);
+fn test_array() -> Result<(), ServiceSubscribeError<OutOfMemoryError>> {
+    let mut rx = CanReceiver::new(0u8.try_into().unwrap(), Mtu::CanFd64);
 
     let subject = SubjectId::try_from(4919).unwrap();
     rx.subscribe_message(subject, 94, duration(1))?;
@@ -230,7 +230,7 @@ fn test_array() -> Result<(), ServiceSubscribeError> {
             transfer_id: 0.try_into().unwrap(),
             priority: Priority::Nominal,
             subject,
-            source: Some(59.try_into().unwrap()),
+            source: Some(59u8.try_into().unwrap()),
         }),
         payload: [
             0x00, 0xb8, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
@@ -286,7 +286,7 @@ fn test_array() -> Result<(), ServiceSubscribeError> {
 fn test_multi_frame_anonymous() {
     // Multi-frame anonymous transfers must be ignored
     let mut receiver =
-        CanReceiver::<Microseconds32>::new(CanNodeId::try_from(3).unwrap(), Mtu::Can8);
+        CanReceiver::<Microseconds32>::new(CanNodeId::try_from(3u8).unwrap(), Mtu::Can8);
     let subject_id = SubjectId::try_from(10).unwrap();
     receiver
         .subscribe_message(subject_id, 8, MicrosecondDuration32::new(100))
@@ -315,7 +315,7 @@ fn test_multi_frame_anonymous() {
             transfer_id: 0.try_into().unwrap(),
             priority: Priority::Nominal,
             subject: subject_id,
-            source: Some(64.try_into().unwrap()),
+            source: Some(64u8.try_into().unwrap()),
         }),
         payload: vec![0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8],
     };
@@ -364,7 +364,7 @@ fn test_anonymous_receive_multi_frame() {
             transfer_id: 14.try_into().unwrap(),
             priority: Priority::Nominal,
             subject: 8166.try_into().unwrap(),
-            source: Some(126.try_into().unwrap()),
+            source: Some(126u8.try_into().unwrap()),
         }),
         payload: vec![190, 159, 33, 213, 34, 64, 1, 103, 0],
     };
@@ -375,7 +375,7 @@ fn test_anonymous_receive_multi_frame() {
 
 #[test]
 fn test_ignore_request_to_other_node() {
-    let mut rx = CanReceiver::new(43.try_into().unwrap(), Mtu::Can8);
+    let mut rx = CanReceiver::new(43u8.try_into().unwrap(), Mtu::Can8);
 
     let service = ServiceId::try_from(430).unwrap();
     rx.subscribe_request(service, 0, duration(0)).unwrap();

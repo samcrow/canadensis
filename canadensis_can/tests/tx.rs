@@ -30,7 +30,7 @@ fn test_heartbeat() {
             transfer_id: CanTransferId::try_from(0).unwrap(),
             priority: Priority::Nominal,
             subject: SubjectId::try_from(7509).unwrap(),
-            source: Some(CanNodeId::try_from(42).unwrap()),
+            source: Some(CanNodeId::try_from(42u8).unwrap()),
         }),
         payload: &[0x00, 0x00, 0x00, 0x00, 0x04, 0x78, 0x68],
     })
@@ -53,7 +53,7 @@ fn test_heartbeat() {
             transfer_id: CanTransferId::try_from(1).unwrap(),
             priority: Priority::Nominal,
             subject: SubjectId::try_from(7509).unwrap(),
-            source: Some(CanNodeId::try_from(42).unwrap()),
+            source: Some(CanNodeId::try_from(42u8).unwrap()),
         }),
         payload: &[0x01, 0x00, 0x00, 0x00, 0x04, 0x78, 0x68],
     })
@@ -111,8 +111,8 @@ fn test_node_info_request() {
             transfer_id: CanTransferId::try_from(1).unwrap(),
             priority: Priority::Nominal,
             service: ServiceId::try_from(430).unwrap(),
-            source: CanNodeId::try_from(123).unwrap(),
-            destination: CanNodeId::try_from(42).unwrap(),
+            source: CanNodeId::try_from(123u8).unwrap(),
+            destination: CanNodeId::try_from(42u8).unwrap(),
         }),
         payload: &[],
     })
@@ -138,8 +138,8 @@ fn test_node_info_response() {
             transfer_id: CanTransferId::try_from(1).unwrap(),
             priority: Priority::Nominal,
             service: ServiceId::try_from(430).unwrap(),
-            source: CanNodeId::try_from(42).unwrap(),
-            destination: CanNodeId::try_from(123).unwrap(),
+            source: CanNodeId::try_from(42u8).unwrap(),
+            destination: CanNodeId::try_from(123u8).unwrap(),
         }),
         payload: &b"\x01\x00\x00\x00\x01\x00\x00\
                     \x00\x00\x00\x00\x00\x00\x00\
@@ -186,7 +186,7 @@ fn test_array() {
             transfer_id: CanTransferId::try_from(0).unwrap(),
             priority: Priority::Nominal,
             subject: SubjectId::try_from(4919).unwrap(),
-            source: Some(CanNodeId::try_from(59).unwrap()),
+            source: Some(CanNodeId::try_from(59u8).unwrap()),
         }),
         payload: &[
             0x00, 0xb8, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
