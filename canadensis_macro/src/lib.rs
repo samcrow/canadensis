@@ -9,7 +9,6 @@ use canadensis_dsdl_frontend::{Package, TypeKey};
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span, TokenTree};
 use std::env;
-use std::path::PathBuf;
 use syn::spanned::Spanned;
 
 /// Parses one or more DSDL definitions and expands into the corresponding Rust code
