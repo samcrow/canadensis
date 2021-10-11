@@ -46,7 +46,6 @@ fn types_from_dsdl_inner(
                     })?;
                     let code = canadensis_codegen_rust::generate_code(&compiled);
                     let code_string = code.to_string();
-                    write_generated_debug_output(&code_string).unwrap();
                     let parsed_code: proc_macro2::TokenStream = code_string
                         .parse()
                         .expect("Internal error: Generated invalid code");
@@ -93,7 +92,6 @@ fn eval_package_function(
 fn eval_path_arguments(
     arguments: proc_macro2::TokenStream,
 ) -> Result<ParsedString, proc_macro2::TokenStream> {
-    println!("{:#?}", arguments);
     let args_span = arguments.span();
     let mut path = String::new();
     let mut iter = arguments.into_iter();
@@ -138,24 +136,6 @@ fn eval_path_arguments(
         span: args_span,
         value: path,
     })
-}
-
-/// Evaluates a single function argument that is a string literal
-fn eval_single_string_argument(
-    arguments: proc_macro2::TokenStream,
-) -> Result<ParsedString, proc_macro2::TokenStream> {
-    let args_span = arguments.span();
-    let mut iter = arguments.into_iter();
-    let value = match iter.next() {
-        Some(TokenTree::Literal(literal)) => ParsedString::from_literal(literal),
-        Some(other) => Err(make_error(other.span(), "Expected string literal")),
-        None => Err(make_error(args_span, "Expected string literal")),
-    }?;
-    // Nothing else after the literal
-    match iter.next() {
-        None => Ok(value),
-        Some(other) => Err(make_error(other.span(), "Unexpected token")),
-    }
 }
 
 fn eval_env_variable(name: Ident) -> Result<String, proc_macro2::TokenStream> {
@@ -210,14 +190,4 @@ where
             Ok(())
         }
     }
-}
-
-fn write_generated_debug_output(content: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let out_dir = env::var_os("CARGO_MANIFEST_DIR").ok_or(std::io::Error::new(
-        std::io::ErrorKind::NotFound,
-        "CARGO_MANIFEST_DIR not set",
-    ))?;
-    let out_path = PathBuf::from(out_dir).join("types_from_dsdl.rs");
-    std::fs::write(out_path, content)?;
-    Ok(())
 }

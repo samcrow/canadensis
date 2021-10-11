@@ -21,15 +21,15 @@ use canadensis::core::time::{Clock, Duration, Instant, MicrosecondDuration64, Mi
 use canadensis::core::transfer::ServiceTransfer;
 use canadensis::core::{NodeId, Priority};
 use canadensis::{Node, ResponseToken, TransferHandler};
-use canadensis_data_types::uavcan::node::get_info::{GetInfoRequest, GetInfoResponse};
-use canadensis_data_types::uavcan::node::health::Health;
-use canadensis_data_types::uavcan::node::heartbeat::Heartbeat;
-use canadensis_data_types::uavcan::node::mode::Mode;
+use canadensis_data_types::uavcan::node::get_info_1_0::{self, GetInfoResponse};
+use canadensis_data_types::uavcan::node::health_1_0::Health;
+use canadensis_data_types::uavcan::node::heartbeat_1_0::{self, Heartbeat};
+use canadensis_data_types::uavcan::node::mode_1_0::Mode;
 use canadensis_data_types::uavcan::node::port;
-use canadensis_data_types::uavcan::node::port::list::List;
-use canadensis_data_types::uavcan::node::port::service_id_list::ServiceIdList;
-use canadensis_data_types::uavcan::node::port::subject_id_list::SubjectIdList;
-use canadensis_data_types::uavcan::node::version::Version;
+use canadensis_data_types::uavcan::node::port::list_0_1::{self, List};
+use canadensis_data_types::uavcan::node::port::service_id_list_0_1::ServiceIDList;
+use canadensis_data_types::uavcan::node::port::subject_id_list_0_1::SubjectIDList;
+use canadensis_data_types::uavcan::node::version_1_0::Version;
 
 /// Runs a basic UAVCAN node, sending Heartbeat messages and responding to NodeInfo requests
 ///
@@ -87,20 +87,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let heartbeat_token = uavcan
         .start_publishing(
-            Heartbeat::SUBJECT,
+            heartbeat_1_0::SUBJECT,
             MicrosecondDuration64::new(1_000_000),
             Priority::Low,
         )
         .expect("Couldn't start publishing");
     let port_list_token = uavcan
         .start_publishing(
-            List::SUBJECT,
+            list_0_1::SUBJECT,
             MicrosecondDuration64::new(1_000_000),
             Priority::Optional,
         )
         .expect("Couldn't start publishing");
     uavcan
-        .subscribe_request(GetInfoRequest::SERVICE, 0, MicrosecondDuration64::new(0))
+        .subscribe_request(get_info_1_0::SERVICE, 0, MicrosecondDuration64::new(0))
         .expect("Out of memory");
 
     let mut last_run_time_seconds = 0u64;
@@ -139,8 +139,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             // Publish heartbeat
             let heartbeat = Heartbeat {
                 uptime: run_time_seconds,
-                health: Health::Nominal,
-                mode: Mode::Operational,
+                health: Health {
+                    value: Health::NOMINAL,
+                },
+                mode: Mode {
+                    value: Mode::OPERATIONAL,
+                },
                 vendor_specific_status_code: 0,
             };
             uavcan
@@ -149,29 +153,35 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             if run_time_seconds % u32::from(List::MAX_PUBLICATION_PERIOD) == 0 {
                 // Send port list every 10 seconds
-                let publishers = SubjectIdList::SparseList({
+                let publishers = SubjectIDList::SparseList({
                     let mut subject_ids = heapless::Vec::new();
                     subject_ids
-                        .push(port::subject_id::SubjectId {
-                            value: Heartbeat::SUBJECT.into(),
+                        .push(port::subject_id_1_0::SubjectID {
+                            value: heartbeat_1_0::SUBJECT.into(),
                         })
+                        .ok()
                         .unwrap();
                     subject_ids
-                        .push(port::subject_id::SubjectId {
-                            value: List::SUBJECT.into(),
+                        .push(port::subject_id_1_0::SubjectID {
+                            value: list_0_1::SUBJECT.into(),
                         })
+                        .ok()
                         .unwrap();
                     subject_ids
                 });
                 let servers = {
-                    let mut servers = ServiceIdList::default();
-                    servers.mask.set(usize::from(GetInfoRequest::SERVICE), true);
+                    let mut servers = ServiceIDList {
+                        mask: Default::default(),
+                    };
+                    servers.mask.set(usize::from(get_info_1_0::SERVICE), true);
                     servers
                 };
                 let port_list = List {
                     publishers,
-                    subscribers: Default::default(),
-                    clients: Default::default(),
+                    subscribers: SubjectIDList::Mask(Default::default()),
+                    clients: ServiceIDList {
+                        mask: Default::default(),
+                    },
                     servers,
                 };
                 uavcan
@@ -204,7 +214,7 @@ impl TransferHandler<Microseconds64> for BasicTransferHandler {
         N: Node<Instant = Microseconds64>,
     {
         println!("Handling request {:?}", transfer);
-        if transfer.header.service == GetInfoRequest::SERVICE {
+        if transfer.header.service == get_info_1_0::SERVICE {
             // Send a node information response
             let response = GetInfoResponse {
                 protocol_version: Version { major: 1, minor: 0 },
@@ -213,7 +223,7 @@ impl TransferHandler<Microseconds64> for BasicTransferHandler {
                 software_vcs_revision_id: 0,
                 unique_id: self.unique_id.clone(),
                 name: heapless::Vec::from_iter(b"org.samcrow.basic_node".iter().cloned()),
-                software_image_crc: None,
+                software_image_crc: heapless::Vec::new(),
                 certificate_of_authenticity: heapless::Vec::new(),
             };
             let timeout =

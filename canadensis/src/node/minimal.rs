@@ -2,9 +2,9 @@ use crate::{Node, PublishToken, StartSendError};
 use canadensis_can::OutOfMemoryError;
 use canadensis_core::time::{Clock, Duration, Instant};
 use canadensis_core::Priority;
-use canadensis_data_types::uavcan::node::health::Health;
-use canadensis_data_types::uavcan::node::heartbeat::Heartbeat;
-use canadensis_data_types::uavcan::node::mode::Mode;
+use canadensis_data_types::uavcan::node::health_1_0::Health;
+use canadensis_data_types::uavcan::node::heartbeat_1_0::{self, Heartbeat};
+use canadensis_data_types::uavcan::node::mode_1_0::Mode;
 
 /// A node with the minimum required application-layer functionality
 ///
@@ -38,8 +38,12 @@ where
         // Default heartbeat settings
         let heartbeat = Heartbeat {
             uptime: 0,
-            health: Health::Nominal,
-            mode: Mode::Operational,
+            health: Health {
+                value: Health::NOMINAL,
+            },
+            mode: Mode {
+                value: Mode::OPERATIONAL,
+            },
             vendor_specific_status_code: 0,
         };
         let heartbeat_timeout =
@@ -47,7 +51,7 @@ where
                 .expect("Duration type can't represent 500 milliseconds");
 
         let heartbeat_token =
-            node.start_publishing(Heartbeat::SUBJECT, heartbeat_timeout, Priority::Nominal)?;
+            node.start_publishing(heartbeat_1_0::SUBJECT, heartbeat_timeout, Priority::Nominal)?;
 
         Ok(MinimalNode {
             node,

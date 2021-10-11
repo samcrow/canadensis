@@ -17,8 +17,8 @@ use std::time::Instant;
 use canadensis::can::{CanId, Frame, Mtu, Receiver};
 use canadensis::core::time::{Clock, MicrosecondDuration64, Microseconds64};
 use canadensis::encoding::{DataType, Deserialize, ReadCursor};
-use canadensis_data_types::uavcan::diagnostic::record::Record;
-use canadensis_data_types::uavcan::diagnostic::severity::Severity;
+use canadensis_data_types::uavcan::diagnostic::record_1_1::{self, Record};
+use canadensis_data_types::uavcan::diagnostic::severity_1_0::Severity;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let interface = env::args().skip(1).next().unwrap_or_else(|| {
@@ -31,7 +31,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut receiver = Receiver::new_anonymous(Mtu::Can8);
     receiver
         .subscribe_message(
-            Record::SUBJECT,
+            record_1_1::SUBJECT,
             Record::EXTENT_BYTES.unwrap() as usize,
             MicrosecondDuration64::new(1_000_000),
         )
@@ -53,15 +53,16 @@ fn main() -> Result<(), Box<dyn Error>> {
                         .source()
                         .map(|node| node.to_string())
                         .unwrap_or_else(|| "?".to_owned());
-                    let level_text = match log_record.severity {
-                        Severity::Trace => 'T',
-                        Severity::Debug => 'D',
-                        Severity::Info => 'I',
-                        Severity::Notice => 'N',
-                        Severity::Warning => 'W',
-                        Severity::Error => 'E',
-                        Severity::Critical => 'C',
-                        Severity::Alert => 'A',
+                    let level_text = match log_record.severity.value {
+                        Severity::TRACE => 'T',
+                        Severity::DEBUG => 'D',
+                        Severity::INFO => 'I',
+                        Severity::NOTICE => 'N',
+                        Severity::WARNING => 'W',
+                        Severity::ERROR => 'E',
+                        Severity::CRITICAL => 'C',
+                        Severity::ALERT => 'A',
+                        _ => '?',
                     };
                     let text = String::from_utf8_lossy(&log_record.text);
 

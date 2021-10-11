@@ -19,11 +19,13 @@ use canadensis::core::{NodeId, Priority, TransferId};
 use canadensis::encoding::Deserialize;
 use canadensis::node::{BasicNode, CoreNode};
 use canadensis::{Node, ServiceToken, TransferHandler};
-use canadensis_data_types::uavcan::node::get_info::GetInfoResponse;
-use canadensis_data_types::uavcan::node::version::Version;
-use canadensis_data_types::uavcan::register::access::{AccessRequest, AccessResponse};
-use canadensis_data_types::uavcan::register::list::{ListRequest, ListResponse};
-use canadensis_data_types::uavcan::register::value::Value;
+use canadensis_data_types::uavcan::node::get_info_1_0::GetInfoResponse;
+use canadensis_data_types::uavcan::node::version_1_0::Version;
+use canadensis_data_types::uavcan::primitive::empty_1_0::Empty;
+use canadensis_data_types::uavcan::register::access_1_0::{self, AccessRequest, AccessResponse};
+use canadensis_data_types::uavcan::register::list_1_0::{self, ListRequest, ListResponse};
+use canadensis_data_types::uavcan::register::name_1_0::Name;
+use canadensis_data_types::uavcan::register::value_1_0::Value;
 use canadensis_linux::{LinuxCan, SystemClock};
 use std::collections::BTreeMap;
 use std::io::ErrorKind;
@@ -78,7 +80,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         software_vcs_revision_id: 0,
         unique_id: rand::random(),
         name: heapless::Vec::from_slice(b"org.samcrow.register_client").unwrap(),
-        software_image_crc: None,
+        software_image_crc: heapless::Vec::new(),
         certificate_of_authenticity: Default::default(),
     };
 
@@ -91,15 +93,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let mut node = BasicNode::new(core_node, node_info).unwrap();
     let list_request_token: ServiceToken<ListRequest> = node
-        .start_sending_requests(ListRequest::SERVICE, milliseconds(1000), 256, Priority::Low)
+        .start_sending_requests(list_1_0::SERVICE, milliseconds(1000), 256, Priority::Low)
         .unwrap();
     let access_token = node
-        .start_sending_requests(
-            AccessRequest::SERVICE,
-            milliseconds(1000),
-            267,
-            Priority::Low,
-        )
+        .start_sending_requests(access_1_0::SERVICE, milliseconds(1000), 267, Priority::Low)
         .unwrap();
 
     // Now that the node has subscribed to everything it wants, set up the frame acceptance filters
@@ -201,7 +198,7 @@ impl TransferHandler<<SystemClock as Clock>::Instant> for RegisterHandler {
         N: Node<Instant = <SystemClock as Clock>::Instant>,
     {
         match transfer.header.service {
-            ListResponse::SERVICE => {
+            list_1_0::SERVICE => {
                 if let Ok(list_response) = ListResponse::deserialize_from_bytes(&transfer.payload) {
                     match str::from_utf8(&list_response.name.name) {
                         Ok(register_name) => {
@@ -216,8 +213,10 @@ impl TransferHandler<<SystemClock as Clock>::Instant> for RegisterHandler {
                                     .send_request(
                                         &self.access_token,
                                         &AccessRequest {
-                                            name: list_response.name.clone(),
-                                            value: Default::default(),
+                                            name: Name {
+                                                name: list_response.name.name.clone(),
+                                            },
+                                            value: Value::Empty(Empty {}),
                                         },
                                         self.target_node_id,
                                     )
@@ -250,7 +249,7 @@ impl TransferHandler<<SystemClock as Clock>::Instant> for RegisterHandler {
                     false
                 }
             }
-            AccessResponse::SERVICE => {
+            access_1_0::SERVICE => {
                 if let Ok(response) = AccessResponse::deserialize_from_bytes(&transfer.payload) {
                     // Find the register name with the matching transfer ID
                     let register_entry =
@@ -306,27 +305,27 @@ struct DebugValue<'v>(&'v Value);
 impl std::fmt::Debug for DebugValue<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self.0 {
-            Value::Empty => f.debug_struct("Empty").finish(),
+            Value::Empty(_) => f.debug_struct("Empty").finish(),
             Value::String(bytes) => {
-                let string = String::from_utf8_lossy(&bytes);
+                let string = String::from_utf8_lossy(&bytes.value);
                 f.debug_tuple("String").field(&string).finish()
             }
             Value::Unstructured(bytes) => f
                 .debug_tuple("Unstructured")
-                .field(&DebugHexBytes(&bytes))
+                .field(&DebugHexBytes(&bytes.value))
                 .finish(),
-            Value::Bit(bits) => f.debug_tuple("Bit").field(&bits).finish(),
-            Value::Integer64(values) => f.debug_tuple("Integer64").field(&values).finish(),
-            Value::Integer32(values) => f.debug_tuple("Integer32").field(&values).finish(),
-            Value::Integer16(values) => f.debug_tuple("Integer16").field(&values).finish(),
-            Value::Integer8(values) => f.debug_tuple("Integer8").field(&values).finish(),
-            Value::Natural64(values) => f.debug_tuple("Natural64").field(&values).finish(),
-            Value::Natural32(values) => f.debug_tuple("Natural32").field(&values).finish(),
-            Value::Natural16(values) => f.debug_tuple("Natural16").field(&values).finish(),
-            Value::Natural8(values) => f.debug_tuple("Natural8").field(&values).finish(),
-            Value::Real64(value) => f.debug_tuple("Real64").field(value).finish(),
-            Value::Real32(value) => f.debug_tuple("Real32").field(value).finish(),
-            Value::Real16(value) => f.debug_tuple("Real16").field(value).finish(),
+            Value::Bit(bits) => f.debug_tuple("Bit").field(&bits.value).finish(),
+            Value::Integer64(values) => f.debug_tuple("Integer64").field(&values.value).finish(),
+            Value::Integer32(values) => f.debug_tuple("Integer32").field(&values.value).finish(),
+            Value::Integer16(values) => f.debug_tuple("Integer16").field(&values.value).finish(),
+            Value::Integer8(values) => f.debug_tuple("Integer8").field(&values.value).finish(),
+            Value::Natural64(values) => f.debug_tuple("Natural64").field(&values.value).finish(),
+            Value::Natural32(values) => f.debug_tuple("Natural32").field(&values.value).finish(),
+            Value::Natural16(values) => f.debug_tuple("Natural16").field(&values.value).finish(),
+            Value::Natural8(values) => f.debug_tuple("Natural8").field(&values.value).finish(),
+            Value::Real64(value) => f.debug_tuple("Real64").field(&value.value).finish(),
+            Value::Real32(value) => f.debug_tuple("Real32").field(&value.value).finish(),
+            Value::Real16(value) => f.debug_tuple("Real16").field(&value.value).finish(),
         }
     }
 }

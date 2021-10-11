@@ -12,6 +12,8 @@ zerocopy = "0.6.0"
 
 [dependencies.canadensis_encoding]
 path = "../../canadensis_encoding"
+[dependencies.canadensis_core]
+path = "../../canadensis_core"
 
 [dev-dependencies]
 memoffset = "0.6.4"

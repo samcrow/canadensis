@@ -1,5 +1,5 @@
 #![no_std]
-#![deny(missing_docs)]
+#![deny(missing_docs, unaligned_references)]
 
 //!
 //! # Canadensis: An implementation of UAVCAN v1

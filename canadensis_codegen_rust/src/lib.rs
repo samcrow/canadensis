@@ -30,33 +30,64 @@ pub fn generate_code(package: &CompiledPackage) -> GeneratedModule {
         match &dsdl.kind {
             DsdlKind::Message(message) => {
                 let rust_type = RustTypeName::for_message_type(key);
-                // println!("{} from {}", rust_type, key);
-                generated_types.push(generate_rust_type(
+
+                if let Some(subject_id) = dsdl.fixed_port_id {
+                    // Add a module-level constant with the subject ID
+                    let constant_name = RustTypeName {
+                        path: rust_type.path.clone(),
+                        type_name: "SUBJECT".into(),
+                    };
+                    generated_types.push(GeneratedItem::Constant {
+                        name: constant_name,
+                        ty: "::canadensis_core::SubjectId".into(),
+                        value: format!(
+                            "::canadensis_core::SubjectId::from_truncating({})",
+                            subject_id
+                        ),
+                    });
+                }
+
+                generated_types.push(GeneratedItem::Type(generate_rust_type(
                     key,
                     message,
                     &rust_type,
                     message.extent().clone(),
                     MessageRole::Message,
-                ));
+                )));
             }
             DsdlKind::Service { request, response } => {
                 let rust_type = ServiceTypeNames::for_service_type(key);
-                // println!("{} request from {}", rust_type.request, key);
-                // println!("{} response from {}", rust_type.response, key);
-                generated_types.push(generate_rust_type(
+
+                if let Some(service_id) = dsdl.fixed_port_id {
+                    // Add a module-level constant with the service ID
+                    let constant_name = RustTypeName {
+                        path: rust_type.request.path.clone(),
+                        type_name: "SERVICE".into(),
+                    };
+                    generated_types.push(GeneratedItem::Constant {
+                        name: constant_name,
+                        ty: "::canadensis_core::ServiceId".into(),
+                        value: format!(
+                            "::canadensis_core::ServiceId::from_truncating({})",
+                            service_id
+                        ),
+                    });
+                }
+
+                generated_types.push(GeneratedItem::Type(generate_rust_type(
                     key,
                     request,
                     &rust_type.request,
                     request.extent().clone(),
                     MessageRole::Request,
-                ));
-                generated_types.push(generate_rust_type(
+                )));
+                generated_types.push(GeneratedItem::Type(generate_rust_type(
                     key,
                     response,
                     &rust_type.response,
                     response.extent().clone(),
                     MessageRole::Response,
-                ));
+                )));
             }
         }
     }
@@ -96,6 +127,24 @@ fn generate_rust_type(
             uavcan_union,
             message.constants().clone(),
         ),
+    }
+}
+
+enum GeneratedItem {
+    Type(GeneratedType),
+    Constant {
+        name: RustTypeName,
+        ty: String,
+        value: String,
+    },
+}
+
+impl GeneratedItem {
+    pub fn name(&self) -> &RustTypeName {
+        match self {
+            GeneratedItem::Type(ty) => &ty.name,
+            GeneratedItem::Constant { name, .. } => name,
+        }
     }
 }
 
@@ -472,7 +521,7 @@ mod fmt_impl {
     use crate::impl_data_type::ImplementDataType;
     use crate::impl_deserialize::ImplementDeserialize;
     use crate::impl_serialize::ImplementSerialize;
-    use crate::{GeneratedModule, GeneratedTypeKind, GeneratedVariant};
+    use crate::{GeneratedItem, GeneratedModule, GeneratedTypeKind, GeneratedVariant};
     use std::convert::TryFrom;
     use std::fmt::{Display, Formatter, Result};
 
@@ -626,15 +675,39 @@ mod fmt_impl {
 
     impl Display for GeneratedModule {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-            writeln!(f, "#[allow(unused_variables, unused_braces)]")?;
-            writeln!(f, "#[deny(unaligned_references)]")?;
             writeln!(
                 f,
                 r#"#[cfg(not(target_endian = "little"))] compile_error!("Zero-copy serialization requires a little-endian target");"#
             )?;
-            Display::fmt(&self.tree, f)?;
+            assert!(
+                self.tree.items.is_empty(),
+                "Top-level types are not allowed"
+            );
+            for (sub_name, submodule) in &self.tree.children {
+                // Adjust lints for every top-level module
+                writeln!(
+                    f,
+                    "#[allow(unused_variables, unused_braces, unused_parens)]"
+                )?;
+                writeln!(f, "#[deny(unaligned_references)]")?;
+
+                writeln!(f, "pub mod {} {{", sub_name)?;
+                Display::fmt(submodule, f)?;
+                writeln!(f, "}}")?;
+            }
 
             Ok(())
+        }
+    }
+
+    impl Display for GeneratedItem {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+            match self {
+                GeneratedItem::Type(ty) => Display::fmt(ty, f),
+                GeneratedItem::Constant { name, ty, value } => {
+                    writeln!(f, "pub const {}: {} = {};", name.type_name, ty, value)
+                }
+            }
         }
     }
 }

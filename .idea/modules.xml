@@ -19,6 +19,7 @@
       <module fileurl="file://$PROJECT_DIR$/canadensis_macro/canadensis_macro.iml" filepath="$PROJECT_DIR$/canadensis_macro/canadensis_macro.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_pnp_client/canadensis_pnp_client.iml" filepath="$PROJECT_DIR$/canadensis_pnp_client/canadensis_pnp_client.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_write_crc/canadensis_write_crc.iml" filepath="$PROJECT_DIR$/canadensis_write_crc/canadensis_write_crc.iml" />
+      <module fileurl="file://$PROJECT_DIR$/canadensis_codegen_rust/prdt_compile_test/prdt_compile_test.iml" filepath="$PROJECT_DIR$/canadensis_codegen_rust/prdt_compile_test/prdt_compile_test.iml" />
     </modules>
   </component>
 </project>

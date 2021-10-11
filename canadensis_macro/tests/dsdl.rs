@@ -1,5 +1,7 @@
+extern crate canadensis_encoding;
 extern crate canadensis_macro;
 
+use canadensis_encoding::{Deserialize, Serialize};
 use canadensis_macro::types_from_dsdl;
 
 types_from_dsdl! {
@@ -26,4 +28,16 @@ uint64 d
     generate_all()
     // Generates code for one or more specific DSDL types and their dependencies
     // generate_with_dependencies("canadensis.Test.1.0")
+}
+
+#[test]
+fn encoding_1() {
+    use canadensis::test_1_0::TestRequest;
+    let request = TestRequest { a: 99 };
+
+    let mut bytes = [0u8; 4];
+    request.serialize_to_bytes(&mut bytes);
+    assert_eq!(bytes, [99, 0, 0, 0]);
+    let decoded = TestRequest::deserialize_from_bytes(&bytes).unwrap();
+    assert_eq!(99, { decoded.a });
 }

@@ -16,8 +16,8 @@ use canadensis::core::transfer::{MessageTransfer, ServiceTransfer};
 use canadensis::core::NodeId;
 use canadensis::node::{BasicNode, CoreNode};
 use canadensis::{Node, ResponseToken, TransferHandler};
-use canadensis_data_types::uavcan::node::get_info::GetInfoResponse;
-use canadensis_data_types::uavcan::node::version::Version;
+use canadensis_data_types::uavcan::node::get_info_1_0::GetInfoResponse;
+use canadensis_data_types::uavcan::node::version_1_0::Version;
 use canadensis_linux::{LinuxCan, SystemClock};
 use std::io::ErrorKind;
 
@@ -64,7 +64,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!(
         "Port list size: {} bytes",
-        std::mem::size_of::<canadensis_data_types::uavcan::node::port::list::List>()
+        std::mem::size_of::<canadensis_data_types::uavcan::node::port::list_0_1::List>()
     );
 
     let can = CANSocket::open(&can_interface).expect("Failed to open CAN interface");
@@ -80,7 +80,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         software_vcs_revision_id: 0,
         unique_id: rand::random(),
         name: heapless::Vec::from_slice(b"org.samcrow.basic_node").unwrap(),
-        software_image_crc: None,
+        software_image_crc: heapless::Vec::new(),
         certificate_of_authenticity: Default::default(),
     };
 

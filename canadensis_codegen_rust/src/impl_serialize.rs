@@ -135,12 +135,12 @@ impl<'t> Display for WriteVariant<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match &self.ty {
             ResolvedType::Scalar(ResolvedScalarType::Composite { .. }) => {
-                // No &
                 writeln!(f, "cursor.write_composite({});", self.field_expr)
             }
             other => Display::fmt(
                 &WriteAlignedField {
-                    field_expr: self.field_expr,
+                    // Add a dereference to get the primitive type value
+                    field_expr: &format!("(*{})", self.field_expr),
                     ty: other,
                 },
                 f,

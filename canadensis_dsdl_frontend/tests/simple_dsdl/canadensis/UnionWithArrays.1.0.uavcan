@@ -1,0 +1,8 @@
+@union
+
+int32 a
+int8[4] b
+uint8[<=8] c
+canadensis.Interesting.0.1[<=2] d
+
+@sealed

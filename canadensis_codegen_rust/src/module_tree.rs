@@ -1,10 +1,10 @@
-use crate::GeneratedType;
+use crate::GeneratedItem;
 use std::collections::BTreeMap;
 use std::iter::FromIterator;
 
 pub(crate) struct ModuleTree {
     /// Structs at this level
-    pub structs: Vec<GeneratedType>,
+    pub items: Vec<GeneratedItem>,
     /// Submodules
     pub children: BTreeMap<String, ModuleTree>,
 }
@@ -12,34 +12,34 @@ pub(crate) struct ModuleTree {
 impl Default for ModuleTree {
     fn default() -> Self {
         ModuleTree {
-            structs: Vec::new(),
+            items: Vec::new(),
             children: BTreeMap::new(),
         }
     }
 }
 
 impl ModuleTree {
-    fn add_struct(&mut self, path: &[String], generated: GeneratedType) {
+    fn add_item(&mut self, path: &[String], generated: GeneratedItem) {
         match path {
             [] => {
                 // It goes here
-                self.structs.push(generated);
+                self.items.push(generated);
             }
             [submodule, rest_of_path @ ..] => {
                 let subtree = self.children.entry(submodule.clone()).or_default();
-                subtree.add_struct(rest_of_path, generated);
+                subtree.add_item(rest_of_path, generated);
             }
         }
     }
 }
 
-impl FromIterator<GeneratedType> for ModuleTree {
-    fn from_iter<T: IntoIterator<Item = GeneratedType>>(iter: T) -> Self {
+impl FromIterator<GeneratedItem> for ModuleTree {
+    fn from_iter<T: IntoIterator<Item = GeneratedItem>>(iter: T) -> Self {
         let mut tree = ModuleTree::default();
 
-        for generated_struct in iter {
-            let path = generated_struct.name.path.clone();
-            tree.add_struct(&path, generated_struct);
+        for generated_item in iter {
+            let path = generated_item.name().path.clone();
+            tree.add_item(&path, generated_item);
         }
 
         tree
@@ -52,8 +52,8 @@ mod fmt_impl {
 
     impl Display for ModuleTree {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-            for generated_struct in &self.structs {
-                writeln!(f, "{}", generated_struct)?;
+            for generated_item in &self.items {
+                writeln!(f, "{}", generated_item)?;
             }
             for (sub_name, submodule) in &self.children {
                 writeln!(f, "pub mod {} {{", sub_name)?;

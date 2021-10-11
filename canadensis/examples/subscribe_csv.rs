@@ -100,24 +100,11 @@ impl DataType for F32Message {
 }
 
 impl Deserialize for F32Message {
-    fn in_bit_length_set(bit_length: usize) -> bool {
-        bit_length == 32
-    }
-
-    fn deserialize_in_place(
-        &mut self,
-        cursor: &mut ReadCursor<'_>,
-    ) -> Result<(), DeserializeError> {
-        self.0 = cursor.read_aligned_f32();
-        Ok(())
-    }
-
     fn deserialize(cursor: &mut ReadCursor<'_>) -> Result<Self, DeserializeError>
     where
         Self: Sized,
     {
-        let mut value = F32Message(0.0);
-        value.deserialize_in_place(cursor)?;
+        let value = F32Message(cursor.read_aligned_f32());
         Ok(value)
     }
 }

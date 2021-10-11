@@ -1,7 +1,7 @@
-#[allow(unused_variables, unused_braces)]
-#[deny(unaligned_references)]
 #[cfg(not(target_endian = "little"))]
 compile_error!("Zero-copy serialization requires a little-endian target");
+#[allow(unused_variables, unused_braces, unused_parens)]
+#[deny(unaligned_references)]
 pub mod canadensis {
     pub mod constants_1_0 {
         /// `canadensis.Constants.1.0`
@@ -171,13 +171,13 @@ Ok(Self::deserialize_zero_copy(cursor))
             }
             fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                 match self {
-                    &UnionOffsetAroundSealed::A(inner) => {
+                    UnionOffsetAroundSealed::A(inner) => {
                         cursor.write_aligned_u8(0);
-                        cursor.write_aligned_u8(inner);
+                        cursor.write_aligned_u8((*inner));
                     }
-                    &UnionOffsetAroundSealed::B(inner) => {
+                    UnionOffsetAroundSealed::B(inner) => {
                         cursor.write_aligned_u8(1);
-                        cursor.write_aligned_u16(inner);
+                        cursor.write_aligned_u16((*inner));
                     }
                 }
             }
@@ -192,6 +192,112 @@ Ok(Self::deserialize_zero_copy(cursor))
                 match cursor.read_aligned_u8() as _ {
                     0 => Ok(UnionOffsetAroundSealed::A({ cursor.read_u8() as _ })),
                     1 => Ok(UnionOffsetAroundSealed::B({ cursor.read_u16() as _ })),
+                    _ => Err(::canadensis_encoding::DeserializeError::UnionTag),
+                }
+            }
+        }
+    }
+    pub mod union_with_arrays_1_0 {
+        /// `canadensis.UnionWithArrays.1.0`
+        ///
+        /// Size ranges from 1 to 805 bytes
+        pub enum UnionWithArrays {
+            // saturated int32
+            A(i32),
+            // saturated int8[4]
+            B([i8; 4]),
+            // saturated uint8[<=8]
+            C(::heapless::Vec<u8, 8>),
+            // canadensis.Interesting.0.1[<=2]
+            D(::heapless::Vec<crate::canadensis::interesting_0_1::Interesting, 2>),
+        }
+        impl ::canadensis_encoding::DataType for UnionWithArrays {
+            const EXTENT_BYTES: Option<u32> = None;
+        }
+        impl ::canadensis_encoding::Message for UnionWithArrays {}
+        impl UnionWithArrays {}
+        impl ::canadensis_encoding::Serialize for UnionWithArrays {
+            fn size_bits(&self) -> usize {
+                8 + match self {
+                    UnionWithArrays::A(inner) => 32,
+                    UnionWithArrays::B(inner) => (inner).len() * 8,
+                    UnionWithArrays::C(inner) => 8 + (inner).len() * 8,
+                    UnionWithArrays::D(inner) => {
+                        8 + (inner)
+                            .iter()
+                            .map(|element| (element).size_bits())
+                            .sum::<usize>()
+                    }
+                }
+            }
+            fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                match self {
+                    UnionWithArrays::A(inner) => {
+                        cursor.write_aligned_u8(0);
+                        cursor.write_aligned_u32((*inner) as u32);
+                    }
+                    UnionWithArrays::B(inner) => {
+                        cursor.write_aligned_u8(1);
+                        for value in (*inner).iter() {
+                            cursor.write_u8(*value as u8);
+                        }
+                    }
+                    UnionWithArrays::C(inner) => {
+                        cursor.write_aligned_u8(2);
+                        cursor.write_aligned_u8((*inner).len() as u8);
+                        cursor.write_bytes(&(*inner)[..]);
+                    }
+                    UnionWithArrays::D(inner) => {
+                        cursor.write_aligned_u8(3);
+                        cursor.write_aligned_u8((*inner).len() as u8);
+                        for value in (*inner).iter() {
+                            cursor.write_composite(value);
+                        }
+                    }
+                }
+            }
+        }
+        impl ::canadensis_encoding::Deserialize for UnionWithArrays {
+            fn deserialize(
+                cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+            ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+            where
+                Self: Sized,
+            {
+                match cursor.read_aligned_u8() as _ {
+                    0 => Ok(UnionWithArrays::A({ cursor.read_u32() as _ })),
+                    1 => Ok(UnionWithArrays::B({
+                        [
+                            cursor.read_u8() as _,
+                            cursor.read_u8() as _,
+                            cursor.read_u8() as _,
+                            cursor.read_u8() as _,
+                        ]
+                    })),
+                    2 => Ok(UnionWithArrays::C({
+                        let length = cursor.read_u8() as _;
+                        if length <= 8 {
+                            let mut elements = ::heapless::Vec::new();
+                            for _ in 0..length {
+                                let _ = elements.push(cursor.read_u8() as _);
+                            }
+                            elements
+                        } else {
+                            return Err(::canadensis_encoding::DeserializeError::ArrayLength);
+                        }
+                    })),
+                    3 => Ok(UnionWithArrays::D({
+                        let length = cursor.read_u8() as _;
+                        if length <= 2 {
+                            let mut elements = ::heapless::Vec::new();
+                            for _ in 0..length {
+                                let _ = elements.push(cursor.read_composite()?);
+                            }
+                            elements
+                        } else {
+                            return Err(::canadensis_encoding::DeserializeError::ArrayLength);
+                        }
+                    })),
                     _ => Err(::canadensis_encoding::DeserializeError::UnionTag),
                 }
             }
@@ -240,6 +346,8 @@ Ok(Self::deserialize_zero_copy(cursor))
         }
     }
 }
+#[allow(unused_variables, unused_braces, unused_parens)]
+#[deny(unaligned_references)]
 pub mod reg {
     pub mod drone {
         pub mod physics {
@@ -4780,9 +4888,14 @@ pub rtk_fix: bool,
         }
     }
 }
+#[allow(unused_variables, unused_braces, unused_parens)]
+#[deny(unaligned_references)]
 pub mod uavcan {
     pub mod diagnostic {
         pub mod record_1_0 {
+            pub const SUBJECT: ::canadensis_core::SubjectId =
+                ::canadensis_core::SubjectId::from_truncating(8184);
+
             /// `uavcan.diagnostic.Record.1.0`
             ///
             /// Size ranges from 9 to 121 bytes
@@ -4847,6 +4960,9 @@ pub mod uavcan {
             }
         }
         pub mod record_1_1 {
+            pub const SUBJECT: ::canadensis_core::SubjectId =
+                ::canadensis_core::SubjectId::from_truncating(8184);
+
             /// `uavcan.diagnostic.Record.1.1`
             ///
             /// Size ranges from 9 to 264 bytes
@@ -5012,6 +5128,9 @@ pub mod uavcan {
             }
         }
         pub mod get_info_0_1 {
+            pub const SERVICE: ::canadensis_core::ServiceId =
+                ::canadensis_core::ServiceId::from_truncating(405);
+
             /// `uavcan.file.GetInfo.0.1`
             ///
             /// Size ranges from 1 to 113 bytes
@@ -5129,6 +5248,9 @@ pub mod uavcan {
             }
         }
         pub mod get_info_0_2 {
+            pub const SERVICE: ::canadensis_core::ServiceId =
+                ::canadensis_core::ServiceId::from_truncating(405);
+
             /// `uavcan.file.GetInfo.0.2`
             ///
             /// Size ranges from 1 to 256 bytes
@@ -5246,6 +5368,9 @@ pub mod uavcan {
             }
         }
         pub mod list_0_1 {
+            pub const SERVICE: ::canadensis_core::ServiceId =
+                ::canadensis_core::ServiceId::from_truncating(406);
+
             /// `uavcan.file.List.0.1`
             ///
             /// Size ranges from 9 to 121 bytes
@@ -5336,6 +5461,9 @@ pub mod uavcan {
             }
         }
         pub mod list_0_2 {
+            pub const SERVICE: ::canadensis_core::ServiceId =
+                ::canadensis_core::ServiceId::from_truncating(406);
+
             /// `uavcan.file.List.0.2`
             ///
             /// Size ranges from 9 to 264 bytes
@@ -5426,6 +5554,9 @@ pub mod uavcan {
             }
         }
         pub mod modify_1_0 {
+            pub const SERVICE: ::canadensis_core::ServiceId =
+                ::canadensis_core::ServiceId::from_truncating(407);
+
             /// `uavcan.file.Modify.1.0`
             ///
             /// Size ranges from 6 to 230 bytes
@@ -5530,6 +5661,9 @@ pub mod uavcan {
             }
         }
         pub mod modify_1_1 {
+            pub const SERVICE: ::canadensis_core::ServiceId =
+                ::canadensis_core::ServiceId::from_truncating(407);
+
             /// `uavcan.file.Modify.1.1`
             ///
             /// Size ranges from 6 to 516 bytes
@@ -5738,6 +5872,9 @@ pub mod uavcan {
             }
         }
         pub mod read_1_0 {
+            pub const SERVICE: ::canadensis_core::ServiceId =
+                ::canadensis_core::ServiceId::from_truncating(408);
+
             /// `uavcan.file.Read.1.0`
             ///
             /// Size ranges from 6 to 118 bytes
@@ -5837,6 +5974,9 @@ pub mod uavcan {
             }
         }
         pub mod read_1_1 {
+            pub const SERVICE: ::canadensis_core::ServiceId =
+                ::canadensis_core::ServiceId::from_truncating(408);
+
             /// `uavcan.file.Read.1.1`
             ///
             /// Size ranges from 6 to 261 bytes
@@ -5924,6 +6064,9 @@ pub mod uavcan {
             }
         }
         pub mod write_1_0 {
+            pub const SERVICE: ::canadensis_core::ServiceId =
+                ::canadensis_core::ServiceId::from_truncating(409);
+
             /// `uavcan.file.Write.1.0`
             ///
             /// Size ranges from 7 to 311 bytes
@@ -6028,6 +6171,9 @@ pub mod uavcan {
             }
         }
         pub mod write_1_1 {
+            pub const SERVICE: ::canadensis_core::ServiceId =
+                ::canadensis_core::ServiceId::from_truncating(409);
+
             /// `uavcan.file.Write.1.1`
             ///
             /// Size ranges from 8 to 519 bytes
@@ -6123,6 +6269,9 @@ pub mod uavcan {
     pub mod internet {
         pub mod udp {
             pub mod handle_incoming_packet_0_1 {
+                pub const SERVICE: ::canadensis_core::ServiceId =
+                    ::canadensis_core::ServiceId::from_truncating(500);
+
                 /// `uavcan.internet.udp.HandleIncomingPacket.0.1`
                 ///
                 /// Size ranges from 4 to 313 bytes
@@ -6218,6 +6367,9 @@ pub mod uavcan {
                 }
             }
             pub mod handle_incoming_packet_0_2 {
+                pub const SERVICE: ::canadensis_core::ServiceId =
+                    ::canadensis_core::ServiceId::from_truncating(500);
+
                 /// `uavcan.internet.udp.HandleIncomingPacket.0.2`
                 ///
                 /// Size ranges from 4 to 512 bytes
@@ -6313,6 +6465,9 @@ pub mod uavcan {
                 }
             }
             pub mod outgoing_packet_0_1 {
+                pub const SUBJECT: ::canadensis_core::SubjectId =
+                    ::canadensis_core::SubjectId::from_truncating(8174);
+
                 /// `uavcan.internet.udp.OutgoingPacket.0.1`
                 ///
                 /// Size ranges from 8 to 313 bytes
@@ -6426,6 +6581,9 @@ pub mod uavcan {
                 }
             }
             pub mod outgoing_packet_0_2 {
+                pub const SUBJECT: ::canadensis_core::SubjectId =
+                    ::canadensis_core::SubjectId::from_truncating(8174);
+
                 /// `uavcan.internet.udp.OutgoingPacket.0.2`
                 ///
                 /// Size ranges from 8 to 561 bytes
@@ -7463,6 +7621,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
     }
     pub mod node {
         pub mod execute_command_1_0 {
+            pub const SERVICE: ::canadensis_core::ServiceId =
+                ::canadensis_core::ServiceId::from_truncating(435);
+
             /// `uavcan.node.ExecuteCommand.1.0`
             ///
             /// Size ranges from 3 to 115 bytes
@@ -7578,6 +7739,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
         }
         pub mod execute_command_1_1 {
+            pub const SERVICE: ::canadensis_core::ServiceId =
+                ::canadensis_core::ServiceId::from_truncating(435);
+
             /// `uavcan.node.ExecuteCommand.1.1`
             ///
             /// Size ranges from 3 to 258 bytes
@@ -7693,6 +7857,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
         }
         pub mod get_info_1_0 {
+            pub const SERVICE: ::canadensis_core::ServiceId =
+                ::canadensis_core::ServiceId::from_truncating(430);
+
             /// `uavcan.node.GetInfo.1.0`
             ///
             /// Fixed size 0 bytes
@@ -7880,6 +8047,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
         }
         pub mod get_transport_statistics_0_1 {
+            pub const SERVICE: ::canadensis_core::ServiceId =
+                ::canadensis_core::ServiceId::from_truncating(434);
+
             /// `uavcan.node.GetTransportStatistics.0.1`
             ///
             /// Fixed size 0 bytes
@@ -8020,6 +8190,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
         }
         pub mod heartbeat_1_0 {
+            pub const SUBJECT: ::canadensis_core::SubjectId =
+                ::canadensis_core::SubjectId::from_truncating(7509);
+
             /// `uavcan.node.Heartbeat.1.0`
             ///
             /// Fixed size 7 bytes
@@ -8264,6 +8437,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 }
             }
             pub mod list_0_1 {
+                pub const SUBJECT: ::canadensis_core::SubjectId =
+                    ::canadensis_core::SubjectId::from_truncating(7510);
+
                 /// `uavcan.node.port.List.0.1`
                 ///
                 /// Size ranges from 146 to 2194 bytes
@@ -8484,12 +8660,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         match self {
                             SubjectIDList::Mask(inner) => {
                                 cursor.write_aligned_u8(0);
-                                (inner).serialize(cursor);
+                                (*inner).serialize(cursor);
                             }
                             SubjectIDList::SparseList(inner) => {
                                 cursor.write_aligned_u8(1);
-                                cursor.write_aligned_u8((inner).len() as u8);
-                                for value in (inner).iter() {
+                                cursor.write_aligned_u8((*inner).len() as u8);
+                                for value in (*inner).iter() {
                                     cursor.write_composite(value);
                                 }
                             }
@@ -8586,6 +8762,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
     pub mod pnp {
         pub mod cluster {
             pub mod append_entries_1_0 {
+                pub const SERVICE: ::canadensis_core::ServiceId =
+                    ::canadensis_core::ServiceId::from_truncating(390);
+
                 /// `uavcan.pnp.cluster.AppendEntries.1.0`
                 ///
                 /// Size ranges from 13 to 35 bytes
@@ -8713,6 +8892,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 }
             }
             pub mod discovery_1_0 {
+                pub const SUBJECT: ::canadensis_core::SubjectId =
+                    ::canadensis_core::SubjectId::from_truncating(8164);
+
                 /// `uavcan.pnp.cluster.Discovery.1.0`
                 ///
                 /// Size ranges from 2 to 12 bytes
@@ -8833,6 +9015,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 }
             }
             pub mod request_vote_1_0 {
+                pub const SERVICE: ::canadensis_core::ServiceId =
+                    ::canadensis_core::ServiceId::from_truncating(391);
+
                 /// `uavcan.pnp.cluster.RequestVote.1.0`
                 ///
                 /// Fixed size 10 bytes
@@ -8937,6 +9122,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
         }
         pub mod node_id_allocation_data_1_0 {
+            pub const SUBJECT: ::canadensis_core::SubjectId =
+                ::canadensis_core::SubjectId::from_truncating(8166);
+
             /// `uavcan.pnp.NodeIDAllocationData.1.0`
             ///
             /// Size ranges from 7 to 9 bytes
@@ -8995,6 +9183,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
         }
         pub mod node_id_allocation_data_2_0 {
+            pub const SUBJECT: ::canadensis_core::SubjectId =
+                ::canadensis_core::SubjectId::from_truncating(8165);
+
             /// `uavcan.pnp.NodeIDAllocationData.2.0`
             ///
             /// Fixed size 18 bytes
@@ -10315,6 +10506,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
     }
     pub mod register {
         pub mod access_1_0 {
+            pub const SERVICE: ::canadensis_core::ServiceId =
+                ::canadensis_core::ServiceId::from_truncating(384);
+
             /// `uavcan.register.Access.1.0`
             ///
             /// Size ranges from 2 to 515 bytes
@@ -10422,6 +10616,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
         }
         pub mod list_1_0 {
+            pub const SERVICE: ::canadensis_core::ServiceId =
+                ::canadensis_core::ServiceId::from_truncating(385);
+
             /// `uavcan.register.List.1.0`
             ///
             /// Fixed size 2 bytes
@@ -13726,6 +13923,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
     }
     pub mod time {
         pub mod get_synchronization_master_info_0_1 {
+            pub const SERVICE: ::canadensis_core::ServiceId =
+                ::canadensis_core::ServiceId::from_truncating(510);
+
             /// `uavcan.time.GetSynchronizationMasterInfo.0.1`
             ///
             /// Fixed size 0 bytes
@@ -13814,6 +14014,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
         }
         pub mod synchronization_1_0 {
+            pub const SUBJECT: ::canadensis_core::SubjectId =
+                ::canadensis_core::SubjectId::from_truncating(7168);
+
             /// `uavcan.time.Synchronization.1.0`
             ///
             /// Fixed size 7 bytes

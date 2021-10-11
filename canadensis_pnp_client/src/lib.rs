@@ -13,6 +13,7 @@ extern crate canadensis;
 extern crate canadensis_data_types;
 extern crate canadensis_filter_config;
 extern crate crc_any;
+extern crate heapless;
 
 use alloc::vec::Vec;
 use canadensis::anonymous::AnonymousPublisher;
@@ -21,7 +22,7 @@ use canadensis::can::{Frame, Mtu, OutOfMemoryError, Receiver, Transmitter};
 use canadensis::core::time::{milliseconds, Clock};
 use canadensis::core::{NodeId, Priority, SubjectId};
 use canadensis::encoding::{Deserialize, Message, Serialize};
-use canadensis_data_types::uavcan::pnp::node_id_allocation_data_1_0::NodeIdAllocationData;
+use canadensis_data_types::uavcan::pnp::node_id_allocation_data_1_0::{self, NodeIDAllocationData};
 use canadensis_filter_config::Filter;
 use core::convert::TryFrom;
 use core::marker::PhantomData;
@@ -121,14 +122,14 @@ pub trait AllocationMessage: Message + Serialize + Deserialize {
     fn node_id(&self) -> Option<NodeId>;
 }
 
-impl AllocationMessage for NodeIdAllocationData {
-    const SUBJECT: SubjectId = NodeIdAllocationData::SUBJECT;
+impl AllocationMessage for NodeIDAllocationData {
+    const SUBJECT: SubjectId = node_id_allocation_data_1_0::SUBJECT;
 
     fn with_unique_id(id: &[u8; 16]) -> Self {
         let id_hash = crc_64we_48_bits(id);
-        NodeIdAllocationData {
+        NodeIDAllocationData {
             unique_id_hash: id_hash,
-            allocated_node_id: None,
+            allocated_node_id: heapless::Vec::new(),
         }
     }
 
@@ -138,10 +139,10 @@ impl AllocationMessage for NodeIdAllocationData {
     }
 
     fn node_id(&self) -> Option<NodeId> {
-        self.allocated_node_id.and_then(|id_bits| {
+        self.allocated_node_id.iter().next().and_then(|id| {
             // The message allows a wider range of node IDs than the UAVCAN/CAN transport allows.
             // If the ID is too large, return None.
-            let short_id = u8::try_from(id_bits).ok()?;
+            let short_id = u8::try_from(id.value).ok()?;
             NodeId::try_from(short_id).ok()
         })
     }

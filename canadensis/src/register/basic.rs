@@ -1,7 +1,21 @@
 //! Basic register types
 
+use crate::encoding::f16_zerocopy::ZeroCopyF16;
 use crate::register::{Access, Register, WriteError};
-use canadensis_data_types::uavcan::register::value::Value;
+use canadensis_data_types::uavcan::primitive::array::integer16_1_0::Integer16;
+use canadensis_data_types::uavcan::primitive::array::integer32_1_0::Integer32;
+use canadensis_data_types::uavcan::primitive::array::integer64_1_0::Integer64;
+use canadensis_data_types::uavcan::primitive::array::integer8_1_0::Integer8;
+use canadensis_data_types::uavcan::primitive::array::natural16_1_0::Natural16;
+use canadensis_data_types::uavcan::primitive::array::natural32_1_0::Natural32;
+use canadensis_data_types::uavcan::primitive::array::natural64_1_0::Natural64;
+use canadensis_data_types::uavcan::primitive::array::natural8_1_0::Natural8;
+use canadensis_data_types::uavcan::primitive::array::real16_1_0::Real16;
+use canadensis_data_types::uavcan::primitive::array::real32_1_0::Real32;
+use canadensis_data_types::uavcan::primitive::array::real64_1_0::Real64;
+use canadensis_data_types::uavcan::primitive::string_1_0;
+use canadensis_data_types::uavcan::primitive::unstructured_1_0;
+use canadensis_data_types::uavcan::register::value_1_0::Value;
 use core::convert::TryFrom;
 use half::f16;
 
@@ -83,7 +97,8 @@ where
 /// # Examples
 ///
 /// ```
-/// # use canadensis_data_types::uavcan::register::value::Value;
+/// # use canadensis_data_types::uavcan::register::value_1_0::Value;
+/// # use canadensis_data_types::uavcan::primitive::array::real32_1_0::Real32;
 /// # use canadensis::register::basic::ValidatedRegister;
 /// # use canadensis::register::Register;
 /// fn is_finite_float(value: &f32) -> bool {
@@ -92,21 +107,21 @@ where
 /// let mut finite_float_register =
 ///     ValidatedRegister::new("test.float", true, true, is_finite_float);
 /// assert!(finite_float_register
-///     .write(&Value::Real32(heapless::Vec::from_slice(&[37.0]).unwrap()))
+///     .write(&Value::Real32(Real32 { value: heapless::Vec::from_slice(&[37.0]).unwrap() }))
 ///     .is_ok());
 /// assert!(finite_float_register
-///     .write(&Value::Real32(
-///         heapless::Vec::from_slice(&[f32::INFINITY]).unwrap()
+///     .write(&Value::Real32(Real32 {
+///         value: heapless::Vec::from_slice(&[f32::INFINITY]).unwrap()}
 ///     ))
 ///     .is_err());
 /// assert!(finite_float_register
-///     .write(&Value::Real32(
-///         heapless::Vec::from_slice(&[f32::NEG_INFINITY]).unwrap()
+///     .write(&Value::Real32(Real32 {
+///         value:heapless::Vec::from_slice(&[f32::NEG_INFINITY]).unwrap()}
 ///     ))
 ///     .is_err());
 /// assert!(finite_float_register
-///     .write(&Value::Real32(
-///         heapless::Vec::from_slice(&[f32::NAN]).unwrap()
+///     .write(&Value::Real32(Real32 {
+///         value: heapless::Vec::from_slice(&[f32::NAN]).unwrap()}
 ///     ))
 ///     .is_err());
 /// ```
@@ -246,11 +261,13 @@ macro_rules! register_primitive {
     ($type:ty, $variant:ident) => {
         impl RegisterType for $type {
             fn read(&self) -> Value {
-                Value::$variant(heapless::Vec::from_slice(&[*self]).unwrap())
+                Value::$variant($variant {
+                    value: heapless::Vec::from_slice(&[*self]).unwrap(),
+                })
             }
 
             fn write(&mut self, value: &Value) -> Result<(), WriteError> {
-                if let Value::$variant(values) = value {
+                if let Value::$variant($variant { value: values }) = value {
                     if values.len() == 1 {
                         *self = values[0];
                         Ok(())
@@ -273,7 +290,7 @@ register_primitive!(i8, Integer8);
 register_primitive!(i16, Integer16);
 register_primitive!(i32, Integer32);
 register_primitive!(i64, Integer64);
-register_primitive!(f16, Real16);
+// register_primitive!(f16, Real16);
 register_primitive!(f32, Real32);
 register_primitive!(f64, Real64);
 
@@ -296,7 +313,7 @@ macro_rules! register_primitive_array {
                         .extend_from_slice(&self[..value_vec.capacity()])
                         .expect("Incorrect length calculation");
                 }
-                Value::$variant(value_vec)
+                Value::$variant($variant { value: value_vec })
             }
 
             /// Writes an array register
@@ -305,7 +322,7 @@ macro_rules! register_primitive_array {
             /// the length of this array.
             fn write(&mut self, value: &Value) -> Result<(), WriteError> {
                 match value {
-                    Value::$variant(values) => {
+                    Value::$variant($variant { value: values }) => {
                         if values.len() == N {
                             self.copy_from_slice(&values);
                             Ok(())
@@ -328,9 +345,73 @@ register_primitive_array!(i8, Integer8);
 register_primitive_array!(i16, Integer16);
 register_primitive_array!(i32, Integer32);
 register_primitive_array!(i64, Integer64);
-register_primitive_array!(f16, Real16);
+// register_primitive_array!(f16, Real16);
 register_primitive_array!(f32, Real32);
 register_primitive_array!(f64, Real64);
+
+// Need to implement f16 manually because of the ZeroCopyF16 type,
+// until this is merged and released: https://github.com/starkat99/half-rs/pull/45
+
+impl RegisterType for f16 {
+    fn read(&self) -> Value {
+        Value::Real16(Real16 {
+            value: heapless::Vec::from_slice(&[ZeroCopyF16::from(*self)]).unwrap(),
+        })
+    }
+
+    fn write(&mut self, value: &Value) -> Result<(), WriteError> {
+        if let Value::Real16(Real16 { value: values }) = value {
+            if values.len() == 1 {
+                *self = values[0].into();
+                Ok(())
+            } else {
+                Err(WriteError::Type)
+            }
+        } else {
+            Err(WriteError::Type)
+        }
+    }
+}
+impl<const N: usize> RegisterType for [f16; N] {
+    /// Reads the value of an array register
+    ///
+    /// If this array is longer than the maximum capacity of the corresponding `Value` variant,
+    /// the returned value will be truncated.
+    fn read(&self) -> Value {
+        let mut value_vec = heapless::Vec::new();
+        if N <= value_vec.capacity() {
+            value_vec.extend(self.iter().map(|value| ZeroCopyF16::from(*value)));
+        } else {
+            // Truncate to the maximum allowed size
+            value_vec.extend(
+                self[..value_vec.capacity()]
+                    .iter()
+                    .map(|value| ZeroCopyF16::from(*value)),
+            );
+        }
+        Value::Real16(Real16 { value: value_vec })
+    }
+
+    /// Writes an array register
+    ///
+    /// This function returns an error if the length of the provided `Value` is not equal to
+    /// the length of this array.
+    fn write(&mut self, value: &Value) -> Result<(), WriteError> {
+        match value {
+            Value::Real16(Real16 { value: values }) => {
+                if values.len() == N {
+                    for (entry, value) in self.iter_mut().zip(values.iter()) {
+                        *entry = f16::from(*value);
+                    }
+                    Ok(())
+                } else {
+                    Err(WriteError::Type)
+                }
+            }
+            _ => Err(WriteError::Type),
+        }
+    }
+}
 
 /// A string value for a register
 #[derive(Debug, Clone, Default)]
@@ -338,12 +419,14 @@ pub struct RegisterString(pub heapless::Vec<u8, 256>);
 
 impl RegisterType for RegisterString {
     fn read(&self) -> Value {
-        Value::String(self.0.clone())
+        Value::String(string_1_0::String {
+            value: self.0.clone(),
+        })
     }
 
     fn write(&mut self, value: &Value) -> Result<(), WriteError> {
         match value {
-            Value::String(bytes) => {
+            Value::String(string_1_0::String { value: bytes }) => {
                 self.0.clone_from(bytes);
                 Ok(())
             }
@@ -379,12 +462,14 @@ pub struct Unstructured(pub heapless::Vec<u8, 256>);
 
 impl RegisterType for Unstructured {
     fn read(&self) -> Value {
-        Value::String(self.0.clone())
+        Value::Unstructured(unstructured_1_0::Unstructured {
+            value: self.0.clone(),
+        })
     }
 
     fn write(&mut self, value: &Value) -> Result<(), WriteError> {
         match value {
-            Value::String(bytes) => {
+            Value::Unstructured(unstructured_1_0::Unstructured { value: bytes }) => {
                 self.0.clone_from(bytes);
                 Ok(())
             }
@@ -445,9 +530,10 @@ impl Register for FixedStringRegister {
     }
 
     fn read(&self) -> Value {
-        Value::String(
-            heapless::Vec::from_slice(self.value.as_bytes()).expect("Register value too long"),
-        )
+        Value::String(string_1_0::String {
+            value: heapless::Vec::from_slice(self.value.as_bytes())
+                .expect("Register value too long"),
+        })
     }
 
     fn write(&mut self, _value: &Value) -> Result<(), WriteError> {
