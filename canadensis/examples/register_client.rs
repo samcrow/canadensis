@@ -16,6 +16,7 @@ use canadensis::core::transfer::ServiceTransfer;
 use canadensis::core::Priority;
 use canadensis::encoding::Deserialize;
 use canadensis::node::{BasicNode, CoreNode};
+use canadensis::requester::TransferIdArray;
 use canadensis::{Node, ServiceToken, TransferHandler};
 use canadensis_can::queue::{ArrayQueue, FrameQueueSource};
 use canadensis_can::types::{CanNodeId, CanTransferId, CanTransport};
@@ -89,7 +90,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let frame_queue = ArrayQueue::<Microseconds64, 64>::new();
     let transmitter = CanTransmitter::new(Mtu::Can8, frame_queue);
     let receiver = CanReceiver::new(node_id, Mtu::Can8);
-    let core_node: CoreNode<_, _, _, 8, 8> =
+    let core_node: CoreNode<_, _, _, TransferIdArray<CanTransport<Microseconds64>>, 8, 8> =
         CoreNode::new(SystemClock::new(), node_id, transmitter, receiver);
     let mut node = BasicNode::new(core_node, node_info).unwrap();
     let list_request_token: ServiceToken<ListRequest> = node

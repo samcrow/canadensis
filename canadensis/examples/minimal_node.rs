@@ -11,9 +11,10 @@ use socketcan::CANSocket;
 
 use canadensis::core::time::Microseconds64;
 use canadensis::node::{CoreNode, MinimalNode};
+use canadensis::requester::TransferIdArray;
 use canadensis::Node;
 use canadensis_can::queue::{ArrayQueue, FrameQueueSource};
-use canadensis_can::types::CanNodeId;
+use canadensis_can::types::{CanNodeId, CanTransport};
 use canadensis_can::{CanReceiver, CanTransmitter, Mtu};
 use canadensis_linux::{LinuxCan, SystemClock};
 
@@ -63,7 +64,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let frame_queue = ArrayQueue::<Microseconds64, 64>::new();
     let transmitter = CanTransmitter::new(Mtu::Can8, frame_queue);
     let receiver = CanReceiver::new(node_id, Mtu::Can8);
-    let core_node: CoreNode<_, _, _, 1, 1> =
+    let core_node: CoreNode<_, _, _, TransferIdArray<CanTransport<Microseconds64>>, 1, 1> =
         CoreNode::new(SystemClock::new(), node_id, transmitter, receiver);
     let mut node = MinimalNode::new(core_node).unwrap();
 

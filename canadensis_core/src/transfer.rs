@@ -7,7 +7,6 @@ use crate::{PortId, ServiceId, SubjectId};
 use core::fmt::{Debug, Formatter};
 
 /// The header of a message transfer
-#[derive(Clone)]
 pub struct MessageHeader<I, T: Transport + ?Sized> {
     /// For RX transfers: the time when the first frame was received
     /// For TX transfers: the transmission deadline for all frames
@@ -38,6 +37,24 @@ where
     }
 }
 
+impl<I, T: Transport + ?Sized> Clone for MessageHeader<I, T>
+where
+    I: Clone,
+    T::TransferId: Clone,
+    T::Priority: Clone,
+    T::NodeId: Clone,
+{
+    fn clone(&self) -> Self {
+        MessageHeader {
+            timestamp: self.timestamp.clone(),
+            transfer_id: self.transfer_id.clone(),
+            priority: self.priority.clone(),
+            subject: self.subject.clone(),
+            source: self.source.clone(),
+        }
+    }
+}
+
 impl<I, T: Transport + ?Sized> PartialEq for MessageHeader<I, T>
 where
     I: PartialEq,
@@ -55,7 +72,6 @@ where
 }
 
 /// The header of a service transfer
-#[derive(Clone)]
 pub struct ServiceHeader<I, T: Transport + ?Sized> {
     /// For RX transfers: the time when the first frame was received
     /// For TX transfers: the transmission deadline for all frames
@@ -89,6 +105,25 @@ where
     }
 }
 
+impl<I, T: Transport + ?Sized> Clone for ServiceHeader<I, T>
+where
+    I: Clone,
+    T::TransferId: Clone,
+    T::Priority: Clone,
+    T::NodeId: Clone,
+{
+    fn clone(&self) -> Self {
+        ServiceHeader {
+            timestamp: self.timestamp.clone(),
+            transfer_id: self.transfer_id.clone(),
+            priority: self.priority.clone(),
+            service: self.service.clone(),
+            source: self.source.clone(),
+            destination: self.destination.clone(),
+        }
+    }
+}
+
 impl<I, T: Transport + ?Sized> PartialEq for ServiceHeader<I, T>
 where
     I: PartialEq,
@@ -107,7 +142,6 @@ where
 }
 
 /// Header fields for a message, request, or response
-#[derive(Clone)]
 pub enum Header<I, T: Transport + ?Sized> {
     /// A message header
     Message(MessageHeader<I, T>),
@@ -125,6 +159,21 @@ where
             Header::Message(inner) => f.debug_tuple("Message").field(inner).finish(),
             Header::Request(inner) => f.debug_tuple("Request").field(inner).finish(),
             Header::Response(inner) => f.debug_tuple("Response").field(inner).finish(),
+        }
+    }
+}
+impl<I, T: Transport + ?Sized> Clone for Header<I, T>
+where
+    I: Clone,
+    T::TransferId: Clone,
+    T::Priority: Clone,
+    T::NodeId: Clone,
+{
+    fn clone(&self) -> Self {
+        match self {
+            Header::Message(inner) => Header::Message(inner.clone()),
+            Header::Request(inner) => Header::Request(inner.clone()),
+            Header::Response(inner) => Header::Response(inner.clone()),
         }
     }
 }
@@ -224,7 +273,6 @@ impl<I, T: Transport + ?Sized> Header<I, T> {
 }
 
 /// A UAVCAN transfer (either incoming or outgoing)
-#[derive(Clone)]
 pub struct Transfer<A, I, T: Transport + ?Sized> {
     /// The transfer header
     pub header: Header<I, T>,
@@ -257,6 +305,21 @@ where
 {
     fn eq(&self, other: &Self) -> bool {
         self.header == other.header && self.payload == other.payload
+    }
+}
+impl<A, I, T: Transport + ?Sized> Clone for Transfer<A, I, T>
+where
+    A: Clone,
+    I: Clone,
+    T::TransferId: Clone,
+    T::Priority: Clone,
+    T::NodeId: Clone,
+{
+    fn clone(&self) -> Self {
+        Transfer {
+            header: self.header.clone(),
+            payload: self.payload.clone(),
+        }
     }
 }
 

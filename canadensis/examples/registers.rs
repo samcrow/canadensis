@@ -14,6 +14,7 @@ use canadensis::core::transfer::{MessageTransfer, ServiceTransfer};
 use canadensis::node::{BasicNode, CoreNode};
 use canadensis::register::basic::{RegisterString, SimpleRegister};
 use canadensis::register::{RegisterBlock, RegisterHandler};
+use canadensis::requester::TransferIdArray;
 use canadensis::{Node, ResponseToken, TransferHandler, TransferHandlerChain};
 use canadensis_can::queue::{ArrayQueue, FrameQueueSource};
 use canadensis_can::types::{CanNodeId, CanTransport};
@@ -102,7 +103,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let frame_queue = ArrayQueue::<Microseconds64, 64>::new();
     let transmitter = CanTransmitter::new(Mtu::Can8, frame_queue);
     let receiver = CanReceiver::new(node_id, Mtu::Can8);
-    let core_node: CoreNode<_, _, _, 8, 8> =
+    let core_node: CoreNode<_, _, _, TransferIdArray<CanTransport<Microseconds64>>, 8, 8> =
         CoreNode::new(SystemClock::new(), node_id, transmitter, receiver);
     let mut node = BasicNode::new(core_node, node_info).unwrap();
 

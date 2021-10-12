@@ -11,7 +11,7 @@ use canadensis_encoding::{Message, Request, Response, Serialize};
 
 use crate::hash::TrivialIndexMap;
 use crate::publisher::Publisher;
-use crate::requester::Requester;
+use crate::requester::{Requester, TransferIdTracker};
 use crate::serialize::do_serialize;
 use crate::{Node, PublishToken, ResponseToken, ServiceToken, StartSendError, TransferHandler};
 
@@ -23,7 +23,7 @@ use crate::{Node, PublishToken, ResponseToken, ServiceToken, StartSendError, Tra
 /// * `P`: The maximum number of topics that can be published
 /// * `R`: The maximum number of services for which requests can be sent
 ///
-pub struct CoreNode<C, T, U, const P: usize, const R: usize>
+pub struct CoreNode<C, T, U, TR, const P: usize, const R: usize>
 where
     C: Clock,
     U: Receiver<C::Instant>,
@@ -34,15 +34,16 @@ where
     receiver: U,
     node_id: <T::Transport as Transport>::NodeId,
     publishers: TrivialIndexMap<SubjectId, Publisher<C::Instant, T>, P>,
-    requesters: TrivialIndexMap<ServiceId, Requester<C::Instant, T>, R>,
+    requesters: TrivialIndexMap<ServiceId, Requester<C::Instant, T, TR>, R>,
 }
 
-impl<C, T, U, N, const P: usize, const R: usize> CoreNode<C, T, U, P, R>
+impl<C, T, U, N, TR, const P: usize, const R: usize> CoreNode<C, T, U, TR, P, R>
 where
     C: Clock,
     N: Transport,
     U: Receiver<C::Instant, Transport = N>,
     T: Transmitter<C::Instant, Transport = N>,
+    TR: TransferIdTracker<N>,
 {
     /// Creates a node
     ///
@@ -125,12 +126,13 @@ where
     }
 }
 
-impl<C, T, U, N, const P: usize, const R: usize> Node for CoreNode<C, T, U, P, R>
+impl<C, T, U, N, TR, const P: usize, const R: usize> Node for CoreNode<C, T, U, TR, P, R>
 where
     C: Clock,
     N: Transport,
     T: Transmitter<<C as Clock>::Instant, Transport = N>,
     U: Receiver<<C as Clock>::Instant, Transport = N>,
+    TR: TransferIdTracker<N>,
 {
     type Clock = C;
     type Instant = <C as Clock>::Instant;
@@ -251,7 +253,7 @@ where
         destination: N::NodeId,
     ) -> Result<N::TransferId, <N as Transport>::Error>
     where
-        M: Serialize,
+        M: Request + Serialize,
     {
         let requester = self
             .requesters

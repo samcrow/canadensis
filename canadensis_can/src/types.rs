@@ -7,6 +7,7 @@ use core::convert::TryFrom;
 use core::fmt;
 use core::marker::PhantomData;
 use core::ops::RangeInclusive;
+use hash32_derive::Hash32;
 
 /// The UAVCAN/CAN transport
 ///
@@ -32,7 +33,7 @@ const VALID_NODE_IDS: RangeInclusive<u8> = 0..=127;
 ///
 /// Valid node IDs are in the range 0..=127 (7 bits). IDs 126 and 127 are reserved for diagnostic
 /// and debugging tools.
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash32)]
 pub struct CanNodeId(u8);
 
 impl CanNodeId {

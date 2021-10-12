@@ -54,6 +54,9 @@ path = "../canadensis_linux"
 [dev-dependencies.canadensis_can]
 version = "0.1.0"
 path = "../canadensis_can"
+[dev-dependencies.canadensis_serial]
+version = "0.1.0"
+path = "../canadensis_serial"
 
 
 [features]

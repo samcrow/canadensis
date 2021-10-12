@@ -20,9 +20,10 @@ use canadensis::core::transfer::ServiceTransfer;
 use canadensis::core::transport::Transport;
 use canadensis::core::Priority;
 use canadensis::node::CoreNode;
+use canadensis::requester::TransferIdArray;
 use canadensis::{Node, ResponseToken, TransferHandler};
 use canadensis_can::queue::{ArrayQueue, FrameQueueSource};
-use canadensis_can::types::CanNodeId;
+use canadensis_can::types::{CanNodeId, CanTransport};
 use canadensis_can::{CanId, CanReceiver, CanTransmitter, Frame, Mtu};
 use canadensis_data_types::uavcan::node::get_info_1_0::{self, GetInfoResponse};
 use canadensis_data_types::uavcan::node::health_1_0::Health;
@@ -87,7 +88,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let transmitter = CanTransmitter::new(Mtu::Can8, frame_queue);
     let receiver = CanReceiver::new(node_id, Mtu::Can8);
-    let mut uavcan: CoreNode<_, _, _, 8, 8> =
+    let mut uavcan: CoreNode<_, _, _, TransferIdArray<CanTransport<Microseconds64>>, 8, 8> =
         CoreNode::new(SystemClock::new(), node_id, transmitter, receiver);
 
     let heartbeat_token = uavcan

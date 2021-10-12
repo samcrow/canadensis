@@ -15,10 +15,11 @@ use canadensis::core::time::{milliseconds, Instant, Microseconds64};
 use canadensis::core::transfer::{MessageTransfer, ServiceTransfer};
 use canadensis::core::transport::Transport;
 use canadensis::node::{BasicNode, CoreNode};
+use canadensis::requester::TransferIdArray;
 use canadensis::{Node, ResponseToken, TransferHandler};
 use canadensis_can::queue::{ArrayQueue, FrameQueueSource};
 use canadensis_can::redundant::{Deduplicator, RedundantQueue};
-use canadensis_can::types::CanNodeId;
+use canadensis_can::types::{CanNodeId, CanTransport};
 use canadensis_can::{CanReceiver, CanTransmitter, Mtu};
 use canadensis_data_types::uavcan::node::get_info_1_0::GetInfoResponse;
 use canadensis_data_types::uavcan::node::version_1_0::Version;
@@ -101,7 +102,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create a node with capacity for 8 publishers and 8 requesters
     let transmitter = CanTransmitter::new(Mtu::Can8, transmit_queue);
     let receiver = CanReceiver::new(node_id, Mtu::Can8);
-    let core_node: CoreNode<_, _, _, 8, 8> =
+    let core_node: CoreNode<_, _, _, TransferIdArray<CanTransport<Microseconds64>>, 8, 8> =
         CoreNode::new(SystemClock::new(), node_id, transmitter, receiver);
     let mut node = BasicNode::new(core_node, node_info).unwrap();
 

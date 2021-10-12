@@ -37,7 +37,7 @@ pub mod anonymous;
 pub mod node;
 mod publisher;
 pub mod register;
-mod requester;
+pub mod requester;
 mod serialize;
 
 use ::core::fmt::{Debug, Formatter};

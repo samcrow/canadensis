@@ -7,6 +7,7 @@ use crate::{ServiceId, SubjectId};
 use alloc::vec::Vec;
 use core::convert::TryFrom;
 use core::fmt::Debug;
+use hash32::Hash;
 
 /// Basic requirements for a transport that can be used to send and receive transfers
 ///
@@ -65,9 +66,11 @@ where
     type Transport: Transport;
     /// Handles an incoming frame
     ///
-    /// If the frame completes a transfer, the transfer is returned.
+    /// If the frame completes a transfer and the transfer matches an active subscription, the
+    /// transfer is returned.
     ///
-    // TODO: If an error occurs, what is required of the transport state?
+    /// This function must not return any transfers for which the transport is not currently
+    /// subscribed. It also must not return any service transfers not addressed to this node.
     fn accept(
         &mut self,
         frame: <Self::Transport as Transport>::Frame,
@@ -155,7 +158,7 @@ where
 }
 
 /// Required operations for a node ID
-pub trait NodeId<T>: Debug + Clone + Into<usize> + TryFrom<u16> {
+pub trait NodeId<T>: Debug + Clone + PartialEq + Eq + Hash + Into<usize> + TryFrom<u16> {
     /// An array of transfer IDs that contains a transfer ID for each possible node ID value
     ///
     /// This is normally `[T; the maximum node ID value + 1]`.
