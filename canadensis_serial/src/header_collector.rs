@@ -3,19 +3,11 @@ use core::mem;
 use zerocopy::FromBytes;
 
 const HEADER_BYTES: usize = mem::size_of::<SerialHeader>();
-const HEADER_ALIGNMENT: usize = mem::align_of::<SerialHeader>();
-const COLLECTOR_ALIGNMENT: usize = mem::align_of::<HeaderCollector>();
-// Check statically that HeaderCollector and SerialHeader have the same alignment
-#[allow(dead_code)]
-const ALIGN_OK: [(); 0] = [(); 0 - if HEADER_ALIGNMENT == COLLECTOR_ALIGNMENT {
-    0
-} else {
-    1
-}];
 
-#[repr(align(8))]
 pub struct HeaderCollector {
     /// The bytes that represent the header
+    ///
+    /// Note: This doesn't have to be aligned to use `FromBytes::read_from`.
     bytes: [u8; HEADER_BYTES],
     /// The number of bytes that have been written
     len: u8,

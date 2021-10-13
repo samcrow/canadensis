@@ -86,6 +86,9 @@ impl TryFrom<u16> for SerialNodeId {
     }
 }
 
+/// A serial transfer identifier
+///
+/// This is just a `u64`.
 #[derive(Default, Debug, Copy, Clone, PartialEq)]
 pub struct SerialTransferId(u64);
 

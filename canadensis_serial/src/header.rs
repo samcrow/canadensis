@@ -6,7 +6,7 @@ use core::mem;
 use crc_any::CRCu32;
 use zerocopy::{AsBytes, FromBytes};
 
-/// The header of a serial frame
+/// The header of a serial transfer
 #[derive(AsBytes, FromBytes, Debug)]
 #[repr(C)]
 pub struct SerialHeader {

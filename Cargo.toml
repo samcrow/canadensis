@@ -18,5 +18,6 @@ members = [
     "canadensis_macro",
     "canadensis_pnp_client",
     "canadensis_serial",
+    "canadensis_udp",
     "canadensis_write_crc"
 ]
