@@ -1,30 +1,71 @@
-#![no_std]
+//!
+//! # UAVCAN/UDP transport
+//!
+//! The current version of the transport is documented at <https://pyuavcan.readthedocs.io/en/latest/api/pyuavcan.transport.udp.html>.
+//!
+//! This implementation requires the `std` library for sockets.
+//!
+//! ## How sockets work
+//!
+//! ### Sending
+//!
+//! A transport can use one socket to send all outgoing message and service transfers.
+//! This socket gets bound to a normal address derived from the local node ID and an ephemeral
+//! UDP port.
+//!
+//! Outgoing message transfers get sent to a multicast address based on the port ID and the fixed
+//! UDP port 16383.
+//!
+//! Outgoing request transfers get sent to the address of the destination node with a UDP port
+//! number based on the service ID.
+//!
+//! ### Receiving message transfers
+//!
+//! Each subscription requires its own socket. The socket gets bound to the multicast address
+//! derived from the subject ID and the fixed UDP port 16383.
+//!
+//! When the transport receives a packet, it knows the subject ID (associated with the socket)
+//! and extracts the source node ID from the source IP address.
+//!
+//! ### Receiving service transfers
+//!
+//! Each subscription requires its own socket. The socket gets bound to a normal address derived
+//! from the local node ID and a UDP port based on the service ID.
+//!
+//! When the transport receives a packet, it knows the service ID (associated with the socket)
+//! and extracts the source node ID from the source IP address.
+//!
 
 extern crate alloc;
 extern crate canadensis_core;
 extern crate crc_any;
-extern crate embedded_nal;
+extern crate fallible_collections;
 extern crate hash32;
 extern crate hash32_derive;
 extern crate heapless;
+extern crate log;
 extern crate zerocopy;
+
+use core::fmt::Debug;
+use fallible_collections::TryReserveError;
+use std::io;
+use std::marker::PhantomData;
+use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, UdpSocket};
+
+use hash32_derive::Hash32;
+
+use canadensis_core::time::Instant;
+use canadensis_core::transport::{NodeId, TransferId, Transport};
+use canadensis_core::{OutOfMemoryError, Priority};
+
+pub use crate::address::NodeAddress;
+pub use crate::rx::{UdpReceiver, UdpSessionData};
+pub use crate::tx::UdpTransmitter;
 
 mod address;
 mod header;
 mod rx;
-pub mod socket;
 mod tx;
-
-pub use crate::address::NodeAddress;
-pub use crate::rx::UdpReceiver;
-pub use crate::tx::UdpTransmitter;
-
-use canadensis_core::transport::{NodeId, TransferId, Transport};
-use canadensis_core::{OutOfMemoryError, Priority};
-use core::fmt::Debug;
-use core::marker::PhantomData;
-use embedded_nal::SocketAddrV4;
-use hash32_derive::Hash32;
 
 /// The UAVCAN/UDP transport
 ///
@@ -34,65 +75,24 @@ use hash32_derive::Hash32;
 ///
 /// The MTU must be at least 25 bytes so that each frame can hold a header (24 bytes) and one byte
 /// of payload.
-pub struct UdpTransport<I, E, const MTU: usize>(PhantomData<I>, PhantomData<E>);
+pub struct UdpTransport<I>(PhantomData<I>);
 
-impl<I, E: Debug, const MTU: usize> Transport for UdpTransport<I, E, MTU> {
+impl<I> Transport for UdpTransport<I>
+where
+    I: Instant,
+{
     type NodeId = UdpNodeId;
     type TransferId = UdpTransferId;
     type Priority = Priority;
-    type Frame = UdpFrame<I, MTU>;
-    type Error = Error<E>;
-}
-
-/// A timestamped frame containing up to MTU bytes of data
-#[derive(Debug)]
-pub struct UdpFrame<I, const MTU: usize> {
-    /// For incoming frames, this is the time when the frame was received from the network.
-    ///
-    /// For outgoing frames, this is the transmit deadline
-    timestamp: I,
-    /// For incoming frames, this is the source address.
-    ///
-    /// For outgoing frames, this is the destination address
-    remote_address: SocketAddrV4,
-    /// The data in the frame
-    data: heapless::Vec<u8, MTU>,
-}
-
-impl<I, const MTU: usize> UdpFrame<I, MTU> {
-    pub fn new_incoming(timestamp: I, from: SocketAddrV4, data: heapless::Vec<u8, MTU>) -> Self {
-        UdpFrame {
-            timestamp,
-            remote_address: from,
-            data,
-        }
-    }
-    pub fn new_outgoing(timestamp: I, to: SocketAddrV4, data: heapless::Vec<u8, MTU>) -> Self {
-        UdpFrame {
-            timestamp,
-            remote_address: to,
-            data,
-        }
-    }
-
-    pub fn timestamp(&self) -> &I {
-        &self.timestamp
-    }
-    pub fn remote_address(&self) -> SocketAddrV4 {
-        self.remote_address
-    }
-    pub fn data(&self) -> &heapless::Vec<u8, MTU> {
-        &self.data
-    }
-    pub fn into_data(self) -> heapless::Vec<u8, MTU> {
-        self.data
-    }
+    /// Because each subscription has its own socket, this can't use the normal interface.
+    type Frame = I;
+    type Error = Error;
 }
 
 /// A UDP node ID
 ///
 /// This allows all u16 values (0..=65535)
-#[derive(Debug, Clone, Eq, PartialEq, Hash32)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash32)]
 pub struct UdpNodeId(u16);
 
 impl From<u16> for UdpNodeId {
@@ -138,7 +138,7 @@ impl AsMut<[UdpTransferId]> for UdpTransferIds {
 /// A UDP transfer identifier
 ///
 /// This is just a `u64`.
-#[derive(Default, Debug, Copy, Clone, PartialEq)]
+#[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct UdpTransferId(u64);
 
 impl TransferId for UdpTransferId {
@@ -160,13 +160,35 @@ impl From<u64> for UdpTransferId {
 }
 
 #[derive(Debug)]
-pub enum Error<E> {
+pub enum Error {
     Memory(OutOfMemoryError),
-    Socket(E),
+    Socket(std::io::Error),
 }
 
-impl<E> From<OutOfMemoryError> for Error<E> {
+impl From<OutOfMemoryError> for Error {
     fn from(oom: OutOfMemoryError) -> Self {
         Error::Memory(oom)
     }
+}
+impl From<TryReserveError> for Error {
+    fn from(inner: TryReserveError) -> Self {
+        Error::Memory(OutOfMemoryError::from(inner))
+    }
+}
+impl From<std::io::Error> for Error {
+    fn from(inner: std::io::Error) -> Self {
+        Error::Socket(inner)
+    }
+}
+
+/// Creates a socket, enables port and address reuse, enables non-blocking mode, binds to the provided
+/// address and port, and returns the socket
+fn bind_socket(address: Ipv4Addr, port: u16) -> Result<UdpSocket, io::Error> {
+    let socket = socket2::Socket::new(socket2::Domain::IPV4, socket2::Type::DGRAM, None)?;
+    socket.set_reuse_address(true)?;
+    socket.set_reuse_port(true)?;
+    socket.set_nonblocking(true)?;
+    // Bind to the multicast address and fixed message port
+    socket.bind(&SocketAddr::V4(SocketAddrV4::new(address, port)).into())?;
+    Ok(socket.into())
 }

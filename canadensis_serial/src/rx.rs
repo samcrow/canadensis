@@ -1,10 +1,11 @@
 use crate::cobs::Unescaper;
 use crate::header_collector::HeaderCollector;
-use crate::{make_payload_crc, SerialNodeId, SerialTransport};
+use crate::{make_payload_crc, SerialNodeId, SerialTransferId, SerialTransport};
 use alloc::vec::Vec;
 use canadensis_core::time::Instant;
 use canadensis_core::transfer::{Header, Transfer};
-use canadensis_core::transport::{Receiver, Transport};
+use canadensis_core::transfer_id::TransferIdTracker;
+use canadensis_core::transport::{Receiver, TransferId, Transport};
 use canadensis_core::{OutOfMemoryError, PortId, ServiceId, ServiceSubscribeError, SubjectId};
 use core::mem;
 use fallible_collections::FallibleVec;
@@ -12,15 +13,15 @@ use fallible_collections::FallibleVec;
 /// A serial transport receiver
 ///
 /// This implementation does not support multi-frame transfers or timestamps.
-pub struct SerialReceiver<I> {
+pub struct SerialReceiver<I, T> {
     state: State<I>,
     node_id: Option<SerialNodeId>,
-    message_subscriptions: Vec<Subscription>,
-    request_subscriptions: Vec<Subscription>,
-    response_subscriptions: Vec<Subscription>,
+    message_subscriptions: Vec<Subscription<T>>,
+    request_subscriptions: Vec<Subscription<T>>,
+    response_subscriptions: Vec<Subscription<T>>,
 }
 
-impl<I> SerialReceiver<I> {
+impl<I, T> SerialReceiver<I, T> {
     pub fn new(node_id: SerialNodeId) -> Self {
         SerialReceiver {
             state: State::Idle,
@@ -41,7 +42,11 @@ impl<I> SerialReceiver<I> {
     }
 }
 
-impl<I: Instant + Default> Receiver<I> for SerialReceiver<I> {
+impl<I, T> Receiver<I> for SerialReceiver<I, T>
+where
+    I: Instant + Default,
+    T: TransferIdTracker<SerialNodeId, SerialTransferId> + Default,
+{
     type Transport = SerialTransport;
 
     fn accept(
@@ -146,7 +151,7 @@ impl<I: Instant + Default> Receiver<I> for SerialReceiver<I> {
                         if payload.len() == payload.capacity() {
                             // Reached maximum payload length, forced to finish the transfer
                             self.state = State::Idle;
-                            return Ok(complete_transfer(header, payload));
+                            return Ok(self.complete_transfer(header, payload));
                         } else {
                             // Keep collecting bytes
                             payload.push(byte);
@@ -169,7 +174,7 @@ impl<I: Instant + Default> Receiver<I> for SerialReceiver<I> {
                         // Got a zero (end delimiter)
                         self.state = State::BetweenTransfers;
                         // Check and finish the transfer
-                        return Ok(complete_transfer(header, payload));
+                        return Ok(self.complete_transfer(header, payload));
                     }
                 }
             }
@@ -239,8 +244,13 @@ impl<I: Instant + Default> Receiver<I> for SerialReceiver<I> {
     }
 }
 
-impl<I> SerialReceiver<I> {
-    fn is_interested(&self, header: &Header<I, SerialTransport>) -> Option<&Subscription> {
+impl<I, T> SerialReceiver<I, T>
+where
+    T: TransferIdTracker<SerialNodeId, SerialTransferId>,
+{
+    /// Finds and returns a subscription that matches the provided header (and, for service
+    /// transfers, has this node as its destination) if any exists
+    fn find_subscription(&self, header: &Header<I, SerialTransport>) -> Option<&Subscription<T>> {
         match header {
             Header::Message(header) => self
                 .message_subscriptions
@@ -266,46 +276,109 @@ impl<I> SerialReceiver<I> {
             }
         }
     }
-}
-
-fn complete_transfer<I>(
-    header: Header<I, SerialTransport>,
-    mut payload_and_crc: Vec<u8>,
-) -> Option<Transfer<Vec<u8>, I, SerialTransport>> {
-    if payload_and_crc.len() >= 4 {
-        let mut crc_bytes = [0u8; 4];
-        crc_bytes.copy_from_slice(&payload_and_crc[payload_and_crc.len() - 4..]);
-        let crc = u32::from_le_bytes(crc_bytes);
-
-        payload_and_crc.truncate(payload_and_crc.len() - 4);
-        let payload = payload_and_crc;
-        if crc != make_payload_crc(&payload) {
-            // Incorrect CRC
-            return None;
+    /// Finds and returns a subscription that matches the provided header (and, for service
+    /// transfers, has this node as its destination) if any exists
+    fn find_subscription_mut(
+        &mut self,
+        header: &Header<I, SerialTransport>,
+    ) -> Option<&mut Subscription<T>> {
+        match header {
+            Header::Message(header) => self
+                .message_subscriptions
+                .iter_mut()
+                .find(|sub| sub.port == header.subject.into()),
+            Header::Request(header) => {
+                if self.node_id == Some(header.destination) {
+                    self.request_subscriptions
+                        .iter_mut()
+                        .find(|sub| sub.port == header.service.into())
+                } else {
+                    None
+                }
+            }
+            Header::Response(header) => {
+                if self.node_id == Some(header.destination) {
+                    self.response_subscriptions
+                        .iter_mut()
+                        .find(|sub| sub.port == header.service.into())
+                } else {
+                    None
+                }
+            }
         }
-        Some(Transfer { header, payload })
-    } else {
-        // Not enough bytes for a CRC
-        None
+    }
+
+    /// Returns true if this receiver has a matching subscription, its last transfer ID is less
+    /// than the provided header's transfer ID, and (for service transfers) this node is the
+    /// destination
+    fn is_interested(&self, header: &Header<I, SerialTransport>) -> Option<&Subscription<T>> {
+        self.find_subscription(header).and_then(|subscription| {
+            match &subscription.last_transfer_id {
+                // TODO: Last transfer ID must be unique for each source node
+                // Continue if there is no last transfer ID, or if this transfer's ID is greater
+                None => Some(subscription),
+                Some(last) if last < header.transfer_id() => Some(subscription),
+                Some(_) => None,
+            }
+        })
+    }
+
+    fn complete_transfer(
+        &mut self,
+        header: Header<I, SerialTransport>,
+        mut payload_and_crc: Vec<u8>,
+    ) -> Option<Transfer<Vec<u8>, I, SerialTransport>> {
+        if payload_and_crc.len() >= 4 {
+            let mut crc_bytes = [0u8; 4];
+            crc_bytes.copy_from_slice(&payload_and_crc[payload_and_crc.len() - 4..]);
+            let crc = u32::from_le_bytes(crc_bytes);
+
+            payload_and_crc.truncate(payload_and_crc.len() - 4);
+            let payload = payload_and_crc;
+            if crc != make_payload_crc(&payload) {
+                // Incorrect CRC
+                return None;
+            }
+
+            // Record that this transfer was received
+            if let Some(subscription) = self.find_subscription_mut(&header) {
+                subscription.last_transfer_id = Some(header.transfer_id().clone());
+                Some(Transfer { header, payload })
+            } else {
+                // The subscription was removed while receiving the transfer
+                None
+            }
+        } else {
+            // Not enough bytes for a CRC
+            None
+        }
     }
 }
 
-struct Subscription {
+struct Subscription<T> {
     port: PortId,
+    /// The maximum payload size, in bytes
     payload_size_max: usize,
+    /// The ID of the last transfer that was successfully received
+    ///
+    /// This is used to remove duplicates
+    last_transfer_ids: T,
 }
 
-fn unsubscribe(subscriptions: &mut Vec<Subscription>, port: PortId) {
+fn unsubscribe<T>(subscriptions: &mut Vec<Subscription<T>>, port: PortId) {
     if let Some(index) = subscriptions.iter().position(|sub| sub.port == port) {
         subscriptions.swap_remove(index);
     }
 }
 
-fn subscribe(
-    subscriptions: &mut Vec<Subscription>,
+fn subscribe<T>(
+    subscriptions: &mut Vec<Subscription<T>>,
     port: PortId,
     payload_size_max: usize,
-) -> Result<(), OutOfMemoryError> {
+) -> Result<(), OutOfMemoryError>
+where
+    T: Default,
+{
     // Remove any existing subscription for this port
     unsubscribe(subscriptions, port);
     FallibleVec::try_push(
@@ -313,6 +386,7 @@ fn subscribe(
         Subscription {
             port,
             payload_size_max,
+            last_transfer_ids: Default::default(),
         },
     )?;
     Ok(())

@@ -1,14 +1,14 @@
 use crate::header::{self, UdpHeader};
-use crate::UdpFrame;
+use crate::tx::UdpFrame;
 use canadensis_core::Priority;
 use core::mem;
-use embedded_nal::SocketAddrV4;
+use std::net::SocketAddrV4;
 use zerocopy::AsBytes;
 
 /// An iterator that breaks a transfer into UDP frames
 ///
 /// If the payload requires more than one frame, it should already have a transfer CRC.
-pub struct Breakdown<P, I, const MTU: usize> {
+pub(crate) struct Breakdown<P, I, const MTU: usize> {
     /// The destination address for all frames
     dest_address: SocketAddrV4,
     /// The transmit deadline for this transfer
@@ -63,7 +63,7 @@ where
         // Copy the header into the current frame
         self.current_frame[..header::SIZE].copy_from_slice(header.as_bytes());
         let frame = UdpFrame {
-            timestamp: self.deadline.clone(),
+            deadline: self.deadline.clone(),
             remote_address: self.dest_address,
             data: mem::take(&mut self.current_frame),
         };

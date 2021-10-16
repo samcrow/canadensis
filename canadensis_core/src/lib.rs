@@ -9,8 +9,12 @@ extern crate alloc;
 extern crate fallible_collections;
 extern crate hash32;
 extern crate hash32_derive;
+extern crate heapless;
+extern crate log;
 
 mod error;
+pub mod session;
+pub mod subscription;
 pub mod time;
 pub mod transfer;
 pub mod transport;
