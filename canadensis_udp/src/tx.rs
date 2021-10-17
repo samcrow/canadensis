@@ -25,7 +25,7 @@ impl<const MTU: usize> UdpTransmitter<MTU> {
     /// This function panics if `MTU` is less than 25. 25 bytes is the minimum MTU required to
     /// contain a header and one byte of payload in each frame.
     pub fn new(address: NodeAddress) -> Result<Self, Error> {
-        assert!(MTU >= header::SIZE + 1, "MTU is too small");
+        assert!(MTU > header::SIZE, "MTU is too small");
 
         // Bind to an ephemeral port
         let socket = bind_socket(address.clone().into(), 0)?;

@@ -150,7 +150,7 @@ impl NodeAddress {
     }
 
     pub fn node_id(&self) -> UdpNodeId {
-        self.node.clone()
+        self.node
     }
 }
 
@@ -215,7 +215,7 @@ impl From<UdpPort> for u16 {
         match port {
             UdpPort::Message => SUBJECT_PORT,
             UdpPort::Request(id) => SERVICE_BASE_PORT | (u16::from(id) << 1),
-            UdpPort::Response(id) => SERVICE_BASE_PORT | (u16::from(id) << 1) + 1,
+            UdpPort::Response(id) => SERVICE_BASE_PORT | ((u16::from(id) << 1) + 1),
         }
     }
 }

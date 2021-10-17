@@ -49,7 +49,7 @@ where
             timestamp: self.timestamp.clone(),
             transfer_id: self.transfer_id.clone(),
             priority: self.priority.clone(),
-            subject: self.subject.clone(),
+            subject: self.subject,
             source: self.source.clone(),
         }
     }
@@ -117,7 +117,7 @@ where
             timestamp: self.timestamp.clone(),
             transfer_id: self.transfer_id.clone(),
             priority: self.priority.clone(),
-            service: self.service.clone(),
+            service: self.service,
             source: self.source.clone(),
             destination: self.destination.clone(),
         }

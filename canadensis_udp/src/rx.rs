@@ -51,13 +51,13 @@ where
         T: SessionTracker<I, UdpNodeId, UdpTransferId, UdpSessionData> + Default,
     {
         for subscription in self.subscriptions.message_iter_mut() {
-            subscription.clean_expired_sessions(now.clone());
+            subscription.clean_expired_sessions(now);
         }
         for subscription in self.subscriptions.request_iter_mut() {
-            subscription.clean_expired_sessions(now.clone());
+            subscription.clean_expired_sessions(now);
         }
         for subscription in self.subscriptions.response_iter_mut() {
-            subscription.clean_expired_sessions(now.clone());
+            subscription.clean_expired_sessions(now);
         }
     }
 
@@ -331,8 +331,8 @@ where
         now: I,
     ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport<I>>>, Error> {
         log::debug!("handle_sane_frame header {:?} from node {:?}", header, from);
-        let timeout = self.timeout.clone();
-        let session = self.sessions.get_mut_or_insert_with(from.clone(), || {
+        let timeout = self.timeout;
+        let session = self.sessions.get_mut_or_insert_with(from, || {
             Session::new(now, timeout, None, UdpSessionData::default())
         })?;
         // Check transfer ID
@@ -353,7 +353,7 @@ where
         match result {
             Ok(Some(reassembled)) => {
                 // Add the transfer headers and record the completed transfer
-                session.set_last_transfer_id(header.transfer_id.into());
+                session.set_last_transfer_id(header.transfer_id);
 
                 let header = match &self.kind {
                     SubscriptionKind::Message(subject) => Header::Message(MessageHeader {
@@ -451,82 +451,80 @@ where
                 }
                 Ok(None)
             }
-        } else {
-            if header.last_frame {
-                match self.data_mut().buildup.take() {
-                    Some(mut buildup) => {
-                        match buildup.push(header, bytes_after_header) {
-                            Ok(()) => {
-                                // Completed reassembly
-                                let mut payload_and_crc = buildup.into_payload();
+        } else if header.last_frame {
+            match self.data_mut().buildup.take() {
+                Some(mut buildup) => {
+                    match buildup.push(header, bytes_after_header) {
+                        Ok(()) => {
+                            // Completed reassembly
+                            let mut payload_and_crc = buildup.into_payload();
 
-                                let expected_crc =
-                                    match payload_and_crc.get(payload_and_crc.len() - 4..) {
-                                        Some(crc_slice) => {
-                                            let mut crc_bytes = [0u8; 4];
-                                            crc_bytes.copy_from_slice(crc_slice);
-                                            u32::from_le_bytes(crc_bytes)
-                                        }
-                                        None => {
-                                            // Not enough payload to include a CRC
-                                            log::warn!("Payload too short to contain CRC");
-                                            return Ok(None);
-                                        }
-                                    };
-                                payload_and_crc.truncate(payload_and_crc.len() - 4);
-                                let payload = payload_and_crc;
-
-                                let calculated_crc = {
-                                    let mut crc = CRCu32::crc32c();
-                                    crc.digest(&payload);
-                                    crc.get_crc()
+                            let expected_crc =
+                                match payload_and_crc.get(payload_and_crc.len() - 4..) {
+                                    Some(crc_slice) => {
+                                        let mut crc_bytes = [0u8; 4];
+                                        crc_bytes.copy_from_slice(crc_slice);
+                                        u32::from_le_bytes(crc_bytes)
+                                    }
+                                    None => {
+                                        // Not enough payload to include a CRC
+                                        log::warn!("Payload too short to contain CRC");
+                                        return Ok(None);
+                                    }
                                 };
+                            payload_and_crc.truncate(payload_and_crc.len() - 4);
+                            let payload = payload_and_crc;
 
-                                // Check crc
-                                if calculated_crc == expected_crc {
-                                    Ok(Some(payload))
-                                } else {
-                                    // Incorrect CRC
-                                    log::warn!(
-                                        "Incorrect CRC: calculated {:#08x}, got {:#08x}",
-                                        calculated_crc,
-                                        expected_crc
-                                    );
-                                    Ok(None)
-                                }
-                            }
-                            Err(e) => {
-                                // Reassembly error. Give up on the reassembly.
-                                log::warn!("Reassembly error on last frame: {:?}", e);
+                            let calculated_crc = {
+                                let mut crc = CRCu32::crc32c();
+                                crc.digest(&payload);
+                                crc.get_crc()
+                            };
+
+                            // Check crc
+                            if calculated_crc == expected_crc {
+                                Ok(Some(payload))
+                            } else {
+                                // Incorrect CRC
+                                log::warn!(
+                                    "Incorrect CRC: calculated {:#08x}, got {:#08x}",
+                                    calculated_crc,
+                                    expected_crc
+                                );
                                 Ok(None)
                             }
                         }
-                    }
-                    None => {
-                        // Should have a buildup from the first frame, but none exists
-                        log::warn!("Last frame, buildup does not exist");
-                        Ok(None)
+                        Err(e) => {
+                            // Reassembly error. Give up on the reassembly.
+                            log::warn!("Reassembly error on last frame: {:?}", e);
+                            Ok(None)
+                        }
                     }
                 }
-            } else {
-                // A frame in the middle
-                match self.data_mut().buildup.as_mut() {
-                    Some(buildup) => {
-                        match buildup.push(header, bytes_after_header) {
-                            Ok(()) => Ok(None),
-                            Err(e) => {
-                                // Reassembly error. Give up on the reassembly.
-                                log::warn!("Reassembly error on middle frame: {:?}", e);
-                                self.data_mut().buildup = None;
-                                Ok(None)
-                            }
+                None => {
+                    // Should have a buildup from the first frame, but none exists
+                    log::warn!("Last frame, buildup does not exist");
+                    Ok(None)
+                }
+            }
+        } else {
+            // A frame in the middle
+            match self.data_mut().buildup.as_mut() {
+                Some(buildup) => {
+                    match buildup.push(header, bytes_after_header) {
+                        Ok(()) => Ok(None),
+                        Err(e) => {
+                            // Reassembly error. Give up on the reassembly.
+                            log::warn!("Reassembly error on middle frame: {:?}", e);
+                            self.data_mut().buildup = None;
+                            Ok(None)
                         }
                     }
-                    None => {
-                        // Missed the first frame, can't use this transfer
-                        log::warn!("Middle frame, buildup does not exist");
-                        Ok(None)
-                    }
+                }
+                None => {
+                    // Missed the first frame, can't use this transfer
+                    log::warn!("Middle frame, buildup does not exist");
+                    Ok(None)
                 }
             }
         }

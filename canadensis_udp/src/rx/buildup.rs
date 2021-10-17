@@ -4,7 +4,6 @@ use crate::header::ValidatedUdpHeader;
 use crate::UdpTransferId;
 use canadensis_core::{OutOfMemoryError, Priority};
 use fallible_collections::{FallibleVec, TryReserveError};
-use std::convert::TryInto;
 
 // TODO: Add support for reassembling out-of-order frames
 
@@ -41,10 +40,7 @@ impl Buildup {
         Ok(Buildup {
             bytes,
             next_frame_index: header.frame_index + 1,
-            priority: header
-                .priority
-                .try_into()
-                .map_err(|_| BuildupError::Priority)?,
+            priority: header.priority,
             transfer_id: header.transfer_id,
         })
     }
@@ -63,7 +59,7 @@ impl Buildup {
         if header.transfer_id != self.transfer_id {
             return Err(BuildupError::TransferId);
         }
-        if header.priority != self.priority.clone().into() {
+        if header.priority != self.priority {
             return Err(BuildupError::Priority);
         }
         if self.bytes.len() + bytes_after_header.len() > self.bytes.capacity() {
