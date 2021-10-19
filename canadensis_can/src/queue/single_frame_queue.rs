@@ -1,4 +1,4 @@
-use crate::queue::{FrameQueueSource, FrameSink};
+use crate::queue::{FrameSink, FrameSource};
 use crate::Frame;
 use canadensis_core::OutOfMemoryError;
 
@@ -37,7 +37,7 @@ impl<I> FrameSink<I> for SingleFrameQueue<I> {
     }
 }
 
-impl<I> FrameQueueSource<I> for SingleFrameQueue<I> {
+impl<I> FrameSource<I> for SingleFrameQueue<I> {
     fn peek_frame(&self) -> Option<&Frame<I>> {
         self.frame.as_ref()
     }

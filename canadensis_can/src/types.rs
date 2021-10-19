@@ -1,10 +1,10 @@
 //! Data types used for UAVCAN/CAN
 
-use crate::Frame;
-use canadensis_core::transport::{NodeId, TransferId, Transport};
+use canadensis_core::transport::{TransferId, Transport};
 use canadensis_core::{InvalidValue, OutOfMemoryError, Priority};
 use core::convert::TryFrom;
 use core::fmt;
+use core::fmt::Debug;
 use core::marker::PhantomData;
 use core::ops::RangeInclusive;
 use hash32_derive::Hash32;
@@ -12,20 +12,22 @@ use hash32_derive::Hash32;
 /// The UAVCAN/CAN transport
 ///
 /// `I` is the instant type used to keep track of time
-pub struct CanTransport<I>(PhantomData<I>);
+pub struct CanTransport<E>(PhantomData<E>);
 
-impl<I> Transport for CanTransport<I> {
+impl<E> Transport for CanTransport<E>
+where
+    E: Debug,
+{
     type NodeId = CanNodeId;
     type TransferId = CanTransferId;
     type Priority = Priority;
-    type Frame = Frame<I>;
-    type Error = OutOfMemoryError;
+    type Error = Error<E>;
 }
 
 /// Convenience type alias for a transfer header
-pub type Header<I> = canadensis_core::transfer::Header<I, CanTransport<I>>;
+pub type Header<I, E> = canadensis_core::transfer::Header<I, CanTransport<E>>;
 /// Convenience type alias for a transfer
-pub type Transfer<A, I> = canadensis_core::transfer::Transfer<A, I, CanTransport<I>>;
+pub type Transfer<A, I, E> = canadensis_core::transfer::Transfer<A, I, CanTransport<E>>;
 
 const VALID_NODE_IDS: RangeInclusive<u8> = 0..=127;
 
@@ -59,9 +61,6 @@ impl CanNodeId {
     }
 }
 
-impl NodeId<CanTransferId> for CanNodeId {
-    type TransferIds = CanTransferIds;
-}
 /// A wrapper for an array of `CanTransferIds` that implements Default
 pub struct CanTransferIds([CanTransferId; *VALID_NODE_IDS.end() as usize + 1]);
 
@@ -197,5 +196,20 @@ impl Default for CanTransferId {
     /// Returns a transfer ID of 0
     fn default() -> Self {
         CanTransferId::const_default()
+    }
+}
+
+/// CAN transport errors
+#[derive(Debug)]
+pub enum Error<E> {
+    /// Memory allocation failed
+    Memory(OutOfMemoryError),
+    /// The driver returned an error
+    Driver(E),
+}
+
+impl<E> From<OutOfMemoryError> for Error<E> {
+    fn from(oom: OutOfMemoryError) -> Self {
+        Error::Memory(oom)
     }
 }

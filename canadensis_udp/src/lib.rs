@@ -55,7 +55,7 @@ use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, UdpSocket};
 use hash32_derive::Hash32;
 
 use canadensis_core::time::Instant;
-use canadensis_core::transport::{NodeId, TransferId, Transport};
+use canadensis_core::transport::{TransferId, Transport};
 use canadensis_core::{OutOfMemoryError, Priority};
 
 pub use crate::address::NodeAddress;
@@ -84,8 +84,6 @@ where
     type NodeId = UdpNodeId;
     type TransferId = UdpTransferId;
     type Priority = Priority;
-    /// Because each subscription has its own socket, this can't use the normal interface.
-    type Frame = I;
     type Error = Error;
 }
 
@@ -115,10 +113,6 @@ impl From<UdpNodeId> for usize {
     fn from(id: UdpNodeId) -> Self {
         id.0.into()
     }
-}
-
-impl NodeId<UdpTransferId> for UdpNodeId {
-    type TransferIds = UdpTransferIds;
 }
 
 pub struct UdpTransferIds([UdpTransferId; u16::MAX as usize + 1]);

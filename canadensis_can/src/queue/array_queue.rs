@@ -1,4 +1,4 @@
-use crate::queue::{FrameQueueSource, FrameSink};
+use crate::queue::{FrameSink, FrameSource};
 use crate::Frame;
 use canadensis_core::OutOfMemoryError;
 use core::mem::{self, MaybeUninit};
@@ -129,7 +129,7 @@ where
     }
 }
 
-impl<I, const N: usize> FrameQueueSource<I> for ArrayQueue<I, N>
+impl<I, const N: usize> FrameSource<I> for ArrayQueue<I, N>
 where
     I: Default,
 {
@@ -198,7 +198,7 @@ where
 mod test {
     use super::ArrayQueue;
     use super::FrameSink;
-    use crate::queue::FrameQueueSource;
+    use crate::queue::FrameSource;
     use crate::{CanId, Frame};
     use core::convert::TryFrom;
 

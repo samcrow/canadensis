@@ -4,11 +4,12 @@ use crate::address::{NodeAddress, UdpPort};
 use crate::tx::breakdown::Breakdown;
 use crate::{bind_socket, header};
 use crate::{Error, UdpTransferId, UdpTransport};
-use canadensis_core::time::Instant;
+use canadensis_core::time::{Clock, Instant};
 use canadensis_core::transfer::{Header, Transfer};
-use canadensis_core::transport::Transmitter;
+use canadensis_core::transport::{Transmitter, Transport};
 use canadensis_core::Priority;
 use crc_any::CRCu32;
+use std::cmp::Ordering;
 use std::net::{SocketAddrV4, UdpSocket};
 
 pub struct UdpTransmitter<const MTU: usize> {
@@ -33,14 +34,19 @@ impl<const MTU: usize> UdpTransmitter<MTU> {
         Ok(UdpTransmitter { socket, address })
     }
 
-    fn push_inner<I: Instant>(
+    fn push_inner<I, C>(
         &mut self,
         dest: SocketAddrV4,
         deadline: I,
         transfer_id: UdpTransferId,
         priority: Priority,
         payload: &[u8],
-    ) -> Result<(), Error> {
+        clock: &mut C,
+    ) -> Result<(), Error>
+    where
+        I: Instant,
+        C: Clock<Instant = I>,
+    {
         if breakdown::fits_into_one_frame::<MTU>(payload.len()) {
             // No CRC
             let breakdown = Breakdown::<_, _, MTU>::new(
@@ -50,7 +56,7 @@ impl<const MTU: usize> UdpTransmitter<MTU> {
                 priority,
                 payload.iter().copied(),
             );
-            self.send_frames(breakdown)
+            self.send_frames(breakdown, clock)
         } else {
             // Add CRC
             let mut crc = CRCu32::crc32c();
@@ -64,16 +70,20 @@ impl<const MTU: usize> UdpTransmitter<MTU> {
                 priority,
                 payload_and_crc,
             );
-            self.send_frames(breakdown)
+            self.send_frames(breakdown, clock)
         }
     }
 
-    fn send_frames<I: Instant, B: IntoIterator<Item = UdpFrame<I, MTU>>>(
-        &mut self,
-        breakdown: B,
-    ) -> Result<(), Error> {
+    fn send_frames<I, B, C>(&mut self, breakdown: B, clock: &mut C) -> Result<(), Error>
+    where
+        I: Instant,
+        B: IntoIterator<Item = UdpFrame<I, MTU>>,
+        C: Clock<Instant = I>,
+    {
         for frame in breakdown {
-            self.socket.send_to(&frame.data, frame.remote_address)?;
+            if frame.deadline.overflow_safe_compare(&clock.now()) == Ordering::Greater {
+                self.socket.send_to(&frame.data, frame.remote_address)?;
+            }
         }
         Ok(())
     }
@@ -85,9 +95,14 @@ where
 {
     type Transport = UdpTransport<I>;
 
-    fn push<A>(&mut self, transfer: Transfer<A, I, Self::Transport>) -> Result<(), Error>
+    fn push<A, C>(
+        &mut self,
+        transfer: Transfer<A, I, Self::Transport>,
+        clock: &mut C,
+    ) -> Result<(), Error>
     where
         A: AsRef<[u8]>,
+        C: Clock<Instant = I>,
     {
         match transfer.header {
             Header::Message(header) => {
@@ -99,6 +114,7 @@ where
                     header.transfer_id,
                     header.priority,
                     transfer.payload.as_ref(),
+                    clock,
                 )
             }
             Header::Request(header) => {
@@ -110,6 +126,7 @@ where
                     header.transfer_id,
                     header.priority,
                     transfer.payload.as_ref(),
+                    clock,
                 )
             }
             Header::Response(header) => {
@@ -121,9 +138,22 @@ where
                     header.transfer_id,
                     header.priority,
                     transfer.payload.as_ref(),
+                    clock,
                 )
             }
         }
+    }
+
+    fn flush<C>(
+        &mut self,
+        _clock: &mut C,
+    ) -> canadensis_core::nb::Result<(), <Self::Transport as Transport>::Error>
+    where
+        C: Clock<Instant = I>,
+    {
+        // Because the push() function blocks until everything has been transmitted, nothing is
+        // needed here.
+        Ok(())
     }
 
     fn mtu(&self) -> usize {

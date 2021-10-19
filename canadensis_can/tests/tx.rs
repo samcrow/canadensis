@@ -7,7 +7,7 @@ extern crate canadensis_core;
 
 use core::convert::TryFrom;
 
-use canadensis_can::queue::{ArrayQueue, FrameQueueSource};
+use canadensis_can::queue::{ArrayQueue, FrameSource};
 use canadensis_can::types::{CanNodeId, CanTransferId};
 use canadensis_can::{CanId, CanTransmitter, Frame, Mtu};
 use canadensis_core::time::Microseconds32;

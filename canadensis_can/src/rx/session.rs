@@ -5,6 +5,7 @@ use crate::{Frame, TransferCrc};
 use alloc::vec::Vec;
 use canadensis_core::time::Instant;
 use canadensis_core::OutOfMemoryError;
+use core::fmt::Debug;
 
 /// A receive session, associated with a particular port ID and source node
 #[derive(Debug)]
@@ -40,14 +41,14 @@ where
     ///
     /// The `max_payload_length` value must include space for the transfer CRC and/or padding bytes
     /// that may be inserted, depending on the transport MTU and frame length constraints.
-    pub(crate) fn accept(
+    pub(crate) fn accept<E: Debug>(
         &mut self,
         frame: Frame<I>,
-        frame_header: Header<I>,
+        frame_header: Header<I, E>,
         tail: TailByte,
         max_payload_length: usize,
         transfer_timeout: I::Duration,
-    ) -> Result<Option<Transfer<Vec<u8>, I>>, SessionError> {
+    ) -> Result<Option<Transfer<Vec<u8>, I, E>>, SessionError> {
         if tail.transfer_id != self.buildup.transfer_id() {
             // This is a frame from some other transfer. Ignore it, but keep this session to receive
             // possible later frames.
@@ -83,11 +84,11 @@ where
         }
     }
 
-    fn handle_transfer_data(
+    fn handle_transfer_data<E: Debug>(
         &mut self,
         mut transfer_data: Vec<u8>,
-        frame_header: Header<I>,
-    ) -> Result<Option<Transfer<Vec<u8>, I>>, SessionError> {
+        frame_header: Header<I, E>,
+    ) -> Result<Option<Transfer<Vec<u8>, I, E>>, SessionError> {
         // Check CRC, if this transfer used more than one frame
         if self.buildup.frames() > 1 {
             let mut crc = TransferCrc::new();

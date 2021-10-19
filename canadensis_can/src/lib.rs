@@ -24,6 +24,7 @@ pub use crate::tx::CanTransmitter;
 
 mod crc;
 mod data;
+pub mod driver;
 pub mod queue;
 pub mod redundant;
 mod rx;

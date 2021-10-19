@@ -1,7 +1,7 @@
 //! Transport layer traits
 
 use crate::error::{OutOfMemoryError, ServiceSubscribeError};
-use crate::time::Instant;
+use crate::time::{Clock, Instant};
 use crate::transfer::Transfer;
 use crate::{ServiceId, SubjectId};
 use alloc::vec::Vec;
@@ -14,13 +14,11 @@ use hash32::Hash;
 /// The [`Transmitter`](Transmitter) and [`Receiver`](Receiver) sub-traits add additional functions.
 pub trait Transport {
     /// A node ID type that can hold the node ID values that this transport allows
-    type NodeId: NodeId<Self::TransferId>;
+    type NodeId: Debug + Clone + PartialEq + Eq + Hash + Into<usize> + TryFrom<u16>;
     /// A transfer ID type that can hold all supported transfer ID values
     type TransferId: TransferId;
     /// A priority type that can hold all supported priority values
     type Priority: Clone + Debug + From<crate::Priority>;
-    /// The frame type used in the underlying transport
-    type Frame;
     /// An error type
     ///
     /// This type must have an out-of-memory variant that can hold an `OutOfMemoryError`.
@@ -41,12 +39,30 @@ where
     /// a queue to be sent separately.
     ///
     /// If this function returns an error, no part of the transfer may be transmitted.
-    fn push<A>(
+    fn push<A, C>(
         &mut self,
         transfer: Transfer<A, I, Self::Transport>,
+        clock: &mut C,
     ) -> Result<(), <Self::Transport as Transport>::Error>
     where
-        A: AsRef<[u8]>;
+        A: AsRef<[u8]>,
+        C: Clock<Instant = I>;
+
+    /// Attempts to send all queued outgoing frames
+    ///
+    /// If ths transport's `push` implementation blocks until all frames have been sent,
+    /// this function may be empty.
+    ///
+    /// The transport implementation may block until all frames have been sent, or return
+    /// `Err(nb::Error::WouldBlock)` if not all frames can be sent.
+    ///
+    /// Return values:
+    /// * `Ok(())`: All frames were sent
+    /// * `Err(nb::Error::WouldBlock)`: At least one frame could not be sent yet
+    /// * `Err(nb::Error::Other(e))`: Some other error occurred
+    fn flush<C>(&mut self, clock: &mut C) -> nb::Result<(), <Self::Transport as Transport>::Error>
+    where
+        C: Clock<Instant = I>;
 
     /// Returns the maximum transmission unit of this transport, in bytes
     ///
@@ -64,16 +80,26 @@ where
 {
     /// The transport that this transmitter works with
     type Transport: Transport;
-    /// Handles an incoming frame
+
+    /// Checks for incoming frames and processes them, possibly returning a transfer
     ///
     /// If the frame completes a transfer and the transfer matches an active subscription, the
     /// transfer is returned.
     ///
+    /// This function must not block. If no frame can immediately be read, it should return `Ok(None)`.
+    ///
+    /// If the transport reads a frame and processes it, but the frame does not complete a transfer,
+    /// this function must try again to read and process a frame. It must not return `Ok(None)`
+    /// if there are incoming frames that remain to be processed.
+    ///
     /// This function must not return any transfers for which the transport is not currently
     /// subscribed. It also must not return any service transfers not addressed to this node.
-    fn accept(
+    ///
+    /// The argument `now` should be the current time. This may be used to assign timestamps to
+    /// incoming frames and delete sessions that have timed out.
+    fn receive(
         &mut self,
-        frame: <Self::Transport as Transport>::Frame,
+        now: I,
     ) -> Result<Option<Transfer<Vec<u8>, I, Self::Transport>>, <Self::Transport as Transport>::Error>;
 
     /// Subscribes to messages on a subject
@@ -155,14 +181,6 @@ where
 
     /// Unsubscribes from responses for a service
     fn unsubscribe_response(&mut self, service: ServiceId);
-}
-
-/// Required operations for a node ID
-pub trait NodeId<T>: Debug + Clone + PartialEq + Eq + Hash + Into<usize> + TryFrom<u16> {
-    /// An array of transfer IDs that contains a transfer ID for each possible node ID value
-    ///
-    /// This is normally `[T; the maximum node ID value + 1]`.
-    type TransferIds: AsMut<[T]> + Default;
 }
 
 /// Required operations for a transfer ID

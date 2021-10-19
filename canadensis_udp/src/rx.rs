@@ -61,14 +61,22 @@ where
         }
     }
 
+    /// Checks all subscriptions for incoming frames
+    ///
+    /// Return values:
+    /// * `Ok(Some(transfer))` if a transfer was received
+    /// * `Ok(None)` if at least one packet was read from a socket, but it did not complete a transfer
+    /// * `Err(Error::Socket(e))` with `e.kind() == ErrorKind::WouldBlock` if no packet was available
+    ///    to read
+    /// * `Err(e)` if a socket or memory allocation error occurred
     fn accept_inner(
         &mut self,
-        timestamp: I,
+        now: I,
     ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport<I>>>, Error> {
         for subscription in self.subscriptions.message_iter_mut() {
-            match subscription.check_for_frames::<MTU>(&self.address, timestamp) {
+            match subscription.check_for_frames::<MTU>(&self.address, now) {
                 Ok(Some(transfer)) => return Ok(Some(transfer)),
-                Ok(None) => {}
+                Ok(None) => { /* Continue to the next subscription */ }
                 Err(Error::Socket(e)) if e.kind() == io::ErrorKind::WouldBlock => {
                     // Nothing available to read right now, keep going and check everything else
                 }
@@ -76,9 +84,9 @@ where
             }
         }
         for subscription in self.subscriptions.request_iter_mut() {
-            match subscription.check_for_frames::<MTU>(&self.address, timestamp) {
+            match subscription.check_for_frames::<MTU>(&self.address, now) {
                 Ok(Some(transfer)) => return Ok(Some(transfer)),
-                Ok(None) => {}
+                Ok(None) => { /* Continue to the next subscription */ }
                 Err(Error::Socket(e)) if e.kind() == io::ErrorKind::WouldBlock => {
                     // Nothing available to read right now, keep going and check everything else
                 }
@@ -86,9 +94,9 @@ where
             }
         }
         for subscription in self.subscriptions.response_iter_mut() {
-            match subscription.check_for_frames::<MTU>(&self.address, timestamp) {
+            match subscription.check_for_frames::<MTU>(&self.address, now) {
                 Ok(Some(transfer)) => return Ok(Some(transfer)),
-                Ok(None) => {}
+                Ok(None) => { /* Continue to the next subscription */ }
                 Err(Error::Socket(e)) if e.kind() == io::ErrorKind::WouldBlock => {
                     // Nothing available to read right now, keep going and check everything else
                 }
@@ -109,20 +117,24 @@ where
 {
     type Transport = UdpTransport<I>;
 
-    /// Checks all subscriptions for incoming frames
-    ///
-    /// Return values:
-    /// * `Ok(Some(transfer))` if a transfer was received
-    /// * `Ok(None)` if at least one packet was read from a socket, but it did not complete a transfer
-    /// * `Err(Error::Socket(e))` with `e.kind() == ErrorKind::WouldBlock` if no packet was available
-    ///    to read
-    /// * `Err(e)` if a socket or memory allocation error occurred
-    fn accept(
+    fn receive(
         &mut self,
-        timestamp: I,
-    ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport<I>>>, Error> {
-        let result = self.accept_inner(timestamp);
-        self.clean_expired_sessions(timestamp);
+        now: I,
+    ) -> Result<Option<Transfer<Vec<u8>, I, Self::Transport>>, <Self::Transport as Transport>::Error>
+    {
+        // Loop until all incoming packets have been read
+        let result = loop {
+            match self.accept_inner(now) {
+                Ok(Some(transfer)) => break Ok(Some(transfer)),
+                Ok(None) => { /* Keep going and try to read another packet */ }
+                Err(Error::Socket(e)) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                    // Can't read any more
+                    break Ok(None);
+                }
+                Err(e) => break Err(e),
+            }
+        };
+        self.clean_expired_sessions(now);
         result
     }
 

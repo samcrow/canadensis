@@ -3,20 +3,21 @@
 //!
 
 use core::convert::TryFrom;
+use core::fmt::Debug;
 use core::iter;
 use core::marker::PhantomData;
 
-use canadensis_core::time::Instant;
+use canadensis_core::time::{Clock, Instant};
 use canadensis_core::transfer::{Header, ServiceHeader, Transfer};
-use canadensis_core::transport::Transmitter;
+use canadensis_core::transport::{Transmitter, Transport};
+use canadensis_core::{nb, OutOfMemoryError};
 
 use crate::crc::TransferCrc;
 use crate::data::Frame;
-use crate::queue::FrameSink;
+use crate::queue::{FrameSink, QueueDriver};
 use crate::tx::breakdown::Breakdown;
-use crate::types::{CanNodeId, CanTransport};
+use crate::types::{CanNodeId, CanTransport, Error};
 use crate::{CanId, Mtu};
-use canadensis_core::OutOfMemoryError;
 
 mod breakdown;
 #[cfg(test)]
@@ -24,7 +25,7 @@ mod tx_test;
 
 /// Splits outgoing transfers into frames
 pub struct CanTransmitter<I, Q> {
-    /// Queue of frames waiting to be sent
+    /// Queue of frames waiting to be sent, and the driver that sends them
     frame_queue: Q,
     /// Transport MTU (including the tail byte)
     mtu: usize,
@@ -43,9 +44,9 @@ pub struct CanTransmitter<I, Q> {
 impl<I, Q> Transmitter<I> for CanTransmitter<I, Q>
 where
     I: Instant,
-    Q: FrameSink<I>,
+    Q: QueueDriver<I>,
 {
-    type Transport = CanTransport<I>;
+    type Transport = CanTransport<Q::Error>;
 
     /// Breaks a transfer into frames
     ///
@@ -53,9 +54,14 @@ where
     ///
     /// This function returns an error if the queue does not have enough space to hold all
     /// the required frames.
-    fn push<A>(&mut self, transfer: Transfer<A, I, CanTransport<I>>) -> Result<(), OutOfMemoryError>
+    fn push<A, C>(
+        &mut self,
+        transfer: Transfer<A, I, CanTransport<Q::Error>>,
+        _clock: &mut C,
+    ) -> Result<(), Error<Q::Error>>
     where
         A: AsRef<[u8]>,
+        C: Clock<Instant = I>,
     {
         // Convert the transfer payload into borrowed form
         let transfer = Transfer {
@@ -70,8 +76,19 @@ where
             }
             Err(e) => {
                 self.error_count = self.error_count.wrapping_add(1);
-                Err(e)
+                Err(e.into())
             }
+        }
+    }
+
+    fn flush<C>(&mut self, clock: &mut C) -> nb::Result<(), <Self::Transport as Transport>::Error>
+    where
+        C: Clock<Instant = I>,
+    {
+        match self.frame_queue.flush(clock.now()) {
+            Ok(()) => Ok(()),
+            Err(nb::Error::WouldBlock) => Err(nb::Error::WouldBlock),
+            Err(nb::Error::Other(e)) => Err(nb::Error::Other(Error::Driver(e))),
         }
     }
 
@@ -81,7 +98,10 @@ where
     }
 }
 
-impl<I, Q> CanTransmitter<I, Q> {
+impl<I, Q> CanTransmitter<I, Q>
+where
+    Q: QueueDriver<I>,
+{
     /// Creates a transmitter
     ///
     /// mtu: The maximum number of bytes in a frame
@@ -104,7 +124,7 @@ impl<I, Q> CanTransmitter<I, Q> {
 
     fn push_inner(
         &mut self,
-        transfer: Transfer<&[u8], I, CanTransport<I>>,
+        transfer: Transfer<&[u8], I, CanTransport<Q::Error>>,
     ) -> Result<(), OutOfMemoryError>
     where
         Q: FrameSink<I>,
@@ -196,7 +216,7 @@ impl<I, Q> CanTransmitter<I, Q> {
     }
 }
 
-fn make_can_id<I>(header: &Header<I, CanTransport<I>>, payload: &[u8]) -> CanId {
+fn make_can_id<I, E: Debug>(header: &Header<I, CanTransport<E>>, payload: &[u8]) -> CanId {
     let mut bits = 0u32;
 
     // Common fields for all transfer types
@@ -234,7 +254,7 @@ fn make_can_id<I>(header: &Header<I, CanTransport<I>>, payload: &[u8]) -> CanId 
 
 /// Encodes the service ID, destination ID, and service flag into a 29-bit CAN ID, and returns
 /// it
-fn encode_common_service_fields<I>(header: &ServiceHeader<I, CanTransport<I>>) -> u32 {
+fn encode_common_service_fields<I, E: Debug>(header: &ServiceHeader<I, CanTransport<E>>) -> u32 {
     // Service ID
     (u32::from(u16::from(header.service)) << 14)
         // Destination node ID

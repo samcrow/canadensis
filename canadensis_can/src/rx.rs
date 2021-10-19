@@ -8,25 +8,29 @@ mod subscription;
 
 use alloc::vec::Vec;
 use core::convert::{TryFrom, TryInto};
+use core::fmt::Debug;
 
 use fallible_collections::FallibleVec;
 
 use crate::data::{CanId, Frame};
+use crate::driver::ReceiveDriver;
 use crate::rx::session::SessionError;
 use crate::rx::subscription::{Subscription, SubscriptionError};
-use crate::types::{CanNodeId, CanTransferId, CanTransport};
+use crate::types::{CanNodeId, CanTransferId, CanTransport, Error};
 use crate::Mtu;
 use canadensis_core::time::Instant;
 use canadensis_core::transfer::{Header, MessageHeader, ServiceHeader, Transfer};
-use canadensis_core::transport::Receiver;
+use canadensis_core::transport::{Receiver, Transport};
 use canadensis_core::{
-    OutOfMemoryError, PortId, Priority, ServiceId, ServiceSubscribeError, SubjectId,
+    nb, OutOfMemoryError, PortId, Priority, ServiceId, ServiceSubscribeError, SubjectId,
 };
 use canadensis_filter_config::Filter;
 
 /// Handles subscriptions and assembles incoming frames into transfers
 #[derive(Debug)]
-pub struct CanReceiver<I: Instant> {
+pub struct CanReceiver<I: Instant, D> {
+    /// The driver that supplies incoming frames
+    driver: D,
     /// Subscriptions for messages
     subscriptions_message: Vec<Subscription<I>>,
     /// Subscriptions for service responses
@@ -46,55 +50,35 @@ pub struct CanReceiver<I: Instant> {
     error_count: u64,
 }
 
-impl<I> Receiver<I> for CanReceiver<I>
+impl<I, D> Receiver<I> for CanReceiver<I, D>
 where
     I: Instant,
+    D: ReceiveDriver<I>,
 {
-    type Transport = CanTransport<I>;
+    type Transport = CanTransport<D::Error>;
 
-    /// Handles an incoming CAN or CAN FD frame
-    ///
-    /// If this frame is the last frame in a transfer, this function returns the completed transfer.
-    /// The transfer type is `Transfer<Vec<u8>>`, which owns the payload buffer.
-    ///
-    /// The payload of the returned transfer does not include any tail bytes or CRC.
-    ///
-    /// This function will return an error if memory allocation has failed. Other unexpected
-    /// situations, such as duplicate or malformed frames, do not cause this function to return
-    /// an error but do increment the error counter. Valid frames on subjects that this receiver is
-    /// not subscribed to will be silently ignored.
-    fn accept(
+    fn receive(
         &mut self,
-        frame: Frame<I>,
-    ) -> Result<Option<Transfer<Vec<u8>, I, CanTransport<I>>>, OutOfMemoryError> {
+        now: I,
+    ) -> Result<Option<Transfer<Vec<u8>, I, Self::Transport>>, <Self::Transport as Transport>::Error>
+    {
         // The current time is equal to or greater than the frame timestamp. Use that timestamp
         // to clean up expired sessions.
-        self.clean_expired_sessions(frame.timestamp());
-
-        // Part 1: basic frame checks
-        let (frame_header, tail) = match Self::frame_sanity_check(&frame) {
-            Some(data) => data,
-            None => {
-                // Can't use this frame
-                log::debug!("Frame failed sanity checks, ignoring");
-                self.increment_error_count();
-                return Ok(None);
-            }
-        };
-        // Check that the frame is actually destined for this node, and this node can handle services
-        if let Header::Request(service_header) | Header::Response(service_header) = &frame_header {
-            if let Some(this_id) = self.id {
-                if service_header.destination != this_id {
-                    // This frame is a service request or response going to some other node
-                    return Ok(None);
+        self.clean_expired_sessions(now);
+        // Loop until all available frames have been handled
+        loop {
+            match self.driver.receive() {
+                Ok(frame) => {
+                    match self.accept_frame(frame) {
+                        Ok(Some(transfer)) => break Ok(Some(transfer)),
+                        Ok(None) => { /* Keep going and try another frame */ }
+                        Err(e) => break Err(e.into()),
+                    }
                 }
-            } else {
-                // This node is anonymous, so it must ignore all service frames
-                return Ok(None);
+                Err(nb::Error::WouldBlock) => break Ok(None),
+                Err(nb::Error::Other(e)) => break Err(Error::Driver(e)),
             }
         }
-
-        self.accept_sane_frame(frame, frame_header, tail)
     }
 
     /// Subscribes to messages on a subject
@@ -116,13 +100,14 @@ where
         subject: SubjectId,
         payload_size_max: usize,
         timeout: I::Duration,
-    ) -> Result<(), OutOfMemoryError> {
+    ) -> Result<(), <Self::Transport as Transport>::Error> {
         self.subscribe(
             TransferKind::Message,
             PortId::from(subject),
             payload_size_max,
             timeout,
         )
+        .map_err(Error::Memory)
     }
 
     /// Unsubscribes from messages on a subject
@@ -152,7 +137,7 @@ where
         service: ServiceId,
         payload_size_max: usize,
         timeout: I::Duration,
-    ) -> Result<(), ServiceSubscribeError<OutOfMemoryError>> {
+    ) -> Result<(), ServiceSubscribeError<<Self::Transport as Transport>::Error>> {
         if self.id.is_some() {
             self.subscribe(
                 TransferKind::Request,
@@ -160,6 +145,7 @@ where
                 payload_size_max,
                 timeout,
             )
+            .map_err(Error::Memory)
             .map_err(ServiceSubscribeError::Transport)
         } else {
             Err(ServiceSubscribeError::Anonymous)
@@ -193,7 +179,7 @@ where
         service: ServiceId,
         payload_size_max: usize,
         timeout: I::Duration,
-    ) -> Result<(), ServiceSubscribeError<OutOfMemoryError>> {
+    ) -> Result<(), ServiceSubscribeError<<Self::Transport as Transport>::Error>> {
         if self.id.is_some() {
             self.subscribe(
                 TransferKind::Response,
@@ -201,6 +187,7 @@ where
                 payload_size_max,
                 timeout,
             )
+            .map_err(Error::Memory)
             .map_err(ServiceSubscribeError::Transport)
         } else {
             Err(ServiceSubscribeError::Anonymous)
@@ -212,23 +199,28 @@ where
     }
 }
 
-impl<I: Instant> CanReceiver<I> {
+impl<I, D> CanReceiver<I, D>
+where
+    I: Instant,
+    D: ReceiveDriver<I>,
+{
     /// Creates a receiver
     ///
     /// id: The ID of this node. This is used to filter incoming service requests and responses.
-    pub fn new(id: CanNodeId, mtu: Mtu) -> Self {
-        Self::new_inner(Some(id), mtu)
+    pub fn new(id: CanNodeId, mtu: Mtu, driver: D) -> Self {
+        Self::new_inner(Some(id), mtu, driver)
     }
 
     /// Creates an anonymous receiver
     ///
     /// An anonymous receiver cannot receive service requests or responses.
-    pub fn new_anonymous(mtu: Mtu) -> Self {
-        Self::new_inner(None, mtu)
+    pub fn new_anonymous(mtu: Mtu, driver: D) -> Self {
+        Self::new_inner(None, mtu, driver)
     }
 
-    fn new_inner(id: Option<CanNodeId>, mtu: Mtu) -> Self {
+    fn new_inner(id: Option<CanNodeId>, mtu: Mtu, driver: D) -> Self {
         CanReceiver {
+            driver,
             subscriptions_message: Vec::new(),
             subscriptions_response: Vec::new(),
             subscriptions_request: Vec::new(),
@@ -247,13 +239,54 @@ impl<I: Instant> CanReceiver<I> {
         self.id = id;
     }
 
+    /// Handles an incoming CAN or CAN FD frame
+    ///
+    /// If this frame is the last frame in a transfer, this function returns the completed transfer.
+    /// The transfer type is `Transfer<Vec<u8>>`, which owns the payload buffer.
+    ///
+    /// The payload of the returned transfer does not include any tail bytes or CRC.
+    ///
+    /// This function will return an error if memory allocation has failed. Other unexpected
+    /// situations, such as duplicate or malformed frames, do not cause this function to return
+    /// an error but do increment the error counter. Valid frames on subjects that this receiver is
+    /// not subscribed to will be silently ignored.
+    fn accept_frame(
+        &mut self,
+        frame: Frame<I>,
+    ) -> Result<Option<Transfer<Vec<u8>, I, CanTransport<D::Error>>>, OutOfMemoryError> {
+        // Part 1: basic frame checks
+        let (frame_header, tail) = match Self::frame_sanity_check(&frame) {
+            Some(data) => data,
+            None => {
+                // Can't use this frame
+                log::debug!("Frame failed sanity checks, ignoring");
+                self.increment_error_count();
+                return Ok(None);
+            }
+        };
+        // Check that the frame is actually destined for this node, and this node can handle services
+        if let Header::Request(service_header) | Header::Response(service_header) = &frame_header {
+            if let Some(this_id) = self.id {
+                if service_header.destination != this_id {
+                    // This frame is a service request or response going to some other node
+                    return Ok(None);
+                }
+            } else {
+                // This node is anonymous, so it must ignore all service frames
+                return Ok(None);
+            }
+        }
+
+        self.accept_sane_frame(frame, frame_header, tail)
+    }
+
     /// Handles an incoming frame that has passed sanity checks and has a parsed header and tail byte
     fn accept_sane_frame(
         &mut self,
         frame: Frame<I>,
-        frame_header: Header<I, CanTransport<I>>,
+        frame_header: Header<I, CanTransport<D::Error>>,
         tail: TailByte,
-    ) -> Result<Option<Transfer<Vec<u8>, I, CanTransport<I>>>, OutOfMemoryError> {
+    ) -> Result<Option<Transfer<Vec<u8>, I, CanTransport<D::Error>>>, OutOfMemoryError> {
         let kind = TransferKind::from_header(&frame_header);
         let subscriptions = self.subscriptions_for_kind(kind);
         if let Some(subscription) = subscriptions
@@ -287,7 +320,9 @@ impl<I: Instant> CanReceiver<I> {
 
     /// Runs basic sanity checks on an incoming frame. Returns the header and tail byte if the frame
     /// is valid.
-    fn frame_sanity_check(frame: &Frame<I>) -> Option<(Header<I, CanTransport<I>>, TailByte)> {
+    fn frame_sanity_check(
+        frame: &Frame<I>,
+    ) -> Option<(Header<I, CanTransport<D::Error>>, TailByte)> {
         // Frame must have a tail byte to be valid
         let tail_byte = TailByte::parse(*frame.data().last()?);
 
@@ -428,11 +463,11 @@ pub enum CanIdParseError {
 }
 
 /// Parses a transfer header from a CAN ID, frame timestamp, and frame transfer ID
-fn parse_can_id<I>(
+fn parse_can_id<I, E: Debug>(
     id: CanId,
     timestamp: I,
     transfer_id: CanTransferId,
-) -> core::result::Result<Header<I, CanTransport<I>>, CanIdParseError> {
+) -> core::result::Result<Header<I, CanTransport<E>>, CanIdParseError> {
     let bits = u32::from(id);
 
     if bits.bit_set(23) {
@@ -530,6 +565,7 @@ fn response_filter(service: ServiceId, destination: CanNodeId) -> Filter {
 }
 
 /// Basic extension trait for extracting bits from a CAN ID
+//noinspection RsSelfConvention
 trait GetBits {
     fn bit_set(self, offset: u32) -> bool;
     fn get_u8(self, offset: u32) -> u8;
@@ -630,8 +666,8 @@ mod test {
         );
     }
 
-    fn check_can_id<I: Clone + PartialEq + Debug>(
-        expected_header: Header<I, CanTransport<I>>,
+    fn check_can_id<I: Clone + PartialEq + Debug, E>(
+        expected_header: Header<I, CanTransport<E>>,
         bits: u32,
     ) {
         let id = CanId::try_from(bits).unwrap();
@@ -672,7 +708,7 @@ enum TransferKind {
 }
 
 impl TransferKind {
-    pub fn from_header<I>(header: &Header<I, CanTransport<I>>) -> Self {
+    pub fn from_header<I, E: Debug>(header: &Header<I, CanTransport<E>>) -> Self {
         match header {
             Header::Message(_) => TransferKind::Message,
             Header::Request(_) => TransferKind::Request,

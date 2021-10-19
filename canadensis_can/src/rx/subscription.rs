@@ -7,6 +7,7 @@ use alloc::vec::Vec;
 use canadensis_core::time::Instant;
 use canadensis_core::{OutOfMemoryError, PortId};
 use core::fmt;
+use core::fmt::Debug;
 use fallible_collections::{FallibleBox, FallibleVec, TryReserveError};
 
 /// One session per node ID
@@ -64,12 +65,12 @@ impl<I: Instant> Subscription<I> {
     }
 
     /// Handles an incoming frame on this subscription's topic
-    pub(crate) fn accept(
+    pub(crate) fn accept<E: Debug>(
         &mut self,
         frame: Frame<I>,
-        frame_header: Header<I>,
+        frame_header: Header<I, E>,
         tail: TailByte,
-    ) -> Result<Option<Transfer<Vec<u8>, I>>, SubscriptionError> {
+    ) -> Result<Option<Transfer<Vec<u8>, I, E>>, SubscriptionError> {
         if let Some(source_node) = frame_header.source().cloned() {
             self.accept_non_anonymous(frame, frame_header, source_node, tail)
         } else {
@@ -77,13 +78,13 @@ impl<I: Instant> Subscription<I> {
         }
     }
 
-    fn accept_non_anonymous(
+    fn accept_non_anonymous<E: Debug>(
         &mut self,
         frame: Frame<I>,
-        frame_header: Header<I>,
+        frame_header: Header<I, E>,
         source_node: CanNodeId,
         tail: TailByte,
-    ) -> Result<Option<Transfer<Vec<u8>, I>>, SubscriptionError> {
+    ) -> Result<Option<Transfer<Vec<u8>, I, E>>, SubscriptionError> {
         let max_payload_length = self.payload_size_max;
 
         if tail.start && tail.end {
@@ -105,13 +106,13 @@ impl<I: Instant> Subscription<I> {
         }
     }
 
-    fn accept_with_session(
+    fn accept_with_session<E: Debug>(
         &mut self,
         frame: Frame<I>,
-        frame_header: Header<I>,
+        frame_header: Header<I, E>,
         source_node: CanNodeId,
         tail: TailByte,
-    ) -> Result<Option<Transfer<Vec<u8>, I>>, SubscriptionError> {
+    ) -> Result<Option<Transfer<Vec<u8>, I, E>>, SubscriptionError> {
         let max_payload_length = self.payload_size_max;
         let transfer_timeout = self.timeout;
 
@@ -170,11 +171,11 @@ impl<I: Instant> Subscription<I> {
         }
     }
 
-    fn accept_anonymous(
+    fn accept_anonymous<E: Debug>(
         &mut self,
         frame: Frame<I>,
-        frame_header: Header<I>,
-    ) -> Result<Option<Transfer<Vec<u8>, I>>, SubscriptionError> {
+        frame_header: Header<I, E>,
+    ) -> Result<Option<Transfer<Vec<u8>, I, E>>, SubscriptionError> {
         // An anonymous transfer is always a single frame and does not have a corresponding session.
         // Just convert it into a transfer.
         // Remove the tail byte

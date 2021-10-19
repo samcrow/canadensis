@@ -1,10 +1,11 @@
 extern crate canadensis_core;
 extern crate canadensis_udp;
 
-use canadensis_core::time::Microseconds32;
+use canadensis_core::time::{Clock, MicrosecondDuration64};
 use canadensis_core::transfer::{Header, MessageHeader, Transfer};
 use canadensis_core::transport::{TransferId, Transmitter};
 use canadensis_core::{Priority, SubjectId};
+use canadensis_linux::SystemClock;
 use canadensis_udp::{NodeAddress, UdpTransferId, UdpTransmitter};
 use std::convert::{TryFrom, TryInto};
 use std::net::Ipv4Addr;
@@ -18,6 +19,9 @@ fn main() {
         "This node's IP address: {}",
         Ipv4Addr::from(address.clone())
     );
+
+    let mut clock = SystemClock::new();
+
     const MTU: usize = 1200;
     let mut transmitter = UdpTransmitter::<MTU>::new(address).unwrap();
 
@@ -37,7 +41,7 @@ fn main() {
     loop {
         let transfer = Transfer {
             header: Header::Message(MessageHeader {
-                timestamp: Microseconds32::new(0),
+                timestamp: MicrosecondDuration64::new(1_000_000) + clock.now(),
                 transfer_id: transfer_id.clone(),
                 priority: Priority::Nominal,
                 subject: SubjectId::try_from(73u16).unwrap(),
@@ -47,7 +51,8 @@ fn main() {
             payload: &payload,
         };
 
-        transmitter.push(transfer).unwrap();
+        transmitter.push(transfer, &mut clock).unwrap();
+        transmitter.flush(&mut clock).unwrap();
 
         transfer_id = transfer_id.increment();
 

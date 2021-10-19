@@ -11,6 +11,7 @@ extern crate hash32;
 extern crate hash32_derive;
 extern crate heapless;
 extern crate log;
+pub extern crate nb;
 
 mod error;
 pub mod session;

@@ -14,7 +14,7 @@ use canadensis_core::session::SessionDynamicMap;
 use canadensis_core::time::{Clock, MicrosecondDuration64, Microseconds64};
 use canadensis_core::transport::Receiver;
 use canadensis_linux::SystemClock;
-use canadensis_udp::{Error, NodeAddress, UdpNodeId, UdpReceiver, UdpSessionData, UdpTransferId};
+use canadensis_udp::{NodeAddress, UdpNodeId, UdpReceiver, UdpSessionData, UdpTransferId};
 
 fn main() {
     TermLogger::init(
@@ -49,14 +49,11 @@ fn main() {
 
     // Instead of a real asynchronous IO system, just poll periodically
     loop {
-        match receiver.accept(clock.now()) {
+        match receiver.receive(clock.now()) {
             Ok(Some(transfer)) => {
                 println!("{:?}", transfer);
             }
             Ok(None) => {
-                // Try again immediately
-            }
-            Err(Error::Socket(e)) if e.kind() == std::io::ErrorKind::WouldBlock => {
                 thread::sleep(Duration::from_millis(100));
             }
             Err(e) => panic!("{:?}", e),

@@ -1,6 +1,8 @@
-use crate::queue::FrameSink;
+use crate::driver::TransmitDriver;
+use crate::queue::{flush_single_queue, FrameSink, FrameSource, QueueDriver};
 use crate::Frame;
-use canadensis_core::OutOfMemoryError;
+use canadensis_core::time::Instant;
+use canadensis_core::{nb, OutOfMemoryError};
 
 /// An aggregation of two outgoing frame queues that can be used for double-redundant transports
 ///
@@ -15,7 +17,7 @@ use canadensis_core::OutOfMemoryError;
 ///
 /// ```
 /// # use canadensis_can::redundant::RedundantQueue;
-/// # use canadensis_can::queue::{FrameQueueSource, FrameSink, ArrayQueue};
+/// # use canadensis_can::queue::{FrameSource, FrameSink, ArrayQueue};
 /// # use canadensis_core::time::Microseconds32;
 /// # use canadensis_can::Frame;
 /// # use std::convert::TryInto;
@@ -76,7 +78,7 @@ use canadensis_core::OutOfMemoryError;
 ///
 /// ```
 /// # use canadensis_can::redundant::RedundantQueue;
-/// # use canadensis_can::queue::{FrameQueueSource, FrameSink, ArrayQueue};
+/// # use canadensis_can::queue::{FrameSource, FrameSink, ArrayQueue};
 /// # use canadensis_core::time::Microseconds32;
 /// # use canadensis_can::Frame;
 /// # use std::convert::TryInto;
@@ -205,4 +207,75 @@ where
         // This is successful if the frame got onto at least one queue.
         push_status_0.or(push_status_1)
     }
+}
+
+/// A redundant queue and two redundant drivers
+pub struct DoubleRedundantQueueDriver<Q0, Q1, D0, D1> {
+    queues: RedundantQueue<Q0, Q1>,
+    driver0: D0,
+    driver1: D1,
+}
+
+impl<I, Q0, Q1, D0, D1> FrameSink<I> for DoubleRedundantQueueDriver<Q0, Q1, D0, D1>
+where
+    I: Clone,
+    Q0: FrameSink<I>,
+    Q1: FrameSink<I>,
+{
+    fn try_reserve(&mut self, additional: usize) -> Result<(), OutOfMemoryError> {
+        self.queues.try_reserve(additional)
+    }
+
+    fn shrink_to_fit(&mut self) {
+        self.queues.shrink_to_fit()
+    }
+
+    fn push_frame(&mut self, frame: Frame<I>) -> Result<(), OutOfMemoryError> {
+        self.queues.push_frame(frame)
+    }
+}
+
+impl<I, Q0, Q1, D0, D1> QueueDriver<I> for DoubleRedundantQueueDriver<Q0, Q1, D0, D1>
+where
+    I: Instant + Clone,
+    Q0: FrameSink<I> + FrameSource<I>,
+    Q1: FrameSink<I> + FrameSource<I>,
+    D0: TransmitDriver<I>,
+    D1: TransmitDriver<I>,
+{
+    type Error = RedundantDriverError<D0::Error, D1::Error>;
+
+    fn flush(&mut self, now: I) -> nb::Result<(), Self::Error> {
+        let status0 = flush_single_queue(self.queues.queue_0_mut(), &mut self.driver0, now.clone());
+        let status1 = flush_single_queue(self.queues.queue_1_mut(), &mut self.driver1, now);
+        match (status0, status1) {
+            (Ok(()), Ok(())) => Ok(()),
+            // If both are WouldBlock or one is OK but the other is WouldBlock, return WouldBlock
+            (Err(nb::Error::WouldBlock), Err(nb::Error::WouldBlock))
+            | (Ok(()), Err(nb::Error::WouldBlock))
+            | (Err(nb::Error::WouldBlock), Ok(())) => Err(nb::Error::WouldBlock),
+            // Both have errors other than WouldBlock
+            (Err(nb::Error::Other(e0)), Err(nb::Error::Other(e1))) => {
+                Err(nb::Error::Other(RedundantDriverError::Both(e0, e1)))
+            }
+            // If only one driver has an error, ignore any success or WouldBlock from the other
+            (Err(nb::Error::Other(e)), _) => {
+                Err(nb::Error::Other(RedundantDriverError::Driver0(e)))
+            }
+            (_, Err(nb::Error::Other(e))) => {
+                Err(nb::Error::Other(RedundantDriverError::Driver1(e)))
+            }
+        }
+    }
+}
+
+/// An error from a DoubleRedundantQueueDriver
+#[derive(Debug)]
+pub enum RedundantDriverError<E0, E1> {
+    /// An error from driver 0
+    Driver0(E0),
+    /// An error from driver 1
+    Driver1(E1),
+    /// Errors from both drivers
+    Both(E0, E1),
 }
