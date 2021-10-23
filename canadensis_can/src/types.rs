@@ -195,7 +195,7 @@ impl Default for CanTransferId {
 }
 
 /// CAN transport errors
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Error<E> {
     /// Memory allocation failed
     Memory(OutOfMemoryError),
