@@ -49,12 +49,10 @@ extern crate zerocopy;
 use core::fmt::Debug;
 use fallible_collections::TryReserveError;
 use std::io;
-use std::marker::PhantomData;
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, UdpSocket};
 
 use hash32_derive::Hash32;
 
-use canadensis_core::time::Instant;
 use canadensis_core::transport::{TransferId, Transport};
 use canadensis_core::{OutOfMemoryError, Priority};
 
@@ -75,16 +73,12 @@ mod tx;
 ///
 /// The MTU must be at least 25 bytes so that each frame can hold a header (24 bytes) and one byte
 /// of payload.
-pub struct UdpTransport<I>(PhantomData<I>);
+pub struct UdpTransport;
 
-impl<I> Transport for UdpTransport<I>
-where
-    I: Instant,
-{
+impl Transport for UdpTransport {
     type NodeId = UdpNodeId;
     type TransferId = UdpTransferId;
     type Priority = Priority;
-    type Error = Error;
 }
 
 /// A UDP node ID

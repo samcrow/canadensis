@@ -5,7 +5,7 @@ use crate::serialize::do_serialize;
 use canadensis_core::time::{Clock, Instant};
 use canadensis_core::transfer::{Header, ServiceHeader, Transfer};
 use canadensis_core::transport::{TransferId, Transmitter, Transport};
-use canadensis_core::{OutOfMemoryError, ServiceId};
+use canadensis_core::{nb, OutOfMemoryError, ServiceId};
 use canadensis_encoding::{Request, Serialize};
 
 /// Assembles transfers and manages transfer IDs to send service requests
@@ -49,7 +49,8 @@ impl<I: Instant, T: Transmitter<I>, R: TransferIdTracker<T::Transport>> Requeste
         payload: &Q,
         destination: <T::Transport as Transport>::NodeId,
         transmitter: &mut T,
-    ) -> Result<<T::Transport as Transport>::TransferId, <T::Transport as Transport>::Error>
+        driver: &mut T::Driver,
+    ) -> nb::Result<<T::Transport as Transport>::TransferId, T::Error>
     where
         Q: Serialize + Request,
         C: Clock<Instant = I>,
@@ -65,6 +66,7 @@ impl<I: Instant, T: Transmitter<I>, R: TransferIdTracker<T::Transport>> Requeste
                 deadline,
                 transmitter,
                 clock,
+                driver,
             )
         })
     }
@@ -77,12 +79,16 @@ impl<I: Instant, T: Transmitter<I>, R: TransferIdTracker<T::Transport>> Requeste
         deadline: I,
         transmitter: &mut T,
         clock: &mut C,
-    ) -> Result<<T::Transport as Transport>::TransferId, <T::Transport as Transport>::Error>
+        driver: &mut T::Driver,
+    ) -> nb::Result<<T::Transport as Transport>::TransferId, T::Error>
     where
         C: Clock<Instant = I>,
     {
         // Assemble the transfer
-        let transfer_id = self.transfer_ids.next_transfer_id(destination.clone())?;
+        let transfer_id = self
+            .transfer_ids
+            .next_transfer_id(destination.clone())
+            .map_err(|oom| nb::Error::Other(oom.into()))?;
         let transfer = Transfer {
             header: Header::Request(ServiceHeader {
                 timestamp: deadline,
@@ -95,7 +101,7 @@ impl<I: Instant, T: Transmitter<I>, R: TransferIdTracker<T::Transport>> Requeste
             payload,
         };
 
-        transmitter.push(transfer, clock)?;
+        transmitter.push(transfer, clock, driver)?;
         Ok(transfer_id)
     }
 }

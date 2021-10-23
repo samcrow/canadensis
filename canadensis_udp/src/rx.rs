@@ -13,7 +13,7 @@ use zerocopy::FromBytes;
 use canadensis_core::session::{Session, SessionTracker};
 use canadensis_core::time::Instant;
 use canadensis_core::transfer::{Header, MessageHeader, ServiceHeader, Transfer};
-use canadensis_core::transport::{Receiver, Transport};
+use canadensis_core::transport::Receiver;
 use canadensis_core::{ServiceId, ServiceSubscribeError, SubjectId};
 
 use crate::address::{Address, UdpPort};
@@ -72,7 +72,7 @@ where
     fn accept_inner(
         &mut self,
         now: I,
-    ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport<I>>>, Error> {
+    ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, Error> {
         for subscription in self.subscriptions.message_iter_mut() {
             match subscription.check_for_frames::<MTU>(&self.address, now) {
                 Ok(Some(transfer)) => return Ok(Some(transfer)),
@@ -115,13 +115,16 @@ where
     I: Instant,
     T: SessionTracker<I, UdpNodeId, UdpTransferId, UdpSessionData> + Default,
 {
-    type Transport = UdpTransport<I>;
+    type Transport = UdpTransport;
+    /// The UDP receiver uses multiple sockets internally instead of a separate driver.
+    type Driver = ();
+    type Error = Error;
 
     fn receive(
         &mut self,
         now: I,
-    ) -> Result<Option<Transfer<Vec<u8>, I, Self::Transport>>, <Self::Transport as Transport>::Error>
-    {
+        _driver: &mut (),
+    ) -> Result<Option<Transfer<Vec<u8>, I, Self::Transport>>, Self::Error> {
         // Loop until all incoming packets have been read
         let result = loop {
             match self.accept_inner(now) {
@@ -143,6 +146,7 @@ where
         subject: SubjectId,
         payload_size_max: usize,
         timeout: <I as Instant>::Duration,
+        _driver: &mut (),
     ) -> Result<(), Error> {
         self.subscriptions.subscribe_message(
             subject,
@@ -151,7 +155,7 @@ where
         Ok(())
     }
 
-    fn unsubscribe_message(&mut self, subject: SubjectId) {
+    fn unsubscribe_message(&mut self, subject: SubjectId, _driver: &mut ()) {
         self.subscriptions.unsubscribe_message(subject);
     }
 
@@ -160,7 +164,8 @@ where
         service: ServiceId,
         payload_size_max: usize,
         timeout: <I as Instant>::Duration,
-    ) -> Result<(), ServiceSubscribeError<<Self::Transport as Transport>::Error>> {
+        _driver: &mut (),
+    ) -> Result<(), ServiceSubscribeError<Self::Error>> {
         let subscription =
             Subscription::new_request(service, payload_size_max, timeout, &self.address)
                 .map_err(|io_error| ServiceSubscribeError::Transport(Error::Socket(io_error)))?;
@@ -170,7 +175,7 @@ where
         Ok(())
     }
 
-    fn unsubscribe_request(&mut self, service: ServiceId) {
+    fn unsubscribe_request(&mut self, service: ServiceId, _driver: &mut ()) {
         self.subscriptions.unsubscribe_request(service);
     }
 
@@ -179,7 +184,8 @@ where
         service: ServiceId,
         payload_size_max: usize,
         timeout: <I as Instant>::Duration,
-    ) -> Result<(), ServiceSubscribeError<<Self::Transport as Transport>::Error>> {
+        _driver: &mut (),
+    ) -> Result<(), ServiceSubscribeError<Self::Error>> {
         let subscription =
             Subscription::new_response(service, payload_size_max, timeout, &self.address)
                 .map_err(|io_error| ServiceSubscribeError::Transport(Error::Socket(io_error)))?;
@@ -189,7 +195,7 @@ where
         Ok(())
     }
 
-    fn unsubscribe_response(&mut self, service: ServiceId) {
+    fn unsubscribe_response(&mut self, service: ServiceId, _driver: &mut ()) {
         self.subscriptions.unsubscribe_response(service);
     }
 }
@@ -283,7 +289,7 @@ where
         &mut self,
         local_address: &NodeAddress,
         now: I,
-    ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport<I>>>, Error>
+    ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, Error>
     where
         I: Instant,
     {
@@ -298,7 +304,7 @@ where
         from: SocketAddr,
         local_address: &NodeAddress,
         now: I,
-    ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport<I>>>, Error> {
+    ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, Error> {
         // The from address should always be the address of an individual node
         let from_ip = match from.ip() {
             IpAddr::V4(v4) => v4,
@@ -341,7 +347,7 @@ where
         from: UdpNodeId,
         local_address: &NodeAddress,
         now: I,
-    ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport<I>>>, Error> {
+    ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, Error> {
         log::debug!("handle_sane_frame header {:?} from node {:?}", header, from);
         let timeout = self.timeout;
         let session = self.sessions.get_mut_or_insert_with(from, || {

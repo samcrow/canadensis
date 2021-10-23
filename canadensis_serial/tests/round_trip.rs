@@ -2,14 +2,19 @@ extern crate canadensis_core;
 extern crate canadensis_serial;
 extern crate simplelog;
 
-use canadensis_core::time::{MicrosecondDuration32, Microseconds32};
+use canadensis_core::subscription::DynamicSubscriptionManager;
+use canadensis_core::time::{Clock, MicrosecondDuration32, Microseconds32};
 use canadensis_core::transfer::{Header, MessageHeader, Transfer};
 use canadensis_core::transport::{Receiver, Transmitter};
-use canadensis_core::{Priority, SubjectId};
-use canadensis_serial::{SerialNodeId, SerialReceiver, SerialTransmitter, SerialTransport};
+use canadensis_core::{nb, Priority, SubjectId};
+use canadensis_serial::driver::{ReceiveDriver, TransmitDriver};
+use canadensis_serial::{
+    SerialNodeId, SerialReceiver, SerialTransmitter, SerialTransport, Subscription,
+};
 use log::LevelFilter;
 use simplelog::{ColorChoice, TermLogger, TerminalMode};
-use std::convert::{TryFrom, TryInto};
+use std::collections::VecDeque;
+use std::convert::{Infallible, TryFrom, TryInto};
 
 #[test]
 fn round_trip_no_payload() {
@@ -20,8 +25,9 @@ fn round_trip_no_payload() {
         ColorChoice::Auto,
     );
 
+    let mut driver = MockDriver::default();
     let subject = SubjectId::try_from(9u16).unwrap();
-    let mut tx = SerialTransmitter::<39>::new();
+    let mut tx = SerialTransmitter::<_, 39>::new();
     let transfer: Transfer<Vec<u8>, Microseconds32, SerialTransport> = Transfer {
         header: Header::Message(MessageHeader {
             timestamp: Microseconds32::new(0),
@@ -32,20 +38,66 @@ fn round_trip_no_payload() {
         }),
         payload: vec![],
     };
-    tx.push(transfer.clone()).unwrap();
-    let wire_bytes: Vec<u8> = tx.queue().iter().copied().collect();
+    tx.push(transfer.clone(), &mut ZeroClock, &mut driver)
+        .unwrap();
+    tx.flush(&mut ZeroClock, &mut driver).unwrap();
+    let wire_bytes: Vec<u8> = driver.iter().copied().collect();
     println!("{:02x?}", wire_bytes);
 
-    let mut rx = SerialReceiver::<Microseconds32>::new(SerialNodeId::try_from(360).unwrap());
-    rx.subscribe_message(subject, 0, MicrosecondDuration32::new(0))
+    let mut rx = SerialReceiver::<
+        Microseconds32,
+        MockDriver,
+        DynamicSubscriptionManager<Subscription<Microseconds32>>,
+    >::new(SerialNodeId::try_from(360).unwrap());
+    rx.subscribe_message(subject, 0, MicrosecondDuration32::new(0), &mut driver)
         .unwrap();
 
-    let (&last_byte, others) = wire_bytes.split_last().unwrap();
-    for &byte in others {
-        let status = rx.accept(byte);
-        assert!(status.unwrap().is_none());
-    }
-    let received = rx.accept(last_byte).unwrap().expect("No transfer");
+    // Only need to call receive once. It will read all the available frames.
+    let received = rx
+        .receive(Microseconds32::new(0), &mut driver)
+        .unwrap()
+        .expect("No transfer");
 
     assert_eq!(transfer, received);
+}
+
+/// A driver that stores frames in a queue and allows frames written to be read back
+#[derive(Default)]
+pub struct MockDriver {
+    bytes: VecDeque<u8>,
+}
+
+impl MockDriver {
+    /// Returns an iterator over the bytes in the queue from front to back
+    pub fn iter(&self) -> std::collections::vec_deque::Iter<'_, u8> {
+        self.bytes.iter()
+    }
+}
+
+impl TransmitDriver for MockDriver {
+    type Error = Infallible;
+
+    fn send_byte(&mut self, byte: u8) -> nb::Result<(), Self::Error> {
+        self.bytes.push_back(byte);
+        Ok(())
+    }
+}
+
+impl ReceiveDriver for MockDriver {
+    type Error = Infallible;
+
+    fn receive_byte(&mut self) -> nb::Result<u8, Self::Error> {
+        self.bytes.pop_front().ok_or(nb::Error::WouldBlock)
+    }
+}
+
+/// A clock that produces a Microseconds32 value that is always zero
+pub struct ZeroClock;
+
+impl Clock for ZeroClock {
+    type Instant = Microseconds32;
+
+    fn now(&mut self) -> Self::Instant {
+        Microseconds32::new(0)
+    }
 }

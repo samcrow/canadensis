@@ -44,12 +44,13 @@ fn main() {
             73.try_into().unwrap(),
             4096,
             MicrosecondDuration64::new(2_000_000),
+            &mut (),
         )
         .unwrap();
 
     // Instead of a real asynchronous IO system, just poll periodically
     loop {
-        match receiver.receive(clock.now()) {
+        match receiver.receive(clock.now(), &mut ()) {
             Ok(Some(transfer)) => {
                 println!("{:?}", transfer);
             }

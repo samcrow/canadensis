@@ -24,3 +24,11 @@ pub mod data_types {
     pub use canadensis_data_types::uavcan::node::get_info_1_0::GetInfoResponse;
     pub use canadensis_data_types::uavcan::node::version_1_0::Version;
 }
+
+/// An error from a transmitter or receiver
+pub enum NodeError<T, R> {
+    /// An error from a transmitter
+    Transmitter(T),
+    /// An error from a receiver
+    Receiver(R),
+}

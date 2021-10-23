@@ -1,4 +1,5 @@
 use alloc::vec::Vec;
+use core::marker::PhantomData;
 use core::mem;
 
 use fallible_collections::FallibleVec;
@@ -7,7 +8,7 @@ use zerocopy::AsBytes;
 
 use canadensis_core::time::{Clock, Instant};
 use canadensis_core::transfer::Transfer;
-use canadensis_core::transport::{Transmitter, Transport};
+use canadensis_core::transport::Transmitter;
 use canadensis_core::{nb, OutOfMemoryError};
 
 use crate::driver::TransmitDriver;
@@ -26,17 +27,16 @@ const DELIMITER: u8 = 0x0;
 ///
 /// C is the size of the transmit queue in bytes
 pub struct SerialTransmitter<D, const C: usize> {
-    /// Driver used to send bytes
-    driver: D,
     /// Queue of outgoing bytes
     queue: TransmitQueue<C>,
+    _driver: PhantomData<D>,
 }
 
 impl<D, const C: usize> SerialTransmitter<D, C> {
-    pub fn new(driver: D) -> Self {
+    pub fn new() -> Self {
         SerialTransmitter {
-            driver,
             queue: TransmitQueue::new(),
+            _driver: PhantomData,
         }
     }
 }
@@ -46,13 +46,16 @@ where
     I: Instant,
     D: TransmitDriver,
 {
-    type Transport = SerialTransport<D::Error>;
+    type Transport = SerialTransport;
+    type Driver = D;
+    type Error = Error<D::Error>;
 
     fn push<A, CL>(
         &mut self,
         transfer: Transfer<A, I, Self::Transport>,
         _clock: &mut CL,
-    ) -> Result<(), <Self::Transport as Transport>::Error>
+        _driver: &mut D,
+    ) -> nb::Result<(), Self::Error>
     where
         A: AsRef<[u8]>,
         CL: Clock<Instant = I>,
@@ -63,7 +66,7 @@ where
         let length_on_wire = escaped_length + PER_FRAME_UNESCAPED_OVERHEAD;
 
         if length_on_wire > (self.queue.capacity() - self.queue.len()) {
-            return Err(Error::Memory(OutOfMemoryError));
+            return Err(nb::Error::Other(Error::Memory(OutOfMemoryError)));
         }
         let header = SerialHeader::from(transfer.header);
         let payload_crc = crate::make_payload_crc(transfer.payload.as_ref());
@@ -84,7 +87,7 @@ where
         // Calculate the required queue capacity based on the real escaped length
         let length_on_wire = escaped_length + PER_FRAME_UNESCAPED_OVERHEAD;
         if length_on_wire > (self.queue.capacity() - self.queue.len()) {
-            return Err(Error::Memory(OutOfMemoryError));
+            return Err(nb::Error::Other(Error::Memory(OutOfMemoryError)));
         }
 
         // Put in the queue: delimiter, escaped data, delimiter
@@ -97,15 +100,12 @@ where
         Ok(())
     }
 
-    fn flush<CL>(
-        &mut self,
-        _clock: &mut CL,
-    ) -> nb::Result<(), <Self::Transport as Transport>::Error>
+    fn flush<CL>(&mut self, _clock: &mut CL, driver: &mut D) -> nb::Result<(), Self::Error>
     where
         CL: Clock<Instant = I>,
     {
         while let Some(byte) = self.queue.pop_front() {
-            match self.driver.send_byte(byte) {
+            match driver.send_byte(byte) {
                 Ok(()) => {}
                 Err(e) => {
                     // Put the byte back to send later

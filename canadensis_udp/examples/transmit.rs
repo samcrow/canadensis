@@ -50,8 +50,8 @@ fn main() {
             payload: &payload,
         };
 
-        transmitter.push(transfer, &mut clock).unwrap();
-        transmitter.flush(&mut clock).unwrap();
+        transmitter.push(transfer, &mut clock, &mut ()).unwrap();
+        transmitter.flush(&mut clock, &mut ()).unwrap();
 
         transfer_id = transfer_id.increment();
 

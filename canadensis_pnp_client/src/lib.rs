@@ -22,7 +22,6 @@ use canadensis::core::{Priority, SubjectId};
 use canadensis::encoding::{Deserialize, Message, Serialize};
 use canadensis_data_types::uavcan::pnp::node_id_allocation_data_1_0::{self, NodeIDAllocationData};
 use core::convert::TryFrom;
-use core::fmt::Debug;
 use core::marker::PhantomData;
 use crc_any::CRCu64;
 
@@ -46,14 +45,18 @@ where
     T: Transmitter<C::Instant, Transport = P>,
     R: Receiver<C::Instant, Transport = P>,
     P: Transport,
-    P::Error: Debug,
 {
     /// Creates a new plug-and-play client
     ///
     /// * `mtu`: The maximum transmission unit size to use when sending frames
     /// * `unique_id`: The unique ID of this node
-    pub fn new(transmitter: T, mut receiver: R, unique_id: [u8; 16]) -> Result<Self, P::Error> {
-        receiver.subscribe_message(M::SUBJECT, 9, milliseconds(1000))?;
+    pub fn new(
+        transmitter: T,
+        mut receiver: R,
+        unique_id: [u8; 16],
+        driver: &mut R::Driver,
+    ) -> Result<Self, R::Error> {
+        receiver.subscribe_message(M::SUBJECT, 9, milliseconds(1000), driver)?;
 
         Ok(PnpClient {
             unique_id,
@@ -69,18 +72,26 @@ where
     }
 
     /// Creates an outgoing node ID allocation message and gives it to the transmitter
-    pub fn send_request(&mut self, clock: &mut C) {
+    pub fn send_request(&mut self, clock: &mut C, driver: &mut T::Driver) {
         let message = M::with_unique_id(&self.unique_id);
-        self.publisher
-            .send(&message, clock, &mut self.transmitter)
-            .expect("Can't fit message into one frame");
+        let status = self
+            .publisher
+            .send(&message, clock, &mut self.transmitter, driver);
+        match status {
+            Ok(()) => {}
+            Err(_) => panic!("Can't fit transfer into one frame"),
+        }
     }
 
     /// Handles an incoming frame and checks if it provides an ID for this node
     ///
     /// This function returns the node ID if one was assigned.
-    pub fn receive(&mut self, now: C::Instant) -> Result<Option<P::NodeId>, P::Error> {
-        if let Some(transfer_in) = self.receiver.receive(now)? {
+    pub fn receive(
+        &mut self,
+        now: C::Instant,
+        driver: &mut R::Driver,
+    ) -> Result<Option<P::NodeId>, R::Error> {
+        if let Some(transfer_in) = self.receiver.receive(now, driver)? {
             if let Ok(message) = M::deserialize_from_bytes(&transfer_in.payload) {
                 if message.matches_unique_id(&self.unique_id) {
                     if let Some(node_id) = message.node_id() {

@@ -11,7 +11,6 @@ extern crate log;
 extern crate zerocopy;
 
 use core::convert::TryFrom;
-use core::marker::PhantomData;
 
 use crc_any::CRCu32;
 use hash32_derive::Hash32;
@@ -19,7 +18,7 @@ use hash32_derive::Hash32;
 use canadensis_core::transport::{TransferId, Transport};
 use canadensis_core::{InvalidValue, OutOfMemoryError, Priority};
 
-pub use crate::rx::SerialReceiver;
+pub use crate::rx::{SerialReceiver, Subscription};
 pub use crate::tx::SerialTransmitter;
 
 pub(crate) mod cobs;
@@ -29,13 +28,12 @@ pub(crate) mod header_collector;
 mod rx;
 mod tx;
 
-pub struct SerialTransport<E>(PhantomData<E>);
+pub struct SerialTransport;
 
-impl<E> Transport for SerialTransport<E> {
+impl Transport for SerialTransport {
     type NodeId = SerialNodeId;
     type TransferId = SerialTransferId;
     type Priority = Priority;
-    type Error = Error<E>;
 }
 
 /// A serial node identifier, which allows the values 0..=65534

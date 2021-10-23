@@ -7,8 +7,10 @@ pub use self::array_queue::ArrayQueue;
 pub use self::single_frame_queue::SingleFrameQueue;
 use core::cmp::Ordering;
 
-use crate::driver::TransmitDriver;
+use crate::driver::{ReceiveDriver, TransmitDriver};
+use crate::types::CanNodeId;
 use crate::Frame;
+use canadensis_core::subscription::Subscription;
 use canadensis_core::time::Instant;
 use canadensis_core::{nb, OutOfMemoryError};
 
@@ -55,6 +57,11 @@ impl<Q, D> SingleQueueDriver<Q, D> {
     pub fn new(queue: Q, driver: D) -> Self {
         SingleQueueDriver { queue, driver }
     }
+
+    /// Breaks down this queue driver into its queue and driver
+    pub fn into_parts(self) -> (Q, D) {
+        (self.queue, self.driver)
+    }
 }
 
 impl<I, Q, D> TransmitDriver<I> for SingleQueueDriver<Q, D>
@@ -82,6 +89,24 @@ where
     /// Attempts to send all queued frames to the driver
     fn flush(&mut self, now: I) -> nb::Result<(), Self::Error> {
         flush_single_queue(&mut self.queue, &mut self.driver, now)
+    }
+}
+
+impl<I, Q, D> ReceiveDriver<I> for SingleQueueDriver<Q, D>
+where
+    D: ReceiveDriver<I>,
+{
+    type Error = D::Error;
+
+    fn receive(&mut self, now: I) -> nb::Result<Frame<I>, Self::Error> {
+        self.driver.receive(now)
+    }
+
+    fn apply_filters<S>(&mut self, local_node: Option<CanNodeId>, subscriptions: S)
+    where
+        S: IntoIterator<Item = Subscription>,
+    {
+        self.driver.apply_filters(local_node, subscriptions)
     }
 }
 

@@ -156,6 +156,46 @@ pub trait TransferHandler<I: Instant, T: Transport> {
     }
 }
 
+impl<'h, I, T, H> TransferHandler<I, T> for &'h mut H
+where
+    I: Instant,
+    T: Transport,
+    H: TransferHandler<I, T>,
+{
+    fn handle_message<N: Node<Instant = I, Transport = T>>(
+        &mut self,
+        node: &mut N,
+        transfer: &MessageTransfer<Vec<u8>, I, T>,
+    ) -> bool {
+        <H as TransferHandler<I, T>>::handle_message(self, node, transfer)
+    }
+
+    fn handle_request<N: Node<Instant = I, Transport = T>>(
+        &mut self,
+        node: &mut N,
+        token: ResponseToken<T>,
+        transfer: &ServiceTransfer<Vec<u8>, I, T>,
+    ) -> bool {
+        <H as TransferHandler<I, T>>::handle_request(self, node, token, transfer)
+    }
+
+    fn handle_response<N: Node<Instant = I, Transport = T>>(
+        &mut self,
+        node: &mut N,
+        transfer: &ServiceTransfer<Vec<u8>, I, T>,
+    ) -> bool {
+        <H as TransferHandler<I, T>>::handle_response(self, node, transfer)
+    }
+
+    fn chain<H1>(self, next: H1) -> TransferHandlerChain<Self, H1>
+    where
+        Self: Sized,
+        H1: TransferHandler<I, T>,
+    {
+        TransferHandlerChain::new(self, next)
+    }
+}
+
 /// Combines two transfer handlers
 pub struct TransferHandlerChain<H0, H1> {
     handler0: H0,
@@ -247,7 +287,7 @@ pub trait Node {
         &mut self,
         now: Self::Instant,
         handler: &mut H,
-    ) -> Result<(), <Self::Transport as Transport>::Error>
+    ) -> Result<(), <Self::Receiver as Receiver<Self::Instant>>::Error>
     where
         H: TransferHandler<Self::Instant, Self::Transport>;
 
@@ -263,7 +303,10 @@ pub trait Node {
         subject: SubjectId,
         timeout: <<<Self as Node>::Clock as Clock>::Instant as Instant>::Duration,
         priority: <Self::Transport as Transport>::Priority,
-    ) -> Result<PublishToken<T>, StartSendError<<Self::Transport as Transport>::Error>>
+    ) -> Result<
+        PublishToken<T>,
+        StartSendError<<Self::Transmitter as Transmitter<Self::Instant>>::Error>,
+    >
     where
         T: Message;
 
@@ -279,7 +322,7 @@ pub trait Node {
         &mut self,
         token: &PublishToken<T>,
         payload: &T,
-    ) -> Result<(), <Self::Transport as Transport>::Error>
+    ) -> nb::Result<(), <Self::Transmitter as Transmitter<Self::Instant>>::Error>
     where
         T: Message + Serialize;
 
@@ -295,7 +338,7 @@ pub trait Node {
         receive_timeout: <<<Self as Node>::Clock as Clock>::Instant as Instant>::Duration,
         response_payload_size_max: usize,
         priority: <Self::Transport as Transport>::Priority,
-    ) -> Result<ServiceToken<T>, StartSendError<<Self::Transport as Transport>::Error>>
+    ) -> Result<ServiceToken<T>, StartSendError<<Self::Receiver as Receiver<Self::Instant>>::Error>>
     where
         T: Request;
 
@@ -312,7 +355,10 @@ pub trait Node {
         token: &ServiceToken<T>,
         payload: &T,
         destination: <Self::Transport as Transport>::NodeId,
-    ) -> Result<<Self::Transport as Transport>::TransferId, <Self::Transport as Transport>::Error>
+    ) -> nb::Result<
+        <Self::Transport as Transport>::TransferId,
+        <Self::Transmitter as Transmitter<Self::Instant>>::Error,
+    >
     where
         T: Request + Serialize;
 
@@ -322,7 +368,7 @@ pub trait Node {
         subject: SubjectId,
         payload_size_max: usize,
         timeout: <<<Self as Node>::Clock as Clock>::Instant as Instant>::Duration,
-    ) -> Result<(), <Self::Transport as Transport>::Error>;
+    ) -> Result<(), <Self::Receiver as Receiver<Self::Instant>>::Error>;
 
     /// Subscribes to requests for a service
     fn subscribe_request(
@@ -330,7 +376,7 @@ pub trait Node {
         service: ServiceId,
         payload_size_max: usize,
         timeout: <<<Self as Node>::Clock as Clock>::Instant as Instant>::Duration,
-    ) -> Result<(), <Self::Transport as Transport>::Error>;
+    ) -> Result<(), <Self::Receiver as Receiver<Self::Instant>>::Error>;
 
     /// Responds to a service request
     ///
@@ -342,12 +388,13 @@ pub trait Node {
         token: ResponseToken<Self::Transport>,
         timeout: <<<Self as Node>::Clock as Clock>::Instant as Instant>::Duration,
         payload: &T,
-    ) -> Result<(), <Self::Transport as Transport>::Error>
+    ) -> nb::Result<(), <Self::Transmitter as Transmitter<Self::Instant>>::Error>
     where
         T: Response + Serialize;
 
     /// Attempts to flush all outgoing frames
-    fn flush(&mut self) -> nb::Result<(), <Self::Transport as Transport>::Error>;
+    fn flush(&mut self)
+        -> nb::Result<(), <Self::Transmitter as Transmitter<Self::Instant>>::Error>;
 
     // Component access
 

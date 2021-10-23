@@ -51,10 +51,10 @@ impl SerialHeader {
     }
 
     /// Parses this serial header into a transfer header
-    pub fn into_header<I, E>(
+    pub fn into_header<I>(
         self,
         timestamp: I,
-    ) -> Result<Header<I, SerialTransport<E>>, HeaderParseError> {
+    ) -> Result<Header<I, SerialTransport>, HeaderParseError> {
         if !self.check_crc() {
             return Err(HeaderParseError::Crc);
         }
@@ -102,9 +102,9 @@ impl SerialHeader {
     }
 }
 
-impl<I, E> From<Header<I, SerialTransport<E>>> for SerialHeader {
+impl<I> From<Header<I, SerialTransport>> for SerialHeader {
     /// Converts a transfer header into a serial header
-    fn from(header: Header<I, SerialTransport<E>>) -> Self {
+    fn from(header: Header<I, SerialTransport>) -> Self {
         let mut serial_header = match header {
             Header::Message(header) => SerialHeader {
                 version: SerialHeader::VERSION,

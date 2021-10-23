@@ -6,7 +6,7 @@ use canadensis_core::transfer::{
     Header, MessageTransfer, ServiceHeader, ServiceTransfer, Transfer,
 };
 use canadensis_core::transport::{Receiver, Transmitter, Transport};
-use canadensis_core::{OutOfMemoryError, ServiceId, ServiceSubscribeError, SubjectId};
+use canadensis_core::{nb, OutOfMemoryError, ServiceId, ServiceSubscribeError, SubjectId};
 use canadensis_encoding::{Message, Request, Response, Serialize};
 
 use crate::hash::TrivialIndexMap;
@@ -23,7 +23,7 @@ use crate::{Node, PublishToken, ResponseToken, ServiceToken, StartSendError, Tra
 /// * `P`: The maximum number of topics that can be published
 /// * `R`: The maximum number of services for which requests can be sent
 ///
-pub struct CoreNode<C, T, U, TR, const P: usize, const R: usize>
+pub struct CoreNode<C, T, U, TR, D, const P: usize, const R: usize>
 where
     C: Clock,
     U: Receiver<C::Instant>,
@@ -32,17 +32,18 @@ where
     clock: C,
     transmitter: T,
     receiver: U,
+    driver: D,
     node_id: <T::Transport as Transport>::NodeId,
     publishers: TrivialIndexMap<SubjectId, Publisher<C::Instant, T>, P>,
     requesters: TrivialIndexMap<ServiceId, Requester<C::Instant, T, TR>, R>,
 }
 
-impl<C, T, U, N, TR, const P: usize, const R: usize> CoreNode<C, T, U, TR, P, R>
+impl<C, T, U, N, TR, D, const P: usize, const R: usize> CoreNode<C, T, U, TR, D, P, R>
 where
     C: Clock,
     N: Transport,
-    U: Receiver<C::Instant, Transport = N>,
-    T: Transmitter<C::Instant, Transport = N>,
+    U: Receiver<C::Instant, Transport = N, Driver = D>,
+    T: Transmitter<C::Instant, Transport = N, Driver = D>,
     TR: TransferIdTracker<N>,
 {
     /// Creates a node
@@ -51,16 +52,19 @@ where
     /// * `node_id`: The ID of this node
     /// * `transmitter`: A transport transmitter
     /// * `receiver`: A transport receiver
+    /// * `driver`: A driver compatible with `receiver` and `transmitter`
     pub fn new(
         clock: C,
         node_id: <T::Transport as Transport>::NodeId,
         transmitter: T,
         receiver: U,
+        driver: D,
     ) -> Self {
         CoreNode {
             clock,
             transmitter,
             receiver,
+            driver,
             node_id,
             publishers: TrivialIndexMap::new(),
             requesters: TrivialIndexMap::new(),
@@ -110,7 +114,7 @@ where
         token: ResponseToken<T::Transport>,
         deadline: C::Instant,
         payload: &[u8],
-    ) -> Result<(), <T::Transport as Transport>::Error> {
+    ) -> nb::Result<(), T::Error> {
         let transfer_out = Transfer {
             header: Header::Response(ServiceHeader {
                 timestamp: deadline,
@@ -122,16 +126,17 @@ where
             }),
             payload,
         };
-        self.transmitter.push(transfer_out, &mut self.clock)
+        self.transmitter
+            .push(transfer_out, &mut self.clock, &mut self.driver)
     }
 }
 
-impl<C, T, U, N, TR, const P: usize, const R: usize> Node for CoreNode<C, T, U, TR, P, R>
+impl<C, T, U, N, TR, D, const P: usize, const R: usize> Node for CoreNode<C, T, U, TR, D, P, R>
 where
     C: Clock,
     N: Transport,
-    T: Transmitter<<C as Clock>::Instant, Transport = N>,
-    U: Receiver<<C as Clock>::Instant, Transport = N>,
+    T: Transmitter<<C as Clock>::Instant, Transport = N, Driver = D>,
+    U: Receiver<<C as Clock>::Instant, Transport = N, Driver = D>,
     TR: TransferIdTracker<N>,
 {
     type Clock = C;
@@ -140,15 +145,11 @@ where
     type Transmitter = T;
     type Receiver = U;
 
-    fn receive<H>(
-        &mut self,
-        now: Self::Instant,
-        handler: &mut H,
-    ) -> Result<(), <Self::Transport as Transport>::Error>
+    fn receive<H>(&mut self, now: Self::Instant, handler: &mut H) -> Result<(), U::Error>
     where
         H: TransferHandler<Self::Instant, Self::Transport>,
     {
-        if let Some(transfer) = self.receiver.receive(now)? {
+        if let Some(transfer) = self.receiver.receive(now, &mut self.driver)? {
             self.handle_incoming_transfer(transfer, handler)
         }
         Ok(())
@@ -159,7 +160,7 @@ where
         subject: SubjectId,
         timeout: <C::Instant as Instant>::Duration,
         priority: N::Priority,
-    ) -> Result<PublishToken<M>, StartSendError<N::Error>>
+    ) -> Result<PublishToken<M>, StartSendError<T::Error>>
     where
         M: Message,
     {
@@ -184,7 +185,7 @@ where
         self.publishers.remove(&token.0);
     }
 
-    fn publish<M>(&mut self, token: &PublishToken<M>, payload: &M) -> Result<(), N::Error>
+    fn publish<M>(&mut self, token: &PublishToken<M>, payload: &M) -> nb::Result<(), T::Error>
     where
         M: Message + Serialize,
     {
@@ -192,7 +193,13 @@ where
             .publishers
             .get_mut(&token.0)
             .expect("Bug: Token exists but no subscriber");
-        publisher.publish(&mut self.clock, token.0, payload, &mut self.transmitter)
+        publisher.publish(
+            &mut self.clock,
+            token.0,
+            payload,
+            &mut self.transmitter,
+            &mut self.driver,
+        )
     }
 
     /// Sets up to send requests for a service
@@ -204,7 +211,7 @@ where
         receive_timeout: <C::Instant as Instant>::Duration,
         response_payload_size_max: usize,
         priority: N::Priority,
-    ) -> Result<ServiceToken<M>, StartSendError<N::Error>>
+    ) -> Result<ServiceToken<M>, StartSendError<U::Error>>
     where
         M: Request,
     {
@@ -222,6 +229,7 @@ where
                 service,
                 response_payload_size_max,
                 receive_timeout,
+                &mut self.driver,
             ) {
                 Ok(()) => Ok(token),
                 Err(e) => {
@@ -251,7 +259,7 @@ where
         token: &ServiceToken<M>,
         payload: &M,
         destination: N::NodeId,
-    ) -> Result<N::TransferId, <N as Transport>::Error>
+    ) -> nb::Result<N::TransferId, T::Error>
     where
         M: Request + Serialize,
     {
@@ -265,6 +273,7 @@ where
             payload,
             destination,
             &mut self.transmitter,
+            &mut self.driver,
         )
     }
 
@@ -273,9 +282,9 @@ where
         subject: SubjectId,
         payload_size_max: usize,
         timeout: <C::Instant as Instant>::Duration,
-    ) -> Result<(), <Self::Transport as Transport>::Error> {
+    ) -> Result<(), U::Error> {
         self.receiver
-            .subscribe_message(subject, payload_size_max, timeout)
+            .subscribe_message(subject, payload_size_max, timeout, &mut self.driver)
     }
 
     fn subscribe_request(
@@ -283,10 +292,10 @@ where
         service: ServiceId,
         payload_size_max: usize,
         timeout: <C::Instant as Instant>::Duration,
-    ) -> Result<(), <Self::Transport as Transport>::Error> {
-        let status = self
-            .receiver
-            .subscribe_request(service, payload_size_max, timeout);
+    ) -> Result<(), U::Error> {
+        let status =
+            self.receiver
+                .subscribe_request(service, payload_size_max, timeout, &mut self.driver);
         // Because a CoreNode can't be anonymous, the above function can't return an Anonymous error.
         status.map_err(|e| match e {
             ServiceSubscribeError::Transport(e) => e,
@@ -299,7 +308,7 @@ where
         token: ResponseToken<Self::Transport>,
         timeout: <C::Instant as Instant>::Duration,
         payload: &M,
-    ) -> Result<(), <Self::Transport as Transport>::Error>
+    ) -> nb::Result<(), T::Error>
     where
         M: Response + Serialize,
     {
@@ -310,8 +319,8 @@ where
         })
     }
 
-    fn flush(&mut self) -> canadensis_core::nb::Result<(), <Self::Transport as Transport>::Error> {
-        self.transmitter.flush(&mut self.clock)
+    fn flush(&mut self) -> canadensis_core::nb::Result<(), T::Error> {
+        self.transmitter.flush(&mut self.clock, &mut self.driver)
     }
 
     /// Returns a reference to the enclosed clock
@@ -322,11 +331,6 @@ where
     fn clock_mut(&mut self) -> &mut C {
         &mut self.clock
     }
-
-    /// TODO: Move to CanReceiver (this is CAN-specific)
-    // fn frame_filters(&self) -> Result<Vec<Filter>, OutOfMemoryError> {
-    //     self.receiver.frame_filters()
-    // }
 
     fn transmitter(&self) -> &Self::Transmitter {
         &self.transmitter
@@ -347,26 +351,3 @@ where
         self.node_id.clone()
     }
 }
-
-// TODO: Move this to CanTransmitter
-// impl<C, T, U, const P: usize, const R: usize> CoreNode<C, T, U, P, R>
-// where
-//     C: Clock,
-//     T: Transmitter<C::Instant>,
-//     U: Receiver<C::Instant>,
-// {
-//     /// Removes an outgoing frame from the queue and returns it
-//     pub fn pop_frame(&mut self) -> Option<Frame<C::Instant>> {
-//         self.transmitter.frame_queue_mut().pop_frame()
-//     }
-//
-//     /// Returns a reference to the next outgoing frame in the queue, and does not remove it
-//     pub fn peek_frame(&mut self) -> Option<&Frame<C::Instant>> {
-//         self.transmitter.frame_queue_mut().peek_frame()
-//     }
-//
-//     /// Returns an outgoing frame to the queue so that it can be transmitted later
-//     pub fn return_frame(&mut self, frame: Frame<C::Instant>) -> Result<(), OutOfMemoryError> {
-//         self.transmitter.frame_queue_mut().return_frame(frame)
-//     }
-// }

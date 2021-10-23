@@ -23,12 +23,11 @@ pub mod pnp;
 
 use alloc::vec::Vec;
 use bxcan::filter::{BankConfig, Mask32};
-use bxcan::{Can, ExtendedId, FilterOwner, Instance, Mailbox, Tx};
+use bxcan::{Can, ExtendedId, FilterOwner, Instance, Mailbox};
 use canadensis::core::subscription::Subscription;
 use canadensis::core::time::Instant;
 use canadensis::core::{OutOfMemoryError, ServiceId, SubjectId};
 use canadensis::filter::Filter;
-use canadensis::Node;
 use canadensis_can::driver::{ReceiveDriver, TransmitDriver};
 use canadensis_can::types::CanNodeId;
 use canadensis_can::Frame;
@@ -48,6 +47,7 @@ where
 
 impl<I, N> BxCanDriver<I, N>
 where
+    I: Clone,
     N: Instance,
 {
     /// Creates a CAN driver
@@ -57,22 +57,38 @@ where
             deadlines: DeadlineTracker::new(),
         }
     }
+
+    /// Consumes this driver and returns its CAN object
+    pub fn into_can(self) -> Can<N> {
+        self.can
+    }
 }
 
 impl<I, N> TransmitDriver<I> for BxCanDriver<I, N>
 where
+    I: Instant,
     N: Instance,
 {
     type Error = Infallible;
 
-    fn transmit(&mut self, frame: &Frame<I>, now: I) -> nb::Result<Option<Frame<I>>, Self::Error> {
+    fn try_reserve(&mut self, frames: usize) -> Result<(), OutOfMemoryError> {
+        if frames == 1 {
+            // There's likely space for at least one frame
+            Ok(())
+        } else {
+            // However, there is no in-memory queue.
+            Err(OutOfMemoryError)
+        }
+    }
+
+    fn transmit(&mut self, frame: Frame<I>, now: I) -> nb::Result<Option<Frame<I>>, Self::Error> {
         clean_expired_frames(&mut self.deadlines, &mut self.can, now);
         // Check that the frame's deadline has not passed
         let deadline = frame.timestamp();
         match deadline.overflow_safe_compare(&now) {
             Ordering::Greater | Ordering::Equal => {
                 // Deadline is now or in the future. Continue to transmit.
-                let frame = uavcan_frame_to_bxcan(frame);
+                let frame = uavcan_frame_to_bxcan(&frame);
                 match self.can.transmit(&frame) {
                     Ok(status) => {
                         // Store the deadline for this frame
@@ -102,6 +118,11 @@ where
                 Ok(None)
             }
         }
+    }
+
+    fn flush(&mut self, _now: I) -> nb::Result<(), Self::Error> {
+        // The hardware does this automatically
+        Ok(())
     }
 }
 
@@ -156,7 +177,6 @@ where
     I: Instance + FilterOwner,
     S: IntoIterator<Item = Subscription>,
 {
-    let mut subscriptions = subscriptions.into_iter();
     let mut filters: Vec<Filter> = Vec::new();
     for subscription in subscriptions {
         if let Some(filter) = make_filter(subscription, local_node) {
@@ -171,7 +191,7 @@ where
 /// transmit deadlines
 ///
 /// now: The current time
-fn clean_expired_frames<I, C>(deadlines: &mut DeadlineTracker<I>, can: &mut Tx<C>, now: I)
+fn clean_expired_frames<I, C>(deadlines: &mut DeadlineTracker<I>, can: &mut Can<C>, now: I)
 where
     I: Instant,
     C: Instance,

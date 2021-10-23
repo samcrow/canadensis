@@ -9,7 +9,7 @@ use crate::Clock;
 use canadensis_core::time::Instant;
 use canadensis_core::transfer::{Header, MessageHeader, Transfer};
 use canadensis_core::transport::{TransferId, Transmitter, Transport};
-use canadensis_core::SubjectId;
+use canadensis_core::{nb, SubjectId};
 use canadensis_encoding::{Message, Serialize};
 
 /// A transmitter that sends anonymous messages and does not require a node ID
@@ -60,18 +60,20 @@ where
         payload: &M,
         clock: &mut C,
         transmitter: &mut T,
-    ) -> Result<(), AnonymousPublishError<<T::Transport as Transport>::Error>> {
+        driver: &mut T::Driver,
+    ) -> nb::Result<(), AnonymousPublishError<T::Error>> {
         // Check that the message fits into one frame
         // Convert to bites, rounding up
         let payload_size_bytes = (payload.size_bits() + 7) / 8;
         if payload_size_bytes > transmitter.mtu() {
-            return Err(AnonymousPublishError::Length);
+            return Err(nb::Error::Other(AnonymousPublishError::Length));
         }
         // Part 1: Serialize
         let deadline = self.timeout + clock.now();
         do_serialize(payload, |payload_bytes| {
-            self.send_payload(payload_bytes, deadline, transmitter, clock)
-        })?;
+            self.send_payload(payload_bytes, deadline, transmitter, clock, driver)
+        })
+        .map_err(|e| e.map(AnonymousPublishError::Transport))?;
         Ok(())
     }
 
@@ -81,7 +83,8 @@ where
         deadline: C::Instant,
         transmitter: &mut T,
         clock: &mut C,
-    ) -> Result<(), <T::Transport as Transport>::Error> {
+        driver: &mut T::Driver,
+    ) -> nb::Result<(), T::Error> {
         // Assemble the transfer
         let transfer = Transfer {
             header: Header::Message(MessageHeader {
@@ -95,7 +98,7 @@ where
         };
         self.next_transfer_id = self.next_transfer_id.clone().increment();
 
-        transmitter.push(transfer, clock)
+        transmitter.push(transfer, clock, driver)
     }
 }
 

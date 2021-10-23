@@ -1,7 +1,7 @@
 use crate::{Node, PublishToken, StartSendError};
 use canadensis_core::time::{Clock, Duration, Instant};
-use canadensis_core::transport::Transport;
-use canadensis_core::Priority;
+use canadensis_core::transport::Transmitter;
+use canadensis_core::{nb, Priority};
 use canadensis_data_types::uavcan::node::health_1_0::Health;
 use canadensis_data_types::uavcan::node::heartbeat_1_0::{self, Heartbeat};
 use canadensis_data_types::uavcan::node::mode_1_0::Mode;
@@ -34,7 +34,9 @@ where
     /// Creates a new minimal node
     ///
     /// * `node`: The underlying node (this is usually a [`CoreNode`](crate::node::CoreNode))
-    pub fn new(mut node: N) -> Result<Self, StartSendError<<N::Transport as Transport>::Error>> {
+    pub fn new(
+        mut node: N,
+    ) -> Result<Self, StartSendError<<N::Transmitter as Transmitter<N::Instant>>::Error>> {
         // Default heartbeat settings
         let heartbeat = Heartbeat {
             uptime: 0,
@@ -69,12 +71,16 @@ where
     /// if one second has passed since the last time it was called.
     ///
     /// Either `run_periodic_tasks` or `run_per_second_tasks` should be called, but not both.
-    pub fn run_per_second_tasks(&mut self) -> Result<(), <N::Transport as Transport>::Error> {
+    pub fn run_per_second_tasks(
+        &mut self,
+    ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Instant>>::Error> {
         self.send_heartbeat()
     }
 
     /// Publishes a heartbeat message
-    fn send_heartbeat(&mut self) -> Result<(), <N::Transport as Transport>::Error> {
+    fn send_heartbeat(
+        &mut self,
+    ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Instant>>::Error> {
         self.heartbeat.uptime = self.heartbeat.uptime.saturating_add(1);
         self.node.publish(&self.heartbeat_token, &self.heartbeat)
     }

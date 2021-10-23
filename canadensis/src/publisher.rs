@@ -2,7 +2,7 @@ use crate::serialize::do_serialize;
 use canadensis_core::time::{Clock, Instant};
 use canadensis_core::transfer::{Header, MessageHeader, Transfer};
 use canadensis_core::transport::{TransferId, Transmitter, Transport};
-use canadensis_core::SubjectId;
+use canadensis_core::{nb, SubjectId};
 use canadensis_encoding::{Message, Serialize};
 
 /// Assembles transfers and manages transfer IDs to send messages
@@ -44,7 +44,8 @@ impl<I: Instant, T: Transmitter<I>> Publisher<I, T> {
         subject: SubjectId,
         payload: &M,
         transmitter: &mut T,
-    ) -> Result<(), <T::Transport as Transport>::Error>
+        driver: &mut T::Driver,
+    ) -> nb::Result<(), T::Error>
     where
         M: Message + Serialize,
         I: Instant,
@@ -54,7 +55,7 @@ impl<I: Instant, T: Transmitter<I>> Publisher<I, T> {
         // Part 1: Serialize
         do_serialize(payload, |payload_bytes| {
             // Part 2: Split into frames and put frames in the queue
-            self.send_payload(subject, payload_bytes, deadline, transmitter, clock)
+            self.send_payload(subject, payload_bytes, deadline, transmitter, clock, driver)
         })
     }
 
@@ -65,7 +66,8 @@ impl<I: Instant, T: Transmitter<I>> Publisher<I, T> {
         deadline: I,
         transmitter: &mut T,
         clock: &mut C,
-    ) -> Result<(), <T::Transport as Transport>::Error>
+        driver: &mut T::Driver,
+    ) -> nb::Result<(), T::Error>
     where
         I: Clone,
         C: Clock<Instant = I>,
@@ -83,6 +85,6 @@ impl<I: Instant, T: Transmitter<I>> Publisher<I, T> {
         };
         self.next_transfer_id = self.next_transfer_id.clone().increment();
 
-        transmitter.push(transfer, clock)
+        transmitter.push(transfer, clock, driver)
     }
 }

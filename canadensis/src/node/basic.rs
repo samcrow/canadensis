@@ -1,10 +1,11 @@
-use crate::node::MinimalNode;
+use crate::core::transport::Transmitter;
+use crate::node::{MinimalNode, NodeError};
 use crate::{Node, PublishToken, ResponseToken, ServiceToken, StartSendError, TransferHandler};
 use alloc::vec::Vec;
 use canadensis_core::time::{milliseconds, Clock, Instant};
 use canadensis_core::transfer::{MessageTransfer, ServiceTransfer};
-use canadensis_core::transport::Transport;
-use canadensis_core::{Priority, ServiceId, SubjectId};
+use canadensis_core::transport::{Receiver, Transport};
+use canadensis_core::{nb, Priority, ServiceId, SubjectId};
 use canadensis_data_types::uavcan::node::get_info_1_0::{self, GetInfoResponse};
 use canadensis_data_types::uavcan::node::health_1_0::Health;
 use canadensis_data_types::uavcan::node::heartbeat_1_0;
@@ -49,18 +50,27 @@ where
     pub fn new(
         mut node: N,
         node_info: GetInfoResponse,
-    ) -> Result<Self, StartSendError<<N::Transport as Transport>::Error>> {
+    ) -> Result<
+        Self,
+        NodeError<
+            StartSendError<<N::Transmitter as Transmitter<N::Instant>>::Error>,
+            <N::Receiver as Receiver<N::Instant>>::Error,
+        >,
+    > {
         // The MinimalNode takes care of heartbeats.
         // Do node info and port list here.
 
-        node.subscribe_request(get_info_1_0::SERVICE, 0, milliseconds(1000))?;
-        let port_list_token = node.start_publishing(
-            list_0_1::SUBJECT,
-            milliseconds(1000),
-            Priority::Optional.into(),
-        )?;
+        node.subscribe_request(get_info_1_0::SERVICE, 0, milliseconds(1000))
+            .map_err(NodeError::Receiver)?;
+        let port_list_token = node
+            .start_publishing(
+                list_0_1::SUBJECT,
+                milliseconds(1000),
+                Priority::Optional.into(),
+            )
+            .map_err(NodeError::Transmitter)?;
 
-        let minimal = MinimalNode::new(node)?;
+        let minimal = MinimalNode::new(node).map_err(NodeError::Transmitter)?;
 
         // Initialize the port list with the Heartbeat publisher, GetInfo responder, and List publisher
         let port_list = List {
@@ -101,7 +111,9 @@ where
     }
 
     /// This function must be called once per second to send heartbeat and port list messages
-    pub fn run_per_second_tasks(&mut self) -> Result<(), <N::Transport as Transport>::Error> {
+    pub fn run_per_second_tasks(
+        &mut self,
+    ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Instant>>::Error> {
         self.node.run_per_second_tasks()?;
         if self.seconds_since_port_list_published == 10 {
             self.seconds_since_port_list_published = 1;
@@ -112,7 +124,9 @@ where
         Ok(())
     }
 
-    fn publish_port_list(&mut self) -> Result<(), <N::Transport as Transport>::Error> {
+    fn publish_port_list(
+        &mut self,
+    ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Instant>>::Error> {
         self.node
             .node_mut()
             .publish(&self.port_list_token, &self.port_list)
@@ -146,11 +160,15 @@ where
         &mut self,
         now: Self::Instant,
         handler: &mut H,
-    ) -> Result<(), <Self::Transport as Transport>::Error>
+    ) -> Result<(), <N::Receiver as Receiver<N::Instant>>::Error>
     where
         H: TransferHandler<Self::Instant, Self::Transport>,
     {
-        self.node.node_mut().receive(now, handler)
+        let mut chained_handler = NodeInfoHandler {
+            response: &self.node_info,
+        }
+        .chain(handler);
+        self.node.node_mut().receive(now, &mut chained_handler)
     }
 
     fn start_publishing<T>(
@@ -158,7 +176,7 @@ where
         subject: SubjectId,
         timeout: <<N::Clock as Clock>::Instant as Instant>::Duration,
         priority: <Self::Transport as Transport>::Priority,
-    ) -> Result<PublishToken<T>, StartSendError<<Self::Transport as Transport>::Error>>
+    ) -> Result<PublishToken<T>, StartSendError<<N::Transmitter as Transmitter<N::Instant>>::Error>>
     where
         T: Message,
     {
@@ -184,7 +202,7 @@ where
         &mut self,
         token: &PublishToken<T>,
         payload: &T,
-    ) -> Result<(), <Self::Transport as Transport>::Error>
+    ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Instant>>::Error>
     where
         T: Message + Serialize,
     {
@@ -197,7 +215,7 @@ where
         receive_timeout: <<N::Clock as Clock>::Instant as Instant>::Duration,
         response_payload_size_max: usize,
         priority: <Self::Transport as Transport>::Priority,
-    ) -> Result<ServiceToken<T>, StartSendError<<Self::Transport as Transport>::Error>>
+    ) -> Result<ServiceToken<T>, StartSendError<<N::Receiver as Receiver<N::Instant>>::Error>>
     where
         T: Request,
     {
@@ -227,7 +245,10 @@ where
         token: &ServiceToken<T>,
         payload: &T,
         destination: <Self::Transport as Transport>::NodeId,
-    ) -> Result<<Self::Transport as Transport>::TransferId, <Self::Transport as Transport>::Error>
+    ) -> nb::Result<
+        <Self::Transport as Transport>::TransferId,
+        <N::Transmitter as Transmitter<N::Instant>>::Error,
+    >
     where
         T: Request + Serialize,
     {
@@ -241,7 +262,7 @@ where
         subject: SubjectId,
         payload_size_max: usize,
         timeout: <<N::Clock as Clock>::Instant as Instant>::Duration,
-    ) -> Result<(), <Self::Transport as Transport>::Error> {
+    ) -> Result<(), <N::Receiver as Receiver<N::Instant>>::Error> {
         self.node
             .node_mut()
             .subscribe_message(subject, payload_size_max, timeout)?;
@@ -257,7 +278,7 @@ where
         service: ServiceId,
         payload_size_max: usize,
         timeout: <<N::Clock as Clock>::Instant as Instant>::Duration,
-    ) -> Result<(), <Self::Transport as Transport>::Error> {
+    ) -> Result<(), <N::Receiver as Receiver<N::Instant>>::Error> {
         self.node
             .node_mut()
             .subscribe_request(service, payload_size_max, timeout)?;
@@ -273,14 +294,16 @@ where
         token: ResponseToken<Self::Transport>,
         timeout: <<N::Clock as Clock>::Instant as Instant>::Duration,
         payload: &T,
-    ) -> Result<(), <Self::Transport as Transport>::Error>
+    ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Instant>>::Error>
     where
         T: Response + Serialize,
     {
         self.node.node_mut().send_response(token, timeout, payload)
     }
 
-    fn flush(&mut self) -> canadensis_core::nb::Result<(), <Self::Transport as Transport>::Error> {
+    fn flush(
+        &mut self,
+    ) -> canadensis_core::nb::Result<(), <N::Transmitter as Transmitter<N::Instant>>::Error> {
         self.node.node_mut().flush()
     }
 
@@ -416,6 +439,31 @@ fn remove_from_list(subject_list: &mut SubjectIDList, subject: SubjectId) {
             mask.fill(true);
             mask.set(subject.into(), false);
             *subject_list = SubjectIDList::Mask(mask);
+        }
+    }
+}
+
+/// Responds to NodeInfo requests with the provided response
+struct NodeInfoHandler<'r> {
+    response: &'r GetInfoResponse,
+}
+
+impl<'r, I, T> TransferHandler<I, T> for NodeInfoHandler<'r>
+where
+    I: Instant,
+    T: Transport,
+{
+    fn handle_request<N: Node<Instant = I, Transport = T>>(
+        &mut self,
+        node: &mut N,
+        token: ResponseToken<T>,
+        transfer: &ServiceTransfer<Vec<u8>, I, T>,
+    ) -> bool {
+        if transfer.header.service == get_info_1_0::SERVICE {
+            let _ = node.send_response(token, milliseconds(1000), self.response);
+            true
+        } else {
+            false
         }
     }
 }

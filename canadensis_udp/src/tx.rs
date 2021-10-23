@@ -6,8 +6,8 @@ use crate::{bind_socket, header};
 use crate::{Error, UdpTransferId, UdpTransport};
 use canadensis_core::time::{Clock, Instant};
 use canadensis_core::transfer::{Header, Transfer};
-use canadensis_core::transport::{Transmitter, Transport};
-use canadensis_core::Priority;
+use canadensis_core::transport::Transmitter;
+use canadensis_core::{nb, Priority};
 use crc_any::CRCu32;
 use std::cmp::Ordering;
 use std::net::{SocketAddrV4, UdpSocket};
@@ -93,13 +93,17 @@ impl<I, const MTU: usize> Transmitter<I> for UdpTransmitter<MTU>
 where
     I: Instant,
 {
-    type Transport = UdpTransport<I>;
+    type Transport = UdpTransport;
+    /// The UDP transport uses an internal socket instead of a separate driver.
+    type Driver = ();
+    type Error = Error;
 
     fn push<A, C>(
         &mut self,
         transfer: Transfer<A, I, Self::Transport>,
         clock: &mut C,
-    ) -> Result<(), Error>
+        _driver: &mut (),
+    ) -> nb::Result<(), Error>
     where
         A: AsRef<[u8]>,
         C: Clock<Instant = I>,
@@ -142,12 +146,14 @@ where
                 )
             }
         }
+        .map_err(nb::Error::Other)
     }
 
     fn flush<C>(
         &mut self,
         _clock: &mut C,
-    ) -> canadensis_core::nb::Result<(), <Self::Transport as Transport>::Error>
+        _driver: &mut (),
+    ) -> canadensis_core::nb::Result<(), Self::Error>
     where
         C: Clock<Instant = I>,
     {
