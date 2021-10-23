@@ -122,7 +122,7 @@ where
             }),
             payload,
         };
-        self.transmitter.push(transfer_out)
+        self.transmitter.push(transfer_out, &mut self.clock)
     }
 }
 
@@ -140,15 +140,15 @@ where
     type Transmitter = T;
     type Receiver = U;
 
-    fn accept_frame<H>(
+    fn receive<H>(
         &mut self,
-        frame: N::Frame,
+        now: Self::Instant,
         handler: &mut H,
     ) -> Result<(), <Self::Transport as Transport>::Error>
     where
         H: TransferHandler<Self::Instant, Self::Transport>,
     {
-        if let Some(transfer) = self.receiver.accept(frame)? {
+        if let Some(transfer) = self.receiver.receive(now)? {
             self.handle_incoming_transfer(transfer, handler)
         }
         Ok(())
@@ -192,7 +192,7 @@ where
             .publishers
             .get_mut(&token.0)
             .expect("Bug: Token exists but no subscriber");
-        publisher.publish(self.clock.now(), token.0, payload, &mut self.transmitter)
+        publisher.publish(&mut self.clock, token.0, payload, &mut self.transmitter)
     }
 
     /// Sets up to send requests for a service
@@ -260,7 +260,7 @@ where
             .get_mut(&token.0)
             .expect("Bug: No requester for token");
         requester.send(
-            self.clock.now(),
+            &mut self.clock,
             token.0,
             payload,
             destination,
@@ -308,6 +308,10 @@ where
         do_serialize(payload, |payload| {
             self.send_response_payload(token, deadline, payload)
         })
+    }
+
+    fn flush(&mut self) -> canadensis_core::nb::Result<(), <Self::Transport as Transport>::Error> {
+        self.transmitter.flush(&mut self.clock)
     }
 
     /// Returns a reference to the enclosed clock

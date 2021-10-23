@@ -142,20 +142,15 @@ where
     type Transmitter = N::Transmitter;
     type Receiver = N::Receiver;
 
-    fn accept_frame<H>(
+    fn receive<H>(
         &mut self,
-        frame: <Self::Transport as Transport>::Frame,
+        now: Self::Instant,
         handler: &mut H,
     ) -> Result<(), <Self::Transport as Transport>::Error>
     where
         H: TransferHandler<Self::Instant, Self::Transport>,
     {
-        let mut responder = NodeInfoResponder {
-            info: &self.node_info,
-            inner: handler,
-        };
-
-        self.node.node_mut().accept_frame(frame, &mut responder)
+        self.node.node_mut().receive(now, handler)
     }
 
     fn start_publishing<T>(
@@ -283,6 +278,10 @@ where
         T: Response + Serialize,
     {
         self.node.node_mut().send_response(token, timeout, payload)
+    }
+
+    fn flush(&mut self) -> canadensis_core::nb::Result<(), <Self::Transport as Transport>::Error> {
+        self.node.node_mut().flush()
     }
 
     fn clock(&self) -> &Self::Clock {

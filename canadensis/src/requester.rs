@@ -2,18 +2,14 @@
 
 use crate::hash::TrivialIndexMap;
 use crate::serialize::do_serialize;
-use canadensis_core::time::Instant;
+use canadensis_core::time::{Clock, Instant};
 use canadensis_core::transfer::{Header, ServiceHeader, Transfer};
-use canadensis_core::transport::{NodeId, TransferId, Transmitter, Transport};
+use canadensis_core::transport::{TransferId, Transmitter, Transport};
 use canadensis_core::{OutOfMemoryError, ServiceId};
 use canadensis_encoding::{Request, Serialize};
 
 /// Assembles transfers and manages transfer IDs to send service requests
-pub struct Requester<
-    I: Instant,
-    T: Transmitter<I>,
-    R = TransferIdArray<<T as Transmitter<I>>::Transport>,
-> {
+pub struct Requester<I: Instant, T: Transmitter<I>, R> {
     /// The ID of this node
     this_node: <T::Transport as Transport>::NodeId,
     /// The priority of transfers from this transmitter
@@ -46,9 +42,9 @@ impl<I: Instant, T: Transmitter<I>, R: TransferIdTracker<T::Transport>> Requeste
     }
 
     /// Sends a service request and returns its transfer ID
-    pub fn send<Q>(
+    pub fn send<Q, C>(
         &mut self,
-        now: I,
+        clock: &mut C,
         service: ServiceId,
         payload: &Q,
         destination: <T::Transport as Transport>::NodeId,
@@ -56,23 +52,35 @@ impl<I: Instant, T: Transmitter<I>, R: TransferIdTracker<T::Transport>> Requeste
     ) -> Result<<T::Transport as Transport>::TransferId, <T::Transport as Transport>::Error>
     where
         Q: Serialize + Request,
+        C: Clock<Instant = I>,
     {
         // Part 1: Serialize
-        let deadline = self.timeout + now;
+        let deadline = self.timeout + clock.now();
         do_serialize(payload, |payload_bytes| {
             // Part 2: Split into frames and send
-            self.send_payload(payload_bytes, service, destination, deadline, transmitter)
+            self.send_payload(
+                payload_bytes,
+                service,
+                destination,
+                deadline,
+                transmitter,
+                clock,
+            )
         })
     }
 
-    fn send_payload(
+    fn send_payload<C>(
         &mut self,
         payload: &[u8],
         service: ServiceId,
         destination: <T::Transport as Transport>::NodeId,
         deadline: I,
         transmitter: &mut T,
-    ) -> Result<<T::Transport as Transport>::TransferId, <T::Transport as Transport>::Error> {
+        clock: &mut C,
+    ) -> Result<<T::Transport as Transport>::TransferId, <T::Transport as Transport>::Error>
+    where
+        C: Clock<Instant = I>,
+    {
         // Assemble the transfer
         let transfer_id = self.transfer_ids.next_transfer_id(destination.clone())?;
         let transfer = Transfer {
@@ -87,7 +95,7 @@ impl<I: Instant, T: Transmitter<I>, R: TransferIdTracker<T::Transport>> Requeste
             payload,
         };
 
-        transmitter.push(transfer)?;
+        transmitter.push(transfer, clock)?;
         Ok(transfer_id)
     }
 }
@@ -137,33 +145,5 @@ impl<T: Transport, const C: usize> TransferIdTracker<T> for TransferIdFixedMap<T
                 }
             }
         }
-    }
-}
-
-/// A map from destination node IDs to transfer IDs of the next transfer
-///
-/// This implementation contains a fixed-size array with one transfer ID for every possible
-/// node ID. With transports that allow a large range of node IDs, it may be too large.
-pub struct TransferIdArray<T: Transport> {
-    ids: <T::NodeId as NodeId<T::TransferId>>::TransferIds,
-}
-
-impl<T: Transport> Default for TransferIdArray<T> {
-    fn default() -> Self {
-        TransferIdArray {
-            ids: Default::default(),
-        }
-    }
-}
-
-impl<T: Transport> TransferIdTracker<T> for TransferIdArray<T> {
-    fn next_transfer_id(
-        &mut self,
-        destination: T::NodeId,
-    ) -> Result<T::TransferId, OutOfMemoryError> {
-        let entry = &mut self.ids.as_mut()[destination.into()];
-        let current = entry.clone();
-        *entry = entry.clone().increment();
-        Ok(current)
     }
 }

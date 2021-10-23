@@ -1,4 +1,4 @@
-use crate::queue::{FrameSink, FrameSource};
+use crate::queue::FrameQueue;
 use crate::Frame;
 use canadensis_core::OutOfMemoryError;
 use core::mem::{self, MaybeUninit};
@@ -79,7 +79,7 @@ where
     }
 }
 
-impl<I, const N: usize> FrameSink<I> for ArrayQueue<I, N>
+impl<I, const N: usize> FrameQueue<I> for ArrayQueue<I, N>
 where
     I: Clone + Default,
 {
@@ -127,12 +127,7 @@ where
             Ok(())
         }
     }
-}
 
-impl<I, const N: usize> FrameSource<I> for ArrayQueue<I, N>
-where
-    I: Default,
-{
     fn peek_frame(&self) -> Option<&Frame<I>> {
         if self.length != 0 {
             Some(&self.items[self.head])
@@ -197,8 +192,7 @@ where
 #[cfg(test)]
 mod test {
     use super::ArrayQueue;
-    use super::FrameSink;
-    use crate::queue::FrameSource;
+    use crate::queue::FrameQueue;
     use crate::{CanId, Frame};
     use core::convert::TryFrom;
 

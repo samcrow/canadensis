@@ -77,17 +77,17 @@ pub trait SubscriptionManager<S> {
     fn find_response_subscription_mut(&mut self, service: ServiceId) -> Option<&mut S>;
 
     /// Executes the provided operation for each message subscription
-    fn for_each_message_subscription_mut<F, R>(&mut self, operation: F) -> Option<R>
+    fn for_each_message_subscription_mut<F>(&mut self, operation: F)
     where
-        F: FnMut(&mut S) -> Option<R>;
+        F: FnMut(&mut S);
     /// Executes the provided operation for each request subscription
-    fn for_each_request_subscription_mut<F, R>(&mut self, operation: F) -> Option<R>
+    fn for_each_request_subscription_mut<F>(&mut self, operation: F)
     where
-        F: FnMut(&mut S) -> Option<R>;
+        F: FnMut(&mut S);
     /// Executes the provided operation for each response subscription
-    fn for_each_response_subscription_mut<F, R>(&mut self, operation: F) -> Option<R>
+    fn for_each_response_subscription_mut<F>(&mut self, operation: F)
     where
-        F: FnMut(&mut S) -> Option<R>;
+        F: FnMut(&mut S);
 }
 
 /// A subscription manager that dynamically allocates memory
@@ -209,40 +209,31 @@ impl<S> SubscriptionManager<S> for DynamicSubscriptionManager<S> {
             .map(|(_, sub)| sub)
     }
 
-    fn for_each_message_subscription_mut<F, R>(&mut self, mut operation: F) -> Option<R>
+    fn for_each_message_subscription_mut<F>(&mut self, mut operation: F)
     where
-        F: FnMut(&mut S) -> Option<R>,
+        F: FnMut(&mut S),
     {
         for (_, subscription) in &mut self.message_subscriptions {
-            if let Some(result) = operation(subscription) {
-                return Some(result);
-            }
+            operation(subscription);
         }
-        None
     }
 
-    fn for_each_request_subscription_mut<F, R>(&mut self, mut operation: F) -> Option<R>
+    fn for_each_request_subscription_mut<F>(&mut self, mut operation: F)
     where
-        F: FnMut(&mut S) -> Option<R>,
+        F: FnMut(&mut S),
     {
         for (_, subscription) in &mut self.request_subscriptions {
-            if let Some(result) = operation(subscription) {
-                return Some(result);
-            }
+            operation(subscription);
         }
-        None
     }
 
-    fn for_each_response_subscription_mut<F, R>(&mut self, mut operation: F) -> Option<R>
+    fn for_each_response_subscription_mut<F>(&mut self, mut operation: F)
     where
-        F: FnMut(&mut S) -> Option<R>,
+        F: FnMut(&mut S),
     {
         for (_, subscription) in &mut self.response_subscriptions {
-            if let Some(result) = operation(subscription) {
-                return Some(result);
-            }
+            operation(subscription);
         }
-        None
     }
 }
 
@@ -254,4 +245,15 @@ impl<S> Default for DynamicSubscriptionManager<S> {
             response_subscriptions: Default::default(),
         }
     }
+}
+
+/// Information about something that a receiver/node is subscribed to
+#[derive(Debug)]
+pub enum Subscription {
+    /// A message subscription, for messages with the specified subject ID
+    Message(SubjectId),
+    /// A service subscription, for service requests with the specified service ID
+    Request(ServiceId),
+    /// A service subscription, for service responses with the specified service ID
+    Response(ServiceId),
 }

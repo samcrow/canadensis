@@ -1,74 +1,83 @@
 use crate::cobs::Unescaper;
+use crate::driver::ReceiveDriver;
 use crate::header_collector::HeaderCollector;
-use crate::{make_payload_crc, SerialNodeId, SerialTransferId, SerialTransport};
+use crate::{make_payload_crc, Error, SerialNodeId, SerialTransferId, SerialTransport};
 use alloc::vec::Vec;
+use canadensis_core::subscription::SubscriptionManager;
 use canadensis_core::time::Instant;
 use canadensis_core::transfer::{Header, Transfer};
-use canadensis_core::transfer_id::TransferIdTracker;
-use canadensis_core::transport::{Receiver, TransferId, Transport};
-use canadensis_core::{OutOfMemoryError, PortId, ServiceId, ServiceSubscribeError, SubjectId};
+use canadensis_core::transport::{Receiver, Transport};
+use canadensis_core::{nb, OutOfMemoryError, ServiceId, ServiceSubscribeError, SubjectId};
+use core::cmp::Ordering;
 use core::mem;
-use fallible_collections::FallibleVec;
+use fallible_collections::{FallibleVec, TryHashMap};
 
 /// A serial transport receiver
 ///
 /// This implementation does not support multi-frame transfers or timestamps.
-pub struct SerialReceiver<I, T> {
-    state: State<I>,
+pub struct SerialReceiver<I, D, S>
+where
+    D: ReceiveDriver,
+{
+    /// The driver used to receive bytes
+    driver: D,
+    state: State<I, D>,
     node_id: Option<SerialNodeId>,
-    message_subscriptions: Vec<Subscription<T>>,
-    request_subscriptions: Vec<Subscription<T>>,
-    response_subscriptions: Vec<Subscription<T>>,
+    subscriptions: S,
 }
 
-impl<I, T> SerialReceiver<I, T> {
-    pub fn new(node_id: SerialNodeId) -> Self {
+impl<I, D, S> SerialReceiver<I, D, S>
+where
+    I: Instant,
+    D: ReceiveDriver,
+    S: SubscriptionManager<Subscription<I>> + Default,
+{
+    pub fn new(driver: D, node_id: SerialNodeId) -> Self {
         SerialReceiver {
+            driver,
             state: State::Idle,
             node_id: Some(node_id),
-            message_subscriptions: Vec::new(),
-            request_subscriptions: Vec::new(),
-            response_subscriptions: Vec::new(),
+            subscriptions: S::default(),
         }
     }
-    pub fn new_anonymous() -> Self {
+    pub fn new_anonymous(driver: D) -> Self {
         SerialReceiver {
+            driver,
             state: State::Idle,
             node_id: None,
-            message_subscriptions: Vec::new(),
-            request_subscriptions: Vec::new(),
-            response_subscriptions: Vec::new(),
+            subscriptions: S::default(),
         }
     }
-}
 
-impl<I, T> Receiver<I> for SerialReceiver<I, T>
-where
-    I: Instant + Default,
-    T: TransferIdTracker<SerialNodeId, SerialTransferId> + Default,
-{
-    type Transport = SerialTransport;
+    fn clean_expired_sessions(&mut self, now: I) {
+        self.subscriptions
+            .for_each_message_subscription_mut(|sub| sub.clean_expired_sessions(now));
+        self.subscriptions
+            .for_each_request_subscription_mut(|sub| sub.clean_expired_sessions(now));
+        self.subscriptions
+            .for_each_response_subscription_mut(|sub| sub.clean_expired_sessions(now));
+    }
 
-    fn accept(
+    fn handle_byte(
         &mut self,
-        frame: u8,
-    ) -> Result<Option<Transfer<Vec<u8>, I, Self::Transport>>, <Self::Transport as Transport>::Error>
-    {
+        byte: u8,
+        now: I,
+    ) -> Result<Option<Transfer<Vec<u8>, I, SerialTransport<D::Error>>>, Error<D::Error>> {
         let state = mem::replace(&mut self.state, State::Idle);
         self.state = match state {
             State::Idle => {
-                if frame == 0 {
+                if byte == 0 {
                     State::BetweenTransfers
                 } else {
                     State::Idle
                 }
             }
             State::BetweenTransfers => {
-                if frame != 0 {
+                if byte != 0 {
                     // Start decoding
                     log::debug!("Starting frame");
                     let mut unescaper = Unescaper::new();
-                    match unescaper.accept(frame) {
+                    match unescaper.accept(byte) {
                         Ok(Some(byte)) => {
                             // Got the first byte of the header
                             let mut header = HeaderCollector::new();
@@ -90,14 +99,14 @@ where
                 mut unescaper,
                 mut header,
             } => {
-                match unescaper.accept(frame) {
+                match unescaper.accept(byte) {
                     Ok(Some(byte)) => {
                         header.push(byte);
 
                         if header.is_done() {
                             // Got the complete header
                             let header = header.as_header();
-                            match header.into_header(I::default()) {
+                            match header.into_header(now) {
                                 Ok(header) => {
                                     if let Some(subscription) = self.is_interested(&header) {
                                         // Try to allocate memory for the incoming transfer
@@ -113,7 +122,7 @@ where
                                             Err(_) => {
                                                 // Not enough memory to receive this transfer
                                                 self.state = State::Idle;
-                                                return Err(OutOfMemoryError);
+                                                return Err(Error::Memory(OutOfMemoryError));
                                             }
                                         }
                                     } else {
@@ -146,7 +155,7 @@ where
                 header,
                 mut payload,
             } => {
-                match unescaper.accept(frame) {
+                match unescaper.accept(byte) {
                     Ok(Some(byte)) => {
                         if payload.len() == payload.capacity() {
                             // Reached maximum payload length, forced to finish the transfer
@@ -181,126 +190,117 @@ where
         };
         Ok(None)
     }
+}
+
+impl<I, D, S> Receiver<I> for SerialReceiver<I, D, S>
+where
+    I: Instant + Default,
+    D: ReceiveDriver,
+    S: SubscriptionManager<Subscription<I>> + Default,
+{
+    type Transport = SerialTransport<D::Error>;
+
+    fn receive(
+        &mut self,
+        now: I,
+    ) -> Result<Option<Transfer<Vec<u8>, I, Self::Transport>>, <Self::Transport as Transport>::Error>
+    {
+        self.clean_expired_sessions(now);
+        loop {
+            match self.driver.receive_byte() {
+                Ok(byte) => match self.handle_byte(byte, now) {
+                    Ok(Some(transfer)) => break Ok(Some(transfer)),
+                    Ok(None) => { /* Keep going and try another byte */ }
+                    Err(e) => break Err(e),
+                },
+                Err(nb::Error::WouldBlock) => break Ok(None),
+                Err(nb::Error::Other(e)) => break Err(Error::Driver(e)),
+            }
+        }
+    }
 
     fn subscribe_message(
         &mut self,
         subject: SubjectId,
         payload_size_max: usize,
-        _timeout: <I as Instant>::Duration,
+        timeout: <I as Instant>::Duration,
     ) -> Result<(), <Self::Transport as Transport>::Error> {
-        subscribe(
-            &mut self.message_subscriptions,
-            subject.into(),
-            payload_size_max,
-        )
+        self.subscriptions
+            .subscribe_message(subject, Subscription::new(payload_size_max, timeout))
+            .map_err(Error::Memory)
     }
 
     fn unsubscribe_message(&mut self, subject: SubjectId) {
-        unsubscribe(&mut self.message_subscriptions, subject.into());
+        self.subscriptions.unsubscribe_message(subject);
     }
 
     fn subscribe_request(
         &mut self,
         service: ServiceId,
         payload_size_max: usize,
-        _timeout: <I as Instant>::Duration,
+        timeout: <I as Instant>::Duration,
     ) -> Result<(), ServiceSubscribeError<<Self::Transport as Transport>::Error>> {
         if self.node_id.is_some() {
-            subscribe(
-                &mut self.request_subscriptions,
-                service.into(),
-                payload_size_max,
-            )
-            .map_err(ServiceSubscribeError::Transport)
+            self.subscriptions
+                .subscribe_request(service, Subscription::new(payload_size_max, timeout))
+                .map_err(|oom| ServiceSubscribeError::Transport(Error::Memory(oom)))
         } else {
             Err(ServiceSubscribeError::Anonymous)
         }
     }
 
     fn unsubscribe_request(&mut self, service: ServiceId) {
-        unsubscribe(&mut self.request_subscriptions, service.into());
+        self.subscriptions.unsubscribe_request(service);
     }
 
     fn subscribe_response(
         &mut self,
         service: ServiceId,
         payload_size_max: usize,
-        _timeout: <I as Instant>::Duration,
+        timeout: <I as Instant>::Duration,
     ) -> Result<(), ServiceSubscribeError<<Self::Transport as Transport>::Error>> {
         if self.node_id.is_some() {
-            subscribe(
-                &mut self.response_subscriptions,
-                service.into(),
-                payload_size_max,
-            )
-            .map_err(ServiceSubscribeError::Transport)
+            self.subscriptions
+                .subscribe_response(service, Subscription::new(payload_size_max, timeout))
+                .map_err(|oom| ServiceSubscribeError::Transport(Error::Memory(oom)))
         } else {
             Err(ServiceSubscribeError::Anonymous)
         }
     }
 
     fn unsubscribe_response(&mut self, service: ServiceId) {
-        unsubscribe(&mut self.response_subscriptions, service.into());
+        self.subscriptions.unsubscribe_response(service);
     }
 }
 
-impl<I, T> SerialReceiver<I, T>
+impl<I, D, S> SerialReceiver<I, D, S>
 where
-    T: TransferIdTracker<SerialNodeId, SerialTransferId>,
+    I: Instant,
+    D: ReceiveDriver,
+    S: SubscriptionManager<Subscription<I>>,
 {
-    /// Finds and returns a subscription that matches the provided header (and, for service
-    /// transfers, has this node as its destination) if any exists
-    fn find_subscription(&self, header: &Header<I, SerialTransport>) -> Option<&Subscription<T>> {
-        match header {
-            Header::Message(header) => self
-                .message_subscriptions
-                .iter()
-                .find(|sub| sub.port == header.subject.into()),
-            Header::Request(header) => {
-                if self.node_id == Some(header.destination) {
-                    self.request_subscriptions
-                        .iter()
-                        .find(|sub| sub.port == header.service.into())
-                } else {
-                    None
-                }
-            }
-            Header::Response(header) => {
-                if self.node_id == Some(header.destination) {
-                    self.response_subscriptions
-                        .iter()
-                        .find(|sub| sub.port == header.service.into())
-                } else {
-                    None
-                }
-            }
-        }
-    }
     /// Finds and returns a subscription that matches the provided header (and, for service
     /// transfers, has this node as its destination) if any exists
     fn find_subscription_mut(
         &mut self,
-        header: &Header<I, SerialTransport>,
-    ) -> Option<&mut Subscription<T>> {
+        header: &Header<I, SerialTransport<D::Error>>,
+    ) -> Option<&mut Subscription<I>> {
         match header {
             Header::Message(header) => self
-                .message_subscriptions
-                .iter_mut()
-                .find(|sub| sub.port == header.subject.into()),
+                .subscriptions
+                .find_message_subscription_mut(header.subject),
             Header::Request(header) => {
                 if self.node_id == Some(header.destination) {
-                    self.request_subscriptions
-                        .iter_mut()
-                        .find(|sub| sub.port == header.service.into())
+                    self.subscriptions
+                        .find_request_subscription_mut(header.service)
                 } else {
                     None
                 }
             }
             Header::Response(header) => {
                 if self.node_id == Some(header.destination) {
-                    self.response_subscriptions
-                        .iter_mut()
-                        .find(|sub| sub.port == header.service.into())
+                    self.subscriptions
+                        .find_response_subscription_mut(header.service)
                 } else {
                     None
                 }
@@ -311,23 +311,43 @@ where
     /// Returns true if this receiver has a matching subscription, its last transfer ID is less
     /// than the provided header's transfer ID, and (for service transfers) this node is the
     /// destination
-    fn is_interested(&self, header: &Header<I, SerialTransport>) -> Option<&Subscription<T>> {
-        self.find_subscription(header).and_then(|subscription| {
-            match &subscription.last_transfer_id {
-                // TODO: Last transfer ID must be unique for each source node
-                // Continue if there is no last transfer ID, or if this transfer's ID is greater
-                None => Some(subscription),
-                Some(last) if last < header.transfer_id() => Some(subscription),
-                Some(_) => None,
-            }
-        })
+    fn is_interested(
+        &self,
+        header: &Header<I, SerialTransport<D::Error>>,
+    ) -> Option<&Subscription<I>> {
+        self.subscriptions
+            .find_subscription(header)
+            .and_then(|subscription| {
+                match header.source() {
+                    Some(source) => {
+                        match subscription.sessions.get(source) {
+                            Some(session) => {
+                                if session.last_transfer_id < *header.transfer_id() {
+                                    Some(subscription)
+                                } else {
+                                    // Duplicate transfer
+                                    None
+                                }
+                            }
+                            None => {
+                                // No session, accept
+                                Some(subscription)
+                            }
+                        }
+                    }
+                    None => {
+                        // Anonymous transfers can't take advantage of deduplication. Always accept.
+                        Some(subscription)
+                    }
+                }
+            })
     }
 
     fn complete_transfer(
         &mut self,
-        header: Header<I, SerialTransport>,
+        header: Header<I, SerialTransport<D::Error>>,
         mut payload_and_crc: Vec<u8>,
-    ) -> Option<Transfer<Vec<u8>, I, SerialTransport>> {
+    ) -> Option<Transfer<Vec<u8>, I, SerialTransport<D::Error>>> {
         if payload_and_crc.len() >= 4 {
             let mut crc_bytes = [0u8; 4];
             crc_bytes.copy_from_slice(&payload_and_crc[payload_and_crc.len() - 4..]);
@@ -342,7 +362,17 @@ where
 
             // Record that this transfer was received
             if let Some(subscription) = self.find_subscription_mut(&header) {
-                subscription.last_transfer_id = Some(header.transfer_id().clone());
+                if let Some(source_node) = header.source() {
+                    // This may fail to allocate memory.
+                    // TODO: Handle allocation failure
+                    let _ = subscription.sessions.insert(
+                        source_node.clone(),
+                        Session {
+                            expiration_time: subscription.timeout + header.timestamp(),
+                            last_transfer_id: header.transfer_id().clone(),
+                        },
+                    );
+                }
                 Some(Transfer { header, payload })
             } else {
                 // The subscription was removed while receiving the transfer
@@ -355,45 +385,61 @@ where
     }
 }
 
-struct Subscription<T> {
-    port: PortId,
+pub struct Subscription<I>
+where
+    I: Instant,
+{
     /// The maximum payload size, in bytes
     payload_size_max: usize,
-    /// The ID of the last transfer that was successfully received
+    /// Transfer ID timeout
+    timeout: <I as Instant>::Duration,
+    /// A session for each node (and an associated last transfer ID)
     ///
     /// This is used to remove duplicates
-    last_transfer_ids: T,
+    sessions: TryHashMap<SerialNodeId, Session<I>>,
 }
 
-fn unsubscribe<T>(subscriptions: &mut Vec<Subscription<T>>, port: PortId) {
-    if let Some(index) = subscriptions.iter().position(|sub| sub.port == port) {
-        subscriptions.swap_remove(index);
+impl<I> Subscription<I>
+where
+    I: Instant,
+{
+    fn new(payload_size_max: usize, timeout: <I as Instant>::Duration) -> Self {
+        Subscription {
+            payload_size_max,
+            timeout,
+            sessions: Default::default(),
+        }
+    }
+
+    /// Removes all sessions that have expired
+    fn clean_expired_sessions(&mut self, now: I) {
+        loop {
+            let mut id_to_remove: Option<SerialNodeId> = None;
+            for (id, session) in self.sessions.iter() {
+                if session.expiration_time.overflow_safe_compare(&now) == Ordering::Less {
+                    id_to_remove = Some(id.clone());
+                }
+            }
+            match id_to_remove {
+                Some(id) => {
+                    self.sessions.remove(&id);
+                }
+                None => break,
+            }
+        }
     }
 }
 
-fn subscribe<T>(
-    subscriptions: &mut Vec<Subscription<T>>,
-    port: PortId,
-    payload_size_max: usize,
-) -> Result<(), OutOfMemoryError>
-where
-    T: Default,
-{
-    // Remove any existing subscription for this port
-    unsubscribe(subscriptions, port);
-    FallibleVec::try_push(
-        subscriptions,
-        Subscription {
-            port,
-            payload_size_max,
-            last_transfer_ids: Default::default(),
-        },
-    )?;
-    Ok(())
+struct Session<I> {
+    expiration_time: I,
+    last_transfer_id: SerialTransferId,
 }
 
 /// Receiver states
-enum State<I> {
+enum State<I, D>
+where
+    D: ReceiveDriver,
+{
     /// Waiting for the first zero byte
     Idle,
     /// Got a zero byte, waiting for the first non-zero byte to begin a transfer
@@ -412,7 +458,7 @@ enum State<I> {
     /// The capacity of the payload is set to the maximum payload length plus 4 bytes.
     Payload {
         unescaper: Unescaper,
-        header: Header<I, SerialTransport>,
+        header: Header<I, SerialTransport<D::Error>>,
         payload: Vec<u8>,
     },
 }

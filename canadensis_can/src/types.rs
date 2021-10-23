@@ -5,29 +5,24 @@ use canadensis_core::{InvalidValue, OutOfMemoryError, Priority};
 use core::convert::TryFrom;
 use core::fmt;
 use core::fmt::Debug;
-use core::marker::PhantomData;
 use core::ops::RangeInclusive;
 use hash32_derive::Hash32;
 
 /// The UAVCAN/CAN transport
 ///
 /// `I` is the instant type used to keep track of time
-pub struct CanTransport<E>(PhantomData<E>);
+pub struct CanTransport;
 
-impl<E> Transport for CanTransport<E>
-where
-    E: Debug,
-{
+impl Transport for CanTransport {
     type NodeId = CanNodeId;
     type TransferId = CanTransferId;
     type Priority = Priority;
-    type Error = Error<E>;
 }
 
 /// Convenience type alias for a transfer header
-pub type Header<I, E> = canadensis_core::transfer::Header<I, CanTransport<E>>;
+pub type Header<I> = canadensis_core::transfer::Header<I, CanTransport>;
 /// Convenience type alias for a transfer
-pub type Transfer<A, I, E> = canadensis_core::transfer::Transfer<A, I, CanTransport<E>>;
+pub type Transfer<A, I> = canadensis_core::transfer::Transfer<A, I, CanTransport>;
 
 const VALID_NODE_IDS: RangeInclusive<u8> = 0..=127;
 

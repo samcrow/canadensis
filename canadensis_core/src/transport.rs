@@ -19,10 +19,6 @@ pub trait Transport {
     type TransferId: TransferId;
     /// A priority type that can hold all supported priority values
     type Priority: Clone + Debug + From<crate::Priority>;
-    /// An error type
-    ///
-    /// This type must have an out-of-memory variant that can hold an `OutOfMemoryError`.
-    type Error: Debug + From<OutOfMemoryError>;
 }
 
 /// A transmitter that can send outgoing transfers
@@ -32,18 +28,23 @@ where
 {
     /// The transport that this transmitter works with
     type Transport: Transport;
+    /// The driver type that this transmitter uses to send frames
+    type Driver;
+    /// An error type
+    ///
+    /// This type must have an out-of-memory variant that can hold an `OutOfMemoryError`.
+    type Error: From<OutOfMemoryError>;
 
     /// Starts the process of sending an outgoing transfer
     ///
     /// The transport implementation may block until the entire transfer is sent, or put frames in
     /// a queue to be sent separately.
-    ///
-    /// If this function returns an error, no part of the transfer may be transmitted.
     fn push<A, C>(
         &mut self,
         transfer: Transfer<A, I, Self::Transport>,
         clock: &mut C,
-    ) -> Result<(), <Self::Transport as Transport>::Error>
+        driver: &mut Self::Driver,
+    ) -> nb::Result<(), Self::Error>
     where
         A: AsRef<[u8]>,
         C: Clock<Instant = I>;
@@ -60,7 +61,7 @@ where
     /// * `Ok(())`: All frames were sent
     /// * `Err(nb::Error::WouldBlock)`: At least one frame could not be sent yet
     /// * `Err(nb::Error::Other(e))`: Some other error occurred
-    fn flush<C>(&mut self, clock: &mut C) -> nb::Result<(), <Self::Transport as Transport>::Error>
+    fn flush<C>(&mut self, clock: &mut C, driver: &mut Self::Driver) -> nb::Result<(), Self::Error>
     where
         C: Clock<Instant = I>;
 
@@ -80,6 +81,12 @@ where
 {
     /// The transport that this transmitter works with
     type Transport: Transport;
+    /// The driver type that this transmitter uses to receive frames
+    type Driver;
+    /// An error type
+    ///
+    /// This type must have an out-of-memory variant that can hold an `OutOfMemoryError`.
+    type Error: From<OutOfMemoryError>;
 
     /// Checks for incoming frames and processes them, possibly returning a transfer
     ///
@@ -100,7 +107,8 @@ where
     fn receive(
         &mut self,
         now: I,
-    ) -> Result<Option<Transfer<Vec<u8>, I, Self::Transport>>, <Self::Transport as Transport>::Error>;
+        driver: &mut Self::Driver,
+    ) -> Result<Option<Transfer<Vec<u8>, I, Self::Transport>>, Self::Error>;
 
     /// Subscribes to messages on a subject
     ///
@@ -121,10 +129,11 @@ where
         subject: SubjectId,
         payload_size_max: usize,
         timeout: I::Duration,
-    ) -> Result<(), <Self::Transport as Transport>::Error>;
+        driver: &mut Self::Driver,
+    ) -> Result<(), Self::Error>;
 
     /// Unsubscribes from messages on a subject
-    fn unsubscribe_message(&mut self, subject: SubjectId);
+    fn unsubscribe_message(&mut self, subject: SubjectId, driver: &mut Self::Driver);
 
     /// Subscribes to requests for a service
     ///
@@ -149,10 +158,11 @@ where
         service: ServiceId,
         payload_size_max: usize,
         timeout: I::Duration,
-    ) -> Result<(), ServiceSubscribeError<<Self::Transport as Transport>::Error>>;
+        driver: &mut Self::Driver,
+    ) -> Result<(), ServiceSubscribeError<Self::Error>>;
 
     /// Unsubscribes from requests for a service
-    fn unsubscribe_request(&mut self, service: ServiceId);
+    fn unsubscribe_request(&mut self, service: ServiceId, driver: &mut Self::Driver);
 
     /// Subscribes to responses for a service
     ///
@@ -177,10 +187,11 @@ where
         service: ServiceId,
         payload_size_max: usize,
         timeout: I::Duration,
-    ) -> Result<(), ServiceSubscribeError<<Self::Transport as Transport>::Error>>;
+        driver: &mut Self::Driver,
+    ) -> Result<(), ServiceSubscribeError<Self::Error>>;
 
     /// Unsubscribes from responses for a service
-    fn unsubscribe_response(&mut self, service: ServiceId);
+    fn unsubscribe_response(&mut self, service: ServiceId, driver: &mut Self::Driver);
 }
 
 /// Required operations for a transfer ID

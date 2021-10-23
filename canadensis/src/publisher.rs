@@ -1,5 +1,5 @@
 use crate::serialize::do_serialize;
-use canadensis_core::time::Instant;
+use canadensis_core::time::{Clock, Instant};
 use canadensis_core::transfer::{Header, MessageHeader, Transfer};
 use canadensis_core::transport::{TransferId, Transmitter, Transport};
 use canadensis_core::SubjectId;
@@ -38,9 +38,9 @@ impl<I: Instant, T: Transmitter<I>> Publisher<I, T> {
         }
     }
 
-    pub fn publish<M>(
+    pub fn publish<M, C>(
         &mut self,
-        now: I,
+        clock: &mut C,
         subject: SubjectId,
         payload: &M,
         transmitter: &mut T,
@@ -48,24 +48,27 @@ impl<I: Instant, T: Transmitter<I>> Publisher<I, T> {
     where
         M: Message + Serialize,
         I: Instant,
+        C: Clock<Instant = I>,
     {
-        let deadline = self.timeout + now;
+        let deadline = self.timeout + clock.now();
         // Part 1: Serialize
         do_serialize(payload, |payload_bytes| {
             // Part 2: Split into frames and put frames in the queue
-            self.send_payload(subject, payload_bytes, deadline, transmitter)
+            self.send_payload(subject, payload_bytes, deadline, transmitter, clock)
         })
     }
 
-    pub fn send_payload(
+    pub fn send_payload<C>(
         &mut self,
         subject: SubjectId,
         payload: &[u8],
         deadline: I,
         transmitter: &mut T,
+        clock: &mut C,
     ) -> Result<(), <T::Transport as Transport>::Error>
     where
         I: Clone,
+        C: Clock<Instant = I>,
     {
         // Assemble the transfer
         let transfer = Transfer {
@@ -80,6 +83,6 @@ impl<I: Instant, T: Transmitter<I>> Publisher<I, T> {
         };
         self.next_transfer_id = self.next_transfer_id.clone().increment();
 
-        transmitter.push(transfer)
+        transmitter.push(transfer, clock)
     }
 }

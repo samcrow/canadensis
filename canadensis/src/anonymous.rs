@@ -58,7 +58,7 @@ where
     pub fn send(
         &mut self,
         payload: &M,
-        now: C::Instant,
+        clock: &mut C,
         transmitter: &mut T,
     ) -> Result<(), AnonymousPublishError<<T::Transport as Transport>::Error>> {
         // Check that the message fits into one frame
@@ -68,9 +68,9 @@ where
             return Err(AnonymousPublishError::Length);
         }
         // Part 1: Serialize
-        let deadline = self.timeout + now;
+        let deadline = self.timeout + clock.now();
         do_serialize(payload, |payload_bytes| {
-            self.send_payload(payload_bytes, deadline, transmitter)
+            self.send_payload(payload_bytes, deadline, transmitter, clock)
         })?;
         Ok(())
     }
@@ -80,6 +80,7 @@ where
         payload: &[u8],
         deadline: C::Instant,
         transmitter: &mut T,
+        clock: &mut C,
     ) -> Result<(), <T::Transport as Transport>::Error> {
         // Assemble the transfer
         let transfer = Transfer {
@@ -94,8 +95,7 @@ where
         };
         self.next_transfer_id = self.next_transfer_id.clone().increment();
 
-        transmitter.push(transfer)?;
-        Ok(())
+        transmitter.push(transfer, clock)
     }
 }
 

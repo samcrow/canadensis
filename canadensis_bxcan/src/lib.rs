@@ -15,221 +15,163 @@ extern crate canadensis;
 extern crate canadensis_can;
 extern crate canadensis_filter_config;
 extern crate canadensis_pnp_client;
+extern crate fallible_collections;
 extern crate log;
 extern crate nb;
 
 pub mod pnp;
 
+use alloc::vec::Vec;
 use bxcan::filter::{BankConfig, Mask32};
-use bxcan::{Can, ExtendedId, FilterOwner, Instance, Mailbox};
-use canadensis::core::time::{Clock, Instant};
-use canadensis::core::OutOfMemoryError;
-use canadensis::{Node, TransferHandler};
-use canadensis_can::queue::FrameQueueSource;
-use canadensis_can::types::CanTransport;
-use canadensis_can::{CanReceiver, CanTransmitter};
-use canadensis_filter_config::{optimize, Filter};
+use bxcan::{Can, ExtendedId, FilterOwner, Instance, Mailbox, Tx};
+use canadensis::core::subscription::Subscription;
+use canadensis::core::time::Instant;
+use canadensis::core::{OutOfMemoryError, ServiceId, SubjectId};
+use canadensis::filter::Filter;
+use canadensis::Node;
+use canadensis_can::driver::{ReceiveDriver, TransmitDriver};
+use canadensis_can::types::CanNodeId;
+use canadensis_can::Frame;
+use canadensis_filter_config::optimize;
 use core::cmp::Ordering;
 use core::convert::{Infallible, TryFrom};
+use fallible_collections::FallibleVec;
 
-/// A UAVCAN node that communicates using a bxCAN peripheral
-pub struct BxCanNode<N, C>
+/// A CAN driver that wraps a bxCAN device and keeps track of deadlines for queued frames
+pub struct BxCanDriver<I, N>
 where
-    N: Node,
-    C: Instance,
+    N: Instance,
 {
-    /// The UAVCAN node
-    pub node: N,
-    /// The bxCAN peripheral
-    pub can: Can<C>,
-    deadlines: DeadlineTracker<N::Instant>,
+    can: Can<N>,
+    deadlines: DeadlineTracker<I>,
 }
 
-impl<I, N, C, Q> BxCanNode<N, C>
+impl<I, N> BxCanDriver<I, N>
 where
-    I: Instant,
-    N: Node<
-        Instant = I,
-        Transport = CanTransport<I>,
-        Transmitter = CanTransmitter<I, Q>,
-        Receiver = CanReceiver<I>,
-    >,
-    Q: FrameQueueSource<N::Instant>,
-    C: Instance,
+    N: Instance,
 {
-    /// Creates a node
-    pub fn new(node: N, can: Can<C>) -> Self {
-        BxCanNode {
-            node,
+    /// Creates a CAN driver
+    pub fn new(can: Can<N>) -> Self {
+        BxCanDriver {
             can,
             deadlines: DeadlineTracker::new(),
         }
     }
-
-    /// Configures the receive filters on a CAN peripheral to receive the frames that this node
-    /// is currently subscribed to
-    ///
-    /// Caution: While the filters are being applied, there will be a period where the CAN
-    /// peripheral does not accept any frames. This may cause frames to be lost if this function
-    /// is called while the node is running.
-    pub fn configure_filters(&mut self) -> Result<(), OutOfMemoryError>
-    where
-        C: FilterOwner,
-    {
-        configure_node_filters(&self.node, &mut self.can)
-    }
-
-    /// Receives all incoming CAN frames from the CAN peripheral, converts them into transfers,
-    /// and passes all completed transfers to the provided handler
-    pub fn receive_frames<H>(&mut self, handler: &mut H) -> Result<(), OutOfMemoryError>
-    where
-        H: TransferHandler<N::Instant, CanTransport<N::Instant>>,
-    {
-        loop {
-            match self.can.receive() {
-                // Need to access the clock for each frame to give it an accurate timestamp.
-                // When a frame completes a transfer, it may take a significant amount of time
-                // to process the transfer before the next frame can be received.
-                Ok(frame) => {
-                    let now = self.node.clock_mut().now();
-                    if let Ok(uavcan_frame) = bxcan_frame_to_uavcan(&frame, now) {
-                        self.node.accept_frame(uavcan_frame, handler)?;
-                    }
-                }
-                Err(nb::Error::Other(())) => {
-                    log::warn!("CAN receive FIFO overflowed");
-                }
-                Err(nb::Error::WouldBlock) => break,
-            }
-        }
-        Ok(())
-    }
-
-    /// Sends frames from the outgoing frame queue onto the CAN bus
-    ///
-    /// This function also discards any frames that have not been transmitted by their deadlines.
-    ///
-    /// This function returns a WouldBlock error if frames are waiting to be transmitted
-    /// but no suitable transmit mailbox is open.
-    pub fn send_frames(&mut self) -> nb::Result<(), Infallible> {
-        send_frames(&mut self.node, &mut self.can, &mut self.deadlines)
-    }
 }
 
-/// Configures filters on a CAN peripheral to accept all frames that the provided node is subscribed
-/// to
-pub fn configure_node_filters<N, I, S>(node: &N, can: &mut Can<I>) -> Result<(), OutOfMemoryError>
+impl<I, N> TransmitDriver<I> for BxCanDriver<I, N>
 where
-    N: Node<Receiver = CanReceiver<S>>,
-    I: Instance + FilterOwner,
-    S: Instant,
+    N: Instance,
 {
-    let mut filters = node.receiver().frame_filters()?;
-    optimize_and_apply_filters(&mut filters, can);
-    Ok(())
-}
+    type Error = Infallible;
 
-/// Sends frames from the node's outgoing frame queue onto the CAN bus
-///
-/// This function also discards any frames that have not been transmitted by their deadlines.
-///
-/// This function returns a WouldBlock error if frames are waiting to be transmitted
-/// but no suitable transmit mailbox is open.
-pub fn send_frames<I, N, C, Q>(
-    node: &mut N,
-    can: &mut Can<C>,
-    deadlines: &mut DeadlineTracker<N::Instant>,
-) -> nb::Result<(), Infallible>
-where
-    I: Instant,
-    N: Node<Instant = I, Transmitter = CanTransmitter<I, Q>>,
-    Q: FrameQueueSource<I>,
-    C: Instance,
-{
-    let now = node.clock_mut().now();
-    clean_expired_frames(deadlines, can, now);
-    while let Some(frame) = node.transmitter_mut().frame_queue_mut().pop_frame() {
+    fn transmit(&mut self, frame: &Frame<I>, now: I) -> nb::Result<Option<Frame<I>>, Self::Error> {
+        clean_expired_frames(&mut self.deadlines, &mut self.can, now);
         // Check that the frame's deadline has not passed
-        match frame.timestamp().overflow_safe_compare(&now) {
+        let deadline = frame.timestamp();
+        match deadline.overflow_safe_compare(&now) {
             Ordering::Greater | Ordering::Equal => {
                 // Deadline is now or in the future. Continue to transmit.
-                let send_status = send_frame(node, can, deadlines, frame);
-                match send_status {
-                    Ok(()) => {}
-                    Err(nb::Error::Other(infallible)) => match infallible {},
-                    Err(nb::Error::WouldBlock) => {
-                        // The self.send_frame call already put the frame back in the queue
-                        return Err(nb::Error::WouldBlock);
+                let frame = uavcan_frame_to_bxcan(frame);
+                match self.can.transmit(&frame) {
+                    Ok(status) => {
+                        // Store the deadline for this frame
+                        let replaced_deadline = self.deadlines.replace(status.mailbox(), deadline);
+                        if let (Some(removed_frame), Some(removed_frame_deadline)) =
+                            (status.dequeued_frame(), replaced_deadline)
+                        {
+                            if let Ok(removed_frame) =
+                                bxcan_frame_to_uavcan(removed_frame, removed_frame_deadline)
+                            {
+                                Ok(Some(removed_frame))
+                            } else {
+                                // Frame that was removed is not compatible with UAVCAN, so ignore it
+                                Ok(None)
+                            }
+                        } else {
+                            // No frame was removed
+                            Ok(None)
+                        }
                     }
+                    Err(nb::Error::WouldBlock) => Err(nb::Error::WouldBlock),
+                    Err(nb::Error::Other(infallible)) => match infallible {},
                 }
             }
             Ordering::Less => {
                 // Deadline passed, ignore frame
-                drop(frame);
+                Ok(None)
             }
         }
     }
-    // All frames in the queue processed
-    Ok(())
 }
 
-/// Puts one frame in a transmit mailbox to be sent
-///
-/// If all mailboxes are full with frames of equal or greater priority, this function returns
-/// the frame to the outgoing frame queue and returns a WouldBlock error.
-fn send_frame<I, N, C, Q>(
-    node: &mut N,
-    can: &mut Can<C>,
-    deadlines: &mut DeadlineTracker<I>,
-    frame: canadensis_can::Frame<I>,
-) -> nb::Result<(), Infallible>
+impl<I, N> ReceiveDriver<I> for BxCanDriver<I, N>
 where
     I: Instant,
-    N: Node<Instant = I, Transmitter = CanTransmitter<I, Q>>,
-    Q: FrameQueueSource<N::Instant>,
-    C: Instance,
+    N: Instance + FilterOwner,
 {
-    // Convert frame to BXCAN format
-    let bxcan_frame = uavcan_frame_to_bxcan(&frame);
-    match can.transmit_and_get_mailbox(&bxcan_frame) {
-        Ok((None, mailbox)) => {
-            // Store the deadline for the frame just submitted
-            let _ = deadlines.replace(mailbox, frame.timestamp());
-            Ok(())
-        }
-        Ok((Some(removed_frame), mailbox)) => {
-            // Store the deadline for the frame just submitted, and get the deadline for
-            // the removed frame
-            let removed_frame_deadline = deadlines
-                .replace(mailbox, frame.timestamp())
-                .expect("Bug: removed a frame from the mailbox, but no deadline");
-            let removed_frame = bxcan_frame_to_uavcan(&removed_frame, removed_frame_deadline)
-                .expect("Bug: Replaced frame has invalid format");
-            // Put the removed frame back in the queue to be transmitted later
-            // This may return an error if it runs out of memory, but there's nothing we can
-            // do about that.
-            let _ = node
-                .transmitter_mut()
-                .frame_queue_mut()
-                .return_frame(removed_frame);
-            Ok(())
-        }
-        Err(nb::Error::WouldBlock) => {
-            // No mailbox available for this frame. Put it back.
-            // Ignore out of memory
-            let _ = node.transmitter_mut().frame_queue_mut().return_frame(frame);
+    /// This matches the error type defined in bxcan
+    type Error = ();
 
-            Err(nb::Error::WouldBlock)
+    fn receive(&mut self, now: I) -> nb::Result<Frame<I>, Self::Error> {
+        loop {
+            match self.can.receive() {
+                Ok(frame) => match bxcan_frame_to_uavcan(&frame, now) {
+                    Ok(frame) => break Ok(frame),
+                    Err(_) => {
+                        // Remote or basic ID, not compatible with UAVCAN
+                        // Try to receive another frame
+                    }
+                },
+                Err(nb::Error::WouldBlock) => break Err(nb::Error::WouldBlock),
+                Err(nb::Error::Other(e)) => break Err(nb::Error::Other(e)),
+            }
         }
-        Err(nb::Error::Other(infallible)) => match infallible {},
     }
+
+    fn apply_filters<S>(&mut self, local_node: Option<CanNodeId>, subscriptions: S)
+    where
+        S: IntoIterator<Item = Subscription>,
+    {
+        match configure_node_filters(&mut self.can, local_node, subscriptions) {
+            Ok(()) => { /* Done */ }
+            Err(_) => {
+                // Out of memory. Set the filters to accept all frames.
+                self.can
+                    .modify_filters()
+                    .clear()
+                    .enable_bank(0, Mask32::accept_all());
+            }
+        }
+    }
+}
+
+/// Configures filters on a CAN peripheral to accept all frames that match the provided subscription
+pub fn configure_node_filters<I, S>(
+    can: &mut Can<I>,
+    local_node: Option<CanNodeId>,
+    subscriptions: S,
+) -> Result<(), OutOfMemoryError>
+where
+    I: Instance + FilterOwner,
+    S: IntoIterator<Item = Subscription>,
+{
+    let mut subscriptions = subscriptions.into_iter();
+    let mut filters: Vec<Filter> = Vec::new();
+    for subscription in subscriptions {
+        if let Some(filter) = make_filter(subscription, local_node) {
+            filters.try_push(filter)?;
+        }
+    }
+    optimize_and_apply_filters(&mut filters, can);
+    Ok(())
 }
 
 /// Aborts transmission for all frames placed in transmit mailboxes that have missed their
 /// transmit deadlines
 ///
 /// now: The current time
-fn clean_expired_frames<I, C>(deadlines: &mut DeadlineTracker<I>, can: &mut Can<C>, now: I)
+fn clean_expired_frames<I, C>(deadlines: &mut DeadlineTracker<I>, can: &mut Tx<C>, now: I)
 where
     I: Instant,
     C: Instance,
@@ -329,4 +271,62 @@ where
             BankConfig::Mask32(Mask32::frames_with_ext_id(id, mask)),
         );
     }
+}
+
+/// Creates and returns a filter that matches the provided subscription, or None if the subscription
+/// is a request or response subscription and local_node is None.
+fn make_filter(subscription: Subscription, local_node: Option<CanNodeId>) -> Option<Filter> {
+    match subscription {
+        Subscription::Message(subject) => Some(subject_filter(subject)),
+        Subscription::Request(service) => {
+            local_node.map(|local_node| request_filter(service, local_node))
+        }
+        Subscription::Response(service) => {
+            local_node.map(|local_node| response_filter(service, local_node))
+        }
+    }
+}
+
+/// Returns a filter that matches message transfers on one subject
+///
+/// Criteria:
+/// * Priority: any
+/// * Anonymous: any
+/// * Subject ID: matching the provided subject ID
+/// * Source node ID: any
+fn subject_filter(subject: SubjectId) -> Filter {
+    let m_id: u32 = 0b0_0000_0110_0000_0000_0000_0000_0000 | u32::from(subject) << 8;
+    let mask: u32 = 0b0_0010_1001_1111_1111_1111_1000_0000;
+    Filter::new(mask, m_id)
+}
+
+/// Returns a filter that matches service request transfers for one service to one node ID
+///
+/// Criteria:
+/// * Priority: any
+/// * Request or response: request
+/// * Service ID: matching the provided service ID
+/// * Destination: matching the provided node ID
+/// * Source: any
+fn request_filter(service: ServiceId, destination: CanNodeId) -> Filter {
+    let dynamic_id_bits = u32::from(service) << 14 | u32::from(destination) << 7;
+    let m_id: u32 = 0b0_0011_0000_0000_0000_0000_0000_0000 | dynamic_id_bits;
+    let mask: u32 = 0b0_0011_1111_1111_1111_1111_1000_0000;
+    Filter::new(mask, m_id)
+}
+
+/// Returns a filter that matches service response transfers for one service to one node ID
+///
+/// Criteria:
+/// * Priority: any
+/// * Request or response: response
+/// * Service ID: matching the provided service ID
+/// * Destination: matching the provided node ID
+/// * Source: any
+fn response_filter(service: ServiceId, destination: CanNodeId) -> Filter {
+    let dynamic_id_bits =
+        u32::from(u16::from(service)) << 14 | u32::from(u8::from(destination)) << 7;
+    let m_id: u32 = 0b0_0010_0000_0000_0000_0000_0000_0000 | dynamic_id_bits;
+    let mask: u32 = 0b0_0011_1111_1111_1111_1111_1000_0000;
+    Filter::new(mask, m_id)
 }

@@ -22,6 +22,7 @@ use canadensis::core::{Priority, SubjectId};
 use canadensis::encoding::{Deserialize, Message, Serialize};
 use canadensis_data_types::uavcan::pnp::node_id_allocation_data_1_0::{self, NodeIDAllocationData};
 use core::convert::TryFrom;
+use core::fmt::Debug;
 use core::marker::PhantomData;
 use crc_any::CRCu64;
 
@@ -45,6 +46,7 @@ where
     T: Transmitter<C::Instant, Transport = P>,
     R: Receiver<C::Instant, Transport = P>,
     P: Transport,
+    P::Error: Debug,
 {
     /// Creates a new plug-and-play client
     ///
@@ -67,18 +69,18 @@ where
     }
 
     /// Creates an outgoing node ID allocation message and gives it to the transmitter
-    pub fn assemble_request(&mut self, now: C::Instant) {
+    pub fn send_request(&mut self, clock: &mut C) {
         let message = M::with_unique_id(&self.unique_id);
         self.publisher
-            .send(&message, now, &mut self.transmitter)
+            .send(&message, clock, &mut self.transmitter)
             .expect("Can't fit message into one frame");
     }
 
     /// Handles an incoming frame and checks if it provides an ID for this node
     ///
     /// This function returns the node ID if one was assigned.
-    pub fn accept(&mut self, frame: P::Frame) -> Result<Option<P::NodeId>, P::Error> {
-        if let Some(transfer_in) = self.receiver.accept(frame)? {
+    pub fn receive(&mut self, now: C::Instant) -> Result<Option<P::NodeId>, P::Error> {
+        if let Some(transfer_in) = self.receiver.receive(now)? {
             if let Ok(message) = M::deserialize_from_bytes(&transfer_in.payload) {
                 if message.matches_unique_id(&self.unique_id) {
                     if let Some(node_id) = message.node_id() {

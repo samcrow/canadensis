@@ -30,6 +30,7 @@ pub mod filter {
     //! Automatic CAN receive filter configuration
     pub use canadensis_filter_config::*;
 }
+pub use canadensis_core::nb;
 
 mod hash;
 
@@ -235,16 +236,16 @@ pub trait Node {
     /// The receiver that this node uses
     type Receiver: Receiver<Self::Instant, Transport = Self::Transport>;
 
-    /// Handles an incoming frame
+    /// Receives any available incoming frames and attempts ot reassemble them into a transfer
     ///
     /// If the frame completes a transfer, the transfer is passed to the provided handler.
     ///
     /// This function returns an error if memory for the received transfer could not be allocated.
     /// Other types of errors, like an invalid frame format or an incorrect transfer CRC,
     /// may cause transfers to be lost but are not reported as errors here.
-    fn accept_frame<H>(
+    fn receive<H>(
         &mut self,
-        frame: <Self::Transport as Transport>::Frame,
+        now: Self::Instant,
         handler: &mut H,
     ) -> Result<(), <Self::Transport as Transport>::Error>
     where
@@ -344,6 +345,9 @@ pub trait Node {
     ) -> Result<(), <Self::Transport as Transport>::Error>
     where
         T: Response + Serialize;
+
+    /// Attempts to flush all outgoing frames
+    fn flush(&mut self) -> nb::Result<(), <Self::Transport as Transport>::Error>;
 
     // Component access
 

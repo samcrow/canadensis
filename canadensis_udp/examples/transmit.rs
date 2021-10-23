@@ -26,7 +26,6 @@ fn main() {
     let mut transmitter = UdpTransmitter::<MTU>::new(address).unwrap();
 
     // Make a payload compatible with the uavcan.metatransport.ethernet.Frame.0.1 format format.
-    let length: u16 = MAJOR_GENERAL_SONG.len().try_into().unwrap();
     let mut payload = Vec::with_capacity(6 + 6 + 2 + 2 + MAJOR_GENERAL_SONG.len());
     // Destination
     payload.extend_from_slice(&[0xd1, 0xd2, 0xd3, 0xd4, 0xd5, 0xd6]);
@@ -34,6 +33,7 @@ fn main() {
     payload.extend_from_slice(&[0x31, 0x32, 0x33, 0x34, 0x35, 0x36]);
     // Type IPv4
     payload.extend_from_slice(&[0x00, 0x08]);
+    let length: u16 = MAJOR_GENERAL_SONG.len().try_into().unwrap();
     payload.extend_from_slice(&[length as u8, (length >> 8) as u8]);
     payload.extend_from_slice(MAJOR_GENERAL_SONG);
 
@@ -47,7 +47,6 @@ fn main() {
                 subject: SubjectId::try_from(73u16).unwrap(),
                 source: Some(node_id.clone()),
             }),
-            // This payload is compatible with the uvcan.primitive.String.1.0 format.
             payload: &payload,
         };
 

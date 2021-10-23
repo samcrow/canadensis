@@ -12,9 +12,10 @@ description = "Bridge between Canadensis and the BXCAN peripherals found in some
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bxcan = "0.5.1"
+bxcan = "0.6.0"
 nb = "1.0.0"
 log = "0.4"
+fallible_collections = "0.4.3"
 
 [dependencies.canadensis]
 version = "0.1.0"
