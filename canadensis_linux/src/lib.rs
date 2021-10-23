@@ -10,35 +10,78 @@ extern crate canadensis_filter_config;
 extern crate log;
 extern crate socketcan;
 
+use canadensis_can::driver::{optimize_filters, ReceiveDriver, TransmitDriver};
+use canadensis_can::types::CanNodeId;
+use canadensis_can::Frame;
+use canadensis_core::subscription::Subscription;
 use canadensis_core::time::{Clock, Instant, Microseconds64};
-use canadensis_filter_config::Filter;
+use canadensis_core::{nb, OutOfMemoryError};
 use socketcan::CANSocket;
 use std::cmp::Ordering;
 use std::convert::TryInto;
 use std::io;
+use std::io::ErrorKind;
 
 /// An adapter between SocketCAN and the canadensis frame format
 pub struct LinuxCan {
     socket: CANSocket,
-    clock: SystemClock,
 }
 
 impl LinuxCan {
     /// Creates a Linux CAN adapter around a SocketCAN socket
     pub fn new(socket: CANSocket) -> Self {
-        LinuxCan {
-            socket,
-            clock: SystemClock::new(),
-        }
+        LinuxCan { socket }
+    }
+}
+
+impl TransmitDriver<Microseconds64> for LinuxCan {
+    type Error = io::Error;
+
+    fn try_reserve(&mut self, _frames: usize) -> Result<(), OutOfMemoryError> {
+        // Assume there's enough space
+        Ok(())
     }
 
-    /// Receives a frame
-    pub fn receive(&mut self) -> io::Result<canadensis_can::Frame<Microseconds64>> {
+    fn transmit(
+        &mut self,
+        frame: Frame<Microseconds64>,
+        now: Microseconds64,
+    ) -> nb::Result<Option<Frame<Microseconds64>>, Self::Error> {
+        // Drop this frame if its deadline has passed
+        if frame.timestamp().overflow_safe_compare(&now) == Ordering::Less {
+            log::warn!("Dropping frame that has missed its deadline");
+            return Ok(None);
+        }
+        let socketcan_frame =
+            socketcan::CANFrame::new(frame.id().into(), frame.data(), false, false)
+                .expect("Invalid frame format");
+        self.socket
+            .write_frame_insist(&socketcan_frame)
+            .map(|()| None)
+            .map_err(|e| {
+                if e.kind() == ErrorKind::WouldBlock {
+                    nb::Error::WouldBlock
+                } else {
+                    nb::Error::Other(e)
+                }
+            })
+    }
+
+    fn flush(&mut self, _now: Microseconds64) -> canadensis_core::nb::Result<(), Self::Error> {
+        // Presumably this happens automatically
+        Ok(())
+    }
+}
+
+impl ReceiveDriver<Microseconds64> for LinuxCan {
+    type Error = io::Error;
+
+    fn receive(&mut self, now: Microseconds64) -> nb::Result<Frame<Microseconds64>, Self::Error> {
         loop {
             let socketcan_frame = self.socket.read_frame()?;
             if socketcan_frame.data().len() <= canadensis_can::FRAME_CAPACITY {
                 let uavcan_frame = canadensis_can::Frame::new(
-                    self.clock.now(),
+                    now,
                     socketcan_frame.id().try_into().expect("Invalid CAN ID"),
                     socketcan_frame.data(),
                 );
@@ -52,30 +95,18 @@ impl LinuxCan {
         }
     }
 
-    /// Sends a frame, or discards the frame if its deadline has passed
-    pub fn send(&mut self, frame: canadensis_can::Frame<Microseconds64>) -> io::Result<()> {
-        // Drop this frame if its deadline has passed
-        if frame.timestamp().overflow_safe_compare(&self.clock.now()) == Ordering::Less {
-            log::warn!("Dropping frame that has missed its deadline");
-            return Ok(());
-        }
-        let socketcan_frame =
-            socketcan::CANFrame::new(frame.id().into(), frame.data(), false, false)
-                .expect("Invalid frame format");
-        self.socket.write_frame_insist(&socketcan_frame)
-    }
-
-    /// Replaces any configured filters with one filter that accepts all frames
-    pub fn set_filter_accept_all(&mut self) -> io::Result<()> {
-        self.socket.filter_accept_all()
-    }
-    /// Sets zero or more filters to accept frames
-    pub fn set_filters(&mut self, filters: &[Filter]) -> io::Result<()> {
-        let socketcan_filters = filters
-            .iter()
-            .map(|filter| socketcan::CANFilter::new(filter.id(), filter.mask()).unwrap())
-            .collect::<Vec<_>>();
-        self.socket.set_filter(&socketcan_filters)
+    fn apply_filters<S>(&mut self, local_node: Option<CanNodeId>, subscriptions: S)
+    where
+        S: IntoIterator<Item = Subscription>,
+    {
+        optimize_filters(local_node, subscriptions, usize::MAX, |optimized| {
+            let socketcan_filters = optimized
+                .iter()
+                .map(|filter| socketcan::CANFilter::new(filter.id(), filter.mask()).unwrap())
+                .collect::<Vec<_>>();
+            self.socket.set_filter(&socketcan_filters).unwrap();
+        })
+        .unwrap()
     }
 }
 

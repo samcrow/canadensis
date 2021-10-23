@@ -21,20 +21,16 @@ extern crate nb;
 
 pub mod pnp;
 
-use alloc::vec::Vec;
 use bxcan::filter::{BankConfig, Mask32};
 use bxcan::{Can, ExtendedId, FilterOwner, Instance, Mailbox};
 use canadensis::core::subscription::Subscription;
 use canadensis::core::time::Instant;
-use canadensis::core::{OutOfMemoryError, ServiceId, SubjectId};
-use canadensis::filter::Filter;
-use canadensis_can::driver::{ReceiveDriver, TransmitDriver};
+use canadensis::core::OutOfMemoryError;
+use canadensis_can::driver::{optimize_filters, ReceiveDriver, TransmitDriver};
 use canadensis_can::types::CanNodeId;
 use canadensis_can::Frame;
-use canadensis_filter_config::optimize;
 use core::cmp::Ordering;
 use core::convert::{Infallible, TryFrom};
-use fallible_collections::FallibleVec;
 
 /// A CAN driver that wraps a bxCAN device and keeps track of deadlines for queued frames
 pub struct BxCanDriver<I, N>
@@ -154,37 +150,29 @@ where
     where
         S: IntoIterator<Item = Subscription>,
     {
-        match configure_node_filters(&mut self.can, local_node, subscriptions) {
-            Ok(()) => { /* Done */ }
-            Err(_) => {
-                // Out of memory. Set the filters to accept all frames.
-                self.can
-                    .modify_filters()
-                    .clear()
-                    .enable_bank(0, Mask32::accept_all());
-            }
+        let mut filters = self.can.modify_filters();
+        let status = optimize_filters(
+            local_node,
+            subscriptions,
+            filters.num_banks().into(),
+            |optimized| {
+                // Apply filters
+                filters.clear();
+                for (i, filter) in optimized.iter().enumerate() {
+                    let id = ExtendedId::new(filter.id()).unwrap();
+                    let mask = ExtendedId::new(filter.mask()).unwrap();
+                    filters.enable_bank(
+                        i as u8,
+                        BankConfig::Mask32(Mask32::frames_with_ext_id(id, mask)),
+                    );
+                }
+            },
+        );
+        if let Err(_) = status {
+            // Not enough memory to apply the ideal filters. Just accept all frames.
+            filters.clear().enable_bank(0, Mask32::accept_all());
         }
     }
-}
-
-/// Configures filters on a CAN peripheral to accept all frames that match the provided subscription
-pub fn configure_node_filters<I, S>(
-    can: &mut Can<I>,
-    local_node: Option<CanNodeId>,
-    subscriptions: S,
-) -> Result<(), OutOfMemoryError>
-where
-    I: Instance + FilterOwner,
-    S: IntoIterator<Item = Subscription>,
-{
-    let mut filters: Vec<Filter> = Vec::new();
-    for subscription in subscriptions {
-        if let Some(filter) = make_filter(subscription, local_node) {
-            filters.try_push(filter)?;
-        }
-    }
-    optimize_and_apply_filters(&mut filters, can);
-    Ok(())
 }
 
 /// Aborts transmission for all frames placed in transmit mailboxes that have missed their
@@ -271,82 +259,3 @@ pub fn bxcan_frame_to_uavcan<I>(
 /// An error indicating that a frame did not have the correct format for use with UAVCAN
 #[derive(Debug)]
 pub struct InvalidFrameFormat;
-
-/// Optimizes the provided list and applies filters to a CAN peripheral
-fn optimize_and_apply_filters<I>(ideal_filters: &mut [Filter], can: &mut Can<I>)
-where
-    I: Instance + FilterOwner,
-{
-    // Reduce the filters if necessary
-    let mut hardware_filters = can.modify_filters();
-    let max_hardware_filters = hardware_filters.num_banks();
-    let optimized_filters = optimize(ideal_filters, max_hardware_filters.into());
-    // Apply filters
-    hardware_filters.clear();
-    for (i, filter) in optimized_filters.iter().enumerate() {
-        let id = ExtendedId::new(filter.id()).unwrap();
-        let mask = ExtendedId::new(filter.mask()).unwrap();
-        hardware_filters.enable_bank(
-            i as u8,
-            BankConfig::Mask32(Mask32::frames_with_ext_id(id, mask)),
-        );
-    }
-}
-
-/// Creates and returns a filter that matches the provided subscription, or None if the subscription
-/// is a request or response subscription and local_node is None.
-fn make_filter(subscription: Subscription, local_node: Option<CanNodeId>) -> Option<Filter> {
-    match subscription {
-        Subscription::Message(subject) => Some(subject_filter(subject)),
-        Subscription::Request(service) => {
-            local_node.map(|local_node| request_filter(service, local_node))
-        }
-        Subscription::Response(service) => {
-            local_node.map(|local_node| response_filter(service, local_node))
-        }
-    }
-}
-
-/// Returns a filter that matches message transfers on one subject
-///
-/// Criteria:
-/// * Priority: any
-/// * Anonymous: any
-/// * Subject ID: matching the provided subject ID
-/// * Source node ID: any
-fn subject_filter(subject: SubjectId) -> Filter {
-    let m_id: u32 = 0b0_0000_0110_0000_0000_0000_0000_0000 | u32::from(subject) << 8;
-    let mask: u32 = 0b0_0010_1001_1111_1111_1111_1000_0000;
-    Filter::new(mask, m_id)
-}
-
-/// Returns a filter that matches service request transfers for one service to one node ID
-///
-/// Criteria:
-/// * Priority: any
-/// * Request or response: request
-/// * Service ID: matching the provided service ID
-/// * Destination: matching the provided node ID
-/// * Source: any
-fn request_filter(service: ServiceId, destination: CanNodeId) -> Filter {
-    let dynamic_id_bits = u32::from(service) << 14 | u32::from(destination) << 7;
-    let m_id: u32 = 0b0_0011_0000_0000_0000_0000_0000_0000 | dynamic_id_bits;
-    let mask: u32 = 0b0_0011_1111_1111_1111_1111_1000_0000;
-    Filter::new(mask, m_id)
-}
-
-/// Returns a filter that matches service response transfers for one service to one node ID
-///
-/// Criteria:
-/// * Priority: any
-/// * Request or response: response
-/// * Service ID: matching the provided service ID
-/// * Destination: matching the provided node ID
-/// * Source: any
-fn response_filter(service: ServiceId, destination: CanNodeId) -> Filter {
-    let dynamic_id_bits =
-        u32::from(u16::from(service)) << 14 | u32::from(u8::from(destination)) << 7;
-    let m_id: u32 = 0b0_0010_0000_0000_0000_0000_0000_0000 | dynamic_id_bits;
-    let mask: u32 = 0b0_0011_1111_1111_1111_1111_1000_0000;
-    Filter::new(mask, m_id)
-}
