@@ -1,7 +1,0 @@
-# Service-ID. The ranges are defined by the specification.
-
-uint9 MAX = 511
-
-uint9 value
-
-@sealed
