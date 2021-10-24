@@ -62,6 +62,15 @@ impl<Q, D> SingleQueueDriver<Q, D> {
     pub fn into_parts(self) -> (Q, D) {
         (self.queue, self.driver)
     }
+
+    /// Returns a reference to the driver
+    pub fn driver(&self) -> &D {
+        &self.driver
+    }
+    /// Returns a mutable reference to the driver
+    pub fn driver_mut(&mut self) -> &mut D {
+        &mut self.driver
+    }
 }
 
 impl<I, Q, D> TransmitDriver<I> for SingleQueueDriver<Q, D>
