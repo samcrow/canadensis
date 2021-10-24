@@ -186,7 +186,7 @@ impl<'t> Display for WriteAlignedField<'_> {
                         )?;
                     }
                     PrimitiveType::Float16 { .. } => {
-                        writeln!(f, "cursor.write_f16(({}).into());", self.field_expr)?
+                        writeln!(f, "cursor.write_f16({});", self.field_expr)?
                     }
                     PrimitiveType::Float32 { .. } => {
                         writeln!(f, "cursor.write_f32({});", self.field_expr)?
@@ -278,7 +278,7 @@ impl Display for WriteUnalignedField<'_> {
                         f,
                     )?,
                     PrimitiveType::Float16 { .. } => {
-                        writeln!(f, "cursor.write_f16(({}).into());", self.field_expr)?
+                        writeln!(f, "cursor.write_f16({});", self.field_expr)?
                     }
                     PrimitiveType::Float32 { .. } => {
                         writeln!(f, "cursor.write_f32({});", self.field_expr)?
@@ -392,7 +392,7 @@ impl Display for WriteArrayElements<'_> {
                 PrimitiveType::Float16 { .. } => {
                     writeln!(
                         f,
-                        "for value in ({}).iter() {{ cursor.write_f16((*value).into()); }}",
+                        "for value in ({}).iter() {{ cursor.write_f16(*value); }}",
                         self.array_expr
                     )
                 }

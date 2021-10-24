@@ -2,352 +2,6 @@
 compile_error!("Zero-copy serialization requires a little-endian target");
 #[allow(unused_variables, unused_braces, unused_parens)]
 #[deny(unaligned_references)]
-pub mod canadensis {
-    pub mod constants_1_0 {
-        /// `canadensis.Constants.1.0`
-        ///
-        /// Fixed size 0 bytes
-        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
-        #[repr(C, packed)]
-        pub struct Constants {}
-        impl ::canadensis_encoding::DataType for Constants {
-            const EXTENT_BYTES: Option<u32> = None;
-        }
-        impl ::canadensis_encoding::Message for Constants {}
-        impl Constants {
-            pub const A: u8 = 37;
-            pub const B: u16 = 18;
-            pub const C: u16 = 666;
-            pub const D: bool = true;
-            pub const E: bool = true;
-        }
-        impl ::canadensis_encoding::Serialize for Constants {
-            fn size_bits(&self) -> usize {
-                0
-            }
-            fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
-            }
-        }
-        impl ::canadensis_encoding::Deserialize for Constants {
-            fn deserialize(
-                cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
-            ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
-            where
-                Self: Sized,
-            {
-                Ok(Self::deserialize_zero_copy(cursor))
-            }
-        }
-        #[test]
-        fn test_layout() {
-            assert_eq!(::core::mem::size_of::<Constants>() * 8, 0);
-        }
-    }
-    pub mod interesting_0_1 {
-        /// `canadensis.Interesting.0.1`
-        ///
-        /// Size ranges from 14 to 402 bytes
-        pub struct Interesting {
-            /// `saturated uint1`
-            ///
-            /// Always aligned
-            /// Size 1 bits
-            pub a: u8,
-            /// `saturated uint32[3]`
-            ///
-            /// Not always aligned
-            /// Size 96 bits
-            pub offset_dependent: [u32; 3],
-            /// `saturated uint32[<=97]`
-            ///
-            /// Not always aligned
-            /// Size ranges from 0 to 3104 bits
-            pub others: ::heapless::Vec<u32, 97>,
-        }
-        impl ::canadensis_encoding::DataType for Interesting {
-            const EXTENT_BYTES: Option<u32> = None;
-        }
-        impl ::canadensis_encoding::Message for Interesting {}
-        impl Interesting {}
-        impl ::canadensis_encoding::Serialize for Interesting {
-            fn size_bits(&self) -> usize {
-                1 + (self.offset_dependent).len() * 32 + 8 + (self.others).len() * 32 + 0
-            }
-            fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                cursor.write_u1(self.a);
-                for value in (self.offset_dependent).iter() {
-                    cursor.write_u32(*value);
-                }
-                cursor.write_u8((self.others).len() as u8);
-                for value in (self.others).iter() {
-                    cursor.write_u32(*value);
-                }
-            }
-        }
-        impl ::canadensis_encoding::Deserialize for Interesting {
-            fn deserialize(
-                cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
-            ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
-            where
-                Self: Sized,
-            {
-                Ok(Interesting {
-                    a: { cursor.read_u1() as _ },
-                    offset_dependent: {
-                        [
-                            cursor.read_u32() as _,
-                            cursor.read_u32() as _,
-                            cursor.read_u32() as _,
-                        ]
-                    },
-                    others: {
-                        let length = cursor.read_u8() as _;
-                        if length <= 97 {
-                            let mut elements = ::heapless::Vec::new();
-                            for _ in 0..length {
-                                let _ = elements.push(cursor.read_u32() as _);
-                            }
-                            elements
-                        } else {
-                            return Err(::canadensis_encoding::DeserializeError::ArrayLength);
-                        }
-                    },
-                })
-            }
-        }
-    }
-    pub mod two_hundred_and_fifty_five_characters_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_1_0 {
-        /// `canadensis.TwoHundredAndFiftyFiveCharactersLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLong.1.0`
-        ///
-        /// Fixed size 0 bytes
-        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
-        #[repr(C, packed)]
-        pub struct TwoHundredAndFiftyFiveCharactersLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLong
-        {}
-        impl ::canadensis_encoding::DataType for TwoHundredAndFiftyFiveCharactersLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLong {
-const EXTENT_BYTES: Option<u32> = None;
-}
-        impl ::canadensis_encoding::Message for TwoHundredAndFiftyFiveCharactersLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLong {}
-        impl TwoHundredAndFiftyFiveCharactersLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLong {
-}
-        impl ::canadensis_encoding::Serialize for TwoHundredAndFiftyFiveCharactersLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLong {
-fn size_bits(&self) -> usize { 0 }
-fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
-}
-}
-        impl ::canadensis_encoding::Deserialize for TwoHundredAndFiftyFiveCharactersLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLong {
-fn deserialize(cursor: &mut ::canadensis_encoding::ReadCursor<'_>) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError> where Self: Sized {
-Ok(Self::deserialize_zero_copy(cursor))
-}
-}
-        #[test]
-        fn test_layout() {
-            assert_eq!(::core::mem::size_of::<TwoHundredAndFiftyFiveCharactersLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLong>() * 8, 0);
-        }
-    }
-    pub mod union_offset_around_sealed_1_0 {
-        /// `canadensis.UnionOffsetAroundSealed.1.0`
-        ///
-        /// Size ranges from 2 to 3 bytes
-        pub enum UnionOffsetAroundSealed {
-            // saturated uint8
-            A(u8),
-            // saturated uint16
-            B(u16),
-        }
-        impl ::canadensis_encoding::DataType for UnionOffsetAroundSealed {
-            const EXTENT_BYTES: Option<u32> = None;
-        }
-        impl ::canadensis_encoding::Message for UnionOffsetAroundSealed {}
-        impl UnionOffsetAroundSealed {}
-        impl ::canadensis_encoding::Serialize for UnionOffsetAroundSealed {
-            fn size_bits(&self) -> usize {
-                8 + match self {
-                    UnionOffsetAroundSealed::A(inner) => 8,
-                    UnionOffsetAroundSealed::B(inner) => 16,
-                }
-            }
-            fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                match self {
-                    UnionOffsetAroundSealed::A(inner) => {
-                        cursor.write_aligned_u8(0);
-                        cursor.write_aligned_u8((*inner));
-                    }
-                    UnionOffsetAroundSealed::B(inner) => {
-                        cursor.write_aligned_u8(1);
-                        cursor.write_aligned_u16((*inner));
-                    }
-                }
-            }
-        }
-        impl ::canadensis_encoding::Deserialize for UnionOffsetAroundSealed {
-            fn deserialize(
-                cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
-            ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
-            where
-                Self: Sized,
-            {
-                match cursor.read_aligned_u8() as _ {
-                    0 => Ok(UnionOffsetAroundSealed::A({ cursor.read_u8() as _ })),
-                    1 => Ok(UnionOffsetAroundSealed::B({ cursor.read_u16() as _ })),
-                    _ => Err(::canadensis_encoding::DeserializeError::UnionTag),
-                }
-            }
-        }
-    }
-    pub mod union_with_arrays_1_0 {
-        /// `canadensis.UnionWithArrays.1.0`
-        ///
-        /// Size ranges from 1 to 805 bytes
-        pub enum UnionWithArrays {
-            // saturated int32
-            A(i32),
-            // saturated int8[4]
-            B([i8; 4]),
-            // saturated uint8[<=8]
-            C(::heapless::Vec<u8, 8>),
-            // canadensis.Interesting.0.1[<=2]
-            D(::heapless::Vec<crate::canadensis::interesting_0_1::Interesting, 2>),
-        }
-        impl ::canadensis_encoding::DataType for UnionWithArrays {
-            const EXTENT_BYTES: Option<u32> = None;
-        }
-        impl ::canadensis_encoding::Message for UnionWithArrays {}
-        impl UnionWithArrays {}
-        impl ::canadensis_encoding::Serialize for UnionWithArrays {
-            fn size_bits(&self) -> usize {
-                8 + match self {
-                    UnionWithArrays::A(inner) => 32,
-                    UnionWithArrays::B(inner) => (inner).len() * 8,
-                    UnionWithArrays::C(inner) => 8 + (inner).len() * 8,
-                    UnionWithArrays::D(inner) => {
-                        8 + (inner)
-                            .iter()
-                            .map(|element| (element).size_bits())
-                            .sum::<usize>()
-                    }
-                }
-            }
-            fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                match self {
-                    UnionWithArrays::A(inner) => {
-                        cursor.write_aligned_u8(0);
-                        cursor.write_aligned_u32((*inner) as u32);
-                    }
-                    UnionWithArrays::B(inner) => {
-                        cursor.write_aligned_u8(1);
-                        for value in (*inner).iter() {
-                            cursor.write_u8(*value as u8);
-                        }
-                    }
-                    UnionWithArrays::C(inner) => {
-                        cursor.write_aligned_u8(2);
-                        cursor.write_aligned_u8((*inner).len() as u8);
-                        cursor.write_bytes(&(*inner)[..]);
-                    }
-                    UnionWithArrays::D(inner) => {
-                        cursor.write_aligned_u8(3);
-                        cursor.write_aligned_u8((*inner).len() as u8);
-                        for value in (*inner).iter() {
-                            cursor.write_composite(value);
-                        }
-                    }
-                }
-            }
-        }
-        impl ::canadensis_encoding::Deserialize for UnionWithArrays {
-            fn deserialize(
-                cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
-            ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
-            where
-                Self: Sized,
-            {
-                match cursor.read_aligned_u8() as _ {
-                    0 => Ok(UnionWithArrays::A({ cursor.read_u32() as _ })),
-                    1 => Ok(UnionWithArrays::B({
-                        [
-                            cursor.read_u8() as _,
-                            cursor.read_u8() as _,
-                            cursor.read_u8() as _,
-                            cursor.read_u8() as _,
-                        ]
-                    })),
-                    2 => Ok(UnionWithArrays::C({
-                        let length = cursor.read_u8() as _;
-                        if length <= 8 {
-                            let mut elements = ::heapless::Vec::new();
-                            for _ in 0..length {
-                                let _ = elements.push(cursor.read_u8() as _);
-                            }
-                            elements
-                        } else {
-                            return Err(::canadensis_encoding::DeserializeError::ArrayLength);
-                        }
-                    })),
-                    3 => Ok(UnionWithArrays::D({
-                        let length = cursor.read_u8() as _;
-                        if length <= 2 {
-                            let mut elements = ::heapless::Vec::new();
-                            for _ in 0..length {
-                                let _ = elements.push(cursor.read_composite()?);
-                            }
-                            elements
-                        } else {
-                            return Err(::canadensis_encoding::DeserializeError::ArrayLength);
-                        }
-                    })),
-                    _ => Err(::canadensis_encoding::DeserializeError::UnionTag),
-                }
-            }
-        }
-    }
-    pub mod uses_constants_1_0 {
-        /// `canadensis.UsesConstants.1.0`
-        ///
-        /// Fixed size 84 bytes
-        pub struct UsesConstants {
-            /// `saturated bool[666]`
-            ///
-            /// Always aligned
-            /// Size 666 bits
-            pub things: ::canadensis_encoding::bits::BitArray<84>,
-        }
-        impl ::canadensis_encoding::DataType for UsesConstants {
-            const EXTENT_BYTES: Option<u32> = None;
-        }
-        impl ::canadensis_encoding::Message for UsesConstants {}
-        impl UsesConstants {
-            pub const DEPENDENT: u16 = 666;
-            pub const INDEPENDENT: u16 = 192;
-        }
-        impl ::canadensis_encoding::Serialize for UsesConstants {
-            fn size_bits(&self) -> usize {
-                672
-            }
-            fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                (self.things).serialize(cursor);
-            }
-        }
-        impl ::canadensis_encoding::Deserialize for UsesConstants {
-            fn deserialize(
-                cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
-            ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
-            where
-                Self: Sized,
-            {
-                Ok(UsesConstants {
-                    things: {
-                        ::canadensis_encoding::bits::BitArray::deserialize(666_usize, cursor)
-                    },
-                })
-            }
-        }
-    }
-}
-#[allow(unused_variables, unused_braces, unused_parens)]
-#[deny(unaligned_references)]
 pub mod reg {
     pub mod drone {
         pub mod physics {
@@ -1018,8 +672,7 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::point_state_var_0_
                             ///
                             /// Always aligned
                             /// Size 96 bits
-                            pub covariance_urt:
-                                [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 6],
+                            pub covariance_urt: [::half::f16; 6],
                         }
                         impl ::canadensis_encoding::DataType for PointVar {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -1124,8 +777,7 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::point_state_var_0_
                             ///
                             /// Always aligned
                             /// Size 336 bits
-                            pub covariance_urt:
-                                [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 21],
+                            pub covariance_urt: [::half::f16; 21],
                         }
                         impl ::canadensis_encoding::DataType for PoseVar {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -1427,8 +1079,7 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::state_var_0_1::Sta
                             ///
                             /// Always aligned
                             /// Size 336 bits
-                            pub covariance_urt:
-                                [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 21],
+                            pub covariance_urt: [::half::f16; 21],
                         }
                         impl ::canadensis_encoding::DataType for TwistVar {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -1737,8 +1388,7 @@ pub value: crate::reg::drone::physics::kinematics::geodetic::point_state_var_0_1
                             ///
                             /// Always aligned
                             /// Size 96 bits
-                            pub covariance_urt:
-                                [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 6],
+                            pub covariance_urt: [::half::f16; 6],
                         }
                         impl ::canadensis_encoding::DataType for PointVar {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -1843,8 +1493,7 @@ pub value: crate::reg::drone::physics::kinematics::geodetic::point_state_var_0_1
                             ///
                             /// Always aligned
                             /// Size 336 bits
-                            pub covariance_urt:
-                                [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 21],
+                            pub covariance_urt: [::half::f16; 21],
                         }
                         impl ::canadensis_encoding::DataType for PoseVar {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -2263,17 +1912,17 @@ pub value: crate::reg::drone::physics::kinematics::translation::linear_ts_0_1::L
 ///
 /// Always aligned
 /// Size 16 bits
-pub position_error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
+pub position_error_variance: ::half::f16,
 /// `saturated float16`
 ///
 /// Always aligned
 /// Size 16 bits
-pub velocity_error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
+pub velocity_error_variance: ::half::f16,
 /// `saturated float16`
 ///
 /// Always aligned
 /// Size 16 bits
-pub acceleration_error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
+pub acceleration_error_variance: ::half::f16,
 }
                         impl ::canadensis_encoding::DataType for LinearVarTs {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -2289,9 +1938,9 @@ pub acceleration_error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF1
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
                                 cursor.write_composite(&self.value);
-                                cursor.write_f16((self.position_error_variance).into());
-                                cursor.write_f16((self.velocity_error_variance).into());
-                                cursor.write_f16((self.acceleration_error_variance).into());
+                                cursor.write_f16(self.position_error_variance);
+                                cursor.write_f16(self.velocity_error_variance);
+                                cursor.write_f16(self.acceleration_error_variance);
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for LinearVarTs {
@@ -2303,9 +1952,9 @@ pub acceleration_error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF1
                             {
                                 Ok(LinearVarTs {
                                     value: { cursor.read_composite()? },
-                                    position_error_variance: { cursor.read_f16().into() },
-                                    velocity_error_variance: { cursor.read_f16().into() },
-                                    acceleration_error_variance: { cursor.read_f16().into() },
+                                    position_error_variance: { cursor.read_f16() },
+                                    velocity_error_variance: { cursor.read_f16() },
+                                    acceleration_error_variance: { cursor.read_f16() },
                                 })
                             }
                         }
@@ -2324,7 +1973,7 @@ pub acceleration_error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF1
                             ///
                             /// Always aligned
                             /// Size 16 bits
-                            pub error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
+                            pub error_variance: ::half::f16,
                         }
                         impl ::canadensis_encoding::DataType for Velocity1VarTs {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -2340,7 +1989,7 @@ pub acceleration_error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF1
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
                                 cursor.write_composite(&self.value);
-                                cursor.write_f16((self.error_variance).into());
+                                cursor.write_f16(self.error_variance);
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for Velocity1VarTs {
@@ -2352,7 +2001,7 @@ pub acceleration_error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF1
                             {
                                 Ok(Velocity1VarTs {
                                     value: { cursor.read_composite()? },
-                                    error_variance: { cursor.read_f16().into() },
+                                    error_variance: { cursor.read_f16() },
                                 })
                             }
                         }
@@ -2371,8 +2020,7 @@ pub acceleration_error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF1
                             ///
                             /// Always aligned
                             /// Size 96 bits
-                            pub covariance_urt:
-                                [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 6],
+                            pub covariance_urt: [::half::f16; 6],
                         }
                         impl ::canadensis_encoding::DataType for Velocity3Var {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -2389,7 +2037,7 @@ pub acceleration_error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF1
                             ) {
                                 cursor.write_composite(&self.value);
                                 for value in (self.covariance_urt).iter() {
-                                    cursor.write_f16((*value).into());
+                                    cursor.write_f16(*value);
                                 }
                             }
                         }
@@ -2404,12 +2052,12 @@ pub acceleration_error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF1
                                     value: { cursor.read_composite()? },
                                     covariance_urt: {
                                         [
-                                            cursor.read_f16().into(),
-                                            cursor.read_f16().into(),
-                                            cursor.read_f16().into(),
-                                            cursor.read_f16().into(),
-                                            cursor.read_f16().into(),
-                                            cursor.read_f16().into(),
+                                            cursor.read_f16(),
+                                            cursor.read_f16(),
+                                            cursor.read_f16(),
+                                            cursor.read_f16(),
+                                            cursor.read_f16(),
+                                            cursor.read_f16(),
                                         ]
                                     },
                                 })
@@ -2432,8 +2080,7 @@ pub acceleration_error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF1
                             ///
                             /// Always aligned
                             /// Size 96 bits
-                            pub covariance_urt:
-                                [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 6],
+                            pub covariance_urt: [::half::f16; 6],
                         }
                         impl ::canadensis_encoding::DataType for Velocity3Var {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -2556,7 +2203,7 @@ pub acceleration_error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF1
                         ///
                         /// Always aligned
                         /// Size 48 bits
-                        pub covariance_urt: [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 3],
+                        pub covariance_urt: [::half::f16; 3],
                     }
                     impl ::canadensis_encoding::DataType for PressureTempVarTs {
                         const EXTENT_BYTES: Option<u32> = None;
@@ -2572,7 +2219,7 @@ pub acceleration_error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF1
                             cursor.write_composite(&self.pressure);
                             cursor.write_composite(&self.temperature);
                             for value in (self.covariance_urt).iter() {
-                                cursor.write_f16((*value).into());
+                                cursor.write_f16(*value);
                             }
                         }
                     }
@@ -2588,11 +2235,7 @@ pub acceleration_error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF1
                                 pressure: { cursor.read_composite()? },
                                 temperature: { cursor.read_composite()? },
                                 covariance_urt: {
-                                    [
-                                        cursor.read_f16().into(),
-                                        cursor.read_f16().into(),
-                                        cursor.read_f16().into(),
-                                    ]
+                                    [cursor.read_f16(), cursor.read_f16(), cursor.read_f16()]
                                 },
                             })
                         }
@@ -2992,7 +2635,7 @@ pub acceleration_error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF1
                                 ///
                                 /// Always aligned
                                 /// Size 16 bits
-                                pub value: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
+                                pub value: ::half::f16,
                             }
                             impl ::canadensis_encoding::DataType for Scalar {
                                 const EXTENT_BYTES: Option<u32> = Some(512);
@@ -3040,7 +2683,7 @@ pub acceleration_error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF1
                                 ///
                                 /// Always aligned
                                 /// Size 32 bits
-                                pub value: [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 2],
+                                pub value: [::half::f16; 2],
                             }
                             impl ::canadensis_encoding::DataType for Vector2 {
                                 const EXTENT_BYTES: Option<u32> = Some(512);
@@ -3088,7 +2731,7 @@ pub acceleration_error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF1
                                 ///
                                 /// Always aligned
                                 /// Size 496 bits
-                                pub value: [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 31],
+                                pub value: [::half::f16; 31],
                             }
                             impl ::canadensis_encoding::DataType for Vector31 {
                                 const EXTENT_BYTES: Option<u32> = Some(512);
@@ -3136,7 +2779,7 @@ pub acceleration_error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF1
                                 ///
                                 /// Always aligned
                                 /// Size 48 bits
-                                pub value: [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 3],
+                                pub value: [::half::f16; 3],
                             }
                             impl ::canadensis_encoding::DataType for Vector3 {
                                 const EXTENT_BYTES: Option<u32> = Some(512);
@@ -3184,7 +2827,7 @@ pub acceleration_error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF1
                                 ///
                                 /// Always aligned
                                 /// Size 64 bits
-                                pub value: [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 4],
+                                pub value: [::half::f16; 4],
                             }
                             impl ::canadensis_encoding::DataType for Vector4 {
                                 const EXTENT_BYTES: Option<u32> = Some(512);
@@ -3232,7 +2875,7 @@ pub acceleration_error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF1
                                 ///
                                 /// Always aligned
                                 /// Size 96 bits
-                                pub value: [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 6],
+                                pub value: [::half::f16; 6],
                             }
                             impl ::canadensis_encoding::DataType for Vector6 {
                                 const EXTENT_BYTES: Option<u32> = Some(512);
@@ -3280,7 +2923,7 @@ pub acceleration_error_variance: ::canadensis_encoding::f16_zerocopy::ZeroCopyF1
                                 ///
                                 /// Always aligned
                                 /// Size 128 bits
-                                pub value: [::canadensis_encoding::f16_zerocopy::ZeroCopyF16; 8],
+                                pub value: [::half::f16; 8],
                             }
                             impl ::canadensis_encoding::DataType for Vector8 {
                                 const EXTENT_BYTES: Option<u32> = Some(512);
@@ -4142,8 +3785,7 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                         ///
                         /// Always aligned
                         /// Size ranges from 0 to 4080 bits
-                        pub cell_voltages:
-                            ::heapless::Vec<::canadensis_encoding::f16_zerocopy::ZeroCopyF16, 255>,
+                        pub cell_voltages: ::heapless::Vec<::half::f16, 255>,
                     }
                     impl ::canadensis_encoding::DataType for Status {
                         const EXTENT_BYTES: Option<u32> = Some(600);
@@ -4172,7 +3814,7 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                             cursor.write_composite(&self.error);
                             cursor.write_aligned_u8((self.cell_voltages).len() as u8);
                             for value in (self.cell_voltages).iter() {
-                                cursor.write_f16((*value).into());
+                                cursor.write_f16(*value);
                             }
                         }
                     }
@@ -4198,7 +3840,7 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                                     if length <= 255 {
                                         let mut elements = ::heapless::Vec::new();
                                         for _ in 0..length {
-                                            let _ = elements.push(cursor.read_f16().into());
+                                            let _ = elements.push(cursor.read_f16());
                                         }
                                         elements
                                     } else {
@@ -4415,37 +4057,37 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                         ///
                         /// Always aligned
                         /// Size 16 bits
-                        pub geometric: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
+                        pub geometric: ::half::f16,
                         /// `saturated float16`
                         ///
                         /// Always aligned
                         /// Size 16 bits
-                        pub position: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
+                        pub position: ::half::f16,
                         /// `saturated float16`
                         ///
                         /// Always aligned
                         /// Size 16 bits
-                        pub horizontal: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
+                        pub horizontal: ::half::f16,
                         /// `saturated float16`
                         ///
                         /// Always aligned
                         /// Size 16 bits
-                        pub vertical: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
+                        pub vertical: ::half::f16,
                         /// `saturated float16`
                         ///
                         /// Always aligned
                         /// Size 16 bits
-                        pub time: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
+                        pub time: ::half::f16,
                         /// `saturated float16`
                         ///
                         /// Always aligned
                         /// Size 16 bits
-                        pub northing: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
+                        pub northing: ::half::f16,
                         /// `saturated float16`
                         ///
                         /// Always aligned
                         /// Size 16 bits
-                        pub easting: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
+                        pub easting: ::half::f16,
                     }
                     impl ::canadensis_encoding::DataType for DilutionOfPrecision {
                         const EXTENT_BYTES: Option<u32> = None;
@@ -9717,8 +9359,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Always aligned
                     /// Size ranges from 0 to 2048 bits
-                    pub value:
-                        ::heapless::Vec<::canadensis_encoding::f16_zerocopy::ZeroCopyF16, 128>,
+                    pub value: ::heapless::Vec<::half::f16, 128>,
                 }
                 impl ::canadensis_encoding::DataType for Real16 {
                     const EXTENT_BYTES: Option<u32> = None;
@@ -9732,7 +9373,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u8((self.value).len() as u8);
                         for value in (self.value).iter() {
-                            cursor.write_f16((*value).into());
+                            cursor.write_f16(*value);
                         }
                     }
                 }
@@ -9749,7 +9390,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                                 if length <= 128 {
                                     let mut elements = ::heapless::Vec::new();
                                     for _ in 0..length {
-                                        let _ = elements.push(cursor.read_f16().into());
+                                        let _ = elements.push(cursor.read_f16());
                                     }
                                     elements
                                 } else {
@@ -10289,7 +9930,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ///
                     /// Always aligned
                     /// Size 16 bits
-                    pub value: ::canadensis_encoding::f16_zerocopy::ZeroCopyF16,
+                    pub value: ::half::f16,
                 }
                 impl ::canadensis_encoding::DataType for Real16 {
                     const EXTENT_BYTES: Option<u32> = None;

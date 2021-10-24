@@ -1,6 +1,5 @@
 //! Basic register types
 
-use crate::encoding::f16_zerocopy::ZeroCopyF16;
 use crate::register::{Access, Register, WriteError};
 use canadensis_data_types::uavcan::primitive::array::integer16_1_0::Integer16;
 use canadensis_data_types::uavcan::primitive::array::integer32_1_0::Integer32;
@@ -290,7 +289,7 @@ register_primitive!(i8, Integer8);
 register_primitive!(i16, Integer16);
 register_primitive!(i32, Integer32);
 register_primitive!(i64, Integer64);
-// register_primitive!(f16, Real16);
+register_primitive!(f16, Real16);
 register_primitive!(f32, Real32);
 register_primitive!(f64, Real64);
 
@@ -345,73 +344,9 @@ register_primitive_array!(i8, Integer8);
 register_primitive_array!(i16, Integer16);
 register_primitive_array!(i32, Integer32);
 register_primitive_array!(i64, Integer64);
-// register_primitive_array!(f16, Real16);
+register_primitive_array!(f16, Real16);
 register_primitive_array!(f32, Real32);
 register_primitive_array!(f64, Real64);
-
-// Need to implement f16 manually because of the ZeroCopyF16 type,
-// until this is merged and released: https://github.com/starkat99/half-rs/pull/45
-
-impl RegisterType for f16 {
-    fn read(&self) -> Value {
-        Value::Real16(Real16 {
-            value: heapless::Vec::from_slice(&[ZeroCopyF16::from(*self)]).unwrap(),
-        })
-    }
-
-    fn write(&mut self, value: &Value) -> Result<(), WriteError> {
-        if let Value::Real16(Real16 { value: values }) = value {
-            if values.len() == 1 {
-                *self = values[0].into();
-                Ok(())
-            } else {
-                Err(WriteError::Type)
-            }
-        } else {
-            Err(WriteError::Type)
-        }
-    }
-}
-impl<const N: usize> RegisterType for [f16; N] {
-    /// Reads the value of an array register
-    ///
-    /// If this array is longer than the maximum capacity of the corresponding `Value` variant,
-    /// the returned value will be truncated.
-    fn read(&self) -> Value {
-        let mut value_vec = heapless::Vec::new();
-        if N <= value_vec.capacity() {
-            value_vec.extend(self.iter().map(|value| ZeroCopyF16::from(*value)));
-        } else {
-            // Truncate to the maximum allowed size
-            value_vec.extend(
-                self[..value_vec.capacity()]
-                    .iter()
-                    .map(|value| ZeroCopyF16::from(*value)),
-            );
-        }
-        Value::Real16(Real16 { value: value_vec })
-    }
-
-    /// Writes an array register
-    ///
-    /// This function returns an error if the length of the provided `Value` is not equal to
-    /// the length of this array.
-    fn write(&mut self, value: &Value) -> Result<(), WriteError> {
-        match value {
-            Value::Real16(Real16 { value: values }) => {
-                if values.len() == N {
-                    for (entry, value) in self.iter_mut().zip(values.iter()) {
-                        *entry = f16::from(*value);
-                    }
-                    Ok(())
-                } else {
-                    Err(WriteError::Type)
-                }
-            }
-            _ => Err(WriteError::Type),
-        }
-    }
-}
 
 /// A string value for a register
 #[derive(Debug, Clone, Default)]

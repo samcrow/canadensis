@@ -431,10 +431,7 @@ fn scalar_to_rust_type(scalar: &ResolvedScalarType) -> String {
             PrimitiveType::Boolean => "bool".to_owned(),
             PrimitiveType::Int { bits, .. } => format!("i{}", round_up_integer_size(*bits)),
             PrimitiveType::UInt { bits, .. } => format!("u{}", round_up_integer_size(*bits)),
-            PrimitiveType::Float16 { .. } => {
-                // Use the wrapper type that works with zerocopy
-                "::canadensis_encoding::f16_zerocopy::ZeroCopyF16".to_owned()
-            }
+            PrimitiveType::Float16 { .. } => "::half::f16".to_owned(),
             PrimitiveType::Float32 { .. } => "f32".to_owned(),
             PrimitiveType::Float64 { .. } => "f64".to_owned(),
         },

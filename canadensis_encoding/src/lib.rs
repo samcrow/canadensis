@@ -10,7 +10,6 @@ extern crate zerocopy;
 
 pub mod bits;
 mod cursor;
-pub mod f16_zerocopy;
 
 pub use crate::cursor::deserialize::ReadCursor;
 pub use crate::cursor::serialize::WriteCursor;

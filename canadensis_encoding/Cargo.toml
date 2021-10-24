@@ -10,7 +10,7 @@ license = "MIT OR Apache-2.0"
 description = "A UAVCAN v1 implementation: Transfer encoding and decoding"
 
 [dependencies]
-half = "1.7.1"
+half = "1.8"
 zerocopy = "0.6.0"
 
 [dev-dependencies]

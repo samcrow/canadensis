@@ -136,7 +136,7 @@ impl<'t> Display for ReadUnalignedField<'_> {
                     PrimitiveType::UInt { bits, .. } => {
                         Display::fmt(&CallRead { bits: *bits }, f)?;
                     }
-                    PrimitiveType::Float16 { .. } => writeln!(f, "cursor.read_f16().into()")?,
+                    PrimitiveType::Float16 { .. } => writeln!(f, "cursor.read_f16()")?,
                     PrimitiveType::Float32 { .. } => writeln!(f, "cursor.read_f32()")?,
                     PrimitiveType::Float64 { .. } => writeln!(f, "cursor.read_f64()")?,
                 },
@@ -228,7 +228,7 @@ impl Display for ReadUnalignedScalar<'_> {
                 PrimitiveType::Boolean => write!(f, "cursor.read_bool()")?,
                 PrimitiveType::Int { bits } => Display::fmt(&CallRead { bits: *bits }, f)?,
                 PrimitiveType::UInt { bits, .. } => Display::fmt(&CallRead { bits: *bits }, f)?,
-                PrimitiveType::Float16 { .. } => write!(f, "cursor.read_f16().into()")?,
+                PrimitiveType::Float16 { .. } => write!(f, "cursor.read_f16()")?,
                 PrimitiveType::Float32 { .. } => write!(f, "cursor.read_f32()")?,
                 PrimitiveType::Float64 { .. } => write!(f, "cursor.read_f64()")?,
             },
