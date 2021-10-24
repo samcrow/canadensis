@@ -1,0 +1,5 @@
+
+uavcan.node.Health.1.0 health0
+uavcan.node.Health.1.0 health1
+
+@sealed

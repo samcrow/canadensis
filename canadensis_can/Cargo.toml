@@ -1,13 +1,13 @@
 [package]
 name = "canadensis_can"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
 edition = "2018"
 keywords = ["embedded", "uavcan", "uav", "can"]
 categories = ["embedded", "no-std"]
 repository = "https://github.com/samcrow/canadensis"
 license = "MIT OR Apache-2.0"
-description = "A UAVCAN v1 implementation: CAN and CAN FD transport layer"
+description = "A UAVCAN v1 implementation: UAVCAN/CAN (CAN and CAN FD) transport layer"
 
 [dependencies]
 fallible_collections = "0.4.0"
@@ -16,13 +16,12 @@ log = "0.4"
 hash32 = "0.2.1"
 hash32-derive = "0.1.1"
 
-# Local dependency, change before publishing
 [dependencies.canadensis_core]
-version = "0.1.0"
+version = "0.2.0"
 path = "../canadensis_core"
 
 [dependencies.canadensis_filter_config]
-version = "0.1.0"
+version = "0.2.0"
 path = "../canadensis_filter_config"
 
 [features]

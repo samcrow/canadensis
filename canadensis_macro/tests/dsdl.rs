@@ -25,9 +25,7 @@ uint64 d
 @sealed
     "# }
     // Generates code for all loaded DSDL types
-    generate_all()
-    // Generates code for one or more specific DSDL types and their dependencies
-    // generate_with_dependencies("canadensis.Test.1.0")
+    generate()
 }
 
 #[test]

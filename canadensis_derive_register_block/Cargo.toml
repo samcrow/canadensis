@@ -1,6 +1,6 @@
 [package]
 name = "canadensis_derive_register_block"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
 description = "Derive macro for `canadensis::register::RegisterBlock`"
 keywords = ["template", "proc_macro", "procmacro", "uavcan"]
@@ -17,5 +17,6 @@ proc-macro2 = "1.0"
 syn = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies.canadensis]
+version = "0.2.0"
 path = "../canadensis"
 

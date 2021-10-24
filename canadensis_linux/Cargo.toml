@@ -1,6 +1,6 @@
 [package]
 name = "canadensis_linux"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
 edition = "2018"
 keywords = ["uavcan", "uav", "can"]
@@ -15,11 +15,11 @@ socketcan = "1.7.0"
 log = "0.4"
 
 [dependencies.canadensis_can]
-version = "0.1.0"
+version = "0.2.0"
 path = "../canadensis_can"
 [dependencies.canadensis_core]
-version = "0.1.0"
+version = "0.2.0"
 path = "../canadensis_core"
 [dependencies.canadensis_filter_config]
-version = "0.1.0"
+version = "0.2.0"
 path = "../canadensis_filter_config"

@@ -1,6 +1,6 @@
 [package]
 name = "canadensis_bxcan"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
 edition = "2018"
 keywords = ["embedded", "uavcan", "uav", "can"]
@@ -18,13 +18,14 @@ log = "0.4"
 fallible_collections = "0.4.3"
 
 [dependencies.canadensis]
-version = "0.1.0"
+version = "0.2.0"
 path = "../canadensis"
 [dependencies.canadensis_can]
+version = "0.2.0"
 path = "../canadensis_can"
 [dependencies.canadensis_filter_config]
-version = "0.1.0"
+version = "0.2.0"
 path = "../canadensis_filter_config"
 [dependencies.canadensis_pnp_client]
-version = "0.1.0"
+version = "0.2.0"
 path = "../canadensis_pnp_client"

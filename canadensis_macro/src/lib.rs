@@ -8,6 +8,7 @@ use crate::input::{Input, ParsedString, Statement};
 use canadensis_dsdl_frontend::{Package, TypeKey};
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span, TokenTree};
+use std::collections::BTreeMap;
 use std::env;
 use syn::spanned::Spanned;
 
@@ -27,6 +28,7 @@ fn types_from_dsdl_inner(
 
     // Prepare a package of DSDL to parse
     let mut package = Package::new();
+    let mut external_packages = BTreeMap::new();
     let mut output = proc_macro2::TokenStream::default();
 
     let mut statements = input.statements.into_iter();
@@ -35,7 +37,8 @@ fn types_from_dsdl_inner(
         match statement {
             Statement::Function { name, arguments } => match &*name.to_string() {
                 "package" => eval_package_function(&mut package, arguments)?,
-                "generate_all" => {
+                "make_external" => eval_make_external_function(&mut external_packages, arguments)?,
+                "generate" => {
                     // Generate and break
                     let compiled = package.compile().map_err(|e| {
                         make_error(
@@ -43,7 +46,8 @@ fn types_from_dsdl_inner(
                             format!("Failed to compile DSDL: {}", ErrorChain(e)),
                         )
                     })?;
-                    let code = canadensis_codegen_rust::generate_code(&compiled);
+                    let code =
+                        canadensis_codegen_rust::generate_code(&compiled, &external_packages);
                     let code_string = code.to_string();
                     let parsed_code: proc_macro2::TokenStream = code_string
                         .parse()
@@ -84,6 +88,105 @@ fn eval_package_function(
     package
         .add_files(&path.value)
         .map_err(|e| make_error(path.span, format!("Can't add package: {}", e)))
+}
+
+fn eval_make_external_function(
+    external_packages: &mut BTreeMap<Vec<String>, Vec<String>>,
+    arguments: proc_macro2::TokenStream,
+) -> Result<(), proc_macro2::TokenStream> {
+    // Expect two arguments: a UAVCAN package and a Rust module path
+    let arguments_span = arguments.span();
+    let mut uavcan_package = Vec::new();
+    let mut rust_module = Vec::new();
+
+    let mut iter = arguments.into_iter();
+    // Loop 1: get UAVCAN package name
+    while let Some(tree) = iter.next() {
+        match tree {
+            TokenTree::Ident(ident) => {
+                uavcan_package.push(ident.to_string());
+                // After a package name segment, expect . or ,
+                match iter.next() {
+                    Some(TokenTree::Punct(punct)) if punct.as_char() == '.' => {
+                        // OK, check for the next identifier
+                    }
+                    Some(TokenTree::Punct(punct)) if punct.as_char() == ',' => {
+                        // OK, end of UAVCAN package
+                        break;
+                    }
+                    Some(other) => {
+                        return Err(make_error(
+                            other.span(),
+                            "Expected dot or comma after identifier",
+                        ))
+                    }
+                    None => {
+                        return Err(make_error(ident.span(), "Expected comma after identifier"))
+                    }
+                }
+            }
+            _ => return Err(make_error(tree.span(), "Expected an identifier")),
+        }
+    }
+    // Check that we got a package
+    if uavcan_package.is_empty() {
+        return Err(make_error(
+            arguments_span,
+            "Expected at least one UAVCAN package name segment before comma",
+        ));
+    }
+    // Loop 2: get Rust module name
+    while let Some(tree) = iter.next() {
+        match tree {
+            TokenTree::Ident(ident) => {
+                rust_module.push(ident.to_string());
+                // Should be followed by :: or the end of arguments
+                match iter.next() {
+                    Some(TokenTree::Punct(punct)) if punct.as_char() == ':' => {
+                        match iter.next() {
+                            Some(TokenTree::Punct(punct)) if punct.as_char() == ':' => {
+                                // Path segment OK, go back and read the next identifier
+                            }
+                            _ => {
+                                return Err(make_error(
+                                    ident.span(),
+                                    "Expected :: or end of arguments after identifier",
+                                ))
+                            }
+                        }
+                    }
+                    None => {
+                        // End of arguments
+                        break;
+                    }
+                    _ => {
+                        return Err(make_error(
+                            ident.span(),
+                            "Expected :: or end of arguments after identifier",
+                        ))
+                    }
+                }
+            }
+            _ => return Err(make_error(tree.span(), "Expected an identifier")),
+        }
+    }
+    // Check that we got a Rust module
+    if rust_module.is_empty() {
+        return Err(make_error(
+            arguments_span,
+            "Expected at least one Rust module segment before end of arguments",
+        ));
+    }
+
+    if external_packages.contains_key(&uavcan_package) {
+        Err(make_error(
+            arguments_span,
+            "This package has already been marked as external",
+        ))
+    } else {
+        external_packages.insert(uavcan_package, rust_module);
+        Ok(())
+    }
 }
 
 /// Replaces $CARGO_MANIFEST_DIR with the value of the environment variable CARGO_MANIFEST_DIR,

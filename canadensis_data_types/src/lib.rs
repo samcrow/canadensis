@@ -12,5 +12,5 @@ extern crate zerocopy;
 
 canadensis_macro::types_from_dsdl! {
     package($CARGO_MANIFEST_DIR, "/public_regulated_data_types")
-    generate_all()
+    generate()
 }

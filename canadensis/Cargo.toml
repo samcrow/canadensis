@@ -1,13 +1,13 @@
 [package]
 name = "canadensis"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
 edition = "2018"
 keywords = ["embedded", "uavcan", "uav", "can"]
 categories = ["embedded", "no-std"]
 repository = "https://github.com/samcrow/canadensis"
 license = "MIT OR Apache-2.0"
-description = "A UAVCAN v1 implementation: Node types and re-exports from other canadensis crates"
+description = "A UAVCAN v1 implementation: Node types and re-exports from some other canadensis crates"
 
 [dependencies]
 fallible_collections = "0.4.0"
@@ -18,19 +18,19 @@ log = "0.4"
 
 # Depends on most other canadensis crates that are not transport-specific
 [dependencies.canadensis_core]
-version = "0.1.0"
+version = "0.2.0"
 path = "../canadensis_core"
 [dependencies.canadensis_derive_register_block]
-version = "0.1.0"
+version = "0.2.0"
 path = "../canadensis_derive_register_block"
 [dependencies.canadensis_encoding]
-version = "0.1.0"
+version = "0.2.0"
 path = "../canadensis_encoding"
 
 # canadensis_data_types is likely to change more frequently. Because of the Heartbeat and NodeInfo types, this is still
 # a public dependency.
 [dependencies.canadensis_data_types]
-version = "0.1.0"
+version = "0.2.0"
 path = "../canadensis_data_types"
 
 [dev-dependencies]
@@ -39,19 +39,15 @@ rand = "0.7.3"
 simplelog = "0.10.2"
 
 [dev-dependencies.canadensis_linux]
-version = "0.1.0"
+version = "0.2.0"
 path = "../canadensis_linux"
 [dev-dependencies.canadensis_can]
-version = "0.1.0"
+version = "0.2.0"
 path = "../canadensis_can"
 [dev-dependencies.canadensis_serial]
-version = "0.1.0"
+version = "0.2.0"
 path = "../canadensis_serial"
 [dev-dependencies.canadensis_udp]
-version = "0.1.0"
+version = "0.2.0"
 path = "../canadensis_udp"
 
-
-[features]
-# The can-fd feature increases the maximum frame capacity and maximum MTU from 8 to 64 bytes
-can-fd = ["canadensis_can/can-fd"]

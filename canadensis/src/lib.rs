@@ -15,7 +15,6 @@ extern crate heapless;
 
 extern crate canadensis_core;
 extern crate canadensis_encoding;
-extern crate canadensis_filter_config;
 
 // Re-exports from other crates
 pub mod core {
@@ -25,10 +24,6 @@ pub mod core {
 pub mod encoding {
     //! Data type serialization and deserialization
     pub use canadensis_encoding::*;
-}
-pub mod filter {
-    //! Automatic CAN receive filter configuration
-    pub use canadensis_filter_config::*;
 }
 pub use canadensis_core::nb;
 

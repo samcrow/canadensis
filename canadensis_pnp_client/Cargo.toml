@@ -1,6 +1,6 @@
 [package]
 name = "canadensis_pnp_client"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
 edition = "2018"
 description = "Client library for UAVCAN plug-and-play node ID allocation"
@@ -19,11 +19,11 @@ version = "2.3.9"
 default-features = false
 
 [dependencies.canadensis]
-version = "0.1.0"
+version = "0.2.0"
 path = "../canadensis"
 [dependencies.canadensis_data_types]
-version = "0.1.0"
+version = "0.2.0"
 path = "../canadensis_data_types"
 [dependencies.canadensis_filter_config]
-version = "0.1.0"
+version = "0.2.0"
 path = "../canadensis_filter_config"

@@ -1,6 +1,6 @@
 [package]
 name = "canadensis_data_types"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
 edition = "2018"
 keywords = ["embedded", "uavcan", "uav", "can"]
@@ -17,10 +17,13 @@ heapless = "0.7.7"
 zerocopy = "0.6.0"
 
 [dependencies.canadensis_core]
+version = "0.2.0"
 path = "../canadensis_core"
 [dependencies.canadensis_encoding]
+version = "0.2.0"
 path = "../canadensis_encoding"
 [dependencies.canadensis_macro]
+version = "0.2.0"
 path = "../canadensis_macro"
 
 [dev-dependencies]
