@@ -11,9 +11,8 @@ use socketcan::CANSocket;
 
 use canadensis::core::time::Microseconds64;
 use canadensis::node::{CoreNode, MinimalNode};
-use canadensis::requester::TransferIdArray;
+use canadensis::requester::TransferIdFixedMap;
 use canadensis::Node;
-use canadensis_can::queue::{ArrayQueue, FrameQueueSource};
 use canadensis_can::types::{CanNodeId, CanTransport};
 use canadensis_can::{CanReceiver, CanTransmitter, Mtu};
 use canadensis_linux::{LinuxCan, SystemClock};
@@ -58,20 +57,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let can = CANSocket::open(&can_interface).expect("Failed to open CAN interface");
     can.set_read_timeout(Duration::from_millis(500))?;
     can.set_write_timeout(Duration::from_millis(500))?;
-    let mut can = LinuxCan::new(can);
+    let can = LinuxCan::new(can);
 
     // Create a node with capacity for 1 publisher and 1 requester
-    let frame_queue = ArrayQueue::<Microseconds64, 64>::new();
-    let transmitter = CanTransmitter::new(Mtu::Can8, frame_queue);
+    let transmitter = CanTransmitter::new(Mtu::Can8);
     let receiver = CanReceiver::new(node_id, Mtu::Can8);
-    let core_node: CoreNode<_, _, _, TransferIdArray<CanTransport<Microseconds64>>, 1, 1> =
-        CoreNode::new(SystemClock::new(), node_id, transmitter, receiver);
-    let mut node = MinimalNode::new(core_node).unwrap();
 
-    // Now that the node has subscribed to everything it wants, set up the frame acceptance filters
-    let frame_filters = node.node().receiver().frame_filters().unwrap();
-    println!("Filters: {:?}", frame_filters);
-    can.set_filters(&frame_filters)?;
+    const TRANSFER_IDS: usize = 1;
+    const PUBLISHERS: usize = 1;
+    const REQUESTERS: usize = 1;
+    let core_node: CoreNode<
+        SystemClock,
+        CanTransmitter<Microseconds64, LinuxCan>,
+        CanReceiver<Microseconds64, LinuxCan>,
+        TransferIdFixedMap<CanTransport, TRANSFER_IDS>,
+        LinuxCan,
+        PUBLISHERS,
+        REQUESTERS,
+    > = CoreNode::new(SystemClock::new(), node_id, transmitter, receiver, can);
+    let mut node = MinimalNode::new(core_node).unwrap();
 
     let start_time = std::time::Instant::now();
     let mut prev_seconds = 0;
@@ -84,15 +88,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if seconds != prev_seconds {
             prev_seconds = seconds;
             node.run_per_second_tasks().unwrap();
-        }
-
-        while let Some(frame_out) = node
-            .node_mut()
-            .transmitter_mut()
-            .frame_queue_mut()
-            .pop_frame()
-        {
-            can.send(frame_out)?;
+            node.node_mut().flush().unwrap();
         }
 
         thread::sleep(Duration::from_millis(500));

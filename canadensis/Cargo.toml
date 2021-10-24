@@ -47,6 +47,7 @@ path = "../canadensis_data_types"
 [dev-dependencies]
 socketcan = "1.7.0"
 rand = "0.7.3"
+simplelog = "0.10.2"
 
 [dev-dependencies.canadensis_linux]
 version = "0.1.0"

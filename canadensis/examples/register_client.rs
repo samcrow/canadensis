@@ -16,10 +16,10 @@ use canadensis::core::transfer::ServiceTransfer;
 use canadensis::core::Priority;
 use canadensis::encoding::Deserialize;
 use canadensis::node::{BasicNode, CoreNode};
-use canadensis::requester::TransferIdArray;
+use canadensis::requester::TransferIdFixedMap;
 use canadensis::{Node, ServiceToken, TransferHandler};
-use canadensis_can::queue::{ArrayQueue, FrameQueueSource};
-use canadensis_can::types::{CanNodeId, CanTransferId, CanTransport};
+use canadensis_can::queue::{ArrayQueue, SingleQueueDriver};
+use canadensis_can::types::{CanNodeId, CanTransferId, CanTransport, Error};
 use canadensis_can::{CanReceiver, CanTransmitter, Mtu};
 use canadensis_data_types::uavcan::node::get_info_1_0::GetInfoResponse;
 use canadensis_data_types::uavcan::node::version_1_0::Version;
@@ -72,7 +72,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let can = CANSocket::open(&can_interface).expect("Failed to open CAN interface");
     can.set_read_timeout(Duration::from_millis(5))?;
     can.set_write_timeout(Duration::from_millis(500))?;
-    let mut can = LinuxCan::new(can);
+    let can = LinuxCan::new(can);
 
     // Set up information about this node
     let node_info = GetInfoResponse {
@@ -86,12 +86,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         certificate_of_authenticity: Default::default(),
     };
 
-    // Create a node with capacity for 8 publishers and 8 requesters
-    let frame_queue = ArrayQueue::<Microseconds64, 64>::new();
-    let transmitter = CanTransmitter::new(Mtu::Can8, frame_queue);
+    // Create a node with capacity for 2 publishers and 2 requesters
+    type Queue = SingleQueueDriver<ArrayQueue<Microseconds64, 64>, LinuxCan>;
+    const TRANSFER_IDS: usize = 1;
+    const PUBLISHERS: usize = 2;
+    const REQUESTERS: usize = 2;
+
+    let queue = Queue::new(ArrayQueue::new(), can);
+    let transmitter = CanTransmitter::new(Mtu::Can8);
     let receiver = CanReceiver::new(node_id, Mtu::Can8);
-    let core_node: CoreNode<_, _, _, TransferIdArray<CanTransport<Microseconds64>>, 8, 8> =
-        CoreNode::new(SystemClock::new(), node_id, transmitter, receiver);
+    let core_node: CoreNode<
+        SystemClock,
+        CanTransmitter<Microseconds64, Queue>,
+        CanReceiver<Microseconds64, Queue>,
+        TransferIdFixedMap<CanTransport, TRANSFER_IDS>,
+        Queue,
+        PUBLISHERS,
+        REQUESTERS,
+    > = CoreNode::new(SystemClock::new(), node_id, transmitter, receiver, queue);
     let mut node = BasicNode::new(core_node, node_info).unwrap();
     let list_request_token: ServiceToken<ListRequest> = node
         .start_sending_requests(list_1_0::SERVICE, milliseconds(1000), 256, Priority::Low)
@@ -100,10 +112,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .start_sending_requests(access_1_0::SERVICE, milliseconds(1000), 267, Priority::Low)
         .unwrap();
 
-    // Now that the node has subscribed to everything it wants, set up the frame acceptance filters
-    let frame_filters = node.receiver().frame_filters().unwrap();
-    can.set_filters(&frame_filters)?;
-
     // Send a register list request for the register at index 0
     node.send_request(
         &list_request_token,
@@ -111,6 +119,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         target_node_id,
     )
     .unwrap();
+    node.flush().unwrap();
 
     let mut handler = RegisterHandler {
         target_node_id,
@@ -126,15 +135,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let start_time = std::time::Instant::now();
     let mut prev_seconds = 0;
     while !handler.done && handler.timeout > std::time::Instant::now() {
-        match can.receive() {
-            Ok(frame) => {
-                node.accept_frame(frame, &mut handler).unwrap();
+        match node.receive(&mut handler) {
+            Ok(_) => { /* Keep receiving */ }
+            Err(Error::Driver(e)) if e.kind() == ErrorKind::WouldBlock => {
+                // Keep receiving
             }
-            Err(e) => match e.kind() {
-                ErrorKind::WouldBlock => {}
-                _ => return Err(e.into()),
-            },
-        };
+            Err(e) => panic!("{:?}", e),
+        }
 
         let seconds = std::time::Instant::now()
             .duration_since(start_time)
@@ -143,10 +150,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             prev_seconds = seconds;
             node.run_per_second_tasks().unwrap();
         }
-
-        while let Some(frame_out) = node.transmitter_mut().frame_queue_mut().pop_frame() {
-            can.send(frame_out)?;
-        }
+        node.flush().unwrap();
     }
     // Either finished or timed out
     if handler.done {
@@ -189,23 +193,14 @@ struct RegisterHandler {
     timeout: std::time::Instant,
 }
 
-impl TransferHandler<<SystemClock as Clock>::Instant, CanTransport<<SystemClock as Clock>::Instant>>
-    for RegisterHandler
-{
+impl TransferHandler<<SystemClock as Clock>::Instant, CanTransport> for RegisterHandler {
     fn handle_response<N>(
         &mut self,
         node: &mut N,
-        transfer: &ServiceTransfer<
-            Vec<u8>,
-            <SystemClock as Clock>::Instant,
-            CanTransport<<SystemClock as Clock>::Instant>,
-        >,
+        transfer: &ServiceTransfer<Vec<u8>, <SystemClock as Clock>::Instant, CanTransport>,
     ) -> bool
     where
-        N: Node<
-            Instant = <SystemClock as Clock>::Instant,
-            Transport = CanTransport<<SystemClock as Clock>::Instant>,
-        >,
+        N: Node<Instant = <SystemClock as Clock>::Instant, Transport = CanTransport>,
     {
         match transfer.header.service {
             list_1_0::SERVICE => {

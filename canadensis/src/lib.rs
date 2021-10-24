@@ -285,7 +285,6 @@ pub trait Node {
     /// may cause transfers to be lost but are not reported as errors here.
     fn receive<H>(
         &mut self,
-        now: Self::Instant,
         handler: &mut H,
     ) -> Result<(), <Self::Receiver as Receiver<Self::Instant>>::Error>
     where

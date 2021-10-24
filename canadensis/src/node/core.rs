@@ -19,7 +19,10 @@ use crate::{Node, PublishToken, ResponseToken, ServiceToken, StartSendError, Tra
 ///
 /// Type parameters:
 /// * `C`: The clock used to get the current time
-/// * `Q`: The queue type used to store outgoing frames
+/// * `T`: The transmitter used to send transfers
+/// * `U`: The receiver used to receive transfers
+/// * `TR`: The transfer ID tracker used to manage transfer IDs for outgoing transfers
+/// * `D`: The driver used to send and receive frames
 /// * `P`: The maximum number of topics that can be published
 /// * `R`: The maximum number of services for which requests can be sent
 ///
@@ -145,11 +148,11 @@ where
     type Transmitter = T;
     type Receiver = U;
 
-    fn receive<H>(&mut self, now: Self::Instant, handler: &mut H) -> Result<(), U::Error>
+    fn receive<H>(&mut self, handler: &mut H) -> Result<(), U::Error>
     where
         H: TransferHandler<Self::Instant, Self::Transport>,
     {
-        if let Some(transfer) = self.receiver.receive(now, &mut self.driver)? {
+        if let Some(transfer) = self.receiver.receive(self.clock.now(), &mut self.driver)? {
             self.handle_incoming_transfer(transfer, handler)
         }
         Ok(())

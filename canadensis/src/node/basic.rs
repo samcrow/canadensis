@@ -158,7 +158,6 @@ where
 
     fn receive<H>(
         &mut self,
-        now: Self::Instant,
         handler: &mut H,
     ) -> Result<(), <N::Receiver as Receiver<N::Instant>>::Error>
     where
@@ -168,7 +167,7 @@ where
             response: &self.node_info,
         }
         .chain(handler);
-        self.node.node_mut().receive(now, &mut chained_handler)
+        self.node.node_mut().receive(&mut chained_handler)
     }
 
     fn start_publishing<T>(

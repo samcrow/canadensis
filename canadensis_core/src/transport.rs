@@ -33,7 +33,7 @@ where
     /// An error type
     ///
     /// This type must have an out-of-memory variant that can hold an `OutOfMemoryError`.
-    type Error: From<OutOfMemoryError>;
+    type Error: Debug + From<OutOfMemoryError>;
 
     /// Starts the process of sending an outgoing transfer
     ///
@@ -86,7 +86,7 @@ where
     /// An error type
     ///
     /// This type must have an out-of-memory variant that can hold an `OutOfMemoryError`.
-    type Error: From<OutOfMemoryError>;
+    type Error: Debug + From<OutOfMemoryError>;
 
     /// Checks for incoming frames and processes them, possibly returning a transfer
     ///

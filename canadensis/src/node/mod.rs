@@ -26,6 +26,7 @@ pub mod data_types {
 }
 
 /// An error from a transmitter or receiver
+#[derive(Debug)]
 pub enum NodeError<T, R> {
     /// An error from a transmitter
     Transmitter(T),
