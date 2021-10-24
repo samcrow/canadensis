@@ -4,7 +4,8 @@ name = "canadensis_macro"
 version = "0.2.0"
 authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
 keywords = ["uavcan"]
-description = "Canadensis UAVCAN-related macros"
+license = "MIT OR Apache-2.0"
+description = "A procedural macro that generates Rust data types and serialization code from inline and/or external AVCAN DSDL files"
 edition = "2018"
 
 [lib]

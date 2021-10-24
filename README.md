@@ -12,16 +12,23 @@ This is currently an independent project, not affiliated with the UAVCAN Consort
 
 Crate | Description
 ------|------------
-[`canadensis`](https://crates.io/crates/canadensis) ([documentation](https://docs.rs/canadensis)) | The main library with all core functionality
-[`canadensis_data_types`](https://crates.io/crates/canadensis_data_types) ([documentation](https://docs.rs/canadensis_data_types)) | Some Rust types corresponding to the [UAVCAN public regulated data types](https://github.com/UAVCAN/public_regulated_data_types)
+[`canadensis`](https://crates.io/crates/canadensis) ([documentation](https://docs.rs/canadensis)) | The main library with all core transport-independent functionality
+[`canadensis_data_types`](https://crates.io/crates/canadensis_data_types) ([documentation](https://docs.rs/canadensis_data_types)) | Rust types corresponding to the [UAVCAN public regulated data types](https://github.com/UAVCAN/public_regulated_data_types)
+[`canadensis_can`](https://crates.io/crates/canadensis_can) ([documentation](https://docs.rs/canadensis_bxcan)) | UAVCAN/CAN transport
 [`canadensis_bxcan`](https://crates.io/crates/canadensis_bxcan) ([documentation](https://docs.rs/canadensis_bxcan)) | Compatibility for bxCAN embedded CAN controllers
 [`canadensis_linux`](https://crates.io/crates/canadensis_linux) ([documentation](https://docs.rs/canadensis_linux)) | Compatibility for Linux SocketCAN interfaces
+[`canadensis_serial`](https://crates.io/crates/canadensis_serial) ([documentation](https://docs.rs/canadensis_serial)) | Experimental UAVCAN/Serial transport
+[`canadensis_udp`](https://crates.io/crates/canadensis_udp) ([documentation](https://docs.rs/canadensis_udp)) | Experimental UAVCAN/UDP transport
 [`canadensis_pnp_client`](https://crates.io/crates/canadensis_pnp_client) ([documentation](https://docs.rs/canadensis_pnp_client)) | A client library for plug-and-play node ID allocation
 [`canadensis_crc`](https://crates.io/crates/canadensis_crc) ([documentation](https://docs.rs/canadensis_crc)) | Access to the software image CRC
 [`canadensis_write_crc`](https://crates.io/crates/canadensis_write_crc) ([documentation](https://docs.rs/canadensis_write_crc)) | A tool to calculate and write the CRC of a software image for use with `canadensis_crc`
+[`canadensis_codegen_rust`](https://crates.io/crates/canadensis_codegen_rust) ([documentation](https://docs.rs/canadensis_codegen_rust)) | A DSDL processor that generates Rust data types and serialization code
+[`canadensis_macro`](https://crates.io/crates/canadensis_macro) ([documentation](https://docs.rs/canadensis_macro)) | A procedural macro that generates Rust data types and serialization code from inline and/or external DSDL files
 
-Other crates (`canadensis_can`, `canadensis_core`, `canadensis_derive_register_block`, `canadensis_encoding`, and
-`canadensis_filter_config`) are re-exported from `canadensis`, so you normally will not need to depend on them directly.
+
+Other crates (`canadensis_bit_length_set`, `canadensis_core`, `canadensis_derive_register_block`,
+`canadensis_dsdl_frontend`, `canadensis_dsdl_parser`, `canadensis_encoding`, and
+`canadensis_filter_config`) are re-exported in various places, so you normally will not need to depend on them directly.
 
 ## Status
 
@@ -30,31 +37,16 @@ This code is intended to conform to version 1.0-beta of the UAVCAN specification
 Most of the functionality works. Some parts are incomplete:
 
 * There are some tests, but there are probably several bugs in areas that have not been tested.
-* The design is not the best.
 * The amount of dynamic memory allocation can be reduced, or at least documented better.
-* No automatic generation of code from data structure description language (currently, all Rust data
-  types and serialization/deserialization code must be hand-written)
+* It needs better documentation
 
 ## Principles
 
 * Runs on embedded devices
 * Uses dynamic memory allocation, but only when necessary
 * Supports UAVCAN/CAN (classic CAN and CAN FD)
-    * Other transports are not part of the specification as of this writing, but this library may support them in the
-      future.
-
-## Current features
-
-* Common definitions (`canadensis_core`)
-* A transport layer and session layer for CAN and CAN FD (`canadensis_can`)
-* Transfer serialization and deserialization (`canadensis_encoding`)
-* A basic presentation layer for CAN and CAN FD, which provides a relatively simple API (`canadensis`)
-* Basic application-layer node functions (`canadensis_node`)
-* Automatic filter configuration (`canadensis_filter_config`)
-* Adapter code for running on Linux with SocketCAN (`canadensis_linux`)
-* Adapter code for STM32 bxCAN peripherals (`canadensis_bxcan`)
-* Software image CRC access library (`canadensis_crc`)
-* Software image CRC calculation and writing tool (`canadensis_write_crc`)
+* Supports UAVCAN/Serial and UAVCAN/UDP (these transports are not fully specified yet, but the canadensis
+  implementations were compatible with `pyuavcan` when they were released)
 
 ## License
 
