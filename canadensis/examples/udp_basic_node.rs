@@ -1,11 +1,12 @@
 extern crate canadensis;
-extern crate canadensis_serial;
+extern crate canadensis_udp;
 extern crate rand;
+extern crate socketcan;
 
-use core::slice;
 use std::convert::TryFrom;
+use std::net::Ipv4Addr;
 use std::time::Duration;
-use std::{env, io};
+use std::{env, thread};
 
 use canadensis::core::time::Instant;
 use canadensis::core::transfer::{MessageTransfer, ServiceTransfer};
@@ -13,62 +14,50 @@ use canadensis::core::transport::Transport;
 use canadensis::node::{BasicNode, CoreNode};
 use canadensis::requester::TransferIdFixedMap;
 use canadensis::{Node, ResponseToken, TransferHandler};
-use canadensis_core::nb;
-use canadensis_core::subscription::DynamicSubscriptionManager;
+use canadensis_core::session::SessionDynamicMap;
 use canadensis_core::time::Microseconds64;
 use canadensis_data_types::uavcan::node::get_info_1_0::GetInfoResponse;
 use canadensis_data_types::uavcan::node::version_1_0::Version;
 use canadensis_linux::SystemClock;
-use canadensis_serial::driver::{ReceiveDriver, TransmitDriver};
-use canadensis_serial::{
-    Error, SerialNodeId, SerialReceiver, SerialTransmitter, SerialTransport, Subscription,
+use canadensis_udp::{
+    NodeAddress, UdpNodeId, UdpReceiver, UdpSessionData, UdpTransferId, UdpTransmitter,
+    UdpTransport,
 };
-use std::io::{ErrorKind, Read, Write};
-use std::net::TcpStream;
 
 /// Runs a basic UAVCAN node that sends Heartbeat messages, responds to node information requests,
 /// and sends port list messages
 ///
-/// This node connects to a TCP server and uses the serial transport.
+/// This node connects uses a UDP transport.
 ///
-/// Usage: `tcp_serial_basic_node [address:port] [Node ID]`
+/// Usage: `tcp_serial_basic_node [node IP address]`
+///
+/// The node ID is automatically derived from the 16 least significant bits of the node IP address.
 ///
 /// # Testing
-///
-/// ## Start a server
-///
-/// ```
-/// ncat --broker -l -p [port]
-/// ```
 ///
 /// ## Start the node
 ///
 /// ```
-/// tcp_serial_basic_node 127.0.0.1:[port] [Node ID]
+/// udp_basic_node 127.0.0.[node ID]
 /// ```
 ///
 /// ## Interact with the node using Yakut
 ///
 /// ```
-/// yakut --transport "SerialTransport('socket://127.0.0.1:[port]', local_node_id=128)" monitor
+/// yakut --transport "UDPTransport('127.0.0.127')" monitor
 /// ```
 ///
 /// In the above two commands, 8 is the MTU of standard CAN and 42 is the node ID of the Yakut node.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);
-    let server_address = args.next().expect("Expected server address and port");
-    let node_id = SerialNodeId::try_from(
-        args.next()
-            .expect("Expected node ID")
-            .parse::<u16>()
-            .expect("Invalid node ID format"),
-    )
-    .expect("Node ID too large");
-
-    let socket = TcpStream::connect(server_address)?;
-    socket.set_read_timeout(Some(Duration::from_millis(500)))?;
-    socket.set_write_timeout(Some(Duration::from_millis(500)))?;
-    let driver = SocketDriver(socket);
+    let local_address: Ipv4Addr = args
+        .next()
+        .expect("No local IP address")
+        .parse()
+        .expect("Invalid IP address");
+    let local_address =
+        NodeAddress::try_from(local_address).expect("IP address is not a valid node address");
+    let node_id = local_address.node_id();
 
     // Set up information about this node
     let node_info = GetInfoResponse {
@@ -77,7 +66,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         software_version: Version { major: 0, minor: 1 },
         software_vcs_revision_id: 0,
         unique_id: rand::random(),
-        name: heapless::Vec::from_slice(b"org.samcrow.tcp_serial_basic_node").unwrap(),
+        name: heapless::Vec::from_slice(b"org.samcrow.udp_basic_node").unwrap(),
         software_image_crc: heapless::Vec::new(),
         certificate_of_authenticity: Default::default(),
     };
@@ -86,22 +75,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     const TRANSFER_IDS: usize = 1;
     const PUBLISHERS: usize = 8;
     const REQUESTERS: usize = 8;
+    const MTU: usize = 1200;
 
-    let transmitter = SerialTransmitter::<_, 256>::new();
-    let receiver = SerialReceiver::new(node_id);
+    let transmitter = UdpTransmitter::<MTU>::new(local_address.clone()).unwrap();
+    let receiver = UdpReceiver::new(local_address);
     let core_node: CoreNode<
         SystemClock,
-        SerialTransmitter<SocketDriver, 256>,
-        SerialReceiver<
+        UdpTransmitter<MTU>,
+        UdpReceiver<
             Microseconds64,
-            SocketDriver,
-            DynamicSubscriptionManager<Subscription<Microseconds64>>,
+            SessionDynamicMap<Microseconds64, UdpNodeId, UdpTransferId, UdpSessionData>,
+            MTU,
         >,
-        TransferIdFixedMap<SerialTransport, TRANSFER_IDS>,
-        SocketDriver,
+        TransferIdFixedMap<UdpTransport, TRANSFER_IDS>,
+        (),
         PUBLISHERS,
         REQUESTERS,
-    > = CoreNode::new(SystemClock::new(), node_id, transmitter, receiver, driver);
+    > = CoreNode::new(SystemClock::new(), node_id, transmitter, receiver, ());
     let mut node = BasicNode::new(core_node, node_info).unwrap();
 
     let start_time = std::time::Instant::now();
@@ -109,7 +99,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     loop {
         match node.receive(&mut EmptyHandler) {
             Ok(_) => {}
-            Err(Error::Driver(e)) if e.kind() == ErrorKind::WouldBlock => {}
             Err(e) => panic!("{:?}", e),
         };
 
@@ -122,6 +111,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         node.flush().unwrap();
+        thread::sleep(Duration::from_millis(100));
     }
 }
 
@@ -163,33 +153,5 @@ impl<I: Instant, T: Transport> TransferHandler<I, T> for EmptyHandler {
     {
         println!("Got response {:?}", transfer);
         false
-    }
-}
-
-/// A serial driver that uses a TCP socket
-struct SocketDriver(TcpStream);
-
-impl TransmitDriver for SocketDriver {
-    type Error = io::Error;
-
-    fn send_byte(&mut self, byte: u8) -> nb::Result<(), Self::Error> {
-        match self.0.write_all(&[byte]) {
-            Ok(_) => Ok(()),
-            Err(e) if e.kind() == ErrorKind::WouldBlock => Err(nb::Error::WouldBlock),
-            Err(e) => Err(nb::Error::Other(e)),
-        }
-    }
-}
-
-impl ReceiveDriver for SocketDriver {
-    type Error = io::Error;
-
-    fn receive_byte(&mut self) -> nb::Result<u8, Self::Error> {
-        let mut byte = 0;
-        match self.0.read(slice::from_mut(&mut byte)) {
-            Ok(_) => Ok(byte),
-            Err(e) if e.kind() == ErrorKind::WouldBlock => Err(nb::Error::WouldBlock),
-            Err(e) => Err(nb::Error::Other(e)),
-        }
     }
 }
