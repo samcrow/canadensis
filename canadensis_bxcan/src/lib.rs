@@ -58,6 +58,15 @@ where
     pub fn into_can(self) -> Can<N> {
         self.can
     }
+
+    /// Returns a reference to the CAN driver
+    pub fn can(&self) -> &Can<N> {
+        &self.can
+    }
+    /// Returns a mutable reference to the CAN driver
+    pub fn can_mut(&mut self) -> &mut Can<N> {
+        &mut self.can
+    }
 }
 
 impl<I, N> TransmitDriver<I> for BxCanDriver<I, N>
