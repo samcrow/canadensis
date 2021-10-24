@@ -3,17 +3,25 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/canadensis/canadensis.iml" filepath="$PROJECT_DIR$/canadensis/canadensis.iml" />
+      <module fileurl="file://$PROJECT_DIR$/canadensis_bit_length_set/canadensis_bit_length_set.iml" filepath="$PROJECT_DIR$/canadensis_bit_length_set/canadensis_bit_length_set.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_bxcan/canadensis_bxcan.iml" filepath="$PROJECT_DIR$/canadensis_bxcan/canadensis_bxcan.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_can/canadensis_can.iml" filepath="$PROJECT_DIR$/canadensis_can/canadensis_can.iml" />
+      <module fileurl="file://$PROJECT_DIR$/canadensis_codegen_rust/canadensis_codegen_rust.iml" filepath="$PROJECT_DIR$/canadensis_codegen_rust/canadensis_codegen_rust.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_core/canadensis_core.iml" filepath="$PROJECT_DIR$/canadensis_core/canadensis_core.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_crc/canadensis_crc.iml" filepath="$PROJECT_DIR$/canadensis_crc/canadensis_crc.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_data_types/canadensis_data_types.iml" filepath="$PROJECT_DIR$/canadensis_data_types/canadensis_data_types.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_derive_register_block/canadensis_derive_register_block.iml" filepath="$PROJECT_DIR$/canadensis_derive_register_block/canadensis_derive_register_block.iml" />
+      <module fileurl="file://$PROJECT_DIR$/canadensis_dsdl_frontend/canadensis_dsdl_frontend.iml" filepath="$PROJECT_DIR$/canadensis_dsdl_frontend/canadensis_dsdl_frontend.iml" />
+      <module fileurl="file://$PROJECT_DIR$/canadensis_dsdl_parser/canadensis_dsdl_parser.iml" filepath="$PROJECT_DIR$/canadensis_dsdl_parser/canadensis_dsdl_parser.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_encoding/canadensis_encoding.iml" filepath="$PROJECT_DIR$/canadensis_encoding/canadensis_encoding.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_filter_config/canadensis_filter_config.iml" filepath="$PROJECT_DIR$/canadensis_filter_config/canadensis_filter_config.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_linux/canadensis_linux.iml" filepath="$PROJECT_DIR$/canadensis_linux/canadensis_linux.iml" />
+      <module fileurl="file://$PROJECT_DIR$/canadensis_macro/canadensis_macro.iml" filepath="$PROJECT_DIR$/canadensis_macro/canadensis_macro.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_pnp_client/canadensis_pnp_client.iml" filepath="$PROJECT_DIR$/canadensis_pnp_client/canadensis_pnp_client.iml" />
+      <module fileurl="file://$PROJECT_DIR$/canadensis_serial/canadensis_serial.iml" filepath="$PROJECT_DIR$/canadensis_serial/canadensis_serial.iml" />
+      <module fileurl="file://$PROJECT_DIR$/canadensis_udp/canadensis_udp.iml" filepath="$PROJECT_DIR$/canadensis_udp/canadensis_udp.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_write_crc/canadensis_write_crc.iml" filepath="$PROJECT_DIR$/canadensis_write_crc/canadensis_write_crc.iml" />
+      <module fileurl="file://$PROJECT_DIR$/canadensis_codegen_rust/prdt_compile_test/prdt_compile_test.iml" filepath="$PROJECT_DIR$/canadensis_codegen_rust/prdt_compile_test/prdt_compile_test.iml" />
     </modules>
   </component>
 </project>

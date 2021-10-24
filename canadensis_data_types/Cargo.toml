@@ -1,24 +1,31 @@
 [package]
 name = "canadensis_data_types"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
 edition = "2018"
 keywords = ["embedded", "uavcan", "uav", "can"]
 categories = ["embedded", "no-std"]
 repository = "https://github.com/samcrow/canadensis"
 license = "MIT OR Apache-2.0"
-description = "Hand-written definitions for some UAVCAN public regulated data types"
+description = "Automatically generated types for all UAVCAN public regulated data types"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-heapless = "0.7.0"
-half = "1.7.1"
+half = { version = "1.8", features = ["zerocopy"] }
+heapless = "0.7.7"
+zerocopy = "0.6.0"
 
-[dependencies.canadensis_encoding]
-version = "0.1.0"
-path = "../canadensis_encoding"
 [dependencies.canadensis_core]
-version = "0.1.0"
+version = "0.2.0"
 path = "../canadensis_core"
+[dependencies.canadensis_encoding]
+version = "0.2.0"
+path = "../canadensis_encoding"
+[dependencies.canadensis_macro]
+version = "0.2.0"
+path = "../canadensis_macro"
+
+[dev-dependencies]
+memoffset = "0.6.4"
 

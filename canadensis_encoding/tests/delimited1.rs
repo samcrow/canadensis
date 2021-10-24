@@ -46,19 +46,6 @@ impl Serialize for A {
 }
 
 impl Deserialize for A {
-    fn in_bit_length_set(bit_length: usize) -> bool {
-        // TODO: This may give some false positives
-        bit_length % 8 == 0 && bit_length / 8 <= Self::EXTENT_BYTES.unwrap() as usize
-    }
-
-    fn deserialize_in_place(
-        &mut self,
-        cursor: &mut ReadCursor<'_>,
-    ) -> Result<(), DeserializeError> {
-        *self = Self::deserialize(cursor)?;
-        Ok(())
-    }
-
     fn deserialize(cursor: &mut ReadCursor<'_>) -> Result<Self, DeserializeError>
     where
         Self: Sized,
@@ -129,19 +116,6 @@ impl Serialize for BSealed {
 }
 
 impl Deserialize for BSealed {
-    fn in_bit_length_set(bit_length: usize) -> bool {
-        // TODO: This may produce false positives
-        bit_length % 8 == 0 && bit_length / 8 <= 30
-    }
-
-    fn deserialize_in_place(
-        &mut self,
-        cursor: &mut ReadCursor<'_>,
-    ) -> Result<(), DeserializeError> {
-        *self = Self::deserialize(cursor)?;
-        Ok(())
-    }
-
     fn deserialize(cursor: &mut ReadCursor<'_>) -> Result<Self, DeserializeError>
     where
         Self: Sized,
@@ -231,19 +205,6 @@ impl Serialize for BDelimited {
     }
 }
 impl Deserialize for BDelimited {
-    fn in_bit_length_set(bit_length: usize) -> bool {
-        // TODO: This may produce false positives
-        bit_length % 8 == 0 && bit_length / 8 <= 30
-    }
-
-    fn deserialize_in_place(
-        &mut self,
-        cursor: &mut ReadCursor<'_>,
-    ) -> Result<(), DeserializeError> {
-        *self = Self::deserialize(cursor)?;
-        Ok(())
-    }
-
     fn deserialize(cursor: &mut ReadCursor<'_>) -> Result<Self, DeserializeError>
     where
         Self: Sized,
@@ -308,18 +269,6 @@ impl Serialize for CVariable {
 }
 
 impl Deserialize for CVariable {
-    fn in_bit_length_set(bit_length: usize) -> bool {
-        bit_length == 16 || bit_length == 24 || bit_length == 32
-    }
-
-    fn deserialize_in_place(
-        &mut self,
-        cursor: &mut ReadCursor<'_>,
-    ) -> Result<(), DeserializeError> {
-        *self = Self::deserialize(cursor)?;
-        Ok(())
-    }
-
     fn deserialize(cursor: &mut ReadCursor<'_>) -> Result<Self, DeserializeError>
     where
         Self: Sized,
@@ -365,18 +314,6 @@ impl DataType for CFixed {
 }
 
 impl Deserialize for CFixed {
-    fn in_bit_length_set(bit_length: usize) -> bool {
-        bit_length == 16
-    }
-
-    fn deserialize_in_place(
-        &mut self,
-        cursor: &mut ReadCursor<'_>,
-    ) -> Result<(), DeserializeError> {
-        *self = Self::deserialize(cursor)?;
-        Ok(())
-    }
-
     fn deserialize(cursor: &mut ReadCursor<'_>) -> Result<Self, DeserializeError>
     where
         Self: Sized,
@@ -480,19 +417,6 @@ impl Serialize for A11 {
 }
 
 impl Deserialize for A11 {
-    fn in_bit_length_set(bit_length: usize) -> bool {
-        // TODO: This may give some false positives
-        bit_length % 8 == 0 && bit_length / 8 <= Self::EXTENT_BYTES.unwrap() as usize
-    }
-
-    fn deserialize_in_place(
-        &mut self,
-        cursor: &mut ReadCursor<'_>,
-    ) -> Result<(), DeserializeError> {
-        *self = Self::deserialize(cursor)?;
-        Ok(())
-    }
-
     fn deserialize(cursor: &mut ReadCursor<'_>) -> Result<Self, DeserializeError>
     where
         Self: Sized,
@@ -563,19 +487,6 @@ impl Serialize for BDelimited11 {
     }
 }
 impl Deserialize for BDelimited11 {
-    fn in_bit_length_set(bit_length: usize) -> bool {
-        // TODO: This may produce false positives
-        bit_length % 8 == 0 && bit_length / 8 <= 32
-    }
-
-    fn deserialize_in_place(
-        &mut self,
-        cursor: &mut ReadCursor<'_>,
-    ) -> Result<(), DeserializeError> {
-        *self = Self::deserialize(cursor)?;
-        Ok(())
-    }
-
     fn deserialize(cursor: &mut ReadCursor<'_>) -> Result<Self, DeserializeError>
     where
         Self: Sized,
@@ -637,18 +548,6 @@ impl Serialize for CVariable11 {
 }
 
 impl Deserialize for CVariable11 {
-    fn in_bit_length_set(bit_length: usize) -> bool {
-        bit_length == 8 || bit_length == 16 || bit_length == 24
-    }
-
-    fn deserialize_in_place(
-        &mut self,
-        cursor: &mut ReadCursor<'_>,
-    ) -> Result<(), DeserializeError> {
-        *self = Self::deserialize(cursor)?;
-        Ok(())
-    }
-
     fn deserialize(cursor: &mut ReadCursor<'_>) -> Result<Self, DeserializeError>
     where
         Self: Sized,
@@ -697,18 +596,6 @@ impl DataType for CFixed11 {
 }
 
 impl Deserialize for CFixed11 {
-    fn in_bit_length_set(bit_length: usize) -> bool {
-        bit_length == 32
-    }
-
-    fn deserialize_in_place(
-        &mut self,
-        cursor: &mut ReadCursor<'_>,
-    ) -> Result<(), DeserializeError> {
-        *self = Self::deserialize(cursor)?;
-        Ok(())
-    }
-
     fn deserialize(cursor: &mut ReadCursor<'_>) -> Result<Self, DeserializeError>
     where
         Self: Sized,

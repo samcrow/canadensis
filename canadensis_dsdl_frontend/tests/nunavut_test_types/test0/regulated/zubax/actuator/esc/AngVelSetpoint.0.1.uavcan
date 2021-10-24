@@ -1,0 +1,7 @@
+#
+# This is a test dummy and not the real type.
+#
+uavcan.si.unit.angular_velocity.Scalar.1.0[<64] motor_mechanical_angular_velocity  # [radian/second]
+
+@assert _offset_ % 8 == {0}
+@sealed

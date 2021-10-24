@@ -5,14 +5,22 @@
 //! This library provides types used by other canadensis crates.
 //!
 
+extern crate alloc;
+extern crate fallible_collections;
 extern crate hash32;
 extern crate hash32_derive;
+extern crate heapless;
+extern crate log;
+pub extern crate nb;
 
+mod error;
+pub mod session;
+pub mod subscription;
 pub mod time;
 pub mod transfer;
+pub mod transport;
 
 use core::convert::TryFrom;
-use core::fmt;
 use core::ops::RangeInclusive;
 use core::str::FromStr;
 use hash32_derive::Hash32;
@@ -20,6 +28,7 @@ use hash32_derive::Hash32;
 /// An error indicating that an unacceptable integer was provided to a TryFrom implementation
 #[derive(Debug)]
 pub struct InvalidValue;
+pub use crate::error::{OutOfMemoryError, ServiceSubscribeError};
 
 /// Allowed subject ID values
 const VALID_SUBJECT_IDS: RangeInclusive<u16> = 0..=8191;
@@ -146,151 +155,6 @@ impl TryFrom<PortId> for ServiceId {
     type Error = InvalidValue;
     fn try_from(port: PortId) -> Result<Self, Self::Error> {
         ServiceId::try_from(port.0)
-    }
-}
-
-const VALID_NODE_IDS: RangeInclusive<u8> = 0..=127;
-
-/// Node ID
-///
-/// Valid node IDs are in the range 0..=127 (7 bits). IDs 126 and 127 are reserved for diagnostic
-/// and debugging tools.
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub struct NodeId(u8);
-
-impl NodeId {
-    /// The smallest allowed node ID (0)
-    pub const MIN: NodeId = NodeId(*VALID_NODE_IDS.start());
-    /// The largest allowed node ID (127)
-    pub const MAX: NodeId = NodeId(*VALID_NODE_IDS.end());
-
-    /// Returns the integer value of this node ID
-    pub const fn to_u8(self) -> u8 {
-        self.0
-    }
-
-    /// Creates a valid NodeID from a u8, truncating values that are out of range
-    pub const fn from_truncating(value: u8) -> Self {
-        NodeId(value & *VALID_NODE_IDS.end())
-    }
-
-    /// Returns true if this node ID is one of the two highest values, which are reserved for
-    /// diagnostic and debugging tools
-    pub fn is_diagnostic_reserved(self) -> bool {
-        self.0 >= *VALID_NODE_IDS.end() - 1
-    }
-}
-
-impl fmt::Display for NodeId {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Display::fmt(&self.0, f)
-    }
-}
-
-impl TryFrom<u8> for NodeId {
-    type Error = InvalidValue;
-
-    fn try_from(bits: u8) -> Result<Self, Self::Error> {
-        if VALID_NODE_IDS.contains(&bits) {
-            Ok(NodeId(bits))
-        } else {
-            Err(InvalidValue)
-        }
-    }
-}
-
-impl From<NodeId> for u8 {
-    #[inline]
-    fn from(id: NodeId) -> Self {
-        id.0
-    }
-}
-impl From<NodeId> for u16 {
-    #[inline]
-    fn from(id: NodeId) -> Self {
-        id.0 as u16
-    }
-}
-impl From<NodeId> for u32 {
-    #[inline]
-    fn from(id: NodeId) -> Self {
-        id.0 as u32
-    }
-}
-impl From<NodeId> for usize {
-    #[inline]
-    fn from(id: NodeId) -> Self {
-        id.0 as usize
-    }
-}
-
-const VALID_TRANSFER_IDS: RangeInclusive<u8> = 0..=31;
-
-/// Transfer ID, 5 bits, in range 0..=31
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub struct TransferId(u8);
-
-impl TransferId {
-    /// Returns the default transfer ID (0). This is equivalent to Default::default(), but it can
-    /// be called in a constant expression.
-    pub const fn const_default() -> Self {
-        TransferId(0)
-    }
-
-    /// Returns the next transfer ID after this, wrapping around after reaching the maximum
-    /// allowed value
-    #[must_use = "this returns the result of the operation, without modifying the original"]
-    pub fn increment(self) -> TransferId {
-        if self.0 == *VALID_TRANSFER_IDS.end() {
-            // Wrap around to 0
-            TransferId(0)
-        } else {
-            TransferId(self.0 + 1)
-        }
-    }
-}
-
-impl TryFrom<u8> for TransferId {
-    type Error = InvalidValue;
-
-    fn try_from(value: u8) -> core::result::Result<Self, Self::Error> {
-        if VALID_TRANSFER_IDS.contains(&value) {
-            Ok(TransferId(value))
-        } else {
-            Err(InvalidValue)
-        }
-    }
-}
-
-impl From<TransferId> for u8 {
-    #[inline]
-    fn from(id: TransferId) -> Self {
-        id.0
-    }
-}
-impl From<TransferId> for u16 {
-    #[inline]
-    fn from(id: TransferId) -> Self {
-        id.0 as u16
-    }
-}
-impl From<TransferId> for u32 {
-    #[inline]
-    fn from(id: TransferId) -> Self {
-        id.0 as u32
-    }
-}
-impl From<TransferId> for usize {
-    #[inline]
-    fn from(id: TransferId) -> Self {
-        id.0 as usize
-    }
-}
-
-impl Default for TransferId {
-    /// Returns a transfer ID of 0
-    fn default() -> Self {
-        TransferId::const_default()
     }
 }
 

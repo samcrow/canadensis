@@ -1,25 +1,29 @@
 extern crate canadensis;
+extern crate canadensis_can;
 extern crate canadensis_linux;
 extern crate rand;
+extern crate simplelog;
 extern crate socketcan;
 
 use std::convert::TryFrom;
 use std::env;
+use std::io::ErrorKind;
 use std::time::Duration;
 
 use socketcan::CANSocket;
 
-use canadensis::can::queue::{ArrayQueue, FrameQueueSource};
-use canadensis::can::Mtu;
 use canadensis::core::time::{Instant, Microseconds64};
 use canadensis::core::transfer::{MessageTransfer, ServiceTransfer};
-use canadensis::core::NodeId;
+use canadensis::core::transport::Transport;
 use canadensis::node::{BasicNode, CoreNode};
+use canadensis::requester::TransferIdFixedMap;
 use canadensis::{Node, ResponseToken, TransferHandler};
-use canadensis_data_types::uavcan::node::get_info::GetInfoResponse;
-use canadensis_data_types::uavcan::node::version::Version;
+use canadensis_can::queue::{ArrayQueue, SingleQueueDriver};
+use canadensis_can::types::{CanNodeId, CanTransport, Error};
+use canadensis_can::{CanReceiver, CanTransmitter, Mtu};
+use canadensis_data_types::uavcan::node::get_info_1_0::GetInfoResponse;
+use canadensis_data_types::uavcan::node::version_1_0::Version;
 use canadensis_linux::{LinuxCan, SystemClock};
-use std::io::ErrorKind;
 
 /// Runs a basic UAVCAN node that sends Heartbeat messages, responds to node information requests,
 /// and sends port list messages
@@ -52,9 +56,17 @@ use std::io::ErrorKind;
 ///
 /// In the above two commands, 8 is the MTU of standard CAN and 42 is the node ID of the Yakut node.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    simplelog::TermLogger::init(
+        simplelog::LevelFilter::Warn,
+        simplelog::Config::default(),
+        simplelog::TerminalMode::Stderr,
+        simplelog::ColorChoice::Auto,
+    )
+    .unwrap();
+
     let mut args = env::args().skip(1);
     let can_interface = args.next().expect("Expected CAN interface name");
-    let node_id = NodeId::try_from(
+    let node_id = CanNodeId::try_from(
         args.next()
             .expect("Expected node ID")
             .parse::<u8>()
@@ -64,13 +76,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!(
         "Port list size: {} bytes",
-        std::mem::size_of::<canadensis_data_types::uavcan::node::port::list::List>()
+        std::mem::size_of::<canadensis_data_types::uavcan::node::port::list_0_1::List>()
     );
 
     let can = CANSocket::open(&can_interface).expect("Failed to open CAN interface");
-    can.set_read_timeout(Duration::from_millis(500))?;
-    can.set_write_timeout(Duration::from_millis(500))?;
-    let mut can = LinuxCan::new(can);
+    can.set_read_timeout(Duration::from_millis(100))?;
+    can.set_write_timeout(Duration::from_millis(100))?;
+    let can = LinuxCan::new(can);
 
     // Set up information about this node
     let node_info = GetInfoResponse {
@@ -80,38 +92,47 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         software_vcs_revision_id: 0,
         unique_id: rand::random(),
         name: heapless::Vec::from_slice(b"org.samcrow.basic_node").unwrap(),
-        software_image_crc: None,
+        software_image_crc: heapless::Vec::new(),
         certificate_of_authenticity: Default::default(),
     };
 
+    const QUEUE_CAPACITY: usize = 1210;
+    type Queue = SingleQueueDriver<ArrayQueue<Microseconds64, QUEUE_CAPACITY>, LinuxCan>;
+    let queue_driver: Queue = SingleQueueDriver::new(ArrayQueue::new(), can);
+
     // Create a node with capacity for 8 publishers and 8 requesters
-    let core_node: CoreNode<_, _, 8, 8> = CoreNode::new(
+    let transmitter = CanTransmitter::new(Mtu::Can8);
+    let receiver = CanReceiver::new(node_id, Mtu::Can8);
+
+    const TRANSFER_IDS: usize = 8;
+    const PUBLISHERS: usize = 8;
+    const REQUESTERS: usize = 8;
+
+    let core_node: CoreNode<
+        SystemClock,
+        CanTransmitter<Microseconds64, Queue>,
+        CanReceiver<Microseconds64, Queue>,
+        TransferIdFixedMap<CanTransport, TRANSFER_IDS>,
+        Queue,
+        PUBLISHERS,
+        REQUESTERS,
+    > = CoreNode::new(
         SystemClock::new(),
         node_id,
-        Mtu::Can8,
-        ArrayQueue::<Microseconds64, 1210>::new(),
+        transmitter,
+        receiver,
+        queue_driver,
     );
     let mut node = BasicNode::new(core_node, node_info).unwrap();
-
-    // Now that the node has subscribed to everything it wants, set up the frame acceptance filters
-    let frame_filters = node.frame_filters().unwrap();
-    println!("Filters: {:?}", frame_filters);
-    can.set_filters(&frame_filters)?;
-
-    println!("Node size: {} bytes", std::mem::size_of_val(&node));
 
     let start_time = std::time::Instant::now();
     let mut prev_seconds = 0;
     loop {
-        match can.receive() {
-            Ok(frame) => {
-                node.accept_frame(frame, &mut EmptyHandler).unwrap();
-            }
-            Err(e) => match e.kind() {
-                ErrorKind::WouldBlock => {}
-                _ => return Err(e.into()),
-            },
-        };
+        match node.receive(&mut EmptyHandler) {
+            Ok(_) => {}
+            Err(Error::Driver(e)) if e.kind() == ErrorKind::WouldBlock => {}
+            Err(e) => panic!("{:?}", e),
+        }
 
         let seconds = std::time::Instant::now()
             .duration_since(start_time)
@@ -119,20 +140,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if seconds != prev_seconds {
             prev_seconds = seconds;
             node.run_per_second_tasks().unwrap();
-        }
-
-        while let Some(frame_out) = node.frame_queue_mut().pop_frame() {
-            can.send(frame_out)?;
+            node.flush().unwrap();
         }
     }
 }
 
 struct EmptyHandler;
 
-impl<I: Instant> TransferHandler<I> for EmptyHandler {
-    fn handle_message<N>(&mut self, _node: &mut N, transfer: &MessageTransfer<Vec<u8>, I>) -> bool
+impl<I: Instant, T: Transport> TransferHandler<I, T> for EmptyHandler {
+    fn handle_message<N>(
+        &mut self,
+        _node: &mut N,
+        transfer: &MessageTransfer<Vec<u8>, I, T>,
+    ) -> bool
     where
-        N: Node<Instant = I>,
+        N: Node<Instant = I, Transport = T>,
     {
         println!("Got message {:?}", transfer);
         false
@@ -141,19 +163,23 @@ impl<I: Instant> TransferHandler<I> for EmptyHandler {
     fn handle_request<N>(
         &mut self,
         _node: &mut N,
-        _token: ResponseToken,
-        transfer: &ServiceTransfer<Vec<u8>, I>,
+        _token: ResponseToken<T>,
+        transfer: &ServiceTransfer<Vec<u8>, I, T>,
     ) -> bool
     where
-        N: Node<Instant = I>,
+        N: Node<Instant = I, Transport = T>,
     {
         println!("Got request {:?}", transfer);
         false
     }
 
-    fn handle_response<N>(&mut self, _node: &mut N, transfer: &ServiceTransfer<Vec<u8>, I>) -> bool
+    fn handle_response<N>(
+        &mut self,
+        _node: &mut N,
+        transfer: &ServiceTransfer<Vec<u8>, I, T>,
+    ) -> bool
     where
-        N: Node<Instant = I>,
+        N: Node<Instant = I, Transport = T>,
     {
         println!("Got response {:?}", transfer);
         false

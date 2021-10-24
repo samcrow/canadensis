@@ -1,0 +1,5 @@
+@union
+# One field (two are required)
+uint32 a
+
+@sealed

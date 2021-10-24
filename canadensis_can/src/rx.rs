@@ -8,22 +8,27 @@ mod subscription;
 
 use alloc::vec::Vec;
 use core::convert::{TryFrom, TryInto};
+use core::fmt::Debug;
+use core::marker::PhantomData;
 
 use fallible_collections::FallibleVec;
 
 use crate::data::{CanId, Frame};
-use crate::error::OutOfMemoryError;
+use crate::driver::ReceiveDriver;
 use crate::rx::session::SessionError;
 use crate::rx::subscription::{Subscription, SubscriptionError};
+use crate::types::{CanNodeId, CanTransferId, CanTransport, Error};
 use crate::Mtu;
 use canadensis_core::time::Instant;
 use canadensis_core::transfer::{Header, MessageHeader, ServiceHeader, Transfer};
-use canadensis_core::{NodeId, PortId, Priority, ServiceId, SubjectId, TransferId};
-use canadensis_filter_config::Filter;
+use canadensis_core::transport::Receiver;
+use canadensis_core::{
+    nb, OutOfMemoryError, PortId, Priority, ServiceId, ServiceSubscribeError, SubjectId,
+};
 
 /// Handles subscriptions and assembles incoming frames into transfers
 #[derive(Debug)]
-pub struct Receiver<I: Instant> {
+pub struct CanReceiver<I: Instant, D> {
     /// Subscriptions for messages
     subscriptions_message: Vec<Subscription<I>>,
     /// Subscriptions for service responses
@@ -31,7 +36,7 @@ pub struct Receiver<I: Instant> {
     /// Subscriptions for service requests
     subscriptions_request: Vec<Subscription<I>>,
     /// The ID of this node, or None if this node is anonymous
-    id: Option<NodeId>,
+    id: Option<CanNodeId>,
     /// MTU of the transport
     mtu: Mtu,
     /// Number of transfers successfully received
@@ -41,13 +46,182 @@ pub struct Receiver<I: Instant> {
     /// Errors include failure to allocate memory (when handling incoming frames only), missing
     /// frames, and malformed frames.
     error_count: u64,
+    /// The driver that supplies incoming frames
+    _driver: PhantomData<D>,
 }
 
-impl<I: Instant> Receiver<I> {
+impl<I, D> Receiver<I> for CanReceiver<I, D>
+where
+    I: Instant,
+    D: ReceiveDriver<I>,
+{
+    type Transport = CanTransport;
+    type Driver = D;
+    type Error = Error<D::Error>;
+
+    fn receive(
+        &mut self,
+        now: I,
+        driver: &mut Self::Driver,
+    ) -> Result<Option<Transfer<Vec<u8>, I, Self::Transport>>, Self::Error> {
+        // The current time is equal to or greater than the frame timestamp. Use that timestamp
+        // to clean up expired sessions.
+        self.clean_expired_sessions(now);
+        // Loop until all available frames have been handled
+        loop {
+            match driver.receive(now) {
+                Ok(frame) => {
+                    match self.accept_frame(frame) {
+                        Ok(Some(transfer)) => break Ok(Some(transfer)),
+                        Ok(None) => { /* Keep going and try another frame */ }
+                        Err(e) => break Err(e.into()),
+                    }
+                }
+                Err(nb::Error::WouldBlock) => break Ok(None),
+                Err(nb::Error::Other(e)) => break Err(Error::Driver(e)),
+            }
+        }
+    }
+
+    /// Subscribes to messages on a subject
+    ///
+    /// This will enable incoming transfers from all nodes on the specified subject ID.
+    ///
+    /// subject: The subject ID to subscribe to
+    ///
+    /// payload_size_max: The maximum number of payload bytes expected on this subject
+    /// (longer transfers will be dropped)
+    ///
+    /// timeout: The maximum time between the first and last frames in a transfer (transfers that
+    /// do not finish within this time will be dropped)
+    ///
+    /// If all transfers fit into one frame, the timeout has no meaning and may be zero.
+    ///
+    fn subscribe_message(
+        &mut self,
+        subject: SubjectId,
+        payload_size_max: usize,
+        timeout: I::Duration,
+        driver: &mut Self::Driver,
+    ) -> Result<(), Self::Error> {
+        self.subscribe(
+            TransferKind::Message,
+            PortId::from(subject),
+            payload_size_max,
+            timeout,
+        )
+        .map_err(Error::Memory)?;
+        self.apply_frame_filters(driver);
+        Ok(())
+    }
+
+    /// Unsubscribes from messages on a subject
+    fn unsubscribe_message(&mut self, subject: SubjectId, driver: &mut Self::Driver) {
+        self.unsubscribe(TransferKind::Message, PortId::from(subject));
+        self.apply_frame_filters(driver);
+    }
+
+    /// Subscribes to requests for a service
+    ///
+    /// This will enable incoming service request transfers from all nodes on the specified service
+    /// ID.
+    ///
+    /// service: The service ID to subscribe to
+    ///
+    /// payload_size_max: The maximum number of payload bytes expected on this subject
+    /// (longer transfers will be dropped)
+    ///
+    /// timeout: The maximum time between the first and last frames in a transfer (transfers that
+    /// do not finish within this time will be dropped)
+    ///
+    /// If all transfers fit into one frame, the timeout has no meaning and may be zero.
+    ///
+    /// This function returns an error if memory allocation fails or if this node is anonymous.
+    ///
+    fn subscribe_request(
+        &mut self,
+        service: ServiceId,
+        payload_size_max: usize,
+        timeout: I::Duration,
+        driver: &mut Self::Driver,
+    ) -> Result<(), ServiceSubscribeError<Self::Error>> {
+        if self.id.is_some() {
+            self.subscribe(
+                TransferKind::Request,
+                PortId::from(service),
+                payload_size_max,
+                timeout,
+            )
+            .map_err(Error::Memory)
+            .map_err(ServiceSubscribeError::Transport)?;
+            self.apply_frame_filters(driver);
+            Ok(())
+        } else {
+            Err(ServiceSubscribeError::Anonymous)
+        }
+    }
+
+    /// Unsubscribes from requests for a service
+    fn unsubscribe_request(&mut self, service: ServiceId, driver: &mut Self::Driver) {
+        self.unsubscribe(TransferKind::Request, PortId::from(service));
+        self.apply_frame_filters(driver);
+    }
+
+    /// Subscribes to responses for a service
+    ///
+    /// This will enable incoming service response transfers from all nodes on the specified service
+    /// ID.
+    ///
+    /// service: The service ID to subscribe to
+    ///
+    /// payload_size_max: The maximum number of payload bytes expected on this subject
+    /// (longer transfers will be dropped)
+    ///
+    /// timeout: The maximum time between the first and last frames in a transfer (transfers that
+    /// do not finish within this time will be dropped)
+    ///
+    /// If all transfers fit into one frame, the timeout has no meaning and may be zero.
+    ///
+    /// This function returns an error if memory allocation fails or if this node is anonymous.
+    ///
+    fn subscribe_response(
+        &mut self,
+        service: ServiceId,
+        payload_size_max: usize,
+        timeout: I::Duration,
+        driver: &mut Self::Driver,
+    ) -> Result<(), ServiceSubscribeError<Self::Error>> {
+        if self.id.is_some() {
+            self.subscribe(
+                TransferKind::Response,
+                PortId::from(service),
+                payload_size_max,
+                timeout,
+            )
+            .map_err(Error::Memory)
+            .map_err(ServiceSubscribeError::Transport)?;
+            self.apply_frame_filters(driver);
+            Ok(())
+        } else {
+            Err(ServiceSubscribeError::Anonymous)
+        }
+    }
+    /// Unsubscribes from responses for a service
+    fn unsubscribe_response(&mut self, service: ServiceId, driver: &mut Self::Driver) {
+        self.unsubscribe(TransferKind::Response, PortId::from(service));
+        self.apply_frame_filters(driver);
+    }
+}
+
+impl<I, D> CanReceiver<I, D>
+where
+    I: Instant,
+    D: ReceiveDriver<I>,
+{
     /// Creates a receiver
     ///
     /// id: The ID of this node. This is used to filter incoming service requests and responses.
-    pub fn new(id: NodeId, mtu: Mtu) -> Self {
+    pub fn new(id: CanNodeId, mtu: Mtu) -> Self {
         Self::new_inner(Some(id), mtu)
     }
 
@@ -58,8 +232,8 @@ impl<I: Instant> Receiver<I> {
         Self::new_inner(None, mtu)
     }
 
-    fn new_inner(id: Option<NodeId>, mtu: Mtu) -> Self {
-        Receiver {
+    fn new_inner(id: Option<CanNodeId>, mtu: Mtu) -> Self {
+        CanReceiver {
             subscriptions_message: Vec::new(),
             subscriptions_response: Vec::new(),
             subscriptions_request: Vec::new(),
@@ -67,6 +241,7 @@ impl<I: Instant> Receiver<I> {
             mtu,
             transfer_count: 0,
             error_count: 0,
+            _driver: PhantomData,
         }
     }
 
@@ -74,7 +249,7 @@ impl<I: Instant> Receiver<I> {
     ///
     /// This can be used after a node ID is identified to make this receiver capable of handling
     /// service transfers.
-    pub fn set_id(&mut self, id: Option<NodeId>) {
+    pub fn set_id(&mut self, id: Option<CanNodeId>) {
         self.id = id;
     }
 
@@ -89,14 +264,10 @@ impl<I: Instant> Receiver<I> {
     /// situations, such as duplicate or malformed frames, do not cause this function to return
     /// an error but do increment the error counter. Valid frames on subjects that this receiver is
     /// not subscribed to will be silently ignored.
-    pub fn accept(
+    fn accept_frame(
         &mut self,
         frame: Frame<I>,
-    ) -> Result<Option<Transfer<Vec<u8>, I>>, OutOfMemoryError> {
-        // The current time is equal to or greater than the frame timestamp. Use that timestamp
-        // to clean up expired sessions.
-        self.clean_expired_sessions(frame.timestamp());
-
+    ) -> Result<Option<Transfer<Vec<u8>, I, CanTransport>>, OutOfMemoryError> {
         // Part 1: basic frame checks
         let (frame_header, tail) = match Self::frame_sanity_check(&frame) {
             Some(data) => data,
@@ -127,9 +298,9 @@ impl<I: Instant> Receiver<I> {
     fn accept_sane_frame(
         &mut self,
         frame: Frame<I>,
-        frame_header: Header<I>,
+        frame_header: Header<I, CanTransport>,
         tail: TailByte,
-    ) -> Result<Option<Transfer<Vec<u8>, I>>, OutOfMemoryError> {
+    ) -> Result<Option<Transfer<Vec<u8>, I, CanTransport>>, OutOfMemoryError> {
         let kind = TransferKind::from_header(&frame_header);
         let subscriptions = self.subscriptions_for_kind(kind);
         if let Some(subscription) = subscriptions
@@ -163,7 +334,7 @@ impl<I: Instant> Receiver<I> {
 
     /// Runs basic sanity checks on an incoming frame. Returns the header and tail byte if the frame
     /// is valid.
-    fn frame_sanity_check(frame: &Frame<I>) -> Option<(Header<I>, TailByte)> {
+    fn frame_sanity_check(frame: &Frame<I>) -> Option<(Header<I, CanTransport>, TailByte)> {
         // Frame must have a tail byte to be valid
         let tail_byte = TailByte::parse(*frame.data().last()?);
 
@@ -182,120 +353,6 @@ impl<I: Instant> Receiver<I> {
 
         // OK
         Some((header, tail_byte))
-    }
-
-    /// Subscribes to messages on a subject
-    ///
-    /// This will enable incoming transfers from all nodes on the specified subject ID.
-    ///
-    /// subject: The subject ID to subscribe to
-    ///
-    /// payload_size_max: The maximum number of payload bytes expected on this subject
-    /// (longer transfers will be dropped)
-    ///
-    /// timeout: The maximum time between the first and last frames in a transfer (transfers that
-    /// do not finish within this time will be dropped)
-    ///
-    /// If all transfers fit into one frame, the timeout has no meaning and may be zero.
-    ///
-    pub fn subscribe_message(
-        &mut self,
-        subject: SubjectId,
-        payload_size_max: usize,
-        timeout: I::Duration,
-    ) -> Result<(), OutOfMemoryError> {
-        self.subscribe(
-            TransferKind::Message,
-            PortId::from(subject),
-            payload_size_max,
-            timeout,
-        )
-    }
-
-    /// Unsubscribes from messages on a subject
-    pub fn unsubscribe_message(&mut self, subject: SubjectId) {
-        self.unsubscribe(TransferKind::Message, PortId::from(subject));
-    }
-
-    /// Subscribes to requests for a service
-    ///
-    /// This will enable incoming service request transfers from all nodes on the specified service
-    /// ID.
-    ///
-    /// service: The service ID to subscribe to
-    ///
-    /// payload_size_max: The maximum number of payload bytes expected on this subject
-    /// (longer transfers will be dropped)
-    ///
-    /// timeout: The maximum time between the first and last frames in a transfer (transfers that
-    /// do not finish within this time will be dropped)
-    ///
-    /// If all transfers fit into one frame, the timeout has no meaning and may be zero.
-    ///
-    /// This function returns an error if memory allocation fails or if this node is anonymous.
-    ///
-    pub fn subscribe_request(
-        &mut self,
-        service: ServiceId,
-        payload_size_max: usize,
-        timeout: I::Duration,
-    ) -> Result<(), ServiceSubscribeError> {
-        if self.id.is_some() {
-            self.subscribe(
-                TransferKind::Request,
-                PortId::from(service),
-                payload_size_max,
-                timeout,
-            )
-            .map_err(ServiceSubscribeError::Memory)
-        } else {
-            Err(ServiceSubscribeError::Anonymous)
-        }
-    }
-
-    /// Unsubscribes from requests for a service
-    pub fn unsubscribe_request(&mut self, service: ServiceId) {
-        self.unsubscribe(TransferKind::Request, PortId::from(service));
-    }
-
-    /// Subscribes to responses for a service
-    ///
-    /// This will enable incoming service response transfers from all nodes on the specified service
-    /// ID.
-    ///
-    /// service: The service ID to subscribe to
-    ///
-    /// payload_size_max: The maximum number of payload bytes expected on this subject
-    /// (longer transfers will be dropped)
-    ///
-    /// timeout: The maximum time between the first and last frames in a transfer (transfers that
-    /// do not finish within this time will be dropped)
-    ///
-    /// If all transfers fit into one frame, the timeout has no meaning and may be zero.
-    ///
-    /// This function returns an error if memory allocation fails or if this node is anonymous.
-    ///
-    pub fn subscribe_response(
-        &mut self,
-        service: ServiceId,
-        payload_size_max: usize,
-        timeout: I::Duration,
-    ) -> Result<(), ServiceSubscribeError> {
-        if self.id.is_some() {
-            self.subscribe(
-                TransferKind::Response,
-                PortId::from(service),
-                payload_size_max,
-                timeout,
-            )
-            .map_err(ServiceSubscribeError::Memory)
-        } else {
-            Err(ServiceSubscribeError::Anonymous)
-        }
-    }
-    /// Unsubscribes from responses for a service
-    pub fn unsubscribe_response(&mut self, service: ServiceId) {
-        self.unsubscribe(TransferKind::Response, PortId::from(service));
     }
 
     fn subscribe(
@@ -359,35 +416,20 @@ impl<I: Instant> Receiver<I> {
         clean_sessions_from_subscriptions(&mut self.subscriptions_response, &now);
     }
 
-    /// Returns a set of frame filters that accept only the transfers this receiver is subscribed
-    /// to
-    pub fn frame_filters(&self) -> Result<Vec<Filter>, OutOfMemoryError> {
-        let service_subscriptions = if self.id.is_some() {
-            self.subscriptions_request.len() + self.subscriptions_response.len()
-        } else {
-            // Node is anonymous and can't handle services
-            0
-        };
-        let total_subscriptions = self.subscriptions_message.len() + service_subscriptions;
-        let mut filters: Vec<Filter> = FallibleVec::try_with_capacity(total_subscriptions)?;
-
-        for subscription in &self.subscriptions_message {
-            let subject_id = SubjectId::try_from(subscription.port_id()).unwrap();
-            filters.push(subject_filter(subject_id))
-        }
-        if let Some(local_id) = self.id {
-            // Only non-anonymous nodes can handle requests and responses
-            for subscription in &self.subscriptions_request {
-                let service_id = ServiceId::try_from(subscription.port_id()).unwrap();
-                filters.push(request_filter(service_id, local_id));
-            }
-            for subscription in &self.subscriptions_response {
-                let service_id = ServiceId::try_from(subscription.port_id()).unwrap();
-                filters.push(response_filter(service_id, local_id));
-            }
-        }
-
-        Ok(filters)
+    fn apply_frame_filters(&mut self, driver: &mut D) {
+        let message_subscriptions = self.subscriptions_message.iter().map(|sub| {
+            canadensis_core::subscription::Subscription::Message(sub.port_id().try_into().unwrap())
+        });
+        let request_subscriptions = self.subscriptions_request.iter().map(|sub| {
+            canadensis_core::subscription::Subscription::Request(sub.port_id().try_into().unwrap())
+        });
+        let response_subscriptions = self.subscriptions_response.iter().map(|sub| {
+            canadensis_core::subscription::Subscription::Response(sub.port_id().try_into().unwrap())
+        });
+        let all_subscriptions = message_subscriptions
+            .chain(request_subscriptions)
+            .chain(response_subscriptions);
+        driver.apply_filters(self.id, all_subscriptions);
     }
 }
 
@@ -421,8 +463,8 @@ pub enum CanIdParseError {
 fn parse_can_id<I>(
     id: CanId,
     timestamp: I,
-    transfer_id: TransferId,
-) -> core::result::Result<Header<I>, CanIdParseError> {
+    transfer_id: CanTransferId,
+) -> core::result::Result<Header<I, CanTransport>, CanIdParseError> {
     let bits = u32::from(id);
 
     if bits.bit_set(23) {
@@ -431,7 +473,8 @@ fn parse_can_id<I>(
     // Ignore bits 22 and 21
 
     let priority = Priority::try_from(bits.get_u8(26)).expect("Bug: Invalid priority");
-    let source_id = NodeId::try_from(bits.get_u8(0) & 0x7f).expect("Bug: Invalid source node ID");
+    let source_id =
+        CanNodeId::try_from(bits.get_u8(0) & 0x7f).expect("Bug: Invalid source node ID");
 
     let header = if bits.bit_set(25) {
         // Service
@@ -442,7 +485,7 @@ fn parse_can_id<I>(
             service: ServiceId::try_from(bits.get_u16(14) & 0x1ff)
                 .expect("Bug: Invalid service ID"),
             source: source_id,
-            destination: NodeId::try_from(bits.get_u8(7) & 0x7f)
+            destination: CanNodeId::try_from(bits.get_u8(7) & 0x7f)
                 .expect("Bug: Invalid destination node ID"),
         };
         if bits.bit_set(24) {
@@ -474,51 +517,8 @@ fn parse_can_id<I>(
     Ok(header)
 }
 
-/// Returns a filter that matches message transfers on one subject
-///
-/// Criteria:
-/// * Priority: any
-/// * Anonymous: any
-/// * Subject ID: matching the provided subject ID
-/// * Source node ID: any
-fn subject_filter(subject: SubjectId) -> Filter {
-    let m_id: u32 = 0b0_0000_0110_0000_0000_0000_0000_0000 | u32::from(subject) << 8;
-    let mask: u32 = 0b0_0010_1001_1111_1111_1111_1000_0000;
-    Filter::new(mask, m_id)
-}
-
-/// Returns a filter that matches service request transfers for one service to one node ID
-///
-/// Criteria:
-/// * Priority: any
-/// * Request or response: request
-/// * Service ID: matching the provided service ID
-/// * Destination: matching the provided node ID
-/// * Source: any
-fn request_filter(service: ServiceId, destination: NodeId) -> Filter {
-    let dynamic_id_bits = u32::from(service) << 14 | u32::from(destination) << 7;
-    let m_id: u32 = 0b0_0011_0000_0000_0000_0000_0000_0000 | dynamic_id_bits;
-    let mask: u32 = 0b0_0011_1111_1111_1111_1111_1000_0000;
-    Filter::new(mask, m_id)
-}
-
-/// Returns a filter that matches service response transfers for one service to one node ID
-///
-/// Criteria:
-/// * Priority: any
-/// * Request or response: response
-/// * Service ID: matching the provided service ID
-/// * Destination: matching the provided node ID
-/// * Source: any
-fn response_filter(service: ServiceId, destination: NodeId) -> Filter {
-    let dynamic_id_bits =
-        u32::from(u16::from(service)) << 14 | u32::from(u8::from(destination)) << 7;
-    let m_id: u32 = 0b0_0010_0000_0000_0000_0000_0000_0000 | dynamic_id_bits;
-    let mask: u32 = 0b0_0011_1111_1111_1111_1111_1000_0000;
-    Filter::new(mask, m_id)
-}
-
 /// Basic extension trait for extracting bits from a CAN ID
+//noinspection RsSelfConvention
 trait GetBits {
     fn bit_set(self, offset: u32) -> bool;
     fn get_u8(self, offset: u32) -> u8;
@@ -550,21 +550,6 @@ impl GetBits for u8 {
     }
 }
 
-/// Errors that can occur when subscribing to service requests or responses
-#[derive(Debug)]
-pub enum ServiceSubscribeError {
-    /// This node is anonymous (no node ID set), so it can't handle services
-    Anonymous,
-    /// Memory allocation failed
-    Memory(OutOfMemoryError),
-}
-
-impl From<OutOfMemoryError> for ServiceSubscribeError {
-    fn from(inner: OutOfMemoryError) -> Self {
-        ServiceSubscribeError::Memory(inner)
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
@@ -579,10 +564,10 @@ mod test {
         check_can_id(
             Header::Message(MessageHeader {
                 timestamp: (),
-                transfer_id: TransferId::try_from(0).unwrap(),
+                transfer_id: CanTransferId::try_from(0).unwrap(),
                 priority: Priority::Nominal,
                 subject: SubjectId::try_from(7509).unwrap(),
-                source: Some(NodeId::try_from(42).unwrap()),
+                source: Some(CanNodeId::try_from(42u8).unwrap()),
             }),
             0x107d552a,
         );
@@ -590,7 +575,7 @@ mod test {
         check_can_id(
             Header::Message(MessageHeader {
                 timestamp: (),
-                transfer_id: TransferId::try_from(0).unwrap(),
+                transfer_id: CanTransferId::try_from(0).unwrap(),
                 priority: Priority::Nominal,
                 subject: SubjectId::try_from(4919).unwrap(),
                 source: None,
@@ -601,11 +586,11 @@ mod test {
         check_can_id(
             Header::Request(ServiceHeader {
                 timestamp: (),
-                transfer_id: TransferId::try_from(0).unwrap(),
+                transfer_id: CanTransferId::try_from(0).unwrap(),
                 priority: Priority::Nominal,
                 service: ServiceId::try_from(430).unwrap(),
-                source: NodeId::try_from(123).unwrap(),
-                destination: NodeId::try_from(42).unwrap(),
+                source: CanNodeId::try_from(123u8).unwrap(),
+                destination: CanNodeId::try_from(42u8).unwrap(),
             }),
             0x136b957b,
         );
@@ -613,11 +598,11 @@ mod test {
         check_can_id(
             Header::Response(ServiceHeader {
                 timestamp: (),
-                transfer_id: TransferId::try_from(0).unwrap(),
+                transfer_id: CanTransferId::try_from(0).unwrap(),
                 priority: Priority::Nominal,
                 service: ServiceId::try_from(430).unwrap(),
-                source: NodeId::try_from(42).unwrap(),
-                destination: NodeId::try_from(123).unwrap(),
+                source: CanNodeId::try_from(42u8).unwrap(),
+                destination: CanNodeId::try_from(123u8).unwrap(),
             }),
             0x126bbdaa,
         );
@@ -625,21 +610,24 @@ mod test {
         check_can_id(
             Header::Message(MessageHeader {
                 timestamp: (),
-                transfer_id: TransferId::try_from(0).unwrap(),
+                transfer_id: CanTransferId::try_from(0).unwrap(),
                 priority: Priority::Nominal,
                 subject: SubjectId::try_from(4919).unwrap(),
-                source: Some(NodeId::try_from(59).unwrap()),
+                source: Some(CanNodeId::try_from(59u8).unwrap()),
             }),
             0x1073373b,
         );
     }
 
-    fn check_can_id<I: Clone + PartialEq + Debug>(expected_header: Header<I>, bits: u32) {
+    fn check_can_id<I: Clone + PartialEq + Debug>(
+        expected_header: Header<I, CanTransport>,
+        bits: u32,
+    ) {
         let id = CanId::try_from(bits).unwrap();
         let actual_header = parse_can_id(
             id,
             expected_header.timestamp(),
-            expected_header.transfer_id(),
+            expected_header.transfer_id().clone(),
         )
         .unwrap();
         assert_eq!(actual_header, expected_header);
@@ -650,7 +638,7 @@ pub(crate) struct TailByte {
     start: bool,
     end: bool,
     toggle: bool,
-    transfer_id: TransferId,
+    transfer_id: CanTransferId,
 }
 
 impl TailByte {
@@ -673,7 +661,7 @@ enum TransferKind {
 }
 
 impl TransferKind {
-    pub fn from_header<I>(header: &Header<I>) -> Self {
+    pub fn from_header<I>(header: &Header<I, CanTransport>) -> Self {
         match header {
             Header::Message(_) => TransferKind::Message,
             Header::Request(_) => TransferKind::Request,

@@ -1,10 +1,11 @@
 use crate::rx::buildup::{Buildup, BuildupError};
 use crate::rx::TailByte;
-use crate::{Frame, OutOfMemoryError, TransferCrc};
+use crate::types::{CanTransferId, Header, Transfer};
+use crate::{Frame, TransferCrc};
 use alloc::vec::Vec;
 use canadensis_core::time::Instant;
-use canadensis_core::transfer::{Header, Transfer};
-use canadensis_core::TransferId;
+use canadensis_core::OutOfMemoryError;
+use core::fmt::Debug;
 
 /// A receive session, associated with a particular port ID and source node
 #[derive(Debug)]
@@ -25,7 +26,7 @@ where
     /// used to assemble the received frames.
     pub fn new(
         transfer_timestamp: I,
-        transfer_id: TransferId,
+        transfer_id: CanTransferId,
         max_payload_length: usize,
     ) -> Result<Self, OutOfMemoryError> {
         Ok(Session {
@@ -118,7 +119,7 @@ where
 
     /// Returns the transfer ID of this session
     #[allow(dead_code)]
-    pub fn transfer_id(&self) -> TransferId {
+    pub fn transfer_id(&self) -> CanTransferId {
         self.buildup.transfer_id()
     }
 }

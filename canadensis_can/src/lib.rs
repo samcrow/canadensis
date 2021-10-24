@@ -12,22 +12,24 @@ extern crate alloc;
 extern crate canadensis_core;
 extern crate canadensis_filter_config;
 extern crate fallible_collections;
+extern crate hash32;
+extern crate hash32_derive;
 extern crate heapless;
 extern crate log;
 
 pub use crate::crc::TransferCrc;
 pub use crate::data::*;
-pub use crate::error::*;
-pub use crate::rx::{Receiver, ServiceSubscribeError};
-pub use crate::tx::Transmitter;
+pub use crate::rx::CanReceiver;
+pub use crate::tx::CanTransmitter;
 
 mod crc;
 mod data;
-mod error;
+pub mod driver;
 pub mod queue;
 pub mod redundant;
 mod rx;
 mod tx;
+pub mod types;
 
 use core::cmp;
 

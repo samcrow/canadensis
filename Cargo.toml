@@ -1,15 +1,23 @@
 [workspace]
 members = [
     "canadensis",
+    "canadensis_bit_length_set",
     "canadensis_bxcan",
     "canadensis_can",
+    "canadensis_codegen_rust",
+    "canadensis_codegen_rust/prdt_compile_test",
     "canadensis_core",
     "canadensis_crc",
     "canadensis_data_types",
     "canadensis_derive_register_block",
+    "canadensis_dsdl_frontend",
+    "canadensis_dsdl_parser",
+    "canadensis_encoding",
     "canadensis_filter_config",
     "canadensis_linux",
+    "canadensis_macro",
     "canadensis_pnp_client",
-    "canadensis_encoding",
+    "canadensis_serial",
+    "canadensis_udp",
     "canadensis_write_crc"
 ]

@@ -1,24 +1,26 @@
+//! Sending of service requests
+
+use crate::hash::TrivialIndexMap;
 use crate::serialize::do_serialize;
-use canadensis_can::queue::FrameSink;
-use canadensis_can::{OutOfMemoryError, Transmitter};
-use canadensis_core::time::Instant;
+use canadensis_core::time::{Clock, Instant};
 use canadensis_core::transfer::{Header, ServiceHeader, Transfer};
-use canadensis_core::{NodeId, Priority, ServiceId, TransferId};
-use canadensis_encoding::Serialize;
+use canadensis_core::transport::{TransferId, Transmitter, Transport};
+use canadensis_core::{nb, OutOfMemoryError, ServiceId};
+use canadensis_encoding::{Request, Serialize};
 
 /// Assembles transfers and manages transfer IDs to send service requests
-pub struct Requester<I: Instant> {
+pub struct Requester<I: Instant, T: Transmitter<I>, R> {
     /// The ID of this node
-    this_node: NodeId,
+    this_node: <T::Transport as Transport>::NodeId,
     /// The priority of transfers from this transmitter
-    priority: Priority,
+    priority: <T::Transport as Transport>::Priority,
     /// The timeout for sending transfers
     timeout: I::Duration,
     /// The ID of the next transfer to send, for each destination node
-    next_transfer_ids: NextTransferIds,
+    transfer_ids: R,
 }
 
-impl<I: Instant> Requester<I> {
+impl<I: Instant, T: Transmitter<I>, R: TransferIdTracker<T::Transport>> Requester<I, T, R> {
     /// Creates a service request transmitter
     ///
     /// this_node: The ID of this node
@@ -26,85 +28,128 @@ impl<I: Instant> Requester<I> {
     /// priority: The priority to use for messages
     ///
     /// service: The service ID to request
-    pub fn new(this_node: NodeId, timeout: I::Duration, priority: Priority) -> Self {
+    pub fn new(
+        this_node: <T::Transport as Transport>::NodeId,
+        timeout: I::Duration,
+        priority: <T::Transport as Transport>::Priority,
+    ) -> Self {
         Requester {
             this_node,
             priority,
             timeout,
-            next_transfer_ids: NextTransferIds::new(),
+            transfer_ids: R::default(),
         }
     }
 
-    pub fn send<T, Q>(
+    /// Sends a service request and returns its transfer ID
+    pub fn send<Q, C>(
         &mut self,
-        now: I,
+        clock: &mut C,
         service: ServiceId,
-        payload: &T,
-        destination: NodeId,
-        transmitter: &mut Transmitter<Q>,
-    ) -> Result<TransferId, OutOfMemoryError>
+        payload: &Q,
+        destination: <T::Transport as Transport>::NodeId,
+        transmitter: &mut T,
+        driver: &mut T::Driver,
+    ) -> nb::Result<<T::Transport as Transport>::TransferId, T::Error>
     where
-        T: Serialize,
-        Q: FrameSink<I>,
+        Q: Serialize + Request,
+        C: Clock<Instant = I>,
     {
         // Part 1: Serialize
-        let deadline = self.timeout + now;
+        let deadline = self.timeout + clock.now();
         do_serialize(payload, |payload_bytes| {
             // Part 2: Split into frames and send
-            self.send_payload(payload_bytes, service, destination, deadline, transmitter)
+            self.send_payload(
+                payload_bytes,
+                service,
+                destination,
+                deadline,
+                transmitter,
+                clock,
+                driver,
+            )
         })
     }
 
-    fn send_payload<Q>(
+    fn send_payload<C>(
         &mut self,
         payload: &[u8],
         service: ServiceId,
-        destination: NodeId,
+        destination: <T::Transport as Transport>::NodeId,
         deadline: I,
-        transmitter: &mut Transmitter<Q>,
-    ) -> Result<TransferId, OutOfMemoryError>
+        transmitter: &mut T,
+        clock: &mut C,
+        driver: &mut T::Driver,
+    ) -> nb::Result<<T::Transport as Transport>::TransferId, T::Error>
     where
-        Q: FrameSink<I>,
+        C: Clock<Instant = I>,
     {
         // Assemble the transfer
-        let transfer_id = self.next_transfer_ids.get_and_increment(destination);
-        let transfer: Transfer<&[u8], I> = Transfer {
+        let transfer_id = self
+            .transfer_ids
+            .next_transfer_id(destination.clone())
+            .map_err(|oom| nb::Error::Other(oom.into()))?;
+        let transfer = Transfer {
             header: Header::Request(ServiceHeader {
                 timestamp: deadline,
-                transfer_id,
-                priority: self.priority,
+                transfer_id: transfer_id.clone(),
+                priority: self.priority.clone(),
                 service,
-                source: self.this_node,
+                source: self.this_node.clone(),
                 destination,
             }),
             payload,
         };
 
-        transmitter.push(transfer)?;
+        transmitter.push(transfer, clock, driver)?;
         Ok(transfer_id)
     }
 }
 
-const NUM_TRANSFER_IDS: usize = (NodeId::MAX.to_u8() as usize) + 1;
-
-/// A map from destination node IDs to transfer IDs of the next transfer
-struct NextTransferIds {
-    ids: [TransferId; NUM_TRANSFER_IDS],
+/// Something that can keep track of the next transfer ID to use for each destination node
+pub trait TransferIdTracker<T: Transport>: Default {
+    /// Returns the next transfer ID for the provided node, and increments the stored ID
+    fn next_transfer_id(
+        &mut self,
+        destination: T::NodeId,
+    ) -> Result<T::TransferId, OutOfMemoryError>;
 }
 
-impl NextTransferIds {
-    /// Creates a new transfer ID map with the default transfer ID for each node
-    pub fn new() -> Self {
-        NextTransferIds {
-            ids: [TransferId::default(); NUM_TRANSFER_IDS],
+/// A fixed-capacity map from destination node IDs to transfer IDs of the next transfer
+///
+/// This map has a limited capacity and will return an error if asked to keep track of transfer
+/// IDs for too many nodes.
+pub struct TransferIdFixedMap<T: Transport, const C: usize> {
+    ids: TrivialIndexMap<T::NodeId, T::TransferId, C>,
+}
+
+impl<T: Transport, const C: usize> Default for TransferIdFixedMap<T, C> {
+    fn default() -> Self {
+        TransferIdFixedMap {
+            ids: TrivialIndexMap::default(),
         }
     }
-    /// Returns the next transfer ID for the provided node, and increments the stored transfer
-    /// ID
-    pub fn get_and_increment(&mut self, destination: NodeId) -> TransferId {
-        let entry = &mut self.ids[usize::from(destination)];
-        let current = *entry;
-        *entry = entry.increment();
-        current
+}
+impl<T: Transport, const C: usize> TransferIdTracker<T> for TransferIdFixedMap<T, C> {
+    fn next_transfer_id(
+        &mut self,
+        destination: T::NodeId,
+    ) -> Result<T::TransferId, OutOfMemoryError> {
+        match self.ids.get_mut(&destination) {
+            Some(entry) => {
+                let current = entry.clone();
+                *entry = entry.clone().increment();
+                Ok(current)
+            }
+            None => {
+                let current = T::TransferId::default();
+                let next = current.clone().increment();
+                // Try to store the next transfer ID
+                match self.ids.insert(destination, next) {
+                    Ok(_) => Ok(current),
+                    Err(_) => Err(OutOfMemoryError),
+                }
+            }
+        }
     }
 }

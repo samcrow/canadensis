@@ -6,11 +6,15 @@
 #![deny(missing_docs)]
 
 extern crate half;
+extern crate zerocopy;
 
+pub mod bits;
 mod cursor;
 
 pub use crate::cursor::deserialize::ReadCursor;
 pub use crate::cursor::serialize::WriteCursor;
+use core::cmp;
+use zerocopy::{AsBytes, FromBytes};
 
 /// Trait for types that can be encoded into UAVCAN transfers, or decoded from transfers
 pub trait DataType {
@@ -28,10 +32,11 @@ pub trait Serialize: DataType {
     /// Serializes this value into a buffer
     ///
     /// The provided cursor will allow writing at least the number of bits returned by the
-    /// size_bits() function.
+    /// [`size_bits()`](#tymethod.size_bits) function.
     fn serialize(&self, cursor: &mut WriteCursor<'_>);
 
-    /// A convenience function that creates a cursor around the provided bytes and calls serialize
+    /// A convenience function that creates a cursor around the provided bytes and calls
+    /// [`serialize`](#tymethod.serialize)
     fn serialize_to_bytes(&self, bytes: &mut [u8]) {
         let mut cursor = WriteCursor::new(bytes);
         self.serialize(&mut cursor);
@@ -40,22 +45,39 @@ pub trait Serialize: DataType {
 
 /// Trait for types that can be deserialized from UAVCAN transfers
 pub trait Deserialize: DataType {
-    /// Returns true if the provided number of bits is in this type's bit length set
-    ///
-    /// For composite types, this function must not return true for any input that is not
-    /// a multiple of 8.
-    fn in_bit_length_set(bit_length: usize) -> bool;
-
-    /// Deserializes a value, replacing the content of self with the decoded value
-    fn deserialize_in_place(&mut self, cursor: &mut ReadCursor<'_>)
-        -> Result<(), DeserializeError>;
-
     /// Deserializes a value and returns it
     fn deserialize(cursor: &mut ReadCursor<'_>) -> Result<Self, DeserializeError>
     where
         Self: Sized;
 
-    /// A convenience function that creates a cursor around the provided bytes and calls deserialize
+    /// Deserializes a value from a slice of bytes and returns it
+    ///
+    /// This is available only for types that implement [`Sized`], [`AsBytes`], and [`FromBytes`].
+    ///
+    /// # Panics
+    ///
+    /// This function panics if the provided cursor is not aligned to a byte boundary.
+    fn deserialize_zero_copy(cursor: &mut ReadCursor<'_>) -> Self
+    where
+        Self: Sized + AsBytes + FromBytes,
+    {
+        // This isn't quite zero-copy. It's one-copy, but it eliminates handling each field
+        // individually.
+        let cursor_bytes = cursor.as_bytes().expect("Cursor not aligned");
+        let mut value = Self::new_zeroed();
+
+        let value_bytes = value.as_bytes_mut();
+        // To apply implicit truncation and zero extension, copy whatever bytes we can
+        let bytes_to_copy = cmp::min(value_bytes.len(), cursor_bytes.len());
+        value_bytes[..bytes_to_copy].copy_from_slice(&cursor_bytes[..bytes_to_copy]);
+
+        cursor.advance_bytes(bytes_to_copy);
+
+        value
+    }
+
+    /// A convenience function that creates a cursor around the provided bytes and calls
+    /// [`deserialize`](#tymethod.deserialize)
     fn deserialize_from_bytes(bytes: &[u8]) -> Result<Self, DeserializeError>
     where
         Self: Sized,

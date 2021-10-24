@@ -1,0 +1,5 @@
+@union
+Struct_.0.1 struct_
+DelimitedFixedSize.0.1[2] delimited_fix_le2
+DelimitedVariableSize.0.1[<=2] delimited_var_le2
+@extent _offset_.max

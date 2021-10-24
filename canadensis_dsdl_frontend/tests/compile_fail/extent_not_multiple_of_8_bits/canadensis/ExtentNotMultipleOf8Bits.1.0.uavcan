@@ -1,0 +1,3 @@
+
+# Extent must be a multiple of 8 bits
+@extent 7

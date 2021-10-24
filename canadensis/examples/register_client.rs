@@ -11,19 +11,23 @@ use std::time::Duration;
 
 use socketcan::CANSocket;
 
-use canadensis::can::queue::{ArrayQueue, FrameQueueSource};
-use canadensis::can::Mtu;
 use canadensis::core::time::{milliseconds, Clock, Microseconds64};
 use canadensis::core::transfer::ServiceTransfer;
-use canadensis::core::{NodeId, Priority, TransferId};
+use canadensis::core::Priority;
 use canadensis::encoding::Deserialize;
 use canadensis::node::{BasicNode, CoreNode};
+use canadensis::requester::TransferIdFixedMap;
 use canadensis::{Node, ServiceToken, TransferHandler};
-use canadensis_data_types::uavcan::node::get_info::GetInfoResponse;
-use canadensis_data_types::uavcan::node::version::Version;
-use canadensis_data_types::uavcan::register::access::{AccessRequest, AccessResponse};
-use canadensis_data_types::uavcan::register::list::{ListRequest, ListResponse};
-use canadensis_data_types::uavcan::register::value::Value;
+use canadensis_can::queue::{ArrayQueue, SingleQueueDriver};
+use canadensis_can::types::{CanNodeId, CanTransferId, CanTransport, Error};
+use canadensis_can::{CanReceiver, CanTransmitter, Mtu};
+use canadensis_data_types::uavcan::node::get_info_1_0::GetInfoResponse;
+use canadensis_data_types::uavcan::node::version_1_0::Version;
+use canadensis_data_types::uavcan::primitive::empty_1_0::Empty;
+use canadensis_data_types::uavcan::register::access_1_0::{self, AccessRequest, AccessResponse};
+use canadensis_data_types::uavcan::register::list_1_0::{self, ListRequest, ListResponse};
+use canadensis_data_types::uavcan::register::name_1_0::Name;
+use canadensis_data_types::uavcan::register::value_1_0::Value;
 use canadensis_linux::{LinuxCan, SystemClock};
 use std::collections::BTreeMap;
 use std::io::ErrorKind;
@@ -50,14 +54,14 @@ use std::io::ErrorKind;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);
     let can_interface = args.next().expect("Expected CAN interface name");
-    let node_id = NodeId::try_from(
+    let node_id = CanNodeId::try_from(
         args.next()
             .expect("Expected node ID")
             .parse::<u8>()
             .expect("Invalid node ID format"),
     )
     .expect("Node ID too large");
-    let target_node_id = NodeId::try_from(
+    let target_node_id = CanNodeId::try_from(
         args.next()
             .expect("Expected target node ID")
             .parse::<u8>()
@@ -68,7 +72,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let can = CANSocket::open(&can_interface).expect("Failed to open CAN interface");
     can.set_read_timeout(Duration::from_millis(5))?;
     can.set_write_timeout(Duration::from_millis(500))?;
-    let mut can = LinuxCan::new(can);
+    let can = LinuxCan::new(can);
 
     // Set up information about this node
     let node_info = GetInfoResponse {
@@ -78,33 +82,35 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         software_vcs_revision_id: 0,
         unique_id: rand::random(),
         name: heapless::Vec::from_slice(b"org.samcrow.register_client").unwrap(),
-        software_image_crc: None,
+        software_image_crc: heapless::Vec::new(),
         certificate_of_authenticity: Default::default(),
     };
 
-    // Create a node with capacity for 8 publishers and 8 requesters
-    let core_node: CoreNode<_, _, 8, 8> = CoreNode::new(
-        SystemClock::new(),
-        node_id,
-        Mtu::Can8,
-        ArrayQueue::<Microseconds64, 128>::new(),
-    );
+    // Create a node with capacity for 2 publishers and 2 requesters
+    type Queue = SingleQueueDriver<ArrayQueue<Microseconds64, 64>, LinuxCan>;
+    const TRANSFER_IDS: usize = 1;
+    const PUBLISHERS: usize = 2;
+    const REQUESTERS: usize = 2;
+
+    let queue = Queue::new(ArrayQueue::new(), can);
+    let transmitter = CanTransmitter::new(Mtu::Can8);
+    let receiver = CanReceiver::new(node_id, Mtu::Can8);
+    let core_node: CoreNode<
+        SystemClock,
+        CanTransmitter<Microseconds64, Queue>,
+        CanReceiver<Microseconds64, Queue>,
+        TransferIdFixedMap<CanTransport, TRANSFER_IDS>,
+        Queue,
+        PUBLISHERS,
+        REQUESTERS,
+    > = CoreNode::new(SystemClock::new(), node_id, transmitter, receiver, queue);
     let mut node = BasicNode::new(core_node, node_info).unwrap();
     let list_request_token: ServiceToken<ListRequest> = node
-        .start_sending_requests(ListRequest::SERVICE, milliseconds(1000), 256, Priority::Low)
+        .start_sending_requests(list_1_0::SERVICE, milliseconds(1000), 256, Priority::Low)
         .unwrap();
     let access_token = node
-        .start_sending_requests(
-            AccessRequest::SERVICE,
-            milliseconds(1000),
-            267,
-            Priority::Low,
-        )
+        .start_sending_requests(access_1_0::SERVICE, milliseconds(1000), 267, Priority::Low)
         .unwrap();
-
-    // Now that the node has subscribed to everything it wants, set up the frame acceptance filters
-    let frame_filters = node.frame_filters().unwrap();
-    can.set_filters(&frame_filters)?;
 
     // Send a register list request for the register at index 0
     node.send_request(
@@ -113,6 +119,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         target_node_id,
     )
     .unwrap();
+    node.flush().unwrap();
 
     let mut handler = RegisterHandler {
         target_node_id,
@@ -128,15 +135,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let start_time = std::time::Instant::now();
     let mut prev_seconds = 0;
     while !handler.done && handler.timeout > std::time::Instant::now() {
-        match can.receive() {
-            Ok(frame) => {
-                node.accept_frame(frame, &mut handler).unwrap();
+        match node.receive(&mut handler) {
+            Ok(_) => { /* Keep receiving */ }
+            Err(Error::Driver(e)) if e.kind() == ErrorKind::WouldBlock => {
+                // Keep receiving
             }
-            Err(e) => match e.kind() {
-                ErrorKind::WouldBlock => {}
-                _ => return Err(e.into()),
-            },
-        };
+            Err(e) => panic!("{:?}", e),
+        }
 
         let seconds = std::time::Instant::now()
             .duration_since(start_time)
@@ -145,10 +150,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             prev_seconds = seconds;
             node.run_per_second_tasks().unwrap();
         }
-
-        while let Some(frame_out) = node.frame_queue_mut().pop_frame() {
-            can.send(frame_out)?;
-        }
+        node.flush().unwrap();
     }
     // Either finished or timed out
     if handler.done {
@@ -174,7 +176,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 struct RegisterHandler {
     /// The ID of the node to query
-    target_node_id: NodeId,
+    target_node_id: CanNodeId,
     /// The index of the next register to query
     next_register_index: u16,
     /// Each known register and its value
@@ -191,17 +193,17 @@ struct RegisterHandler {
     timeout: std::time::Instant,
 }
 
-impl TransferHandler<<SystemClock as Clock>::Instant> for RegisterHandler {
+impl TransferHandler<<SystemClock as Clock>::Instant, CanTransport> for RegisterHandler {
     fn handle_response<N>(
         &mut self,
         node: &mut N,
-        transfer: &ServiceTransfer<Vec<u8>, <SystemClock as Clock>::Instant>,
+        transfer: &ServiceTransfer<Vec<u8>, <SystemClock as Clock>::Instant, CanTransport>,
     ) -> bool
     where
-        N: Node<Instant = <SystemClock as Clock>::Instant>,
+        N: Node<Instant = <SystemClock as Clock>::Instant, Transport = CanTransport>,
     {
         match transfer.header.service {
-            ListResponse::SERVICE => {
+            list_1_0::SERVICE => {
                 if let Ok(list_response) = ListResponse::deserialize_from_bytes(&transfer.payload) {
                     match str::from_utf8(&list_response.name.name) {
                         Ok(register_name) => {
@@ -216,10 +218,12 @@ impl TransferHandler<<SystemClock as Clock>::Instant> for RegisterHandler {
                                     .send_request(
                                         &self.access_token,
                                         &AccessRequest {
-                                            name: list_response.name.clone(),
-                                            value: Default::default(),
+                                            name: Name {
+                                                name: list_response.name.name.clone(),
+                                            },
+                                            value: Value::Empty(Empty {}),
                                         },
-                                        self.target_node_id,
+                                        self.target_node_id.clone(),
                                     )
                                     .unwrap();
 
@@ -250,7 +254,7 @@ impl TransferHandler<<SystemClock as Clock>::Instant> for RegisterHandler {
                     false
                 }
             }
-            AccessResponse::SERVICE => {
+            access_1_0::SERVICE => {
                 if let Ok(response) = AccessResponse::deserialize_from_bytes(&transfer.payload) {
                     // Find the register name with the matching transfer ID
                     let register_entry =
@@ -297,7 +301,11 @@ impl RegisterHandler {
 }
 
 enum RegisterState {
-    Waiting(TransferId),
+    /// Waiting for a response with the register value
+    ///
+    /// The response will match the enclosed transfer ID
+    Waiting(CanTransferId),
+    /// The register value has been received
     Done(Value),
 }
 
@@ -306,27 +314,27 @@ struct DebugValue<'v>(&'v Value);
 impl std::fmt::Debug for DebugValue<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self.0 {
-            Value::Empty => f.debug_struct("Empty").finish(),
+            Value::Empty(_) => f.debug_struct("Empty").finish(),
             Value::String(bytes) => {
-                let string = String::from_utf8_lossy(&bytes);
+                let string = String::from_utf8_lossy(&bytes.value);
                 f.debug_tuple("String").field(&string).finish()
             }
             Value::Unstructured(bytes) => f
                 .debug_tuple("Unstructured")
-                .field(&DebugHexBytes(&bytes))
+                .field(&DebugHexBytes(&bytes.value))
                 .finish(),
-            Value::Bit(bits) => f.debug_tuple("Bit").field(&bits).finish(),
-            Value::Integer64(values) => f.debug_tuple("Integer64").field(&values).finish(),
-            Value::Integer32(values) => f.debug_tuple("Integer32").field(&values).finish(),
-            Value::Integer16(values) => f.debug_tuple("Integer16").field(&values).finish(),
-            Value::Integer8(values) => f.debug_tuple("Integer8").field(&values).finish(),
-            Value::Natural64(values) => f.debug_tuple("Natural64").field(&values).finish(),
-            Value::Natural32(values) => f.debug_tuple("Natural32").field(&values).finish(),
-            Value::Natural16(values) => f.debug_tuple("Natural16").field(&values).finish(),
-            Value::Natural8(values) => f.debug_tuple("Natural8").field(&values).finish(),
-            Value::Real64(value) => f.debug_tuple("Real64").field(value).finish(),
-            Value::Real32(value) => f.debug_tuple("Real32").field(value).finish(),
-            Value::Real16(value) => f.debug_tuple("Real16").field(value).finish(),
+            Value::Bit(bits) => f.debug_tuple("Bit").field(&bits.value).finish(),
+            Value::Integer64(values) => f.debug_tuple("Integer64").field(&values.value).finish(),
+            Value::Integer32(values) => f.debug_tuple("Integer32").field(&values.value).finish(),
+            Value::Integer16(values) => f.debug_tuple("Integer16").field(&values.value).finish(),
+            Value::Integer8(values) => f.debug_tuple("Integer8").field(&values.value).finish(),
+            Value::Natural64(values) => f.debug_tuple("Natural64").field(&values.value).finish(),
+            Value::Natural32(values) => f.debug_tuple("Natural32").field(&values.value).finish(),
+            Value::Natural16(values) => f.debug_tuple("Natural16").field(&values.value).finish(),
+            Value::Natural8(values) => f.debug_tuple("Natural8").field(&values.value).finish(),
+            Value::Real64(value) => f.debug_tuple("Real64").field(&value.value).finish(),
+            Value::Real32(value) => f.debug_tuple("Real32").field(&value.value).finish(),
+            Value::Real16(value) => f.debug_tuple("Real16").field(&value.value).finish(),
         }
     }
 }

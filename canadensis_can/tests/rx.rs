@@ -6,11 +6,17 @@ extern crate canadensis_can;
 extern crate canadensis_core;
 
 use core::convert::{TryFrom, TryInto};
+use std::collections::VecDeque;
 
-use canadensis_can::{CanId, Frame, Mtu, OutOfMemoryError, Receiver, ServiceSubscribeError};
+use canadensis_can::driver::ReceiveDriver;
+use canadensis_can::types::CanNodeId;
+use canadensis_can::{CanId, CanReceiver, Frame, Mtu};
+use canadensis_core::nb;
+use canadensis_core::subscription::Subscription;
 use canadensis_core::time::{Instant, MicrosecondDuration32, Microseconds32};
 use canadensis_core::transfer::*;
-use canadensis_core::{NodeId, Priority, ServiceId, SubjectId};
+use canadensis_core::transport::Receiver;
+use canadensis_core::{Priority, ServiceId, SubjectId};
 
 type TestInstant = Microseconds32;
 type TestDuration = <TestInstant as Instant>::Duration;
@@ -23,18 +29,22 @@ fn duration(ticks: u32) -> TestDuration {
 }
 
 #[test]
-fn test_heartbeat() -> Result<(), OutOfMemoryError> {
-    let mut rx = Receiver::new(0.try_into().unwrap(), Mtu::Can8);
+fn test_heartbeat() {
+    let mut driver = StubDriver::default();
+    let mut rx = CanReceiver::new(0u8.try_into().unwrap(), Mtu::Can8);
 
     let heartbeat_subject = SubjectId::try_from(7509).unwrap();
-    rx.subscribe_message(heartbeat_subject, 7, duration(0))?;
+    rx.subscribe_message(heartbeat_subject, 7, duration(0), &mut driver)
+        .unwrap();
 
+    driver.push(Frame::new(
+        instant(42),
+        0x107d552a.try_into().unwrap(),
+        &[0x00, 0x00, 0x00, 0x00, 0x04, 0x78, 0x68, 0xe0],
+    ));
     let transfer = rx
-        .accept(Frame::new(
-            instant(42),
-            0x107d552a.try_into().unwrap(),
-            &[0x00, 0x00, 0x00, 0x00, 0x04, 0x78, 0x68, 0xe0],
-        ))?
+        .receive(instant(0), &mut driver)
+        .unwrap()
         .expect("Didn't get a transfer");
 
     let expected = Transfer {
@@ -43,28 +53,30 @@ fn test_heartbeat() -> Result<(), OutOfMemoryError> {
             transfer_id: 0.try_into().unwrap(),
             priority: Priority::Nominal,
             subject: heartbeat_subject,
-            source: Some(42.try_into().unwrap()),
+            source: Some(42u8.try_into().unwrap()),
         }),
         payload: vec![0x00, 0x00, 0x00, 0x00, 0x04, 0x78, 0x68],
     };
     assert_eq!(expected, transfer);
-
-    Ok(())
 }
 #[test]
 #[cfg(feature = "can-fd")]
-fn test_string() -> Result<(), OutOfMemoryError> {
-    let mut rx = Receiver::new(0.try_into().unwrap(), Mtu::Can8);
+fn test_string() {
+    let mut driver = StubDriver::default();
+    let mut rx = CanReceiver::new(0u8.try_into().unwrap(), Mtu::Can8);
 
     let string_subject = SubjectId::try_from(4919).unwrap();
-    rx.subscribe_message(string_subject, 15, duration(0))?;
+    rx.subscribe_message(string_subject, 15, duration(0), &mut driver)
+        .unwrap();
 
+    driver.push(Frame::new(
+        instant(42),
+        0x11133775.try_into().unwrap(),
+        b"\x00\x18Hello world!\x00\xe0",
+    ));
     let transfer = rx
-        .accept(Frame::new(
-            instant(42),
-            0x11133775.try_into().unwrap(),
-            b"\x00\x18Hello world!\x00\xe0",
-        ))?
+        .receive(instant(0), &mut driver)
+        .unwrap()
         .expect("Didn't get a transfer");
 
     let expected = Transfer {
@@ -78,22 +90,24 @@ fn test_string() -> Result<(), OutOfMemoryError> {
         payload: b"\x00\x18Hello world!\x00".to_vec(),
     };
     assert_eq!(expected, transfer);
-
-    Ok(())
 }
 #[test]
-fn test_node_info_request() -> Result<(), ServiceSubscribeError> {
-    let mut rx = Receiver::new(42.try_into().unwrap(), Mtu::Can8);
+fn test_node_info_request() {
+    let mut driver = StubDriver::default();
+    let mut rx = CanReceiver::new(42u8.try_into().unwrap(), Mtu::Can8);
 
     let service = ServiceId::try_from(430).unwrap();
-    rx.subscribe_request(service, 0, duration(0))?;
+    rx.subscribe_request(service, 0, duration(0), &mut driver)
+        .unwrap();
 
+    driver.push(Frame::new(
+        instant(302),
+        0x136b957b.try_into().unwrap(),
+        &[0xe1],
+    ));
     let transfer = rx
-        .accept(Frame::new(
-            instant(302),
-            0x136b957b.try_into().unwrap(),
-            &[0xe1],
-        ))?
+        .receive(instant(0), &mut driver)
+        .unwrap()
         .expect("Didn't get a transfer");
 
     let expected = Transfer {
@@ -102,21 +116,21 @@ fn test_node_info_request() -> Result<(), ServiceSubscribeError> {
             transfer_id: 1.try_into().unwrap(),
             priority: Priority::Nominal,
             service,
-            source: 123.try_into().unwrap(),
-            destination: 42.try_into().unwrap(),
+            source: 123u8.try_into().unwrap(),
+            destination: 42u8.try_into().unwrap(),
         }),
         payload: vec![],
     };
     assert_eq!(expected, transfer);
-
-    Ok(())
 }
 #[test]
-fn test_node_info_response() -> Result<(), ServiceSubscribeError> {
-    let mut rx = Receiver::new(123.try_into().unwrap(), Mtu::Can8);
+fn test_node_info_response() {
+    let mut driver = StubDriver::default();
+    let mut rx = CanReceiver::new(123u8.try_into().unwrap(), Mtu::Can8);
 
     let service = ServiceId::try_from(430).unwrap();
-    rx.subscribe_response(service, 69, duration(100))?;
+    rx.subscribe_response(service, 69, duration(100), &mut driver)
+        .unwrap();
 
     let payload: [u8; 69] = [
         0x01, 0x00, // Protocol version
@@ -154,12 +168,16 @@ fn test_node_info_response() -> Result<(), ServiceSubscribeError> {
             0x126BBDAA.try_into().unwrap(),
             frame_data,
         );
+        driver.push(frame);
         if i != frames_and_times.len() - 1 {
-            let maybe_transfer = rx.accept(frame)?;
+            let maybe_transfer = rx.receive(instant(frame_time), &mut driver).unwrap();
             assert!(maybe_transfer.is_none());
         } else {
             // End of transfer
-            let transfer = rx.accept(frame)?.expect("Didn't get a transfer");
+            let transfer = rx
+                .receive(instant(frame_time), &mut driver)
+                .unwrap()
+                .expect("Didn't get a transfer");
 
             let expected = Transfer {
                 header: Header::Response(ServiceHeader {
@@ -168,23 +186,23 @@ fn test_node_info_response() -> Result<(), ServiceSubscribeError> {
                     transfer_id: 1.try_into().unwrap(),
                     priority: Priority::Nominal,
                     service,
-                    source: 42.try_into().unwrap(),
-                    destination: 123.try_into().unwrap(),
+                    source: 42u8.try_into().unwrap(),
+                    destination: 123u8.try_into().unwrap(),
                 }),
                 payload: payload.to_vec(),
             };
             assert_eq!(expected, transfer);
         }
     }
-
-    Ok(())
 }
 #[test]
-fn test_node_info_response_timeout() -> Result<(), ServiceSubscribeError> {
-    let mut rx = Receiver::new(123.try_into().unwrap(), Mtu::Can8);
+fn test_node_info_response_timeout() {
+    let mut driver = StubDriver::default();
+    let mut rx = CanReceiver::new(123u8.try_into().unwrap(), Mtu::Can8);
 
     let service = ServiceId::try_from(430).unwrap();
-    rx.subscribe_response(service, 69, duration(100))?;
+    rx.subscribe_response(service, 69, duration(100), &mut driver)
+        .unwrap();
 
     let frames_and_times: [(&[u8], u32); 11] = [
         (&[0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0xa1], 100),
@@ -207,20 +225,21 @@ fn test_node_info_response_timeout() -> Result<(), ServiceSubscribeError> {
             0x126BBDAA.try_into().unwrap(),
             frame_data,
         );
+        driver.push(frame);
         // When the last frame is accepted, it has timed out and the whole transfer gets discarded.
-        let maybe_transfer = rx.accept(frame)?;
+        let maybe_transfer = rx.receive(instant(frame_time), &mut driver).unwrap();
         assert!(maybe_transfer.is_none());
     }
-
-    Ok(())
 }
 #[test]
 #[cfg(feature = "can-fd")]
-fn test_array() -> Result<(), ServiceSubscribeError> {
-    let mut rx = Receiver::new(0.try_into().unwrap(), Mtu::CanFd64);
+fn test_array() {
+    let mut driver = StubDriver::default();
+    let mut rx = CanReceiver::new(0u8.try_into().unwrap(), Mtu::CanFd64);
 
     let subject = SubjectId::try_from(4919).unwrap();
-    rx.subscribe_message(subject, 94, duration(1))?;
+    rx.subscribe_message(subject, 94, duration(1), &mut driver)
+        .unwrap();
 
     let expected = Transfer {
         header: Header::Message(MessageHeader {
@@ -228,7 +247,7 @@ fn test_array() -> Result<(), ServiceSubscribeError> {
             transfer_id: 0.try_into().unwrap(),
             priority: Priority::Nominal,
             subject,
-            source: Some(59.try_into().unwrap()),
+            source: Some(59u8.try_into().unwrap()),
         }),
         payload: [
             0x00, 0xb8, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
@@ -266,27 +285,30 @@ fn test_array() -> Result<(), ServiceSubscribeError> {
             0x1013373b.try_into().unwrap(),
             frame_data,
         );
+        driver.push(frame);
         if i != frames.len() - 1 {
-            let maybe_transfer = rx.accept(frame)?;
+            let maybe_transfer = rx.receive(instant(i as u32), &mut driver).unwrap();
             assert!(maybe_transfer.is_none());
         } else {
             // End of transfer
-            let transfer = rx.accept(frame)?.expect("Didn't get a transfer");
+            let transfer = rx
+                .receive(instant(i as u32), &mut driver)
+                .unwrap()
+                .expect("Didn't get a transfer");
 
             assert_eq!(expected, transfer);
         }
     }
-
-    Ok(())
 }
 
 #[test]
 fn test_multi_frame_anonymous() {
     // Multi-frame anonymous transfers must be ignored
-    let mut receiver = Receiver::<Microseconds32>::new(NodeId::try_from(3).unwrap(), Mtu::Can8);
+    let mut driver = StubDriver::default();
+    let mut receiver = CanReceiver::new(CanNodeId::try_from(3u8).unwrap(), Mtu::Can8);
     let subject_id = SubjectId::try_from(10).unwrap();
     receiver
-        .subscribe_message(subject_id, 8, MicrosecondDuration32::new(100))
+        .subscribe_message(subject_id, 8, MicrosecondDuration32::new(100), &mut driver)
         .unwrap();
     // A non-anonymous 2-frame transfer works
     let non_anonymous_id: CanId = 0b100_0_0_011_0000000001010_0_1000000_u32
@@ -312,39 +334,40 @@ fn test_multi_frame_anonymous() {
             transfer_id: 0.try_into().unwrap(),
             priority: Priority::Nominal,
             subject: subject_id,
-            source: Some(64.try_into().unwrap()),
+            source: Some(64u8.try_into().unwrap()),
         }),
         payload: vec![0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8],
     };
 
-    assert_eq!(
-        Ok(None),
-        receiver.accept(Frame::new(TestInstant::new(1), non_anonymous_id, frames[0]))
-    );
+    driver.push(Frame::new(TestInstant::new(1), non_anonymous_id, frames[0]));
+    assert_eq!(Ok(None), receiver.receive(instant(1), &mut driver));
+    driver.push(Frame::new(TestInstant::new(2), non_anonymous_id, frames[1]));
     assert_eq!(
         Ok(Some(non_anonymous_transfer)),
-        receiver.accept(Frame::new(TestInstant::new(2), non_anonymous_id, frames[1]))
+        receiver.receive(instant(2), &mut driver)
     );
     // Now make it anonymous
     let anonymous_id: CanId = 0b100_0_1_011_0000000001010_0_1000000_u32
         .try_into()
         .unwrap();
-    assert_eq!(
-        Ok(None),
-        receiver.accept(Frame::new(TestInstant::new(1), anonymous_id, frames[0]))
-    );
-    assert_eq!(
-        Ok(None),
-        receiver.accept(Frame::new(TestInstant::new(2), anonymous_id, frames[1]))
-    );
+    driver.push(Frame::new(TestInstant::new(1), anonymous_id, frames[0]));
+    assert_eq!(Ok(None), receiver.receive(instant(1), &mut driver));
+    driver.push(Frame::new(TestInstant::new(2), anonymous_id, frames[1]));
+    assert_eq!(Ok(None), receiver.receive(instant(2), &mut driver));
 }
 
 /// Tests an anonymous receiver receiving a multi-frame non-anonymous transfer
 #[test]
 fn test_anonymous_receive_multi_frame() {
-    let mut rx: Receiver<TestInstant> = Receiver::new_anonymous(Mtu::Can8);
-    rx.subscribe_message(8166.try_into().unwrap(), 9, duration(1_000_000))
-        .unwrap();
+    let mut driver = StubDriver::default();
+    let mut rx = CanReceiver::new_anonymous(Mtu::Can8);
+    rx.subscribe_message(
+        8166.try_into().unwrap(),
+        9,
+        duration(1_000_000),
+        &mut driver,
+    )
+    .unwrap();
 
     let message_id = CanId::try_from(0x107fe67e).unwrap();
     let frames = [
@@ -361,29 +384,65 @@ fn test_anonymous_receive_multi_frame() {
             transfer_id: 14.try_into().unwrap(),
             priority: Priority::Nominal,
             subject: 8166.try_into().unwrap(),
-            source: Some(126.try_into().unwrap()),
+            source: Some(126u8.try_into().unwrap()),
         }),
         payload: vec![190, 159, 33, 213, 34, 64, 1, 103, 0],
     };
 
-    assert_eq!(Ok(None), rx.accept(frames[0].clone()));
-    assert_eq!(Ok(Some(expected_transfer)), rx.accept(frames[1].clone()));
+    driver.push(frames[0].clone());
+    assert_eq!(Ok(None), rx.receive(frames[0].timestamp(), &mut driver));
+    driver.push(frames[1].clone());
+    assert_eq!(
+        Ok(Some(expected_transfer)),
+        rx.receive(frames[1].timestamp(), &mut driver)
+    );
 }
 
 #[test]
 fn test_ignore_request_to_other_node() {
-    let mut rx = Receiver::new(43.try_into().unwrap(), Mtu::Can8);
+    let mut driver = StubDriver::default();
+    let mut rx = CanReceiver::new(43u8.try_into().unwrap(), Mtu::Can8);
 
     let service = ServiceId::try_from(430).unwrap();
-    rx.subscribe_request(service, 0, duration(0)).unwrap();
-    // This transfer is going to node 42.
-    let transfer = rx
-        .accept(Frame::new(
-            instant(302),
-            0x136b957b.try_into().unwrap(),
-            &[0xe1],
-        ))
+    rx.subscribe_request(service, 0, duration(0), &mut driver)
         .unwrap();
+    // This transfer is going to node 42.
+    driver.push(Frame::new(
+        instant(302),
+        0x136b957b.try_into().unwrap(),
+        &[0xe1],
+    ));
+    let transfer = rx.receive(instant(302), &mut driver).unwrap();
 
     assert_eq!(transfer, None);
+}
+
+/// A driver that reads from a queue of frames
+///
+/// This does not keep the frames in order by priority, but it is correct as long as it is used for
+/// only one transfer at a time.
+#[derive(Default)]
+struct StubDriver<I> {
+    frames: VecDeque<Frame<I>>,
+}
+
+impl<I> StubDriver<I> {
+    fn push(&mut self, frame: Frame<I>) {
+        self.frames.push_back(frame)
+    }
+}
+
+impl<I> ReceiveDriver<I> for StubDriver<I> {
+    type Error = ();
+
+    fn receive(&mut self, _now: I) -> nb::Result<Frame<I>, Self::Error> {
+        self.frames.pop_front().ok_or(nb::Error::WouldBlock)
+    }
+
+    fn apply_filters<S>(&mut self, _local_node: Option<CanNodeId>, _subscriptions: S)
+    where
+        S: IntoIterator<Item = Subscription>,
+    {
+        // Nothing to do
+    }
 }

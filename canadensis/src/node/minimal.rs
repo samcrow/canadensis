@@ -1,10 +1,10 @@
 use crate::{Node, PublishToken, StartSendError};
-use canadensis_can::OutOfMemoryError;
 use canadensis_core::time::{Clock, Duration, Instant};
-use canadensis_core::Priority;
-use canadensis_data_types::uavcan::node::health::Health;
-use canadensis_data_types::uavcan::node::heartbeat::Heartbeat;
-use canadensis_data_types::uavcan::node::mode::Mode;
+use canadensis_core::transport::Transmitter;
+use canadensis_core::{nb, Priority};
+use canadensis_data_types::uavcan::node::health_1_0::Health;
+use canadensis_data_types::uavcan::node::heartbeat_1_0::{self, Heartbeat};
+use canadensis_data_types::uavcan::node::mode_1_0::Mode;
 
 /// A node with the minimum required application-layer functionality
 ///
@@ -34,20 +34,29 @@ where
     /// Creates a new minimal node
     ///
     /// * `node`: The underlying node (this is usually a [`CoreNode`](crate::node::CoreNode))
-    pub fn new(mut node: N) -> Result<Self, StartSendError> {
+    pub fn new(
+        mut node: N,
+    ) -> Result<Self, StartSendError<<N::Transmitter as Transmitter<N::Instant>>::Error>> {
         // Default heartbeat settings
         let heartbeat = Heartbeat {
             uptime: 0,
-            health: Health::Nominal,
-            mode: Mode::Operational,
+            health: Health {
+                value: Health::NOMINAL,
+            },
+            mode: Mode {
+                value: Mode::OPERATIONAL,
+            },
             vendor_specific_status_code: 0,
         };
         let heartbeat_timeout =
             <<N::Clock as Clock>::Instant as Instant>::Duration::from_millis(500)
                 .expect("Duration type can't represent 500 milliseconds");
 
-        let heartbeat_token =
-            node.start_publishing(Heartbeat::SUBJECT, heartbeat_timeout, Priority::Nominal)?;
+        let heartbeat_token = node.start_publishing(
+            heartbeat_1_0::SUBJECT,
+            heartbeat_timeout,
+            Priority::Nominal.into(),
+        )?;
 
         Ok(MinimalNode {
             node,
@@ -62,12 +71,16 @@ where
     /// if one second has passed since the last time it was called.
     ///
     /// Either `run_periodic_tasks` or `run_per_second_tasks` should be called, but not both.
-    pub fn run_per_second_tasks(&mut self) -> Result<(), OutOfMemoryError> {
+    pub fn run_per_second_tasks(
+        &mut self,
+    ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Instant>>::Error> {
         self.send_heartbeat()
     }
 
     /// Publishes a heartbeat message
-    fn send_heartbeat(&mut self) -> Result<(), OutOfMemoryError> {
+    fn send_heartbeat(
+        &mut self,
+    ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Instant>>::Error> {
         self.heartbeat.uptime = self.heartbeat.uptime.saturating_add(1);
         self.node.publish(&self.heartbeat_token, &self.heartbeat)
     }

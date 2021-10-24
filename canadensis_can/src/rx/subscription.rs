@@ -1,16 +1,17 @@
 use crate::rx::session::{Session, SessionError};
 use crate::rx::TailByte;
-use crate::{Frame, Mtu, OutOfMemoryError};
+use crate::types::{CanNodeId, Header, Transfer};
+use crate::{Frame, Mtu};
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 use canadensis_core::time::Instant;
-use canadensis_core::transfer::{Header, Transfer};
-use canadensis_core::{NodeId, PortId};
+use canadensis_core::{OutOfMemoryError, PortId};
 use core::fmt;
+use core::fmt::Debug;
 use fallible_collections::{FallibleBox, FallibleVec, TryReserveError};
 
 /// One session per node ID
-const RX_SESSIONS_PER_SUBSCRIPTION: usize = NodeId::MAX.to_u8() as usize + 1;
+const RX_SESSIONS_PER_SUBSCRIPTION: usize = CanNodeId::MAX.to_u8() as usize + 1;
 
 /// Transfer subscription state. The application can register its interest in a particular kind of data exchanged
 /// over the bus by creating such subscription objects. Frames that carry data for which there is no active
@@ -70,7 +71,7 @@ impl<I: Instant> Subscription<I> {
         frame_header: Header<I>,
         tail: TailByte,
     ) -> Result<Option<Transfer<Vec<u8>, I>>, SubscriptionError> {
-        if let Some(source_node) = frame_header.source() {
+        if let Some(source_node) = frame_header.source().cloned() {
             self.accept_non_anonymous(frame, frame_header, source_node, tail)
         } else {
             self.accept_anonymous(frame, frame_header)
@@ -81,7 +82,7 @@ impl<I: Instant> Subscription<I> {
         &mut self,
         frame: Frame<I>,
         frame_header: Header<I>,
-        source_node: NodeId,
+        source_node: CanNodeId,
         tail: TailByte,
     ) -> Result<Option<Transfer<Vec<u8>, I>>, SubscriptionError> {
         let max_payload_length = self.payload_size_max;
@@ -109,7 +110,7 @@ impl<I: Instant> Subscription<I> {
         &mut self,
         frame: Frame<I>,
         frame_header: Header<I>,
-        source_node: NodeId,
+        source_node: CanNodeId,
         tail: TailByte,
     ) -> Result<Option<Transfer<Vec<u8>, I>>, SubscriptionError> {
         let max_payload_length = self.payload_size_max;

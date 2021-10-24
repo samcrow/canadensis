@@ -1,0 +1,14 @@
+#
+# This is a test dummy and not the real type.
+#
+
+uint8 CHEMISTRY_UNKNOWN     = 0  # Chemistry unknown
+uint8 CHEMISTRY_LIPO        = 1  # LiPo chemistry
+uint8 CHEMISTRY_LI_ION      = 2  # Li-On chemistry
+uint8 CHEMISTRY_NICD        = 3  # NiCD chemistry
+uint8 CHEMISTRY_NIMH        = 4  # NiMH chemistry
+uint8 CHEMISTRY_LEAD_ACID   = 5  # Lead Acid chemistry
+
+uint3 chemistry
+
+@extent 8

@@ -50,33 +50,16 @@ impl Serialize for Inner {
 }
 
 impl Deserialize for Inner {
-    fn in_bit_length_set(bit_length: usize) -> bool {
-        bit_length == 8
-    }
-
-    fn deserialize_in_place(
-        &mut self,
-        cursor: &mut ReadCursor<'_>,
-    ) -> Result<(), DeserializeError> {
-        self.a = cursor.read_bool();
-        self.b = cursor.read_bool();
-        self.c = cursor.read_bool();
-        self.d = cursor.read_u5();
-        Ok(())
-    }
-
     fn deserialize(cursor: &mut ReadCursor<'_>) -> Result<Self, DeserializeError>
     where
         Self: Sized,
     {
-        let mut value = Inner {
-            a: false,
-            b: false,
-            c: false,
-            d: 0,
-        };
-        value.deserialize_in_place(cursor)?;
-        Ok(value)
+        Ok(Inner {
+            a: cursor.read_bool(),
+            b: cursor.read_bool(),
+            c: cursor.read_bool(),
+            d: cursor.read_u5(),
+        })
     }
 }
 
@@ -97,38 +80,15 @@ impl Serialize for Outer {
 }
 
 impl Deserialize for Outer {
-    fn in_bit_length_set(bit_length: usize) -> bool {
-        bit_length == 72
-    }
-
-    fn deserialize_in_place(
-        &mut self,
-        cursor: &mut ReadCursor<'_>,
-    ) -> Result<(), DeserializeError> {
-        self.a = cursor.read_u13();
-        cursor.align_to_8_bits();
-        self.inner = cursor.read_composite()?;
-        cursor.align_to_8_bits();
-        self.b = cursor.read_u41();
-        Ok(())
-    }
-
     fn deserialize(cursor: &mut ReadCursor<'_>) -> Result<Self, DeserializeError>
     where
         Self: Sized,
     {
-        let mut value = Outer {
-            a: 0,
-            inner: Inner {
-                a: false,
-                b: false,
-                c: false,
-                d: 0,
-            },
-            b: 0,
-        };
-        value.deserialize_in_place(cursor)?;
-        Ok(value)
+        Ok(Outer {
+            a: cursor.read_u13(),
+            inner: cursor.read_composite()?,
+            b: cursor.read_u41(),
+        })
     }
 }
 

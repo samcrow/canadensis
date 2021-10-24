@@ -1,0 +1,49 @@
+uint8 CAPACITY = 3
+
+# Aligned unsigned integers
+uint64[<=CAPACITY] a_u64
+uint32[<=CAPACITY] a_u32
+uint16[<=CAPACITY] a_u16
+uint8[<=CAPACITY]  a_u8
+uint7[<=CAPACITY]  a_u7
+
+# Non-aligned unsigned integers
+uint64[<=CAPACITY] n_u64
+uint32[<=CAPACITY] n_u32
+uint16[<=CAPACITY] n_u16
+uint8[<=CAPACITY]  n_u8
+uint7[<=CAPACITY]  n_u7
+
+uavcan.primitive.Empty.1.0 restore_alignment_1_
+
+# Aligned signed integers
+int64[<=CAPACITY] a_i64
+int32[<=CAPACITY] a_i32
+int16[<=CAPACITY] a_i16
+int8[<=CAPACITY]  a_i8
+int7[<=CAPACITY]  a_i7
+
+# Non-aligned signed integers
+int64[<=CAPACITY] n_i64
+int32[<=CAPACITY] n_i32
+int16[<=CAPACITY] n_i16
+int8[<=CAPACITY]  n_i8
+int7[<=CAPACITY]  n_i7
+
+uavcan.primitive.Empty.1.0 restore_alignment_2_
+
+# Aligned floats
+float64[<=CAPACITY] a_f64
+float32[<=CAPACITY] a_f32
+float16[<=CAPACITY] a_f16
+
+# Aligned and unaligned booleans
+bool[<=CAPACITY] a_bool
+bool[<=CAPACITY] n_bool
+
+# Non-aligned floats
+float64[<=CAPACITY] n_f64
+float32[<=CAPACITY] n_f32
+float16[<=CAPACITY] n_f16
+
+@sealed

@@ -7,13 +7,14 @@ use alloc::vec::Vec;
 use core::str;
 
 use crate::{Node, ResponseToken, TransferHandler};
-use canadensis_can::OutOfMemoryError;
 use canadensis_core::time::{milliseconds, Instant};
 use canadensis_core::transfer::ServiceTransfer;
-use canadensis_data_types::uavcan::register::access::{AccessRequest, AccessResponse};
-use canadensis_data_types::uavcan::register::list::{ListRequest, ListResponse};
-use canadensis_data_types::uavcan::register::name::Name;
-use canadensis_data_types::uavcan::register::value::Value;
+use canadensis_core::transport::{Receiver, Transport};
+use canadensis_data_types::uavcan::register::access_1_0::{self, AccessRequest, AccessResponse};
+use canadensis_data_types::uavcan::register::list_1_0::{self, ListRequest, ListResponse};
+use canadensis_data_types::uavcan::register::name_1_0::Name;
+use canadensis_data_types::uavcan::register::value_1_0::Value;
+use canadensis_data_types::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp;
 use canadensis_encoding::Deserialize;
 
 pub use canadensis_derive_register_block::RegisterBlock;
@@ -136,12 +137,14 @@ where
     ///
     /// This function returns an error if the provided node does not have enough space to listen
     /// for requests.
-    pub fn subscribe_requests<N>(node: &mut N) -> Result<(), OutOfMemoryError>
+    pub fn subscribe_requests<N>(
+        node: &mut N,
+    ) -> Result<(), <N::Receiver as Receiver<N::Instant>>::Error>
     where
         N: Node,
     {
-        node.subscribe_request(AccessRequest::SERVICE, 515, milliseconds(1000))?;
-        node.subscribe_request(ListRequest::SERVICE, 2, milliseconds(0))?;
+        node.subscribe_request(access_1_0::SERVICE, 515, milliseconds(1000))?;
+        node.subscribe_request(list_1_0::SERVICE, 2, milliseconds(0))?;
         Ok(())
     }
 
@@ -166,18 +169,34 @@ where
                     register_handle_access(register, request)
                 } else {
                     // Register doesn't exist, return empty
-                    AccessResponse::default()
+                    AccessResponse {
+                        timestamp: SynchronizedTimestamp { microsecond: 0 },
+                        mutable: false,
+                        persistent: false,
+                        value: Value::Empty(
+                            canadensis_data_types::uavcan::primitive::empty_1_0::Empty {},
+                        ),
+                    }
                 }
             }
             Err(_) => {
                 // Invalid name, return empty
-                AccessResponse::default()
+                AccessResponse {
+                    timestamp: SynchronizedTimestamp { microsecond: 0 },
+                    mutable: false,
+                    persistent: false,
+                    value: Value::Empty(
+                        canadensis_data_types::uavcan::primitive::empty_1_0::Empty {},
+                    ),
+                }
             }
         }
     }
 
     fn handle_list_request(&mut self, request: &ListRequest) -> ListResponse {
-        log::debug!("Handling register list request, index {}", request.index);
+        log::debug!("Handling register list request, index {}", {
+            request.index
+        });
         match self.block.register_by_index(request.index.into()) {
             Some(register) => {
                 let name = register.name().as_bytes();
@@ -195,7 +214,11 @@ where
             }
             None => {
                 // Empty name
-                ListResponse::default()
+                ListResponse {
+                    name: Name {
+                        name: heapless::Vec::new(),
+                    },
+                }
             }
         }
     }
@@ -203,32 +226,38 @@ where
 
 fn register_handle_access(register: &mut dyn Register, request: &AccessRequest) -> AccessResponse {
     let access = register.access();
-    if access.mutable && !matches!(request.value, Value::Empty) {
+    if access.mutable
+        && !matches!(
+            request.value,
+            Value::Empty(canadensis_data_types::uavcan::primitive::empty_1_0::Empty {})
+        )
+    {
         // Write errors are reported by returning the unmodified register value.
         let _ = register.write(&request.value);
     }
     // Now read the register and return its properties
     AccessResponse {
-        timestamp: Default::default(),
+        timestamp: SynchronizedTimestamp { microsecond: 0 },
         mutable: access.mutable,
         persistent: access.persistent,
         value: register.read(),
     }
 }
 
-impl<I, B> TransferHandler<I> for RegisterHandler<B>
+impl<I, B, T> TransferHandler<I, T> for RegisterHandler<B>
 where
     I: Instant,
     B: RegisterBlock,
+    T: Transport,
 {
-    fn handle_request<N: Node<Instant = I>>(
+    fn handle_request<N: Node<Instant = I, Transport = T>>(
         &mut self,
         node: &mut N,
-        token: ResponseToken,
-        transfer: &ServiceTransfer<Vec<u8>, I>,
+        token: ResponseToken<T>,
+        transfer: &ServiceTransfer<Vec<u8>, I, T>,
     ) -> bool {
         match transfer.header.service {
-            AccessRequest::SERVICE => {
+            access_1_0::SERVICE => {
                 if let Ok(request) = AccessRequest::deserialize_from_bytes(&transfer.payload) {
                     let response = self.handle_access_request(&request);
                     let status = node.send_response(token, milliseconds(1000), &response);
@@ -240,7 +269,7 @@ where
                     false
                 }
             }
-            ListRequest::SERVICE => {
+            list_1_0::SERVICE => {
                 if let Ok(request) = ListRequest::deserialize_from_bytes(&transfer.payload) {
                     let response = self.handle_list_request(&request);
                     let status = node.send_response(token, milliseconds(1000), &response);

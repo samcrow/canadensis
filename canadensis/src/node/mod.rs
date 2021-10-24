@@ -21,6 +21,15 @@ pub use self::minimal::MinimalNode;
 
 pub mod data_types {
     //! Re-exports from `canadensis_data_types` to avoid version conflicts
-    pub use canadensis_data_types::uavcan::node::get_info::GetInfoResponse;
-    pub use canadensis_data_types::uavcan::node::version::Version;
+    pub use canadensis_data_types::uavcan::node::get_info_1_0::GetInfoResponse;
+    pub use canadensis_data_types::uavcan::node::version_1_0::Version;
+}
+
+/// An error from a transmitter or receiver
+#[derive(Debug)]
+pub enum NodeError<T, R> {
+    /// An error from a transmitter
+    Transmitter(T),
+    /// An error from a receiver
+    Receiver(R),
 }

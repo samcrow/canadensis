@@ -12,6 +12,7 @@ use crate::{Deserialize, DeserializeError};
 ///
 /// Functions that read values will return zero when reading beyond the end of the bytes,
 /// in accordance with the implicit zero extension rule (specification section 3.7.1.5)
+#[derive(Debug)]
 pub struct ReadCursor<'b> {
     /// The bytes available to read from
     ///
@@ -21,7 +22,7 @@ pub struct ReadCursor<'b> {
     /// The number of bits in the current byte that have already been read
     ///
     /// Multiple values within a byte are read from right to left:
-    /// https://github.com/UAVCAN/specification/issues/70
+    /// <https://github.com/UAVCAN/specification/issues/70>
     ///
     /// Invariant: This is in the range 0..=7.
     bit_index: u8,
@@ -33,6 +34,21 @@ impl<'b> ReadCursor<'b> {
         ReadCursor {
             bytes,
             bit_index: 0,
+        }
+    }
+
+    /// If this cursor is aligned to a byte boundary, this function returns the slice of bytes
+    /// that remain to be read.
+    ///
+    /// Caution: This function bypasses the normal mechanism for keeping track of which bytes
+    /// have already been read. If you consume any of the returned bytes, you must call
+    /// [`advance_bytes()`](#method.advance_bytes) so that they will not be read again alter.
+    ///
+    pub fn as_bytes(&self) -> Option<&'b [u8]> {
+        if self.bit_index == 0 {
+            Some(self.bytes)
+        } else {
+            None
         }
     }
 
@@ -177,7 +193,11 @@ impl<'b> ReadCursor<'b> {
         self.advance_bytes(byte_increment);
     }
 
-    fn advance_bytes(&mut self, byte_increment: usize) {
+    /// Marks some bytes has having already been read
+    ///
+    /// This function should only be used with [`as_bytes()`](#method.as_bytes) when manually
+    /// handling bytes.
+    pub fn advance_bytes(&mut self, byte_increment: usize) {
         // Advance by the byte increment or number of bytes remaining, whichever is less
         // If the number of bytes remaining is smaller,
         // self.bytes will end up empty.
@@ -990,8 +1010,7 @@ mod test {
 
     #[test]
     fn u64_one() {
-        let bytes = [0x67u8, 0x45, 0x23, 0x01,
-                                0xD4, 0xC3, 0xB2, 0xA1];
+        let bytes = [0x67u8, 0x45, 0x23, 0x01, 0xD4, 0xC3, 0xB2, 0xA1];
         let mut cursor = ReadCursor::new(&bytes);
         assert_eq!(cursor.read_u64(), 0xA1B2C3D401234567);
     }
@@ -1012,8 +1031,7 @@ mod test {
 
     #[test]
     fn f64_one() {
-        let bytes = [0x67u8, 0x45, 0x23, 0x01,
-                                0xD4, 0xC3, 0xB2, 0xA1];
+        let bytes = [0x67u8, 0x45, 0x23, 0x01, 0xD4, 0xC3, 0xB2, 0xA1];
         let mut cursor = ReadCursor::new(&bytes);
         assert_eq!(cursor.read_f64(), f64::from_bits(0xA1B2C3D401234567));
     }

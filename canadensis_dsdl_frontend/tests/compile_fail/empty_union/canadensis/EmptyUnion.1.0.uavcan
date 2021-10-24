@@ -1,0 +1,4 @@
+@union
+# No fields (two are required)
+
+@sealed

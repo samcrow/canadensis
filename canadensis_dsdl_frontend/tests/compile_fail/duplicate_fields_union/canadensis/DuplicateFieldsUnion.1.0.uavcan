@@ -1,0 +1,6 @@
+@union
+
+int32 a
+float32 a
+
+@sealed
