@@ -31,6 +31,7 @@ use canadensis_data_types::uavcan::register::value_1_0::Value;
 use canadensis_linux::{LinuxCan, SystemClock};
 use std::collections::BTreeMap;
 use std::io::ErrorKind;
+use std::thread;
 
 /// Runs a UAVCAN node that connects to another node and gets information about its registers
 ///
@@ -49,7 +50,7 @@ use std::io::ErrorKind;
 /// ## Start the node
 ///
 /// ```
-/// register_client [SocketCAN interface name] [Local node ID] [Target node ID]
+/// register_client [SocketCAN interface name] [Local node ID] [Target node ID] [delay time after each message]
 /// ```
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);
@@ -68,6 +69,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .expect("Invalid node ID format"),
     )
     .expect("Node ID too large");
+    let delay_time_seconds: f32 = args.next().map(|s| s.parse().unwrap()).unwrap_or(0.0);
+    let delay_time = Duration::new(
+        delay_time_seconds.floor() as u64,
+        (delay_time_seconds.fract() * 1e9) as u32,
+    );
 
     let can = CANSocket::open(&can_interface).expect("Failed to open CAN interface");
     can.set_read_timeout(Duration::from_millis(5))?;
@@ -130,6 +136,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         all_registers_listed: false,
         done: false,
         timeout: std::time::Instant::now() + std::time::Duration::from_secs(20),
+        delay_time,
     };
 
     let start_time = std::time::Instant::now();
@@ -191,6 +198,8 @@ struct RegisterHandler {
     done: bool,
     /// The time when the read operation will time out
     timeout: std::time::Instant,
+    /// The time to wait after sending each outgoing transfer
+    delay_time: Duration,
 }
 
 impl TransferHandler<<SystemClock as Clock>::Instant, CanTransport> for RegisterHandler {
@@ -226,6 +235,8 @@ impl TransferHandler<<SystemClock as Clock>::Instant, CanTransport> for Register
                                         self.target_node_id.clone(),
                                     )
                                     .unwrap();
+                                node.flush().unwrap();
+                                thread::sleep(self.delay_time);
 
                                 self.registers.insert(
                                     register_name.to_owned(),
@@ -240,6 +251,9 @@ impl TransferHandler<<SystemClock as Clock>::Instant, CanTransport> for Register
                                     self.target_node_id,
                                 )
                                 .unwrap();
+                                node.flush().unwrap();
+                                thread::sleep(self.delay_time);
+
                                 self.next_register_index += 1;
                             }
                         }

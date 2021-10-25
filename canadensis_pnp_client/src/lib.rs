@@ -48,7 +48,6 @@ where
 {
     /// Creates a new plug-and-play client
     ///
-    /// * `mtu`: The maximum transmission unit size to use when sending frames
     /// * `unique_id`: The unique ID of this node
     pub fn new(
         transmitter: T,
