@@ -78,15 +78,10 @@ where
 
     fn handle_incoming_transfer<H>(
         &mut self,
-        transfer: Transfer<Vec<u8>, C::Instant, N>,
+        transfer: Transfer<Vec<u8>, C::Instant, U::Transport>,
         handler: &mut H,
     ) where
-        H: TransferHandler<
-            <Self as Node>::Instant,
-            N,
-            <Self as Node>::Transmitter,
-            <Self as Node>::Receiver,
-        >,
+        H: TransferHandler<<Self as Node>::Instant, U::Transport>,
     {
         match transfer.header {
             Header::Message(message_header) => {
@@ -157,7 +152,7 @@ where
 
     fn receive<H>(&mut self, handler: &mut H) -> Result<(), U::Error>
     where
-        H: TransferHandler<Self::Instant, Self::Transport, Self::Transmitter, Self::Receiver>,
+        H: TransferHandler<Self::Instant, Self::Transport>,
     {
         if let Some(transfer) = self.receiver.receive(self.clock.now(), &mut self.driver)? {
             self.handle_incoming_transfer(transfer, handler)
