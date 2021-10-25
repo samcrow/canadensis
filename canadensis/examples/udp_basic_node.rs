@@ -10,7 +10,7 @@ use std::{env, thread};
 
 use canadensis::core::time::Instant;
 use canadensis::core::transfer::{MessageTransfer, ServiceTransfer};
-use canadensis::core::transport::{Receiver, Transmitter, Transport};
+use canadensis::core::transport::Transport;
 use canadensis::node::{BasicNode, CoreNode};
 use canadensis::requester::TransferIdFixedMap;
 use canadensis::{Node, ResponseToken, TransferHandler};
@@ -117,16 +117,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 struct EmptyHandler;
 
-impl<I: Instant, T: Transport, TX: Transmitter<I>, RX: Receiver<I>> TransferHandler<I, T, TX, RX>
-    for EmptyHandler
-{
+impl<I: Instant, T: Transport> TransferHandler<I, T> for EmptyHandler {
     fn handle_message<N>(
         &mut self,
         _node: &mut N,
         transfer: &MessageTransfer<Vec<u8>, I, T>,
     ) -> bool
     where
-        N: Node<Instant = I, Transport = T, Transmitter = TX, Receiver = RX>,
+        N: Node<Instant = I, Transport = T>,
     {
         println!("Got message {:?}", transfer);
         false
@@ -139,7 +137,7 @@ impl<I: Instant, T: Transport, TX: Transmitter<I>, RX: Receiver<I>> TransferHand
         transfer: &ServiceTransfer<Vec<u8>, I, T>,
     ) -> bool
     where
-        N: Node<Instant = I, Transport = T, Transmitter = TX, Receiver = RX>,
+        N: Node<Instant = I, Transport = T>,
     {
         println!("Got request {:?}", transfer);
         false
@@ -151,7 +149,7 @@ impl<I: Instant, T: Transport, TX: Transmitter<I>, RX: Receiver<I>> TransferHand
         transfer: &ServiceTransfer<Vec<u8>, I, T>,
     ) -> bool
     where
-        N: Node<Instant = I, Transport = T, Transmitter = TX, Receiver = RX>,
+        N: Node<Instant = I, Transport = T>,
     {
         println!("Got response {:?}", transfer);
         false
