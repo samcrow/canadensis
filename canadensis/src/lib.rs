@@ -92,14 +92,20 @@ where
 }
 
 /// Something that may be able to handle incoming transfers
-pub trait TransferHandler<I: Instant, T: Transport> {
+///
+/// Type parameters:
+/// * `I`: The instant type used for timestamps
+/// * `T`: The transport type
+/// * `TX`: The node's transport-layer transmitter type
+/// * `RX`: The node's transport-layer receiver type
+pub trait TransferHandler<I: Instant, T: Transport, TX, RX> {
     /// Potentially handles an incoming message transfer
     ///
     /// This function returns true if the message was handled and should not be sent on to other
     /// handlers.
     ///
     /// The default implementation does nothing and returns false.
-    fn handle_message<N: Node<Instant = I, Transport = T>>(
+    fn handle_message<N: Node<Instant = I, Transport = T, Transmitter = TX, Receiver = RX>>(
         &mut self,
         node: &mut N,
         transfer: &MessageTransfer<Vec<u8>, I, T>,
@@ -114,7 +120,7 @@ pub trait TransferHandler<I: Instant, T: Transport> {
     /// handlers.
     ///
     /// The default implementation does nothing and returns false.
-    fn handle_request<N: Node<Instant = I, Transport = T>>(
+    fn handle_request<N: Node<Instant = I, Transport = T, Transmitter = TX, Receiver = RX>>(
         &mut self,
         node: &mut N,
         token: ResponseToken<T>,
@@ -130,7 +136,7 @@ pub trait TransferHandler<I: Instant, T: Transport> {
     /// handlers.
     ///
     /// The default implementation does nothing and returns false.
-    fn handle_response<N: Node<Instant = I, Transport = T>>(
+    fn handle_response<N: Node<Instant = I, Transport = T, Transmitter = TX, Receiver = RX>>(
         &mut self,
         node: &mut N,
         transfer: &ServiceTransfer<Vec<u8>, I, T>,
@@ -145,47 +151,47 @@ pub trait TransferHandler<I: Instant, T: Transport> {
     fn chain<H>(self, next: H) -> TransferHandlerChain<Self, H>
     where
         Self: Sized,
-        H: TransferHandler<I, T>,
+        H: TransferHandler<I, T, TX, RX>,
     {
         TransferHandlerChain::new(self, next)
     }
 }
 
-impl<'h, I, T, H> TransferHandler<I, T> for &'h mut H
+impl<'h, I, T, TX, RX, H> TransferHandler<I, T, TX, RX> for &'h mut H
 where
     I: Instant,
     T: Transport,
-    H: TransferHandler<I, T>,
+    H: TransferHandler<I, T, TX, RX>,
 {
-    fn handle_message<N: Node<Instant = I, Transport = T>>(
+    fn handle_message<N: Node<Instant = I, Transport = T, Transmitter = TX, Receiver = RX>>(
         &mut self,
         node: &mut N,
         transfer: &MessageTransfer<Vec<u8>, I, T>,
     ) -> bool {
-        <H as TransferHandler<I, T>>::handle_message(self, node, transfer)
+        <H as TransferHandler<I, T, TX, RX>>::handle_message(self, node, transfer)
     }
 
-    fn handle_request<N: Node<Instant = I, Transport = T>>(
+    fn handle_request<N: Node<Instant = I, Transport = T, Transmitter = TX, Receiver = RX>>(
         &mut self,
         node: &mut N,
         token: ResponseToken<T>,
         transfer: &ServiceTransfer<Vec<u8>, I, T>,
     ) -> bool {
-        <H as TransferHandler<I, T>>::handle_request(self, node, token, transfer)
+        <H as TransferHandler<I, T, TX, RX>>::handle_request(self, node, token, transfer)
     }
 
-    fn handle_response<N: Node<Instant = I, Transport = T>>(
+    fn handle_response<N: Node<Instant = I, Transport = T, Transmitter = TX, Receiver = RX>>(
         &mut self,
         node: &mut N,
         transfer: &ServiceTransfer<Vec<u8>, I, T>,
     ) -> bool {
-        <H as TransferHandler<I, T>>::handle_response(self, node, transfer)
+        <H as TransferHandler<I, T, TX, RX>>::handle_response(self, node, transfer)
     }
 
     fn chain<H1>(self, next: H1) -> TransferHandlerChain<Self, H1>
     where
         Self: Sized,
-        H1: TransferHandler<I, T>,
+        H1: TransferHandler<I, T, TX, RX>,
     {
         TransferHandlerChain::new(self, next)
     }
@@ -207,14 +213,14 @@ impl<H0, H1> TransferHandlerChain<H0, H1> {
     }
 }
 
-impl<I, T, H0, H1> TransferHandler<I, T> for TransferHandlerChain<H0, H1>
+impl<I, T, TX, RX, H0, H1> TransferHandler<I, T, TX, RX> for TransferHandlerChain<H0, H1>
 where
     I: Instant,
     T: Transport,
-    H0: TransferHandler<I, T>,
-    H1: TransferHandler<I, T>,
+    H0: TransferHandler<I, T, TX, RX>,
+    H1: TransferHandler<I, T, TX, RX>,
 {
-    fn handle_message<N: Node<Instant = I, Transport = T>>(
+    fn handle_message<N: Node<Instant = I, Transport = T, Transmitter = TX, Receiver = RX>>(
         &mut self,
         node: &mut N,
         transfer: &MessageTransfer<Vec<u8>, I, T>,
@@ -227,7 +233,7 @@ where
         }
     }
 
-    fn handle_request<N: Node<Instant = I, Transport = T>>(
+    fn handle_request<N: Node<Instant = I, Transport = T, Transmitter = TX, Receiver = RX>>(
         &mut self,
         node: &mut N,
         token: ResponseToken<T>,
@@ -241,7 +247,7 @@ where
         }
     }
 
-    fn handle_response<N: Node<Instant = I, Transport = T>>(
+    fn handle_response<N: Node<Instant = I, Transport = T, Transmitter = TX, Receiver = RX>>(
         &mut self,
         node: &mut N,
         transfer: &ServiceTransfer<Vec<u8>, I, T>,
@@ -283,7 +289,7 @@ pub trait Node {
         handler: &mut H,
     ) -> Result<(), <Self::Receiver as Receiver<Self::Instant>>::Error>
     where
-        H: TransferHandler<Self::Instant, Self::Transport>;
+        H: TransferHandler<Self::Instant, Self::Transport, Self::Transmitter, Self::Receiver>;
 
     /// Starts publishing messages on subject
     ///

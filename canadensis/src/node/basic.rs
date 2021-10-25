@@ -161,7 +161,7 @@ where
         handler: &mut H,
     ) -> Result<(), <N::Receiver as Receiver<N::Instant>>::Error>
     where
-        H: TransferHandler<Self::Instant, Self::Transport>,
+        H: TransferHandler<Self::Instant, Self::Transport, Self::Transmitter, Self::Receiver>,
     {
         let mut chained_handler = NodeInfoHandler {
             response: &self.node_info,
@@ -343,15 +343,17 @@ struct NodeInfoResponder<'r, 'h, H> {
     inner: &'h mut H,
 }
 
-impl<'r, 'h, I, H, T> TransferHandler<I, T> for NodeInfoResponder<'r, 'h, H>
+impl<'r, 'h, I, T, TX, RX, H> TransferHandler<I, T, TX, RX> for NodeInfoResponder<'r, 'h, H>
 where
     I: Instant,
-    H: TransferHandler<I, T>,
+    H: TransferHandler<I, T, TX, RX>,
     T: Transport,
+    TX: Transmitter<I>,
+    RX: Receiver<I>,
 {
     fn handle_message<N>(&mut self, node: &mut N, transfer: &MessageTransfer<Vec<u8>, I, T>) -> bool
     where
-        N: Node<Instant = I, Transport = T>,
+        N: Node<Instant = I, Transport = T, Transmitter = TX, Receiver = RX>,
     {
         // Forward to inner handler
         self.inner.handle_message(node, transfer)
@@ -364,7 +366,7 @@ where
         transfer: &ServiceTransfer<Vec<u8>, I, T>,
     ) -> bool
     where
-        N: Node<Instant = I, Transport = T>,
+        N: Node<Instant = I, Transport = T, Transmitter = TX, Receiver = RX>,
     {
         if transfer.header.service == get_info_1_0::SERVICE {
             // Ignore out-of-memory errors
@@ -383,7 +385,7 @@ where
         transfer: &ServiceTransfer<Vec<u8>, I, T>,
     ) -> bool
     where
-        N: Node<Instant = I, Transport = T>,
+        N: Node<Instant = I, Transport = T, Transmitter = TX, Receiver = RX>,
     {
         // Forward to inner handler
         self.inner.handle_response(node, transfer)
@@ -447,12 +449,14 @@ struct NodeInfoHandler<'r> {
     response: &'r GetInfoResponse,
 }
 
-impl<'r, I, T> TransferHandler<I, T> for NodeInfoHandler<'r>
+impl<'r, I, T, TX, RX> TransferHandler<I, T, TX, RX> for NodeInfoHandler<'r>
 where
     I: Instant,
     T: Transport,
+    TX: Transmitter<I>,
+    RX: Receiver<I>,
 {
-    fn handle_request<N: Node<Instant = I, Transport = T>>(
+    fn handle_request<N: Node<Instant = I, Transport = T, Transmitter = TX, Receiver = RX>>(
         &mut self,
         node: &mut N,
         token: ResponseToken<T>,

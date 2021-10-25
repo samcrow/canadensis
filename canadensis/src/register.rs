@@ -9,7 +9,7 @@ use core::str;
 use crate::{Node, ResponseToken, TransferHandler};
 use canadensis_core::time::{milliseconds, Instant};
 use canadensis_core::transfer::ServiceTransfer;
-use canadensis_core::transport::{Receiver, Transport};
+use canadensis_core::transport::{Receiver, Transmitter, Transport};
 use canadensis_data_types::uavcan::register::access_1_0::{self, AccessRequest, AccessResponse};
 use canadensis_data_types::uavcan::register::list_1_0::{self, ListRequest, ListResponse};
 use canadensis_data_types::uavcan::register::name_1_0::Name;
@@ -244,13 +244,15 @@ fn register_handle_access(register: &mut dyn Register, request: &AccessRequest) 
     }
 }
 
-impl<I, B, T> TransferHandler<I, T> for RegisterHandler<B>
+impl<I, B, T, TX, RX> TransferHandler<I, T, TX, RX> for RegisterHandler<B>
 where
     I: Instant,
     B: RegisterBlock,
     T: Transport,
+    TX: Transmitter<I>,
+    RX: Receiver<I>,
 {
-    fn handle_request<N: Node<Instant = I, Transport = T>>(
+    fn handle_request<N: Node<Instant = I, Transport = T, Transmitter = TX, Receiver = RX>>(
         &mut self,
         node: &mut N,
         token: ResponseToken<T>,
