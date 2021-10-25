@@ -205,6 +205,28 @@ impl<H0, H1> TransferHandlerChain<H0, H1> {
     pub fn new(handler0: H0, handler1: H1) -> Self {
         TransferHandlerChain { handler0, handler1 }
     }
+
+    /// Returns a reference to the first handler in this chain
+    pub fn first(&self) -> &H0 {
+        &self.handler0
+    }
+    /// Returns a mutable reference to the first handler in this chain
+    pub fn first_mut(&mut self) -> &mut H0 {
+        &mut self.handler0
+    }
+    /// Returns a reference to the second handler in this chain
+    pub fn second(&self) -> &H1 {
+        &self.handler1
+    }
+    /// Returns a mutable reference to the second handler in this chain
+    pub fn second_mut(&mut self) -> &mut H1 {
+        &mut self.handler1
+    }
+
+    /// Splits this chain into its inner handlers
+    pub fn into_inner(self) -> (H0, H1) {
+        (self.handler0, self.handler1)
+    }
 }
 
 impl<I, T, H0, H1> TransferHandler<I, T> for TransferHandlerChain<H0, H1>
