@@ -1,3 +1,34 @@
+//! Runs a basic UAVCAN node that sends Heartbeat messages, responds to node information requests,
+//! and sends port list messages
+//!
+//! Usage: `basic_node [SocketCAN interface name] [Node ID]`
+//!
+//! # Testing
+//!
+//! ## Create a virtual CAN device
+//!
+//! ```
+//! sudo modprobe vcan
+//! sudo ip link add dev vcan0 type vcan
+//! sudo ip link set up vcan0
+//! ```
+//!
+//! ## Start the node
+//!
+//! ```
+//! basic_node vcan0 [node ID]
+//! ```
+//!
+//! ## Interact with the node using Yakut
+//!
+//! To subscribe and print out Heartbeat messages:
+//! `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" subscribe uavcan.node.Heartbeat.1.0`
+//!
+//! To send a NodeInfo request:
+//! `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" call [Node ID of basic_node] uavcan.node.GetInfo.1.0 {}`
+//!
+//! In the above two commands, 8 is the MTU of standard CAN and 42 is the node ID of the Yakut node.
+
 extern crate canadensis;
 extern crate canadensis_can;
 extern crate canadensis_linux;
@@ -14,7 +45,7 @@ use socketcan::CANSocket;
 
 use canadensis::core::time::{Instant, Microseconds64};
 use canadensis::core::transfer::{MessageTransfer, ServiceTransfer};
-use canadensis::core::transport::Transport;
+use canadensis::core::transport::{Receiver, Transmitter, Transport};
 use canadensis::node::{BasicNode, CoreNode};
 use canadensis::requester::TransferIdFixedMap;
 use canadensis::{Node, ResponseToken, TransferHandler};
@@ -25,36 +56,6 @@ use canadensis_data_types::uavcan::node::get_info_1_0::GetInfoResponse;
 use canadensis_data_types::uavcan::node::version_1_0::Version;
 use canadensis_linux::{LinuxCan, SystemClock};
 
-/// Runs a basic UAVCAN node that sends Heartbeat messages, responds to node information requests,
-/// and sends port list messages
-///
-/// Usage: `basic_node [SocketCAN interface name] [Node ID]`
-///
-/// # Testing
-///
-/// ## Create a virtual CAN device
-///
-/// ```
-/// sudo modprobe vcan
-/// sudo ip link add dev vcan0 type vcan
-/// sudo ip link set up vcan0
-/// ```
-///
-/// ## Start the node
-///
-/// ```
-/// basic_node vcan0 [node ID]
-/// ```
-///
-/// ## Interact with the node using Yakut
-///
-/// To subscribe and print out Heartbeat messages:
-/// `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" subscribe uavcan.node.Heartbeat.1.0`
-///
-/// To send a NodeInfo request:
-/// `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" call [Node ID of basic_node] uavcan.node.GetInfo.1.0 {}`
-///
-/// In the above two commands, 8 is the MTU of standard CAN and 42 is the node ID of the Yakut node.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     simplelog::TermLogger::init(
         simplelog::LevelFilter::Warn,
@@ -147,14 +148,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 struct EmptyHandler;
 
-impl<I: Instant, T: Transport> TransferHandler<I, T> for EmptyHandler {
+impl<I: Instant, T: Transport, TX: Transmitter<I>, RX: Receiver<I>> TransferHandler<I, T, TX, RX>
+    for EmptyHandler
+{
     fn handle_message<N>(
         &mut self,
         _node: &mut N,
         transfer: &MessageTransfer<Vec<u8>, I, T>,
     ) -> bool
     where
-        N: Node<Instant = I, Transport = T>,
+        N: Node<Instant = I, Transport = T, Transmitter = TX, Receiver = RX>,
     {
         println!("Got message {:?}", transfer);
         false
@@ -167,7 +170,7 @@ impl<I: Instant, T: Transport> TransferHandler<I, T> for EmptyHandler {
         transfer: &ServiceTransfer<Vec<u8>, I, T>,
     ) -> bool
     where
-        N: Node<Instant = I, Transport = T>,
+        N: Node<Instant = I, Transport = T, Transmitter = TX, Receiver = RX>,
     {
         println!("Got request {:?}", transfer);
         false
@@ -179,7 +182,7 @@ impl<I: Instant, T: Transport> TransferHandler<I, T> for EmptyHandler {
         transfer: &ServiceTransfer<Vec<u8>, I, T>,
     ) -> bool
     where
-        N: Node<Instant = I, Transport = T>,
+        N: Node<Instant = I, Transport = T, Transmitter = TX, Receiver = RX>,
     {
         println!("Got response {:?}", transfer);
         false

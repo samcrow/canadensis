@@ -1,3 +1,23 @@
+//! Runs a UAVCAN node that connects to another node and gets information about its registers
+//!
+//! Usage: `register_client [SocketCAN interface name] [Local node ID] [Target node ID]`
+//!
+//! # Testing
+//!
+//! ## Create a virtual CAN device
+//!
+//! ```
+//! sudo modprobe vcan
+//! sudo ip link add dev vcan0 type vcan
+//! sudo ip link set up vcan0
+//! ```
+//!
+//! ## Start the node
+//!
+//! ```
+//! register_client [SocketCAN interface name] [Local node ID] [Target node ID]
+//! ```
+
 extern crate canadensis;
 extern crate canadensis_data_types;
 extern crate canadensis_linux;
@@ -32,25 +52,10 @@ use canadensis_linux::{LinuxCan, SystemClock};
 use std::collections::BTreeMap;
 use std::io::ErrorKind;
 
-/// Runs a UAVCAN node that connects to another node and gets information about its registers
-///
-/// Usage: `register_client [SocketCAN interface name] [Local node ID] [Target node ID]`
-///
-/// # Testing
-///
-/// ## Create a virtual CAN device
-///
-/// ```
-/// sudo modprobe vcan
-/// sudo ip link add dev vcan0 type vcan
-/// sudo ip link set up vcan0
-/// ```
-///
-/// ## Start the node
-///
-/// ```
-/// register_client [SocketCAN interface name] [Local node ID] [Target node ID]
-/// ```
+type Queue = SingleQueueDriver<ArrayQueue<Microseconds64, 64>, LinuxCan>;
+type Transmitter = CanTransmitter<Microseconds64, Queue>;
+type Receiver = CanReceiver<Microseconds64, Queue>;
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);
     let can_interface = args.next().expect("Expected CAN interface name");
@@ -87,7 +92,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // Create a node with capacity for 2 publishers and 2 requesters
-    type Queue = SingleQueueDriver<ArrayQueue<Microseconds64, 64>, LinuxCan>;
     const TRANSFER_IDS: usize = 1;
     const PUBLISHERS: usize = 2;
     const REQUESTERS: usize = 2;
@@ -97,8 +101,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let receiver = CanReceiver::new(node_id, Mtu::Can8);
     let core_node: CoreNode<
         SystemClock,
-        CanTransmitter<Microseconds64, Queue>,
-        CanReceiver<Microseconds64, Queue>,
+        Transmitter,
+        Receiver,
         TransferIdFixedMap<CanTransport, TRANSFER_IDS>,
         Queue,
         PUBLISHERS,
@@ -193,7 +197,9 @@ struct RegisterHandler {
     timeout: std::time::Instant,
 }
 
-impl TransferHandler<<SystemClock as Clock>::Instant, CanTransport> for RegisterHandler {
+impl TransferHandler<<SystemClock as Clock>::Instant, CanTransport, Transmitter, Receiver>
+    for RegisterHandler
+{
     fn handle_response<N>(
         &mut self,
         node: &mut N,

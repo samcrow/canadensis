@@ -1,3 +1,46 @@
+//! Runs a UAVCAN node that sends Heartbeat messages, responds to node information requests,
+//! sends port list messages, and allows access to some registers
+//!
+//! Usage: `registers [SocketCAN interface name] [Node ID]`
+//!
+//! # Testing
+//!
+//! ## Create a virtual CAN device
+//!
+//! ```
+//! sudo modprobe vcan
+//! sudo ip link add dev vcan0 type vcan
+//! sudo ip link set up vcan0
+//! ```
+//!
+//! ## Start the node
+//!
+//! ```
+//! registers vcan0 [node ID]
+//! ```
+//!
+//! ## Interact with the node using Yakut
+//!
+//! To subscribe and print out Heartbeat messages:
+//! `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" subscribe uavcan.node.Heartbeat.1.0`
+//!
+//! To send a NodeInfo request:
+//! `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" call [Node ID of registers node] uavcan.node.GetInfo.1.0 {}`
+//!
+//! To get the name of register 0:
+//! `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" call [Node ID of registers node] uavcan.register.List.1.0 "{ index: 0 }"`
+//!
+//! To read the node ID register:
+//! `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" call [Node ID of registers node] uavcan.register.Access.1.0 "{ name: { name: \"uavcan.node.id\" } }"`
+//!
+//! To write the node ID register:
+//! `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" call [Node ID of registers node] uavcan.register.Access.1.0 "{ name: { name: \"uavcan.node.id\" }, value: { natural16: { value: [value to write] }  }  }"`
+//!
+//! To write a 256-character-long node description:
+//! `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" call [Node ID of registers node] uavcan.register.Access.1.0 "{ name: { name: \"uavcan.node.description\" }, value: { string: { value: \"We're no strangers to love\nYou know the rules and so do I\nA full commitment's what I'm thinking of\nYou wouldn't get this from any other guy\nI just wanna tell you how I'm feeling\nGotta make you understand\nNever gonna give you up\nNever gonna let you down\nNev\" }  }  }"`
+//!
+//! In the above two commands, 8 is the MTU of standard CAN and 42 is the node ID of the Yakut node.
+
 extern crate canadensis;
 extern crate canadensis_linux;
 extern crate rand;
@@ -24,48 +67,13 @@ use canadensis_data_types::uavcan::node::version_1_0::Version;
 use canadensis_linux::{LinuxCan, SystemClock};
 use std::io::ErrorKind;
 
-/// Runs a UAVCAN node that sends Heartbeat messages, responds to node information requests,
-/// sends port list messages, and allows access to some registers
-///
-/// Usage: `registers [SocketCAN interface name] [Node ID]`
-///
-/// # Testing
-///
-/// ## Create a virtual CAN device
-///
-/// ```
-/// sudo modprobe vcan
-/// sudo ip link add dev vcan0 type vcan
-/// sudo ip link set up vcan0
-/// ```
-///
-/// ## Start the node
-///
-/// ```
-/// registers vcan0 [node ID]
-/// ```
-///
-/// ## Interact with the node using Yakut
-///
-/// To subscribe and print out Heartbeat messages:
-/// `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" subscribe uavcan.node.Heartbeat.1.0`
-///
-/// To send a NodeInfo request:
-/// `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" call [Node ID of registers node] uavcan.node.GetInfo.1.0 {}`
-///
-/// To get the name of register 0:
-/// `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" call [Node ID of registers node] uavcan.register.List.1.0 "{ index: 0 }"`
-///
-/// To read the node ID register:
-/// `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" call [Node ID of registers node] uavcan.register.Access.1.0 "{ name: { name: \"uavcan.node.id\" } }"`
-///
-/// To write the node ID register:
-/// `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" call [Node ID of registers node] uavcan.register.Access.1.0 "{ name: { name: \"uavcan.node.id\" }, value: { natural16: { value: [value to write] }  }  }"`
-///
-/// To write a 256-character-long node description:
-/// `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" call [Node ID of registers node] uavcan.register.Access.1.0 "{ name: { name: \"uavcan.node.description\" }, value: { string: { value: \"We're no strangers to love\nYou know the rules and so do I\nA full commitment's what I'm thinking of\nYou wouldn't get this from any other guy\nI just wanna tell you how I'm feeling\nGotta make you understand\nNever gonna give you up\nNever gonna let you down\nNev\" }  }  }"`
-///
-/// In the above two commands, 8 is the MTU of standard CAN and 42 is the node ID of the Yakut node.
+type Queue = SingleQueueDriver<ArrayQueue<Microseconds64, 64>, LinuxCan>;
+const TRANSFER_IDS: usize = 1;
+const PUBLISHERS: usize = 2;
+const REQUESTERS: usize = 2;
+type Transmitter = CanTransmitter<Microseconds64, Queue>;
+type Receiver = CanReceiver<Microseconds64, Queue>;
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);
     let can_interface = args.next().expect("Expected CAN interface name");
@@ -95,18 +103,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // Create a node with capacity for 82 publishers and 2 requesters
-    type Queue = SingleQueueDriver<ArrayQueue<Microseconds64, 64>, LinuxCan>;
-    const TRANSFER_IDS: usize = 1;
-    const PUBLISHERS: usize = 2;
-    const REQUESTERS: usize = 2;
 
     let queue = Queue::new(ArrayQueue::new(), can);
     let transmitter = CanTransmitter::new(Mtu::Can8);
     let receiver = CanReceiver::new(node_id, Mtu::Can8);
     let core_node: CoreNode<
         SystemClock,
-        CanTransmitter<Microseconds64, Queue>,
-        CanReceiver<Microseconds64, Queue>,
+        Transmitter,
+        Receiver,
         TransferIdFixedMap<CanTransport, TRANSFER_IDS>,
         Queue,
         PUBLISHERS,
@@ -152,7 +156,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 struct EmptyHandler;
 
-impl TransferHandler<<SystemClock as Clock>::Instant, CanTransport> for EmptyHandler {
+impl TransferHandler<Microseconds64, CanTransport, Transmitter, Receiver> for EmptyHandler {
     fn handle_message<N>(
         &mut self,
         _node: &mut N,

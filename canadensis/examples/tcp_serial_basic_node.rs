@@ -1,3 +1,32 @@
+//! Runs a basic UAVCAN node that sends Heartbeat messages, responds to node information requests,
+//! and sends port list messages
+//!
+//! This node connects to a TCP server and uses the serial transport.
+//!
+//! Usage: `tcp_serial_basic_node [address:port] [Node ID]`
+//!
+//! # Testing
+//!
+//! ## Start a server
+//!
+//! ```
+//! ncat --broker -l -p [port]
+//! ```
+//!
+//! ## Start the node
+//!
+//! ```
+//! tcp_serial_basic_node 127.0.0.1:[port] [Node ID]
+//! ```
+//!
+//! ## Interact with the node using Yakut
+//!
+//! ```
+//! yakut --transport "SerialTransport('socket://127.0.0.1:[port]', local_node_id=128)" monitor
+//! ```
+//!
+//! In the above two commands, 8 is the MTU of standard CAN and 42 is the node ID of the Yakut node.
+
 extern crate canadensis;
 extern crate canadensis_serial;
 extern crate rand;
@@ -9,7 +38,7 @@ use std::{env, io};
 
 use canadensis::core::time::Instant;
 use canadensis::core::transfer::{MessageTransfer, ServiceTransfer};
-use canadensis::core::transport::Transport;
+use canadensis::core::transport::{Receiver, Transmitter, Transport};
 use canadensis::node::{BasicNode, CoreNode};
 use canadensis::requester::TransferIdFixedMap;
 use canadensis::{Node, ResponseToken, TransferHandler};
@@ -26,34 +55,6 @@ use canadensis_serial::{
 use std::io::{ErrorKind, Read, Write};
 use std::net::TcpStream;
 
-/// Runs a basic UAVCAN node that sends Heartbeat messages, responds to node information requests,
-/// and sends port list messages
-///
-/// This node connects to a TCP server and uses the serial transport.
-///
-/// Usage: `tcp_serial_basic_node [address:port] [Node ID]`
-///
-/// # Testing
-///
-/// ## Start a server
-///
-/// ```
-/// ncat --broker -l -p [port]
-/// ```
-///
-/// ## Start the node
-///
-/// ```
-/// tcp_serial_basic_node 127.0.0.1:[port] [Node ID]
-/// ```
-///
-/// ## Interact with the node using Yakut
-///
-/// ```
-/// yakut --transport "SerialTransport('socket://127.0.0.1:[port]', local_node_id=128)" monitor
-/// ```
-///
-/// In the above two commands, 8 is the MTU of standard CAN and 42 is the node ID of the Yakut node.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);
     let server_address = args.next().expect("Expected server address and port");
@@ -127,14 +128,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 struct EmptyHandler;
 
-impl<I: Instant, T: Transport> TransferHandler<I, T> for EmptyHandler {
+impl<I: Instant, T: Transport, TX: Transmitter<I>, RX: Receiver<I>> TransferHandler<I, T, TX, RX>
+    for EmptyHandler
+{
     fn handle_message<N>(
         &mut self,
         _node: &mut N,
         transfer: &MessageTransfer<Vec<u8>, I, T>,
     ) -> bool
     where
-        N: Node<Instant = I, Transport = T>,
+        N: Node<Instant = I, Transport = T, Transmitter = TX, Receiver = RX>,
     {
         println!("Got message {:?}", transfer);
         false
@@ -147,7 +150,7 @@ impl<I: Instant, T: Transport> TransferHandler<I, T> for EmptyHandler {
         transfer: &ServiceTransfer<Vec<u8>, I, T>,
     ) -> bool
     where
-        N: Node<Instant = I, Transport = T>,
+        N: Node<Instant = I, Transport = T, Transmitter = TX, Receiver = RX>,
     {
         println!("Got request {:?}", transfer);
         false
@@ -159,7 +162,7 @@ impl<I: Instant, T: Transport> TransferHandler<I, T> for EmptyHandler {
         transfer: &ServiceTransfer<Vec<u8>, I, T>,
     ) -> bool
     where
-        N: Node<Instant = I, Transport = T>,
+        N: Node<Instant = I, Transport = T, Transmitter = TX, Receiver = RX>,
     {
         println!("Got response {:?}", transfer);
         false
