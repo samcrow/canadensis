@@ -127,6 +127,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     .unwrap();
     node.flush().unwrap();
 
+    let timeout_duration = std::time::Duration::from_secs(1);
+
     let mut handler = RegisterHandler {
         target_node_id,
         next_register_index: 1,
@@ -135,7 +137,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         access_token,
         all_registers_listed: false,
         done: false,
-        timeout: std::time::Instant::now() + std::time::Duration::from_secs(20),
+        timeout: std::time::Instant::now() + timeout_duration,
+        timeout_duration,
         delay_time,
     };
 
@@ -198,6 +201,8 @@ struct RegisterHandler {
     done: bool,
     /// The time when the read operation will time out
     timeout: std::time::Instant,
+    /// The timeout interval (used to update `timeout` after each successful receive)
+    timeout_duration: Duration,
     /// The time to wait after sending each outgoing transfer
     delay_time: Duration,
 }
@@ -211,6 +216,7 @@ impl TransferHandler<<SystemClock as Clock>::Instant, CanTransport> for Register
     where
         N: Node<Instant = <SystemClock as Clock>::Instant, Transport = CanTransport>,
     {
+        self.timeout = std::time::Instant::now() + self.timeout_duration;
         match transfer.header.service {
             list_1_0::SERVICE => {
                 if let Ok(list_response) = ListResponse::deserialize_from_bytes(&transfer.payload) {
