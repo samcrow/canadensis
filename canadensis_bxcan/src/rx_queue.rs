@@ -48,6 +48,15 @@ impl<I: Default + Clone, C: Instance, const N: usize> BxCanQueuedDriver<I, C, N>
             core_frequency,
         }
     }
+
+    /// Returns a reference to the driver
+    pub fn driver(&self) -> &BxCanDriver<I, C> {
+        &self.driver
+    }
+    /// Returns a mutable reference to the driver
+    pub fn driver_mut(&mut self) -> &mut BxCanDriver<I, C> {
+        &mut self.driver
+    }
 }
 
 impl<I: Instant + Default + Clone, C: Instance, const N: usize> TransmitDriver<I>
