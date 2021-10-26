@@ -15,11 +15,16 @@ extern crate canadensis;
 extern crate canadensis_can;
 extern crate canadensis_filter_config;
 extern crate canadensis_pnp_client;
+extern crate cortex_m;
 extern crate fallible_collections;
+extern crate heapless;
 extern crate log;
 extern crate nb;
 
 pub mod pnp;
+pub mod rx_queue;
+
+pub use self::rx_queue::BxCanQueuedDriver;
 
 use bxcan::filter::{BankConfig, Mask32};
 use bxcan::{Can, ExtendedId, FilterOwner, Instance, Mailbox};

@@ -16,6 +16,8 @@ bxcan = "0.6.0"
 nb = "1.0.0"
 log = "0.4"
 fallible_collections = "0.4.3"
+heapless = "0.7"
+cortex-m = "0.7.3"
 
 [dependencies.canadensis]
 version = "0.2.0"
