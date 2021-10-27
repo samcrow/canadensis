@@ -248,7 +248,7 @@ impl<S> Default for DynamicSubscriptionManager<S> {
 }
 
 /// Information about something that a receiver/node is subscribed to
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Subscription {
     /// A message subscription, for messages with the specified subject ID
     Message(SubjectId),
