@@ -1,9 +1,11 @@
 //! Queues of outgoing CAN frames
 
 mod array_queue;
+mod queue_only_driver;
 mod single_frame_queue;
 
 pub use self::array_queue::ArrayQueue;
+pub use self::queue_only_driver::QueueOnlyDriver;
 pub use self::single_frame_queue::SingleFrameQueue;
 use core::cmp::Ordering;
 

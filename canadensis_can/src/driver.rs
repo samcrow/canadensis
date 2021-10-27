@@ -14,8 +14,6 @@ use fallible_collections::FallibleVec;
 /// This may be a basic driver that can only send a few frames at a time, or it may have an
 /// additional in-memory queue of outgoing frames.
 ///
-/// This is similar to [the embedded-can `Can` trait](embedded_can::Can), but for transmitting only.
-///
 /// The result type is `nb::Result`, which allows the driver to indicate that it cannot send a
 /// frame.
 pub trait TransmitDriver<I> {
@@ -39,8 +37,6 @@ pub trait TransmitDriver<I> {
 }
 
 /// A CAN driver that can receive frames
-///
-/// This is similar to [the embedded-can `Can` trait](embedded_can::Can), but for receiving only.
 ///
 /// The result type is `nb::Result`, which allows the driver to indicate that no frame is available
 /// to receive.
