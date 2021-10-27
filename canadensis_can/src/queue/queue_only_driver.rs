@@ -36,7 +36,7 @@ use heapless::Deque;
 pub struct QueueOnlyDriver<I, const TC: usize, const RC: usize> {
     tx_queue: ArrayQueue<I, TC>,
     rx_queue: Deque<Frame<I>, RC>,
-    subscriptions: Vec<Subscription>,
+    subscriptions: Option<Vec<Subscription>>,
 }
 
 impl<I: Default + Clone, const TC: usize, const RC: usize> QueueOnlyDriver<I, TC, RC> {
@@ -45,7 +45,7 @@ impl<I: Default + Clone, const TC: usize, const RC: usize> QueueOnlyDriver<I, TC
         QueueOnlyDriver {
             tx_queue: ArrayQueue::new(),
             rx_queue: Deque::new(),
-            subscriptions: Vec::new(),
+            subscriptions: None,
         }
     }
 
@@ -71,11 +71,11 @@ impl<I: Default + Clone, const TC: usize, const RC: usize> QueueOnlyDriver<I, TC
 
     /// Returns the subscriptions provided in the last call to `apply_filters()`
     ///
-    /// This function returns an empty slice
+    /// This function returns None
     /// if `empty_filters()` has not been called, was called with no subscriptions, or was called
     /// but an out-of-memory error occurred while collecting the subscriptions
-    pub fn subscriptions(&self) -> &[Subscription] {
-        &self.subscriptions
+    pub fn subscriptions(&self) -> Option<&[Subscription]> {
+        self.subscriptions.as_deref()
     }
 }
 
@@ -110,17 +110,31 @@ impl<I: Default + Clone, const TC: usize, const RC: usize> ReceiveDriver<I>
         self.rx_queue.pop_front().ok_or(nb::Error::WouldBlock)
     }
 
-    fn apply_filters<S>(&mut self, _local_node: Option<CanNodeId>, subscriptions: S)
+    fn apply_filters<S>(&mut self, _local_node: Option<CanNodeId>, new_subscriptions: S)
     where
         S: IntoIterator<Item = Subscription>,
     {
-        self.subscriptions.clear();
-        for subscription in subscriptions {
-            if let Err(_) = FallibleVec::try_push(&mut self.subscriptions, subscription) {
-                // No memory. Clear subscriptions again and leave empty.
-                self.subscriptions.clear();
-                self.subscriptions.shrink_to_fit();
-                break;
+        match self.subscriptions.as_mut() {
+            Some(subscriptions) => {
+                subscriptions.clear();
+                for subscription in new_subscriptions {
+                    if let Err(_) = FallibleVec::try_push(subscriptions, subscription) {
+                        // No memory. Remove subscriptions.
+                        self.subscriptions = None;
+                        break;
+                    }
+                }
+            }
+            None => {
+                let mut subscriptions = Vec::new();
+                for subscription in new_subscriptions {
+                    if let Err(_) = FallibleVec::try_push(&mut subscriptions, subscription) {
+                        // No memory. Remove subscriptions.
+                        self.subscriptions = None;
+                        break;
+                    }
+                }
+                self.subscriptions = Some(subscriptions);
             }
         }
     }

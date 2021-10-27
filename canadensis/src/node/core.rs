@@ -76,6 +76,15 @@ where
         }
     }
 
+    /// Returns a reference to the enclosed driver
+    pub fn driver(&self) -> &D {
+        &self.driver
+    }
+    /// Returns a mutable reference to the enclosed driver
+    pub fn driver_mut(&mut self) -> &mut D {
+        &mut self.driver
+    }
+
     fn handle_incoming_transfer<H>(
         &mut self,
         transfer: Transfer<Vec<u8>, C::Instant, U::Transport>,

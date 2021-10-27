@@ -144,6 +144,15 @@ where
     pub fn set_status_code(&mut self, status: u8) {
         self.node.set_status_code(status);
     }
+
+    /// Returns a reference to the enclosed node
+    pub fn node(&self) -> &N {
+        self.node.node()
+    }
+    /// Returns a mutable reference to the enclosed node
+    pub fn node_mut(&mut self) -> &mut N {
+        self.node.node_mut()
+    }
 }
 
 impl<N> Node for BasicNode<N>
