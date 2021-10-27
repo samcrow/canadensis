@@ -445,4 +445,8 @@ impl<I> ReceiveDriver<I> for StubDriver<I> {
     {
         // Nothing to do
     }
+
+    fn apply_accept_all(&mut self) {
+        // Nothing to do
+    }
 }
