@@ -22,9 +22,6 @@ extern crate log;
 extern crate nb;
 
 pub mod pnp;
-pub mod rx_queue;
-
-pub use self::rx_queue::BxCanQueuedDriver;
 
 use bxcan::filter::{BankConfig, Mask32};
 use bxcan::{Can, ExtendedId, FilterOwner, Instance, Mailbox};
@@ -186,6 +183,13 @@ where
             // Not enough memory to apply the ideal filters. Just accept all frames.
             filters.clear().enable_bank(0, Mask32::accept_all());
         }
+    }
+
+    fn apply_accept_all(&mut self) {
+        self.can
+            .modify_filters()
+            .clear()
+            .enable_bank(0, Mask32::accept_all());
     }
 }
 

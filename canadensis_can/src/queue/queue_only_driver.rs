@@ -138,4 +138,8 @@ impl<I: Default + Clone, const TC: usize, const RC: usize> ReceiveDriver<I>
             }
         }
     }
+
+    fn apply_accept_all(&mut self) {
+        self.subscriptions = None;
+    }
 }

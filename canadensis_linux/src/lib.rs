@@ -108,6 +108,10 @@ impl ReceiveDriver<Microseconds64> for LinuxCan {
         })
         .unwrap()
     }
+
+    fn apply_accept_all(&mut self) {
+        self.socket.filter_accept_all().unwrap();
+    }
 }
 
 /// A clock that uses the operating system's clock

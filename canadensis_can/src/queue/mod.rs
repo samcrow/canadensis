@@ -119,6 +119,10 @@ where
     {
         self.driver.apply_filters(local_node, subscriptions)
     }
+
+    fn apply_accept_all(&mut self) {
+        self.driver.apply_accept_all();
+    }
 }
 
 /// Flushes from one queue to one driver

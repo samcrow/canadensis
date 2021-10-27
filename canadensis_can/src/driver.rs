@@ -63,6 +63,8 @@ pub trait ReceiveDriver<I> {
     fn apply_filters<S>(&mut self, local_node: Option<CanNodeId>, subscriptions: S)
     where
         S: IntoIterator<Item = Subscription>;
+    /// Sets up frame reception filters to accept all incoming frames
+    fn apply_accept_all(&mut self);
 }
 
 /// Creates a set of filters from the provided subscription, optimizes them to reduce the number
