@@ -1,3 +1,23 @@
+//! Runs a UAVCAN node that connects to another node and gets information about its registers
+//!
+//! Usage: `register_client [SocketCAN interface name] [Local node ID] [Target node ID]`
+//!
+//! # Testing
+//!
+//! ## Create a virtual CAN device
+//!
+//! ```
+//! sudo modprobe vcan
+//! sudo ip link add dev vcan0 type vcan
+//! sudo ip link set up vcan0
+//! ```
+//!
+//! ## Start the node
+//!
+//! ```
+//! register_client [SocketCAN interface name] [Local node ID] [Target node ID] [delay time after each message]
+//! ```
+
 extern crate canadensis;
 extern crate canadensis_data_types;
 extern crate canadensis_linux;
@@ -19,8 +39,9 @@ use canadensis::node::{BasicNode, CoreNode};
 use canadensis::requester::TransferIdFixedMap;
 use canadensis::{Node, ServiceToken, TransferHandler};
 use canadensis_can::queue::{ArrayQueue, SingleQueueDriver};
-use canadensis_can::types::{CanNodeId, CanTransferId, CanTransport, Error};
-use canadensis_can::{CanReceiver, CanTransmitter, Mtu};
+use canadensis_can::{
+    CanNodeId, CanReceiver, CanTransferId, CanTransmitter, CanTransport, Error, Mtu,
+};
 use canadensis_data_types::uavcan::node::get_info_1_0::GetInfoResponse;
 use canadensis_data_types::uavcan::node::version_1_0::Version;
 use canadensis_data_types::uavcan::primitive::empty_1_0::Empty;
@@ -33,25 +54,6 @@ use std::collections::BTreeMap;
 use std::io::ErrorKind;
 use std::thread;
 
-/// Runs a UAVCAN node that connects to another node and gets information about its registers
-///
-/// Usage: `register_client [SocketCAN interface name] [Local node ID] [Target node ID]`
-///
-/// # Testing
-///
-/// ## Create a virtual CAN device
-///
-/// ```
-/// sudo modprobe vcan
-/// sudo ip link add dev vcan0 type vcan
-/// sudo ip link set up vcan0
-/// ```
-///
-/// ## Start the node
-///
-/// ```
-/// register_client [SocketCAN interface name] [Local node ID] [Target node ID] [delay time after each message]
-/// ```
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);
     let can_interface = args.next().expect("Expected CAN interface name");

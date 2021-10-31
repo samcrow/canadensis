@@ -9,8 +9,7 @@ use core::convert::{TryFrom, TryInto};
 use std::collections::VecDeque;
 
 use canadensis_can::driver::ReceiveDriver;
-use canadensis_can::types::CanNodeId;
-use canadensis_can::{CanId, CanReceiver, Frame, Mtu};
+use canadensis_can::{CanId, CanNodeId, CanReceiver, Frame, Mtu};
 use canadensis_core::nb;
 use canadensis_core::subscription::Subscription;
 use canadensis_core::time::{Instant, MicrosecondDuration32, Microseconds32};

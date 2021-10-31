@@ -1,3 +1,30 @@
+//! Runs a minimal UAVCAN node, sending Heartbeat messages (and doing nothing else)
+//!
+//! Usage: `minimal_node [SocketCAN interface name] [Node ID]`
+//!
+//! # Testing
+//!
+//! ## Create a virtual CAN device
+//!
+//! ```
+//! sudo modprobe vcan
+//! sudo ip link add dev vcan0 type vcan
+//! sudo ip link set up vcan0
+//! ```
+//!
+//! ## Start the node
+//!
+//! ```
+//! minimal_node vcan0 [node ID]
+//! ```
+//!
+//! ## Interact with the node using Yakut
+//!
+//! To subscribe and print out Heartbeat messages:
+//! `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" subscribe uavcan.node.Heartbeat.1.0`
+//!
+//! In the above command, 8 is the MTU of standard CAN and 42 is the node ID of the Yakut node.
+
 extern crate canadensis;
 extern crate canadensis_linux;
 extern crate socketcan;
@@ -13,36 +40,9 @@ use canadensis::core::time::Microseconds64;
 use canadensis::node::{CoreNode, MinimalNode};
 use canadensis::requester::TransferIdFixedMap;
 use canadensis::Node;
-use canadensis_can::types::{CanNodeId, CanTransport};
-use canadensis_can::{CanReceiver, CanTransmitter, Mtu};
+use canadensis_can::{CanNodeId, CanReceiver, CanTransmitter, CanTransport, Mtu};
 use canadensis_linux::{LinuxCan, SystemClock};
 
-/// Runs a minimal UAVCAN node, sending Heartbeat messages (and doing nothing else)
-///
-/// Usage: `minimal_node [SocketCAN interface name] [Node ID]`
-///
-/// # Testing
-///
-/// ## Create a virtual CAN device
-///
-/// ```
-/// sudo modprobe vcan
-/// sudo ip link add dev vcan0 type vcan
-/// sudo ip link set up vcan0
-/// ```
-///
-/// ## Start the node
-///
-/// ```
-/// minimal_node vcan0 [node ID]
-/// ```
-///
-/// ## Interact with the node using Yakut
-///
-/// To subscribe and print out Heartbeat messages:
-/// `yakut --transport "CAN(can.media.socketcan.SocketCANMedia('vcan0',8),42)" subscribe uavcan.node.Heartbeat.1.0`
-///
-/// In the above command, 8 is the MTU of standard CAN and 42 is the node ID of the Yakut node.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);
     let can_interface = args.next().expect("Expected CAN interface name");

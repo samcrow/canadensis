@@ -1,3 +1,32 @@
+//! Runs a basic UAVCAN node that sends Heartbeat messages, responds to node information requests,
+//! and sends port list messages
+//!
+//! This node connects to a TCP server and uses the serial transport.
+//!
+//! Usage: `tcp_serial_basic_node [address:port] [Node ID]`
+//!
+//! # Testing
+//!
+//! ## Start a server
+//!
+//! ```
+//! ncat --broker -l -p [port]
+//! ```
+//!
+//! ## Start the node
+//!
+//! ```
+//! tcp_serial_basic_node 127.0.0.1:[port] [Node ID]
+//! ```
+//!
+//! ## Interact with the node using Yakut
+//!
+//! ```
+//! yakut --transport "SerialTransport('socket://127.0.0.1:[port]', local_node_id=128)" monitor
+//! ```
+//!
+//! In the above two commands, 8 is the MTU of standard CAN and 42 is the node ID of the Yakut node.
+
 extern crate canadensis;
 extern crate canadensis_serial;
 extern crate rand;
@@ -26,34 +55,6 @@ use canadensis_serial::{
 use std::io::{ErrorKind, Read, Write};
 use std::net::TcpStream;
 
-/// Runs a basic UAVCAN node that sends Heartbeat messages, responds to node information requests,
-/// and sends port list messages
-///
-/// This node connects to a TCP server and uses the serial transport.
-///
-/// Usage: `tcp_serial_basic_node [address:port] [Node ID]`
-///
-/// # Testing
-///
-/// ## Start a server
-///
-/// ```
-/// ncat --broker -l -p [port]
-/// ```
-///
-/// ## Start the node
-///
-/// ```
-/// tcp_serial_basic_node 127.0.0.1:[port] [Node ID]
-/// ```
-///
-/// ## Interact with the node using Yakut
-///
-/// ```
-/// yakut --transport "SerialTransport('socket://127.0.0.1:[port]', local_node_id=128)" monitor
-/// ```
-///
-/// In the above two commands, 8 is the MTU of standard CAN and 42 is the node ID of the Yakut node.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);
     let server_address = args.next().expect("Expected server address and port");

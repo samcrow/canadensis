@@ -10,8 +10,7 @@ use std::collections::VecDeque;
 use std::convert::Infallible;
 
 use canadensis_can::driver::TransmitDriver;
-use canadensis_can::types::{CanNodeId, CanTransferId};
-use canadensis_can::{CanId, CanTransmitter, Frame, Mtu};
+use canadensis_can::{CanId, CanNodeId, CanTransferId, CanTransmitter, Frame, Mtu};
 use canadensis_core::time::{Clock, Microseconds32};
 use canadensis_core::transfer::*;
 use canadensis_core::transport::Transmitter;

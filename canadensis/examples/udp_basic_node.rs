@@ -1,3 +1,28 @@
+//! Runs a basic UAVCAN node that sends Heartbeat messages, responds to node information requests,
+//! and sends port list messages
+//!
+//! This node connects uses a UDP transport.
+//!
+//! Usage: `tcp_serial_basic_node [node IP address]`
+//!
+//! The node ID is automatically derived from the 16 least significant bits of the node IP address.
+//!
+//! # Testing
+//!
+//! ## Start the node
+//!
+//! ```
+//! udp_basic_node 127.0.0.[node ID]
+//! ```
+//!
+//! ## Interact with the node using Yakut
+//!
+//! ```
+//! yakut --transport "UDPTransport('127.0.0.127')" monitor
+//! ```
+//!
+//! In the above two commands, 8 is the MTU of standard CAN and 42 is the node ID of the Yakut node.
+
 extern crate canadensis;
 extern crate canadensis_udp;
 extern crate rand;
@@ -24,30 +49,6 @@ use canadensis_udp::{
     UdpTransport,
 };
 
-/// Runs a basic UAVCAN node that sends Heartbeat messages, responds to node information requests,
-/// and sends port list messages
-///
-/// This node connects uses a UDP transport.
-///
-/// Usage: `tcp_serial_basic_node [node IP address]`
-///
-/// The node ID is automatically derived from the 16 least significant bits of the node IP address.
-///
-/// # Testing
-///
-/// ## Start the node
-///
-/// ```
-/// udp_basic_node 127.0.0.[node ID]
-/// ```
-///
-/// ## Interact with the node using Yakut
-///
-/// ```
-/// yakut --transport "UDPTransport('127.0.0.127')" monitor
-/// ```
-///
-/// In the above two commands, 8 is the MTU of standard CAN and 42 is the node ID of the Yakut node.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);
     let local_address: Ipv4Addr = args
