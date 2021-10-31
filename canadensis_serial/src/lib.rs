@@ -28,7 +28,10 @@ pub(crate) mod header_collector;
 mod rx;
 mod tx;
 
-pub struct SerialTransport;
+/// The UAVCAN/Serial transport
+///
+/// This matches [the pyuavcan implementation](https://pyuavcan.readthedocs.io/en/latest/api/pyuavcan.transport.serial.html).
+pub struct SerialTransport(());
 
 impl Transport for SerialTransport {
     type NodeId = SerialNodeId;

@@ -11,8 +11,7 @@ extern crate log;
 extern crate socketcan;
 
 use canadensis_can::driver::{optimize_filters, ReceiveDriver, TransmitDriver};
-use canadensis_can::types::CanNodeId;
-use canadensis_can::Frame;
+use canadensis_can::{CanNodeId, Frame};
 use canadensis_core::subscription::Subscription;
 use canadensis_core::time::{Clock, Instant, Microseconds64};
 use canadensis_core::{nb, OutOfMemoryError};

@@ -29,8 +29,7 @@ use canadensis::core::subscription::Subscription;
 use canadensis::core::time::Instant;
 use canadensis::core::OutOfMemoryError;
 use canadensis_can::driver::{optimize_filters, ReceiveDriver, TransmitDriver};
-use canadensis_can::types::CanNodeId;
-use canadensis_can::Frame;
+use canadensis_can::{CanNodeId, Frame};
 use core::cmp::Ordering;
 use core::convert::{Infallible, TryFrom};
 

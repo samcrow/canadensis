@@ -6,8 +6,7 @@ use crate::BxCanDriver;
 use bxcan::{Can, FilterOwner, Instance};
 use canadensis::core::time::Clock;
 use canadensis_can::queue::{SingleFrameQueue, SingleQueueDriver};
-use canadensis_can::types::{CanNodeId, CanTransport, Error};
-use canadensis_can::{CanReceiver, CanTransmitter, Mtu};
+use canadensis_can::{CanNodeId, CanReceiver, CanTransmitter, CanTransport, Error, Mtu};
 use canadensis_pnp_client::{AllocationMessage, PnpClient};
 
 /// A plug-and-play node ID assignment client that uses a bxCAN peripheral

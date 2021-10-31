@@ -67,13 +67,8 @@ mod tx;
 
 /// The UAVCAN/UDP transport
 ///
-/// This matches [the pyuavcan implementation](https://pyuavcan.readthedocs.io/en/latest/api/pyuavcan.transport.udp.html#pyuavcan.transport.udp.UDPTransport).
-///
-/// `I` is a clock instant. `MTU` is the maximum number of payload bytes per packet.
-///
-/// The MTU must be at least 25 bytes so that each frame can hold a header (24 bytes) and one byte
-/// of payload.
-pub struct UdpTransport;
+/// This matches [the pyuavcan implementation](https://pyuavcan.readthedocs.io/en/latest/api/pyuavcan.transport.udp.html).
+pub struct UdpTransport(());
 
 impl Transport for UdpTransport {
     type NodeId = UdpNodeId;

@@ -21,6 +21,7 @@ pub use crate::crc::TransferCrc;
 pub use crate::data::*;
 pub use crate::rx::CanReceiver;
 pub use crate::tx::CanTransmitter;
+pub use crate::types::*;
 
 mod crc;
 mod data;
@@ -29,7 +30,7 @@ pub mod queue;
 pub mod redundant;
 mod rx;
 mod tx;
-pub mod types;
+mod types;
 
 use core::cmp;
 

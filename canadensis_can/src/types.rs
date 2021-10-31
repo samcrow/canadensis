@@ -9,9 +9,7 @@ use core::ops::RangeInclusive;
 use hash32_derive::Hash32;
 
 /// The UAVCAN/CAN transport
-///
-/// `I` is the instant type used to keep track of time
-pub struct CanTransport;
+pub struct CanTransport(());
 
 impl Transport for CanTransport {
     type NodeId = CanNodeId;
