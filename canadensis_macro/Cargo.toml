@@ -7,6 +7,7 @@ keywords = ["uavcan"]
 license = "MIT OR Apache-2.0"
 description = "A procedural macro that generates Rust data types and serialization code from inline and/or external AVCAN DSDL files"
 edition = "2018"
+repository = "https://github.com/samcrow/canadensis"
 
 [lib]
 proc-macro = true
