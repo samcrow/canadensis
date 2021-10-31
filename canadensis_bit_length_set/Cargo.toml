@@ -5,6 +5,7 @@ edition = "2018"
 license = "MIT OR Apache-2.0"
 keywords = ["uavcan"]
 description = "A bit length set type used to calculate data type sizes when processing UAVCAN data structure description language files"
+repository = "https://github.com/samcrow/canadensis"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Added missing repository to the Cargo.toml files of `canadensis_dsdl_parser`, `canadensis_dsdl_frontend`, `canadensis_codegen_rust`, and `canadensis_bit_length_set`
+
 ## [0.2.0](https://github.com/samcrow/canadensis/tree/v0.2.0) - 2021-10-31
 
 This section is not complete because version 0.2.0 had too many changes.
