@@ -1,5 +1,6 @@
 use alloc::vec::Vec;
 use core::marker::PhantomData;
+use heapless::FnvIndexMap;
 
 use canadensis_core::time::{Clock, Instant};
 use canadensis_core::transfer::{
@@ -9,7 +10,6 @@ use canadensis_core::transport::{Receiver, Transmitter, Transport};
 use canadensis_core::{nb, OutOfMemoryError, ServiceId, ServiceSubscribeError, SubjectId};
 use canadensis_encoding::{Message, Request, Response, Serialize};
 
-use crate::hash::TrivialIndexMap;
 use crate::publisher::Publisher;
 use crate::requester::{Requester, TransferIdTracker};
 use crate::serialize::do_serialize;
@@ -28,6 +28,7 @@ use crate::{Node, PublishToken, ResponseToken, ServiceToken, StartSendError, Tra
 /// * `R`: The maximum number of services for which requests can be sent
 ///   This must be greater than 0, or the code will fail to compile.
 ///
+#[derive(Debug)]
 pub struct CoreNode<C, T, U, TR, D, const P: usize, const R: usize>
 where
     C: Clock,
@@ -39,8 +40,8 @@ where
     receiver: U,
     driver: D,
     node_id: <T::Transport as Transport>::NodeId,
-    publishers: TrivialIndexMap<SubjectId, Publisher<C::Instant, T>, P>,
-    requesters: TrivialIndexMap<ServiceId, Requester<C::Instant, T, TR>, R>,
+    publishers: FnvIndexMap<SubjectId, Publisher<C::Instant, T>, P>,
+    requesters: FnvIndexMap<ServiceId, Requester<C::Instant, T, TR>, R>,
 }
 
 impl<C, T, U, N, TR, D, const P: usize, const R: usize> CoreNode<C, T, U, TR, D, P, R>
@@ -71,8 +72,8 @@ where
             receiver,
             driver,
             node_id,
-            publishers: TrivialIndexMap::new(),
-            requesters: TrivialIndexMap::new(),
+            publishers: FnvIndexMap::new(),
+            requesters: FnvIndexMap::new(),
         }
     }
 
@@ -206,7 +207,7 @@ where
         let publisher = self
             .publishers
             .get_mut(&token.0)
-            .expect("Bug: Token exists but no subscriber");
+            .expect("Bug: Token exists but no publisher");
         publisher.publish(
             &mut self.clock,
             token.0,

@@ -88,3 +88,29 @@ impl<I: Instant, T: Transmitter<I>> Publisher<I, T> {
         transmitter.push(transfer, clock, driver)
     }
 }
+
+mod fmt_impl {
+    use crate::publisher::Publisher;
+    use canadensis_core::time::Instant;
+    use canadensis_core::transport::{Transmitter, Transport};
+    use core::fmt::{Debug, Formatter, Result};
+
+    impl<I, T> Debug for Publisher<I, T>
+    where
+        I: Instant,
+        I::Duration: Debug,
+        T: Transmitter<I>,
+        <T::Transport as Transport>::TransferId: Debug,
+        <T::Transport as Transport>::Priority: Debug,
+        <T::Transport as Transport>::NodeId: Debug,
+    {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+            f.debug_struct("Publisher")
+                .field("next_transfer_id", &self.next_transfer_id)
+                .field("timeout", &self.timeout)
+                .field("priority", &self.priority)
+                .field("source", &self.source)
+                .finish()
+        }
+    }
+}

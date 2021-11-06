@@ -202,3 +202,14 @@ impl TryFrom<u8> for Priority {
         }
     }
 }
+
+mod fmt_impl {
+    use super::SubjectId;
+    use core::fmt::{Display, Formatter, Result};
+
+    impl Display for SubjectId {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+            Display::fmt(&self.0, f)
+        }
+    }
+}

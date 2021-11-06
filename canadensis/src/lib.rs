@@ -27,8 +27,6 @@ pub mod encoding {
 }
 pub use canadensis_core::nb;
 
-mod hash;
-
 pub mod anonymous;
 pub mod node;
 mod publisher;
@@ -443,6 +441,17 @@ impl<T> PublishToken<T> {
     /// Returns the subject ID that this token is used to publish on
     pub fn subject_id(&self) -> SubjectId {
         self.0
+    }
+}
+
+mod fmt_impl {
+    use super::PublishToken;
+    use core::fmt::{Debug, Formatter, Result};
+
+    impl<T> Debug for PublishToken<T> {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+            f.debug_tuple("PublishToken").field(&self.0).finish()
+        }
     }
 }
 

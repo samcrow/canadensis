@@ -1,12 +1,14 @@
 //! Sending of service requests
 
-use crate::hash::TrivialIndexMap;
-use crate::serialize::do_serialize;
+use heapless::FnvIndexMap;
+
 use canadensis_core::time::{Clock, Instant};
 use canadensis_core::transfer::{Header, ServiceHeader, Transfer};
 use canadensis_core::transport::{TransferId, Transmitter, Transport};
 use canadensis_core::{nb, OutOfMemoryError, ServiceId};
 use canadensis_encoding::{Request, Serialize};
+
+use crate::serialize::do_serialize;
 
 /// Assembles transfers and manages transfer IDs to send service requests
 pub struct Requester<I: Instant, T: Transmitter<I>, R> {
@@ -120,13 +122,13 @@ pub trait TransferIdTracker<T: Transport>: Default {
 /// This map has a limited capacity and will return an error if asked to keep track of transfer
 /// IDs for too many nodes.
 pub struct TransferIdFixedMap<T: Transport, const C: usize> {
-    ids: TrivialIndexMap<T::NodeId, T::TransferId, C>,
+    ids: FnvIndexMap<T::NodeId, T::TransferId, C>,
 }
 
 impl<T: Transport, const C: usize> Default for TransferIdFixedMap<T, C> {
     fn default() -> Self {
         TransferIdFixedMap {
-            ids: TrivialIndexMap::default(),
+            ids: FnvIndexMap::default(),
         }
     }
 }
@@ -150,6 +152,35 @@ impl<T: Transport, const C: usize> TransferIdTracker<T> for TransferIdFixedMap<T
                     Err(_) => Err(OutOfMemoryError),
                 }
             }
+        }
+    }
+}
+
+mod fmt_impl {
+    use core::fmt::{Debug, Formatter, Result};
+
+    use canadensis_core::time::Instant;
+    use canadensis_core::transport::{Transmitter, Transport};
+
+    use crate::requester::Requester;
+
+    impl<I, T, R> Debug for Requester<I, T, R>
+    where
+        I: Instant,
+        T: Transmitter<I>,
+        I::Duration: Debug,
+        <T::Transport as Transport>::TransferId: Debug,
+        <T::Transport as Transport>::Priority: Debug,
+        <T::Transport as Transport>::NodeId: Debug,
+        R: Debug,
+    {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+            f.debug_struct("Requester")
+                .field("this_node", &self.this_node)
+                .field("priority", &self.priority)
+                .field("timeout", &self.timeout)
+                .field("transfer_ids", &self.transfer_ids)
+                .finish()
         }
     }
 }

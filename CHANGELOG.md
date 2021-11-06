@@ -6,9 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.2.1](https://github.com/samcrow/canadensis/tree/v0.2.1) - 2021-11-06
+
+This release applies only to the crates `canadensis_core`, `canadensis`, `canadensis_dsdl_parser`, `canadensis_dsdl_frontend`, `canadensis_codegen_rust`, `canadensis_macro`, and `canadensis_bit_length_set`
+
 ### Added
 
 - Added missing repository to the Cargo.toml files of `canadensis_dsdl_parser`, `canadensis_dsdl_frontend`, `canadensis_codegen_rust`, `canadensis_macro`, and `canadensis_bit_length_set`
+- Added `Display` implementation for `SubjectId`
+- Added some `Debug` implementations
+
+### Fixed
+
+- Various index maps using `TrivialHasher` produced incorrect results.
+  These bugs were fixed by replacing it with the default `FnvHasher`.
 
 ## [0.2.0](https://github.com/samcrow/canadensis/tree/v0.2.0) - 2021-10-31
 
