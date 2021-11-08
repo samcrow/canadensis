@@ -24,9 +24,11 @@ use crate::{Node, PublishToken, ResponseToken, ServiceToken, StartSendError, Tra
 /// * `TR`: The transfer ID tracker used to manage transfer IDs for outgoing transfers
 /// * `D`: The driver used to send and receive frames
 /// * `P`: The maximum number of topics that can be published
-///   This must be greater than 0, or the code will fail to compile.
+///   This must be greater than 0, or the code will fail to compile. It also must be a power of
+///   two, or the software may behave incorrectly.
 /// * `R`: The maximum number of services for which requests can be sent
-///   This must be greater than 0, or the code will fail to compile.
+///   This must be greater than 0, or the code will fail to compile. It also must be a power of
+///   two, or the software may behave incorrectly.
 ///
 #[derive(Debug)]
 pub struct CoreNode<C, T, U, TR, D, const P: usize, const R: usize>
