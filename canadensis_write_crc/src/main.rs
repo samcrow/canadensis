@@ -10,8 +10,10 @@
 //! `canadensis_write_crc file-path`
 //!
 
+extern crate crc_any;
 extern crate object;
 
+use crc_any::CRCu64;
 use object::read::{File, Object};
 use object::{ObjectSection, ObjectSymbol};
 use std::borrow::Cow;
@@ -141,15 +143,10 @@ fn get_input_path() -> PathBuf {
 /// If the length of data is not a multiple of 8 bytes, it will be padded with zero bytes.
 fn crc_64_we(data: &[u8]) -> u64 {
     let data = &*pad_to_8_bytes(data);
-    let table = create_crc64_table();
 
-    let mut crc = 0_u64;
-
-    for byte in data {
-        crc = (crc << 8) ^ table[(((crc >> 56) ^ *byte as u64) & 0x00000000000000FF_u64) as usize];
-    }
-
-    crc
+    let mut crc = CRCu64::crc64we();
+    crc.digest(data);
+    crc.get_crc()
 }
 
 fn pad_to_8_bytes(data: &[u8]) -> Cow<'_, [u8]> {
@@ -163,25 +160,4 @@ fn pad_to_8_bytes(data: &[u8]) -> Cow<'_, [u8]> {
         debug_assert!(data.len() % 8 == 0);
         Cow::Owned(data)
     }
-}
-
-const CRC_POLY_64: u64 = 0x42F0E1EBA9EA3693_u64;
-
-fn create_crc64_table() -> [u64; 256] {
-    let mut table = [0u64; 256];
-
-    for (i, entry) in table.iter_mut().enumerate() {
-        let mut crc = 0;
-        let c = (i as u64) << 56;
-        for _ in 0..8 {
-            if ((crc ^ c) & 0x8000000000000000_u64) != 0 {
-                crc = (crc << 1) ^ CRC_POLY_64;
-            } else {
-                crc <<= 1;
-            }
-        }
-        *entry = crc;
-    }
-
-    table
 }
