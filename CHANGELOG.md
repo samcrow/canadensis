@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added documentation of some values that must be powers of two
 
+## [canadensis_write_crc-v0.1.1](https://github.com/samcrow/canadensis/tree/canadensis_write_crc-v0.1.1) - 2022-01-02
+
+- Fixed incorrect CRC calculation in canadensis_write_crc
+
 ## [0.2.1](https://github.com/samcrow/canadensis/tree/v0.2.1) - 2021-11-06
 
 This release applies only to the crates `canadensis_core`, `canadensis`, `canadensis_dsdl_parser`, `canadensis_dsdl_frontend`, `canadensis_codegen_rust`, `canadensis_macro`, and `canadensis_bit_length_set`
