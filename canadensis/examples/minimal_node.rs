@@ -63,9 +63,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let transmitter = CanTransmitter::new(Mtu::Can8);
     let receiver = CanReceiver::new(node_id, Mtu::Can8);
 
-    const TRANSFER_IDS: usize = 1;
-    const PUBLISHERS: usize = 1;
-    const REQUESTERS: usize = 1;
+    const TRANSFER_IDS: usize = 2;
+    const PUBLISHERS: usize = 2;
+    const REQUESTERS: usize = 2;
     let core_node: CoreNode<
         SystemClock,
         CanTransmitter<Microseconds64, LinuxCan>,
