@@ -60,7 +60,7 @@ impl<'p> CompileContext<'p> {
 
     /// Returns a bit length set covering the fields that have been processed so far
     ///
-    /// This is useful for the _offset_ magic variable.
+    /// This is useful for the `_offset_` magic variable.
     pub fn bit_length_set(&mut self) -> &BitLengthSet {
         // If necessary, change the state to calculate the union bit length
         match self.current_file.state.take().expect("No state") {

@@ -3,6 +3,7 @@ extern crate num_integer;
 
 mod operator;
 
+use std::cmp::Ordering;
 use std::collections::BTreeSet;
 use std::ops::{RangeToInclusive, Rem};
 use std::{iter, mem};
@@ -63,15 +64,15 @@ impl BitLengthSet {
     /// ```
     /// # use canadensis_bit_length_set::BitLengthSet;
     /// let lengths = BitLengthSet::single(37);
-    /// assert_eq!(37, lengths.min());
+    /// assert_eq!(37, lengths.min_value());
     /// ```
     ///
     /// ```
     /// # use canadensis_bit_length_set::BitLengthSet;
     /// let lengths = BitLengthSet::from_lengths([1, 10, 30]).unwrap();
-    /// assert_eq!(1, lengths.min());
+    /// assert_eq!(1, lengths.min_value());
     /// ```
-    pub fn min(&self) -> u64 {
+    pub fn min_value(&self) -> u64 {
         self.operator.min()
     }
     /// Returns the maximum length value in this set
@@ -81,15 +82,15 @@ impl BitLengthSet {
     /// ```
     /// # use canadensis_bit_length_set::BitLengthSet;
     /// let lengths = BitLengthSet::single(37);
-    /// assert_eq!(37, lengths.max());
+    /// assert_eq!(37, lengths.max_value());
     /// ```
     ///
     /// ```
     /// # use canadensis_bit_length_set::BitLengthSet;
     /// let lengths = BitLengthSet::from_lengths([1, 10, 30]).unwrap();
-    /// assert_eq!(30, lengths.max());
+    /// assert_eq!(30, lengths.max_value());
     /// ```
-    pub fn max(&self) -> u64 {
+    pub fn max_value(&self) -> u64 {
         self.operator.max()
     }
 
@@ -109,7 +110,7 @@ impl BitLengthSet {
     /// assert!(!lengths.is_fixed_size());
     /// ```
     pub fn is_fixed_size(&self) -> bool {
-        self.min() == self.max()
+        self.min_value() == self.max_value()
     }
 
     /// Returns true if all values in this set are aligned to multiples of 8 bits
@@ -152,7 +153,7 @@ impl BitLengthSet {
     /// ```
     pub fn is_aligned(&self, bit_length: u64) -> bool {
         let remainder = self % bit_length;
-        remainder.is_fixed_size() && remainder.min() == 0
+        remainder.is_fixed_size() && remainder.min_value() == 0
     }
 
     /// Expands this bit length set and returns a set with all enclosed values
@@ -331,6 +332,14 @@ impl BitLengthSet {
     pub fn validate_numerically(&self) {
         self.operator.validate_numerically()
     }
+
+    /// Returns true if this set has the same structure of operators as another set
+    ///
+    /// If this function returns true, the expanded forms of self and other are equal. If this
+    /// function returns false, the expanded forms of self and other may or may not be equal.
+    fn structural_equal(&self, other: &Self) -> bool {
+        self.operator.structural_equal(&other.operator)
+    }
 }
 
 impl Default for BitLengthSet {
@@ -387,6 +396,32 @@ impl Extend<BitLengthSet> for BitLengthSet {
         self.operator = Operator::Concatenate {
             children: iter::once(self_operator).chain(other_operators).collect(),
         }
+    }
+}
+
+impl PartialEq<Self> for BitLengthSet {
+    fn eq(&self, other: &Self) -> bool {
+        // There may be a more optimized way to do this
+        if self.structural_equal(other) {
+            true
+        } else {
+            self.expand() == other.expand()
+        }
+    }
+}
+
+impl Eq for BitLengthSet {}
+
+impl PartialOrd for BitLengthSet {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for BitLengthSet {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // There may be a more optimized way to do this, without expanding the sets
+        self.expand().cmp(&other.expand())
     }
 }
 

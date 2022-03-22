@@ -3,8 +3,8 @@ use crate::compiled::DsdlKind;
 use crate::error::Error;
 use crate::types::set::Set;
 use crate::types::{ExprType, ScalarType, Type, Value};
+use canadensis_bit_length_set::BitLengthSet;
 use canadensis_dsdl_parser::Span;
-use num_rational::BigRational;
 
 /// Evaluates the attribute operator `expr.attribute`
 pub(crate) fn evaluate(
@@ -15,8 +15,11 @@ pub(crate) fn evaluate(
 ) -> Result<Value, Error> {
     match lhs {
         Value::Set(lhs) => evaluate_set_attr(lhs, rhs, span),
+        Value::BitLengthSet(lhs) => evaluate_bit_length_set_attr(lhs, rhs, span),
         Value::Type(ty) => evaluate_type_attr(cx, ty, rhs, span),
-        _ => Err(span_error!(span, "{} has no attribute {}", lhs.ty(), rhs)),
+        Value::Rational(_) | Value::String(_) | Value::Boolean(_) => {
+            Err(span_error!(span, "{} has no attribute {}", lhs.ty(), rhs))
+        }
     }
 }
 
@@ -26,7 +29,22 @@ fn evaluate_set_attr(lhs: Set, rhs: &str, span: Span<'_>) -> Result<Value, Error
     match rhs {
         "min" => evaluate_set_min(lhs, span),
         "max" => evaluate_set_max(lhs, span),
-        "count" => Ok(Value::Rational(BigRational::from_integer(lhs.len().into()))),
+        "count" => Ok(lhs.len().into()),
+        _ => Err(span_error!(span, "Set does not have a {} attribute", rhs)),
+    }
+}
+
+/// Evaluates an attribute of a bit length set
+fn evaluate_bit_length_set_attr(
+    lhs: BitLengthSet,
+    rhs: &str,
+    span: Span<'_>,
+) -> Result<Value, Error> {
+    // Sets have min, max, and count attributes
+    match rhs {
+        "min" => Ok(lhs.min_value().into()),
+        "max" => Ok(lhs.max_value().into()),
+        "count" => Ok(lhs.expand().len().into()),
         _ => Err(span_error!(span, "Set does not have a {} attribute", rhs)),
     }
 }
@@ -78,15 +96,8 @@ fn evaluate_type_attr(
     // but pyuavcan implements it and some of the public regulated data types use it.
     match rhs {
         "_bit_length_" => {
-            // TODO: Push bit length set ... something ... optimizaion
-            let bit_length = ty.bit_length_set(cx, span)?.expand();
-            Ok(Value::Set(
-                bit_length
-                    .into_iter()
-                    .map(|length| Value::Rational(BigRational::from_integer(length.into())))
-                    .collect::<Result<Set, _>>()
-                    .unwrap(),
-            ))
+            let bit_length = ty.bit_length_set(cx, span)?;
+            Ok(Value::BitLengthSet(bit_length))
         }
         _ => match ty {
             Type::Scalar(ty) => {

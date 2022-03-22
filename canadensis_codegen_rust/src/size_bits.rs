@@ -11,8 +11,8 @@ pub(crate) struct SizeBitsExpr<'t>(pub &'t GeneratedType);
 
 impl Display for SizeBitsExpr<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        let size_min = self.0.size.min();
-        let size_max = self.0.size.max();
+        let size_min = self.0.size.min_value();
+        let size_max = self.0.size.max_value();
         if size_min == size_max {
             // Just a single precalculated value
             write!(f, "{}", size_min)
@@ -128,8 +128,8 @@ struct WriteArrayElementSizes<'t> {
 impl Display for WriteArrayElementSizes<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let element_size = self.ty.size();
-        let size_min = element_size.min();
-        if size_min == element_size.max() {
+        let size_min = element_size.min_value();
+        if size_min == element_size.max_value() {
             // Element size is fixed
             // Add space for the delimiter header if the element type is delimited
             let element_size = match self.ty.extent() {
@@ -168,8 +168,8 @@ impl Display for WriteScalarSize<'_> {
                     write!(f, "32 + ")?;
                 }
 
-                let inner_min_size = inner.bit_length().min();
-                let inner_max_size = inner.bit_length().max();
+                let inner_min_size = inner.bit_length().min_value();
+                let inner_max_size = inner.bit_length().max_value();
                 if inner_min_size == inner_max_size {
                     // Fixed-size type, use a literal
                     write!(f, "{}", inner_min_size)?;

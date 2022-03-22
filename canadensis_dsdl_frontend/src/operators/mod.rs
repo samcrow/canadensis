@@ -14,6 +14,7 @@ pub(crate) mod unary_plus;
 use crate::error::Error;
 use crate::types::set::{Set, TypeError};
 use crate::types::{ExprType, Value};
+use canadensis_bit_length_set::BitLengthSet;
 use canadensis_dsdl_parser::Span;
 use num_rational::BigRational;
 
@@ -74,6 +75,21 @@ where
             let new_elements = new_elements.map_err(|e| make_set_error(e, span))?;
             Ok(Value::Set(new_elements))
         }
+        // If either side is a BitLengthSet, expand it into a normal set and try again
+        (Value::BitLengthSet(lhs), rhs) => calculate_elementwise_binary(
+            Value::Set(Set::from(lhs.expand())),
+            rhs,
+            span,
+            symbol,
+            rational_op,
+        ),
+        (lhs, Value::BitLengthSet(rhs)) => calculate_elementwise_binary(
+            lhs,
+            Value::Set(Set::from(rhs.expand())),
+            span,
+            symbol,
+            rational_op,
+        ),
         // Fall back and check rational/string possibilities
         (lhs, rhs) => calculate_rational_binary(lhs, rhs, span, symbol, rational_op),
     }
@@ -84,23 +100,28 @@ where
 ///
 /// This also accounts for strings that can implicitly convert to integers.
 ///
-/// `symbol should` be a short text representation of the operator, which will be used in error messages.
+/// `symbol` should be a short text representation of the operator, which will be used in error messages.
 ///
 /// `rational_op` should be a function that applies the operator to two rational values and returns the
 /// result or an error.
 ///
-/// `set_op` shold be a function that applies the operator to two sets and returns the result.
-pub(crate) fn calculate_rational_or_set_binary<F, G>(
+/// `set_op` should be a function that applies the operator to two sets and returns the result.
+///
+/// `bit_length_set_op` should be a function that applies the operator to two bit length sets and
+/// returns the result. The result may be a BitLengthSet or a Set.
+pub(crate) fn calculate_rational_or_set_binary<F, G, H>(
     lhs: Value,
     rhs: Value,
     span: Span<'_>,
     symbol: &str,
     rational_op: F,
     mut set_op: G,
+    mut bit_length_set_op: H,
 ) -> Result<Value, Error>
 where
     F: FnMut(BigRational, BigRational, Span<'_>) -> Result<Value, Error>,
     G: FnMut(Set, Set) -> Set,
+    H: FnMut(BitLengthSet, BitLengthSet) -> Value,
 {
     match (lhs, rhs) {
         // set<T> op set<T> -> set<T>
@@ -108,6 +129,7 @@ where
             let result = set_op(lhs, rhs);
             Ok(Value::Set(result))
         }
+        (Value::BitLengthSet(lhs), Value::BitLengthSet(rhs)) => Ok(bit_length_set_op(lhs, rhs)),
         // Fall back and check rational/string possibilities
         (lhs, rhs) => calculate_rational_binary(lhs, rhs, span, symbol, rational_op),
     }
@@ -140,6 +162,15 @@ where
     match (lhs, rhs) {
         // set<T> op set<T> -> bool
         (Value::Set(lhs), Value::Set(rhs)) if lhs.is_compatible(&rhs) => Ok(set_op(lhs, rhs)),
+        // If either side is a BitLengthSet, expand it into a normal set and try again
+        (Value::BitLengthSet(lhs), rhs) => {
+            let lhs = Value::Set(Set::from(lhs.expand()));
+            calculate_rational_or_set_comparison(lhs, rhs, span, symbol, rational_op, set_op)
+        }
+        (lhs, Value::BitLengthSet(rhs)) => {
+            let rhs = Value::Set(Set::from(rhs.expand()));
+            calculate_rational_or_set_comparison(lhs, rhs, span, symbol, rational_op, set_op)
+        }
         // Fall back and try rational/string-as-integer possibilities
         (lhs, rhs) => {
             let result_value = calculate_rational_binary(lhs, rhs, span, symbol, |lhs, rhs, _| {

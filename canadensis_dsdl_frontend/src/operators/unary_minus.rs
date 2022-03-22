@@ -12,7 +12,9 @@ pub(crate) fn evaluate(inner: Value, span: Span<'_>) -> Result<Value, Error> {
             span,
             "Can't apply unary - operator to a string"
         )),
-        Value::Set { .. } => Err(span_error!(span, "Can't apply unary - operator to a set")),
+        Value::Set(_) | Value::BitLengthSet(_) => {
+            Err(span_error!(span, "Can't apply unary - operator to a set"))
+        }
         Value::Boolean(_) => Err(span_error!(
             span,
             "Can't apply unary - operator to a boolean"

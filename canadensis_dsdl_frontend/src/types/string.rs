@@ -24,14 +24,9 @@ impl StringValue {
     /// character is in the ASCII range (0..=127). The implicit integer value is the value of
     /// that character (see section 3.3.2 of the specification).
     pub fn implicit_int(&self) -> Option<u8> {
-        if let [character] = self.0.as_bytes() {
-            if character.is_ascii() {
-                Some(*character)
-            } else {
-                None
-            }
-        } else {
-            None
+        match self.0.as_bytes() {
+            [character] if character.is_ascii() => Some(*character),
+            _ => None,
         }
     }
 

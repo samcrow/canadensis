@@ -658,8 +658,8 @@ mod fmt_impl {
     impl Display for GeneratedType {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
             writeln!(f, "/// `{}`\n///", self.uavcan_name)?;
-            let min_size = self.size.min();
-            let max_size = self.size.max();
+            let min_size = self.size.min_value();
+            let max_size = self.size.max_value();
             if min_size == max_size {
                 writeln!(f, "/// Fixed size {} bytes", min_size / 8)?;
             } else {
@@ -737,8 +737,8 @@ mod fmt_impl {
 
                                     // Update expected offset for the next field
                                     let field_size = field.uavcan_ty.size();
-                                    let field_size_min = field_size.min();
-                                    let field_size_max = field_size.max();
+                                    let field_size_min = field_size.min_value();
+                                    let field_size_max = field_size.max_value();
                                     assert_eq!(field_size_min, field_size_max);
                                     expected_offset_bits +=
                                         usize::try_from(field_size_min).unwrap();
@@ -770,8 +770,8 @@ mod fmt_impl {
                         writeln!(f, "/// Not always aligned")?;
                     }
                     let size = data.uavcan_ty.size();
-                    let size_min = size.min();
-                    let size_max = size.max();
+                    let size_min = size.min_value();
+                    let size_max = size.max_value();
                     if size_min == size_max {
                         writeln!(f, "/// Size {} bits", size_min)?;
                     } else {

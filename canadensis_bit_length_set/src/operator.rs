@@ -190,6 +190,74 @@ impl Operator {
             assert_eq!(mod_expanded, expected, "Incorrect modulo for {}", i);
         }
     }
+
+    pub fn structural_equal(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Operator::Leaf(self_values), Operator::Leaf(other_values)) => {
+                self_values == other_values
+            }
+            (
+                Operator::Padding {
+                    child: self_child,
+                    alignment: self_alignment,
+                },
+                Operator::Padding {
+                    child: other_child,
+                    alignment: other_alignment,
+                },
+            ) => self_alignment == other_alignment && self_child.structural_equal(other_child),
+            (
+                Operator::Concatenate {
+                    children: self_children,
+                },
+                Operator::Concatenate {
+                    children: other_children,
+                },
+            ) => {
+                self_children.len() == other_children.len()
+                    && self_children
+                        .iter()
+                        .zip(other_children.iter())
+                        .all(|(self_child, other_child)| self_child.structural_equal(other_child))
+            }
+            (
+                Operator::Repeat {
+                    child: self_child,
+                    count: self_count,
+                },
+                Operator::Repeat {
+                    child: other_child,
+                    count: other_count,
+                },
+            ) => self_count == other_count && self_child.structural_equal(other_child),
+            (
+                Operator::RangeRepeat {
+                    child: self_child,
+                    count: self_count,
+                },
+                Operator::RangeRepeat {
+                    child: other_child,
+                    count: other_count,
+                },
+            ) => self_count == other_count && self_child.structural_equal(other_child),
+            (
+                Operator::Union {
+                    children: self_children,
+                },
+                Operator::Union {
+                    children: other_children,
+                },
+            ) => {
+                self_children.len() == other_children.len()
+                    && self_children
+                        .iter()
+                        .zip(other_children.iter())
+                        .all(|(self_child, other_child)| self_child.structural_equal(other_child))
+            }
+            // Mismatched operators
+            (_, _) => false,
+        }
+    }
 }
 
 /// Rounds the value up to a multiple of alignment

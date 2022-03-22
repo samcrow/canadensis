@@ -27,8 +27,8 @@ fn combinatorial_explosion() {
         string_length.repeat(65536),
     ]);
 
-    let explosion_min_length = explosion_length.min();
-    let explosion_max_length = explosion_length.max();
+    let explosion_min_length = explosion_length.min_value();
+    let explosion_max_length = explosion_length.max_value();
     let explosion_byte_aligned = explosion_length.is_byte_aligned();
 
     println!(

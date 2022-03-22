@@ -28,6 +28,8 @@ pub(crate) enum Value {
     String(StringValue),
     /// A set of values
     Set(Set),
+    /// A set of bit lengths, represented symbolically
+    BitLengthSet(BitLengthSet),
     /// A boolean
     Boolean(bool),
     /// A data type
@@ -35,14 +37,37 @@ pub(crate) enum Value {
 }
 
 impl Value {
+    /// Returns the type of this value
     pub fn ty(&self) -> ExprType {
         match self {
             Value::Rational(_) => ExprType::Rational,
             Value::String(_) => ExprType::String,
             Value::Set(set) => ExprType::Set(set.ty().map(Box::new)),
+            // A bit length set is always a set of numbers (rationals)
+            Value::BitLengthSet(_) => ExprType::Set(Some(Box::new(ExprType::Rational))),
             Value::Boolean(_) => ExprType::Boolean,
             Value::Type(_) => ExprType::Type,
         }
+    }
+}
+
+impl From<u64> for Value {
+    /// Creates a Rational value from an integer
+    fn from(value: u64) -> Self {
+        Value::Rational(BigRational::from_integer(value.into()))
+    }
+}
+
+impl From<usize> for Value {
+    /// Creates a Rational value from an integer
+    fn from(value: usize) -> Self {
+        Value::Rational(BigRational::from_integer(value.into()))
+    }
+}
+
+impl From<bool> for Value {
+    fn from(value: bool) -> Self {
+        Value::Boolean(value)
     }
 }
 
@@ -306,6 +331,10 @@ impl PrimitiveType {
 pub(crate) enum ExprType {
     Rational,
     String,
+    /// A set
+    ///
+    /// The enclosed ExprType is the type of the elements of this set. If the set is empty,
+    /// there is no element type.
     Set(Option<Box<ExprType>>),
     Boolean,
     Type,
@@ -365,6 +394,21 @@ mod fmt_impl {
                 }
                 Value::String(value) => write!(f, "{}", value),
                 Value::Set(set) => write!(f, "{}", set),
+                Value::BitLengthSet(bit_lengths) => {
+                    let expanded = bit_lengths.expand();
+                    f.write_char('{')?;
+
+                    let len = expanded.len();
+                    for (i, value) in expanded.iter().enumerate() {
+                        write!(f, "{}", value)?;
+                        if i != len - 1 {
+                            // Not the last value, add a separator
+                            f.write_str(", ")?;
+                        }
+                    }
+                    f.write_char('}')?;
+                    Ok(())
+                }
                 Value::Boolean(value) => write!(f, "{}", *value),
                 Value::Type(ty) => write!(f, "{}", ty),
             }

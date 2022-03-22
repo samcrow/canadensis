@@ -15,6 +15,7 @@ use canadensis_dsdl_parser::{
 };
 use num_rational::BigRational;
 use num_traits::{Signed, ToPrimitive};
+use std::collections::BTreeSet;
 
 pub(crate) fn evaluate_expression(
     cx: &mut CompileContext<'_>,
@@ -93,6 +94,15 @@ pub(crate) fn evaluate_expression(
                 "^",
                 rational_bitwise_xor,
                 |lhs, rhs| lhs.symmetric_difference(&rhs).unwrap(),
+                |lhs, rhs| {
+                    let lhs = lhs.expand();
+                    let rhs = rhs.expand();
+                    let symmetric_difference = lhs
+                        .symmetric_difference(&rhs)
+                        .copied()
+                        .collect::<BTreeSet<u64>>();
+                    Value::Set(Set::from(symmetric_difference))
+                },
             )
         }
         ExpressionType::BitAnd(lhs, rhs) => {
@@ -230,15 +240,8 @@ fn evaluate_atom(
             match identifier {
                 // Magic variables
                 "_offset_" => {
-                    // TODO: Extend the bit length set into Value to make things faster
-                    let bit_length = cx.bit_length_set().expand();
-                    // Convert into Value
-                    let set_of_values = bit_length
-                        .into_iter()
-                        .map(|length| Value::Rational(BigRational::from_integer(length.into())))
-                        .collect::<Result<_, _>>()
-                        .unwrap();
-                    Ok(Value::Set(set_of_values))
+                    let bit_length = cx.bit_length_set().clone();
+                    Ok(Value::BitLengthSet(bit_length))
                 }
                 _ => {
                     // Try constants

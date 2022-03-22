@@ -95,11 +95,12 @@ impl Set {
             .iter()
             .map(|element| match element {
                 Value::Set(set) => set.clone(),
+                Value::BitLengthSet(set) => Set::from(set.expand()),
                 _ => panic!("Set contains a non-set element"),
             })
             .collect();
 
-        inner_sets.sort_by(|a, b| {
+        inner_sets.sort_unstable_by(|a, b| {
             // If a is a subset of b and a != b, less
             // Otherwise, equal
             if a.is_subset(b) && a != b {
@@ -238,6 +239,17 @@ impl Set {
 impl From<Set> for BTreeSet<Value> {
     fn from(set: Set) -> Self {
         set.0
+    }
+}
+
+impl From<BTreeSet<u64>> for Set {
+    /// Creates a set of Rational values from a BTreeSet of integers
+    fn from(values: BTreeSet<u64>) -> Self {
+        values
+            .into_iter()
+            .map(Value::from)
+            .collect::<Result<Set, TypeError>>()
+            .unwrap()
     }
 }
 

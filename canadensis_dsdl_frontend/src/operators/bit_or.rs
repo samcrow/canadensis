@@ -7,9 +7,15 @@ use num_rational::BigRational;
 /// Evaluates the bitwise or operator `expr | expr`
 pub(crate) fn evaluate(lhs: Value, rhs: Value, span: Span<'_>) -> Result<Value, Error> {
     // a | b: Bitwise or on integers, or union of sets of the same type
-    calculate_rational_or_set_binary(lhs, rhs, span, "|", rational_bitwise_or, |lhs, rhs| {
-        lhs.union(&rhs).unwrap()
-    })
+    calculate_rational_or_set_binary(
+        lhs,
+        rhs,
+        span,
+        "|",
+        rational_bitwise_or,
+        |lhs, rhs| lhs.union(&rhs).unwrap(),
+        |lhs, rhs| Value::BitLengthSet(lhs.unite([rhs])),
+    )
 }
 
 fn rational_bitwise_or(lhs: BigRational, rhs: BigRational, span: Span<'_>) -> Result<Value, Error> {
