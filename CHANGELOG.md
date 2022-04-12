@@ -13,11 +13,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Renamed most instances of UAVCAN in the documentation to Cyphal, following the [renaming](https://forum.opencyphal.org/t/uavcan-v1-is-now-cyphal/1622)
-- `canadensis_dsdl_frontend`: Added BitLengthSet variant of Value, so bit length sets can be represented symbolically
+
+## [canadensis_codegen_rust-v0.3.0](https://github.com/samcrow/canadensis/tree/canadensis_codegen_rust-v0.3.0)
+
+### Changed
+
+- Updated canadensis_bit_length_set dependency to 0.3.0
+  (this probably does not actually change the public interface)
+
+## [canadensis_dsdl_frontend-v0.3.0](https://github.com/samcrow/canadensis/tree/canadensis_dsdl_frontend-v0.3.0) - 2022-04-12
+
+### Changed
+
+- Breaking change: Added BitLengthSet variant of Value, so bit length sets can be represented symbolically
   during DSDL processing (this may improve performance)
+- Breaking change: Updated canadensis_bit_length_set dependency to 0.3.0
 
 ## [canadensis_bit_length_set-v0.3.0](https://github.com/samcrow/canadensis/tree/canadensis_bit_length_set-v0.3.0) - 2022-04-12
 
+### Changed
+
+- Added implementations of Ord and some other traits
 - Breaking change: Renamed BitLengthSet functions `min` and `max` to `min_value` and `max_value` to avoid conflicts with
   Ord functions
 
@@ -32,6 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed examples to work with heapless 0.7.9
 
 ## [canadensis_write_crc-v0.1.1](https://github.com/samcrow/canadensis/tree/canadensis_write_crc-v0.1.1) - 2022-01-02
+
+### Fixed
 
 - Fixed incorrect CRC calculation in canadensis_write_crc
 
