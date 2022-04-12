@@ -1,6 +1,7 @@
 //! Basic register types
 
 use crate::register::{Access, Register, WriteError};
+use canadensis_data_types::uavcan::primitive::array::bit_1_0::Bit;
 use canadensis_data_types::uavcan::primitive::array::integer16_1_0::Integer16;
 use canadensis_data_types::uavcan::primitive::array::integer32_1_0::Integer32;
 use canadensis_data_types::uavcan::primitive::array::integer64_1_0::Integer64;
@@ -15,6 +16,7 @@ use canadensis_data_types::uavcan::primitive::array::real64_1_0::Real64;
 use canadensis_data_types::uavcan::primitive::string_1_0;
 use canadensis_data_types::uavcan::primitive::unstructured_1_0;
 use canadensis_data_types::uavcan::register::value_1_0::Value;
+use canadensis_encoding::bits::BitArray;
 use core::convert::TryFrom;
 use half::f16;
 
@@ -421,6 +423,54 @@ impl TryFrom<&[u8]> for Unstructured {
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
         let byte_vec = heapless::Vec::from_slice(value).map_err(|_| LengthError(()))?;
         Ok(Unstructured(byte_vec))
+    }
+}
+
+impl RegisterType for bool {
+    fn read(&self) -> Value {
+        let mut value = BitArray::new(1);
+        value.set(0, *self);
+        Value::Bit(Bit { value })
+    }
+
+    fn write(&mut self, value: &Value) -> Result<(), WriteError> {
+        if let Value::Bit(Bit { value: values }) = value {
+            if values.len() == 1 {
+                *self = values.get(0);
+                Ok(())
+            } else {
+                Err(WriteError::Type)
+            }
+        } else {
+            Err(WriteError::Type)
+        }
+    }
+}
+
+impl<const N: usize> RegisterType for [bool; N] {
+    fn read(&self) -> Value {
+        let mut value = BitArray::new(N);
+
+        for (i, val) in self.iter().enumerate() {
+            value.set(i, *val);
+        }
+
+        Value::Bit(Bit { value })
+    }
+
+    fn write(&mut self, value: &Value) -> Result<(), WriteError> {
+        if let Value::Bit(Bit { value: values }) = value {
+            if values.len() == N {
+                for (i, val) in values.iter().enumerate() {
+                    self[i] = val
+                }
+                Ok(())
+            } else {
+                Err(WriteError::Type)
+            }
+        } else {
+            Err(WriteError::Type)
+        }
     }
 }
 
