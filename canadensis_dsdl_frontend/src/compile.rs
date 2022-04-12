@@ -11,7 +11,6 @@ use crate::types::expression::convert_type;
 use crate::types::{array_length_bits, PrimitiveType, ResolvedType};
 use canadensis_bit_length_set::BitLengthSet;
 use canadensis_dsdl_parser::{Identifier, Span, Statement};
-use itertools::Itertools;
 use once_cell::sync::Lazy;
 use std::collections::btree_map::Entry;
 use std::collections::BTreeMap;
@@ -829,7 +828,7 @@ fn make_union_bit_length(variants: &[Variant]) -> BitLengthSet {
     let variant_lengths = variants
         .iter()
         .map(|variant| variant.ty.size())
-        .fold1(|size1, size2| size1.unite([size2]))
+        .reduce(|size1, size2| size1.unite([size2]))
         .unwrap_or_else(|| BitLengthSet::single(0));
     // Concatenate the discriminant and the variant lengths
     discriminant_length.concatenate([variant_lengths])

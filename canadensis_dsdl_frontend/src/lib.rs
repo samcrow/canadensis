@@ -1,7 +1,6 @@
 extern crate canadensis_bit_length_set;
 extern crate canadensis_dsdl_parser;
 extern crate half;
-extern crate itertools;
 extern crate num_rational;
 extern crate num_traits;
 extern crate once_cell;
