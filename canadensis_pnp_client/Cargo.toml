@@ -1,6 +1,6 @@
 [package]
 name = "canadensis_pnp_client"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
 edition = "2018"
 description = "Client library for Cyphal plug-and-play node ID allocation"
