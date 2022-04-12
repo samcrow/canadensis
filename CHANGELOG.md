@@ -6,15 +6,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [canadensis-v0.2.3](https://github.com/samcrow/canadensis/tree/canadensis-v0.2.3) - 2022-04-12
+
 ### Added
 
-- Implemented `RegisterType` for bool values
+- Implemented `RegisterType` for bool values [#7](https://github.com/samcrow/canadensis/pull/7)
 
 ### Changed
 
 - Renamed most instances of UAVCAN in the documentation to Cyphal, following the [renaming](https://forum.opencyphal.org/t/uavcan-v1-is-now-cyphal/1622)
 
-## [canadensis_codegen_rust-v0.3.0](https://github.com/samcrow/canadensis/tree/canadensis_codegen_rust-v0.3.0)
+## Renames - 2022-04-12
+
+This section applies to several crate versions:
+- [canadensis_core-v0.2.2](https://github.com/samcrow/canadensis/tree/canadensis_core-v0.2.2)
+- [canadensis_encoding-v0.2.1](https://github.com/samcrow/canadensis/tree/canadensis_encoding-v0.2.1)
+- [canadensis_data_types-v0.2.1](https://github.com/samcrow/canadensis/tree/canadensis_data_types-v0.2.1)
+- [canadensis_derive_register_block-v0.2.1](https://github.com/samcrow/canadensis/tree/canadensis_derive_register_block-v0.2.1)
+- [canadensis_filter_config-v0.2.1](https://github.com/samcrow/canadensis/tree/canadensis_filter_config-v0.2.1)
+- [canadensis_can-v0.2.1](https://github.com/samcrow/canadensis/tree/canadensis_can-v0.2.1)
+- [canadensis_linux-v0.2.1](https://github.com/samcrow/canadensis/tree/canadensis_linux-v0.2.1)
+- [canadensis_serial-v0.2.1](https://github.com/samcrow/canadensis/tree/canadensis_serial-v0.2.1)
+- [canadensis_udp-v0.2.1](https://github.com/samcrow/canadensis/tree/canadensis_udp-v0.2.1)
+- [canadensis_pnp_client-v0.2.1](https://github.com/samcrow/canadensis/tree/canadensis_pnp_client-v0.2.1)
+- [canadensis_bxcan-v0.2.1](https://github.com/samcrow/canadensis/tree/canadensis_bxcan-v0.2.1)
+- [canadensis_dsdl_parser-v0.2.2](https://github.com/samcrow/canadensis/tree/canadensis_dsdl_parser-v0.2.2)
+- [canadensis_crc-v0.1.1](https://github.com/samcrow/canadensis/tree/canadensis_crc-v0.1.1)
+- [canadensis_macro-v0.2.2](https://github.com/samcrow/canadensis/tree/canadensis_macro-v0.2.2)
+- [canadensis_write_crc-v0.1.2](https://github.com/samcrow/canadensis/tree/canadensis_write_crc-v0.1.2)
+
+### Changed
+
+- Renamed most instances of UAVCAN in the documentation to Cyphal, following the [renaming](https://forum.opencyphal.org/t/uavcan-v1-is-now-cyphal/1622)
+
+## [canadensis_codegen_rust-v0.3.0](https://github.com/samcrow/canadensis/tree/canadensis_codegen_rust-v0.3.0) - 2022-04-12
 
 ### Changed
 
