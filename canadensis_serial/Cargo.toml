@@ -4,8 +4,8 @@ version = "0.2.0"
 edition = "2018"
 repository = "https://github.com/samcrow/canadensis"
 license = "MIT OR Apache-2.0"
-keywords = ["uavcan", "embedded"]
-description = "A UAVCAN v1 implementation: UAVCAN/Serial transport"
+keywords = ["uavcan", "embedded", "cyphal"]
+description = "A Cyphal implementation: Cyphal/Serial transport"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

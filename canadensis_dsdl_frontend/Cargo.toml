@@ -2,8 +2,8 @@
 name = "canadensis_dsdl_frontend"
 version = "0.2.1"
 edition = "2018"
-keywords = ["uavcan"]
-description = "Compiler front-end for the UAVCAN Data Structure Description Language"
+keywords = ["uavcan", "cyphal"]
+description = "Compiler front-end for the Cyphal Data Structure Description Language"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/samcrow/canadensis"
 

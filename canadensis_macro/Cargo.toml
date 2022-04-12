@@ -3,9 +3,9 @@
 name = "canadensis_macro"
 version = "0.2.1"
 authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
-keywords = ["uavcan"]
+keywords = ["uavcan", "cyphal"]
 license = "MIT OR Apache-2.0"
-description = "A procedural macro that generates Rust data types and serialization code from inline and/or external AVCAN DSDL files"
+description = "A procedural macro that generates Rust data types and serialization code from inline and/or external Cyphal DSDL files"
 edition = "2018"
 repository = "https://github.com/samcrow/canadensis"
 

@@ -3,11 +3,11 @@ name = "canadensis"
 version = "0.2.2"
 authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
 edition = "2018"
-keywords = ["embedded", "uavcan", "uav", "can"]
+keywords = ["embedded", "uavcan", "uav", "can", "cyphal"]
 categories = ["embedded", "no-std"]
 repository = "https://github.com/samcrow/canadensis"
 license = "MIT OR Apache-2.0"
-description = "A UAVCAN v1 implementation: Node types and re-exports from some other canadensis crates"
+description = "A Cyphal implementation: Node types and re-exports from some other canadensis crates"
 
 [dependencies]
 fallible_collections = "0.4.0"

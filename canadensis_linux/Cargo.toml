@@ -3,10 +3,10 @@ name = "canadensis_linux"
 version = "0.2.0"
 authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
 edition = "2018"
-keywords = ["uavcan", "uav", "can"]
+keywords = ["uavcan", "uav", "can", "cyphal"]
 repository = "https://github.com/samcrow/canadensis"
 license = "MIT OR Apache-2.0"
-description = "Linux SocketCAN compatibility for canadensis (UAVCAN)"
+description = "Linux SocketCAN compatibility for canadensis (Cyphal)"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

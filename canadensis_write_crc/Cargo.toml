@@ -3,8 +3,8 @@ name = "canadensis_write_crc"
 version = "0.1.1"
 authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
 edition = "2018"
-description = "Calculates and writes UAVCAN image CRC values"
-keywords = ["uavcan", "uav", "can"]
+description = "Calculates and writes Cyphal image CRC values"
+keywords = ["uavcan", "uav", "can", "cyphal"]
 repository = "https://github.com/samcrow/canadensis"
 license = "MIT OR Apache-2.0"
 

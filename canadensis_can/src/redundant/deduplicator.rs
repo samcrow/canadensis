@@ -10,7 +10,7 @@ use canadensis_core::time::Instant;
 /// # Behavior
 ///
 /// This deduplicator accepts all frames from one active transport, and blocks frames from all
-/// other transports. This strategy is required for UAVCAN/CAN, where there are only 32 possible
+/// other transports. This strategy is required for Cyphal/CAN, where there are only 32 possible
 /// transfer ID values.
 ///
 /// After a deduplicator is created, the first transport that receives a frame becomes active.
@@ -18,7 +18,7 @@ use canadensis_core::time::Instant;
 /// After the timeout expires, the first transport that receives a frame becomes active. The newly
 /// active transport may be the same transport that was previously active, or a different one.
 ///
-/// For more explanation, see [the comments in pyuavcan](https://github.com/UAVCAN/pyuavcan/blob/87c27a978119d24ac77c9a7f2d6f289846ac96fd/pyuavcan/transport/redundant/__init__.py).
+/// For more explanation, see [the comments in pycyphal](https://github.com/OpenCyphal/pycyphal/blob/87c27a978119d24ac77c9a7f2d6f289846ac96fd/pyuavcan/transport/redundant/__init__.py).
 ///
 #[derive(Debug)]
 pub struct Deduplicator<I: Instant, const N: usize> {

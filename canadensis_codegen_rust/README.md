@@ -1,7 +1,7 @@
-# canadensis_codegen_rust: A Rust code generator for UAVCAN data types
+# canadensis_codegen_rust: A Rust code generator for Cyphal data types
 
-This application reads UAVCAN data structure description language (DSDL) files.
-It generates Rust code to represent the UAVCAN data types, serialize them,
+This application reads Cyphal data structure description language (DSDL) files.
+It generates Rust code to represent the Cyphal data types, serialize them,
 and deserialize them.
 
 ## Usage
@@ -17,7 +17,7 @@ file.
 
 #### Example
 
-Clone the [UAVCAN public regulated data types repository](https://github.com/UAVCAN/public_regulated_data_types)
+Clone the [Cyphal public regulated data types repository](https://github.com/OpenCyphal/public_regulated_data_types)
 and run `canadensis_codegen_rust compile -o lib.rs public_regulated_data_types`.
 
 For easier viewing, you may want to use `rustfmt` to reformat the generated code.

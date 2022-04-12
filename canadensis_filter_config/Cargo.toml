@@ -1,10 +1,10 @@
 [package]
 name = "canadensis_filter_config"
-description = "Automatic receive filter configuration for UAVCAN"
+description = "Automatic receive filter configuration for Cyphal"
 version = "0.2.0"
 authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
 edition = "2018"
-keywords = ["embedded", "uavcan", "uav", "can"]
+keywords = ["embedded", "uavcan", "uav", "can", "cyphal"]
 categories = ["embedded", "no-std"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/samcrow/canadensis"

@@ -5,7 +5,7 @@
 //! * `172.16.0.0/12`: Private addresses
 //! * `192.168.0.0/16`: Private addresses
 //! * `224.0.0.0/4` (four most significant bits are `1110`): Multicast
-//!   * UAVCAN/UDP further specifies that the nine most significant bits should be `1110 1111 0`.
+//!   * Cyphal/UDP further specifies that the nine most significant bits should be `1110 1111 0`.
 //! * `127.0.0.0/8`: Loopback
 //!
 //! This module assumes that any address with `1110 1111 0` in its nine most significant bits is a
@@ -13,7 +13,7 @@
 //! node.
 //!
 //! Addresses with `1110` in their four most significant bits, but other values in the next five
-//! bits, are multicast addresses but are not valid for UAVCAN/UDP.
+//! bits, are multicast addresses but are not valid for Cyphal/UDP.
 //!
 
 use crate::UdpNodeId;
@@ -31,9 +31,9 @@ const GENERIC_MULTICAST_BASE: u32 = 0b1110_0000_0000_0000_0000_0000_0000_0000;
 /// The bits that must match `GENERIC_MULTICAST_BASE` for the address to be a multicast address
 const GENERIC_MULTICAST_MASK: u32 = 0b1111_0000_0000_0000_0000_0000_0000_0000;
 
-/// Fixed parts of a UAVCAN multicast group address, without the subnet and subject
+/// Fixed parts of a Cyphal multicast group address, without the subnet and subject
 const MULTICAST_BASE: u32 = 0b1110_1111_0000_0000_0000_0000_0000_0000;
-/// The bits that must match `MULTICAST_BASE` for the address to be a valid UAVCAN multicast address
+/// The bits that must match `MULTICAST_BASE` for the address to be a valid Cyphal multicast address
 const MULTICAST_MASK: u32 = 0b1111_1111_1000_0000_1110_0000_0000_0000;
 
 impl From<Address> for Ipv4Addr {
@@ -48,7 +48,7 @@ impl From<Address> for Ipv4Addr {
 impl TryFrom<Ipv4Addr> for Address {
     type Error = InvalidValue;
 
-    /// Parses a UAVCAN/UDP address from an IP address
+    /// Parses a Cyphal/UDP address from an IP address
     fn try_from(ip: Ipv4Addr) -> Result<Self, Self::Error> {
         let bits = u32::from(ip);
         if (bits & GENERIC_MULTICAST_MASK) == GENERIC_MULTICAST_BASE {
@@ -57,7 +57,7 @@ impl TryFrom<Ipv4Addr> for Address {
                 let subject = SubjectId::from_truncating(bits as u16);
                 Ok(Address::Multicast(MulticastAddress { subnet, subject }))
             } else {
-                // Multicast, but not valid for UAVCAN
+                // Multicast, but not valid for Cyphal
                 Err(InvalidValue)
             }
         } else {
@@ -67,7 +67,7 @@ impl TryFrom<Ipv4Addr> for Address {
     }
 }
 
-/// An IP address used for UAVCAN/UDP
+/// An IP address used for Cyphal/UDP
 pub enum Address {
     /// The address of a specific node
     Node(NodeAddress),
@@ -193,7 +193,7 @@ const SERVICE_BASE_MASK: u16 = 0xfc00;
 
 /// A port number associated with a service or message
 ///
-/// Conversions are based on [the pyuavcan implementation](https://github.com/UAVCAN/pyuavcan/blob/87c27a978119d24ac77c9a7f2d6f289846ac96fd/pyuavcan/transport/udp/_ip/_endpoint_mapping.py#L172).
+/// Conversions are based on [the pycyphal implementation](https://github.com/OpenCyphal/pycyphal/blob/87c27a978119d24ac77c9a7f2d6f289846ac96fd/pyuavcan/transport/udp/_ip/_endpoint_mapping.py#L172).
 ///
 /// Messages are always sent on port 16383.
 ///
