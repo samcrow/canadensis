@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Implemented `RegisterType` for bool values
 
+### Changed
+
+- Renamed most instances of UAVCAN in the documentation to Cyphal, following the [renaming](https://forum.opencyphal.org/t/uavcan-v1-is-now-cyphal/1622)
+
 ## [canadensis-v0.2.2](https://github.com/samcrow/canadensis/tree/canadensis-v0.2.2) - 2022-01-02
 
 ### Added
