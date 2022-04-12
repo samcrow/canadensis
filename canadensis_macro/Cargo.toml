@@ -24,7 +24,7 @@ default-features = false
 version = "0.3.0"
 path = "../canadensis_dsdl_frontend"
 [dependencies.canadensis_codegen_rust]
-version = "0.2.0"
+version = "0.3.0"
 path = "../canadensis_codegen_rust"
 
 # These dev-dependencies are required by the generated code

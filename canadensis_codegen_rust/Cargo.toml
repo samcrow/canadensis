@@ -1,6 +1,6 @@
 [package]
 name = "canadensis_codegen_rust"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2018"
 keywords = ["uavcan"]
 description = "Generates Rust code for data types based on DSDL files"
