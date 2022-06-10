@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-- Removed long name DSDL test from filesystem [#10](https://github.com/samcrow/canadensis/pull/10)
+- canadensis_dsdl_frontend: Removed long name DSDL tests from filesystem [#10](https://github.com/samcrow/canadensis/pull/10)
 
 ## [canadensis-v0.2.3](https://github.com/samcrow/canadensis/tree/canadensis-v0.2.3) - 2022-04-12
 
