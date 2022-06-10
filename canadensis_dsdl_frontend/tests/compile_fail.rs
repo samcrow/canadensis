@@ -7,7 +7,6 @@ extern crate canadensis_dsdl_frontend;
 
 use canadensis_dsdl_frontend::compiled::package::CompiledPackage;
 use canadensis_dsdl_frontend::{Error, Package};
-use std::env;
 use std::ffi::OsString;
 use std::fs;
 use std::io;
