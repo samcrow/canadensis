@@ -205,7 +205,7 @@ fn is_dsdl(entry: &DirEntry) -> bool {
         entry
             .path()
             .extension()
-            .map_or(false, |extension| extension == "uavcan")
+            .map_or(false, |extension| extension == "uavcan" || extension == "dsdl")
     } else {
         false
     }
@@ -313,7 +313,7 @@ struct FileInfo {
 /// Extracts information about a data type from its file name and returns it
 fn parse_file_name(name: &str) -> Option<FileInfo> {
     static PATTERN: Lazy<Regex> = Lazy::new(|| {
-        Regex::new(r"^((?P<port_id>\d+)\.)?(?P<short_name>[^.]+)\.(?P<version_major>\d+)\.(?P<version_minor>\d+)\.uavcan$")
+        Regex::new(r"^((?P<port_id>\d+)\.)?(?P<short_name>[^.]+)\.(?P<version_major>\d+)\.(?P<version_minor>\d+)\.(uavcan|dsdl)$")
         .unwrap()
     });
 
