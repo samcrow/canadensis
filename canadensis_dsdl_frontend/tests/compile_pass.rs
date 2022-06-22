@@ -13,10 +13,12 @@ fn compile_simple_types_only() -> Result<(), Error> {
 }
 #[test]
 fn compile_regulated_types_only() -> Result<(), Error> {
+    check_public_regulated_data_types_submodule()?;
     test_compile_subdirs(&["tests/public_regulated_data_types"])
 }
 #[test]
 fn compile_all() -> Result<(), Error> {
+    check_public_regulated_data_types_submodule()?;
     test_compile_subdirs(&[
         "tests/public_regulated_data_types",
         "tests/nunavut_test_types/test0",
@@ -25,8 +27,8 @@ fn compile_all() -> Result<(), Error> {
 }
 
 fn test_compile_subdirs(subdirs: &[&str]) -> Result<(), Error> {
-    let manifset_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let manifest_subdirectories = subdirs.iter().map(|subdir| manifset_dir.join(subdir));
+    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let manifest_subdirectories = subdirs.iter().map(|subdir| manifest_dir.join(subdir));
     test_compile_directories(manifest_subdirectories)
 }
 
@@ -80,4 +82,23 @@ fn write_long_name_file(path: &Path) -> io::Result<()> {
 @sealed
 ",
     )
+}
+
+/// Checks that the public regulated data types submodule has been correctly checked out
+///
+/// This function prints an error message and panics if that is not the case.
+fn check_public_regulated_data_types_submodule() -> io::Result<()> {
+    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let prdt_dir = manifest_dir.join("tests/public_regulated_data_types");
+    if fs::read_dir(&prdt_dir)?.next().is_none() {
+        // No entries in directory
+        eprintln!(
+            "The canadensis_dsdl_frontend/tests/public_regulated_data_types submodule has not \
+        been checked out. To fix this, use `git clone --recursive` when cloning, or \
+        `git submodule init` and `git submodule update` after cloning."
+        );
+        panic!("No public_regulated_data_types");
+    }
+    // At least one entry in the directory, assume submodule is correct
+    Ok(())
 }

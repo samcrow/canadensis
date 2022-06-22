@@ -8,6 +8,12 @@ spacecraft, robots, and cars."
 
 This is currently an independent project, not affiliated with the Cyphal Consortium.
 
+## Submodule note
+
+This repository uses a submodule for the [public regulated data types](https://github.com/OpenCyphal/public_regulated_data_types).
+When cloning, use `git clone --recursive`. If you have already cloned the repository without the
+recursive option, run `git submodule init` followed by `git submodule update`. Otherwise, some tests will fail.
+
 ## Published crates
 
 Crate | Description
