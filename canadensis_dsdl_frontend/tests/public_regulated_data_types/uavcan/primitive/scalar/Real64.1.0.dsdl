@@ -1,2 +1,0 @@
-float64 value       # Exactly representable integers: [-2**53, +2**53]
-@sealed
