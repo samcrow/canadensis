@@ -96,7 +96,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Create a node with capacity for 2 publishers and 2 requesters
     type Queue = SingleQueueDriver<ArrayQueue<Microseconds64, 64>, LinuxCan>;
-    const TRANSFER_IDS: usize = 1;
+    // TRANSFER_IDS must be a power of two and greater than one
+    const TRANSFER_IDS: usize = 2;
     const PUBLISHERS: usize = 2;
     const REQUESTERS: usize = 2;
 

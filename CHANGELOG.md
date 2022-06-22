@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Support the new `.dsdl` extension for cyphal data types [#12](https://github.com/samcrow/canadensis/pull/12)
 
+### Fixed
+
+- `register_client` example now compiles correctly after an update to `heapless` added
+  a new restriction on the size of some containers
+
 ## [canadensis_dsdl_frontend-v0.3.1](https://github.com/samcrow/canadensis/tree/canadensis_dsdl_frontend-v0.3.1) - 2022-06-10
 
 - canadensis_dsdl_frontend: Removed long name DSDL tests from filesystem [#10](https://github.com/samcrow/canadensis/pull/10)

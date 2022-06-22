@@ -122,7 +122,8 @@ pub trait TransferIdTracker<T: Transport>: Default {
 /// This map has a limited capacity and will return an error if asked to keep track of transfer
 /// IDs for too many nodes.
 ///
-/// **C must be a power of two.** Other values may cause incorrect behavior.
+/// **C must be a power of two and be greater than one** Other values may cause incorrect behavior
+/// or a compile-time error.
 pub struct TransferIdFixedMap<T: Transport, const C: usize> {
     ids: FnvIndexMap<T::NodeId, T::TransferId, C>,
 }
