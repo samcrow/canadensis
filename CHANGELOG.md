@@ -6,11 +6,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### Changed
-
-- `canadensis_dsdl_frontend`: Improved performance by adding a special case for BitLengthSet % integer
-- `canadensis_codegen_rust`: Updated `heck` dependency to 0.4.0
-
 ### Added
 
 - `canadensis_dsdl_frontend`: Support the new `.dsdl` extension for cyphal data types [#12](https://github.com/samcrow/canadensis/pull/12)
@@ -25,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_dsdl_frontend`: The public regulated data types in `canadensis_dsdl_frontend` are now a submodule. This should not
   impact any downstream code, but `git clone --recursive` is now required to make all the tests pass.
   [#13](https://github.com/samcrow/canadensis/pull/13)
+- `canadensis_dsdl_frontend`: Improved performance by adding a special case for BitLengthSet % integer
+- `canadensis_codegen_rust`: Updated `heck` dependency to 0.4.0
 
 ## [canadensis_dsdl_frontend-v0.3.1](https://github.com/samcrow/canadensis/tree/canadensis_dsdl_frontend-v0.3.1) - 2022-06-10
 
