@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- `canadensis_dsdl_frontend`: Improved performance by adding a special case for BitLengthSet % integer
+- `canadensis_codegen_rust`: Updated `heck` dependency to 0.4.0
+
 ### Added
 
 - `canadensis_dsdl_frontend`: Support the new `.dsdl` extension for cyphal data types [#12](https://github.com/samcrow/canadensis/pull/12)
