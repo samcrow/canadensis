@@ -10,7 +10,7 @@ repository = "https://github.com/samcrow/canadensis"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-heck = "0.3.3"
+heck = "0.4.0"
 clap = "2.33"
 
 [dependencies.canadensis_dsdl_frontend]

@@ -1,5 +1,17 @@
 //! Functions used to evaluate expressions
 
+use std::collections::BTreeSet;
+use std::convert::TryInto;
+use std::ops::RangeInclusive;
+
+use num_rational::BigRational;
+use num_traits::{Signed, ToPrimitive};
+
+use canadensis_dsdl_parser::num_bigint::BigInt;
+use canadensis_dsdl_parser::{
+    Expression, ExpressionAtom, ExpressionType, Literal, LiteralType, Span,
+};
+
 use crate::compile::CompileContext;
 use crate::error::Error;
 use crate::operators::{
@@ -10,12 +22,6 @@ use crate::operators::{
 use crate::types::set::{Set, TypeError};
 use crate::types::string::StringValue;
 use crate::types::{ScalarType, Type, Value};
-use canadensis_dsdl_parser::{
-    Expression, ExpressionAtom, ExpressionType, Literal, LiteralType, Span,
-};
-use num_rational::BigRational;
-use num_traits::{Signed, ToPrimitive};
-use std::collections::BTreeSet;
 
 pub(crate) fn evaluate_expression(
     cx: &mut CompileContext<'_>,
@@ -62,9 +68,22 @@ pub(crate) fn evaluate_expression(
         ExpressionType::Modulo(lhs, rhs) => {
             let lhs = evaluate_expression(cx, *lhs)?;
             let rhs = evaluate_expression(cx, *rhs)?;
-            calculate_elementwise_binary(lhs, rhs, span, "%", |lhs, rhs, _| {
-                Ok(Value::Rational(lhs % rhs))
-            })
+
+            match (lhs, rhs) {
+                // Special case for BitLengthSet % integer
+                (Value::BitLengthSet(lhs), Value::Rational(rhs)) if is_u64_integer(&rhs) => {
+                    let rhs: u64 = rhs
+                        .numer()
+                        .try_into()
+                        .expect("rhs BigInt to u64 conversion checks incorrect");
+                    let result = lhs % rhs;
+                    Ok(Value::BitLengthSet(result))
+                }
+                // General case
+                (lhs, rhs) => calculate_elementwise_binary(lhs, rhs, span, "%", |lhs, rhs, _| {
+                    Ok(Value::Rational(lhs % rhs))
+                }),
+            }
         }
         ExpressionType::Add(lhs, rhs) => {
             let lhs = evaluate_expression(cx, *lhs)?;
@@ -359,4 +378,10 @@ pub(crate) fn convert_type(
             }
         }
     }
+}
+
+/// Returns true if the provided rational number is an integer that can be converted into a u64
+fn is_u64_integer(value: &BigRational) -> bool {
+    let u64_range: RangeInclusive<BigInt> = BigInt::from(0u64)..=BigInt::from(u64::MAX);
+    value.is_integer() && u64_range.contains(value.numer())
 }
