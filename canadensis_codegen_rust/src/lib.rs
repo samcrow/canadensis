@@ -10,7 +10,7 @@ mod module_tree;
 mod size_bits;
 
 use canadensis_bit_length_set::BitLengthSet;
-use heck::{CamelCase, SnakeCase};
+use heck::{ToSnakeCase, ToUpperCamelCase};
 use std::collections::BTreeMap;
 use std::iter;
 
@@ -458,7 +458,7 @@ impl GeneratedVariant {
         external_packages: &BTreeMap<Vec<String>, Vec<String>>,
     ) -> Self {
         GeneratedVariant {
-            name: make_rust_identifier(name).to_camel_case(),
+            name: make_rust_identifier(name).to_upper_camel_case(),
             ty: to_rust_type(&ty, external_packages),
             uavcan_ty: ty,
         }
