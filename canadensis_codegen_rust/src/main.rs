@@ -3,7 +3,7 @@ extern crate canadensis_dsdl_frontend;
 extern crate clap;
 
 use canadensis_dsdl_frontend::Package;
-use clap::Arg;
+use clap::{AppSettings, Arg, SubCommand};
 use std::collections::BTreeMap;
 use std::ffi::OsString;
 use std::fs::File;
@@ -79,7 +79,8 @@ fn get_args() -> Args {
     let app = clap::App::new("canadensis_generate_code")
         .version(clap::crate_version!())
         .about("Generates Rust data types and serialization code from UAVCAN DSDL files")
-        .subcommand(clap::App::new("compile").about("Parses DSDL files and generates Rust code")
+        .setting(AppSettings::SubcommandRequiredElseHelp)
+        .subcommand(SubCommand::with_name("compile").about("Parses DSDL files and generates Rust code")
         .arg(
             Arg::with_name("input")
                 .index(1)
@@ -103,7 +104,7 @@ fn get_args() -> Args {
                 .value_name("uavcan-package,rust-module-path")
                 .help("A DSDL package name and corresponding Rust module path that will not be generated"),
         ))
-        .subcommand(clap::App::new("print-dependencies")
+        .subcommand(SubCommand::with_name("print-dependencies")
             .about("Prints the packages that the generated code depends on (for use in Cargo.toml)"));
     let matches = app.get_matches();
 
@@ -126,7 +127,7 @@ fn get_args() -> Args {
                 .unwrap_or_else(|| BTreeMap::new()),
         },
         ("print-dependencies", _) => Args::PrintDependencies,
-        _ => panic!("Unrecognized subcommand or no argument matches"),
+        _ => panic!("Unrecognized subcommand"),
     }
 }
 

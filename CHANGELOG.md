@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   [#13](https://github.com/samcrow/canadensis/pull/13)
 - `canadensis_dsdl_frontend`: Improved performance by adding a special case for BitLengthSet % integer
 - `canadensis_codegen_rust`: Updated `heck` dependency to 0.4.0
+- `canadensis_codegen_rust`: Application now prints help text instead of
+  panicking when run with no subcommand
 
 ## [canadensis_dsdl_frontend-v0.3.1](https://github.com/samcrow/canadensis/tree/canadensis_dsdl_frontend-v0.3.1) - 2022-06-10
 
