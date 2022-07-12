@@ -39,6 +39,8 @@ pub enum Error {
     TypeNotInNamespace(TypeKey),
     #[error("Can't add a type named {old}: another type with a conflicting name {new} has already been added")]
     DuplicateKey { old: TypeKey, new: TypeKey },
+    #[error("Non-deprecated type {outer} uses deprecated type {inner}")]
+    DeprecatedInNonDeprecated { outer: TypeKey, inner: TypeKey },
     /// An error triggered by a particular file
     ///
     /// Because files are compiled recursively, this may contain any other error type caused by

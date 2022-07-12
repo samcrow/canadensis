@@ -1,0 +1,5 @@
+
+# Because this type is not deprecated, it cannot include a deprecated type
+InnerDeprecated.0.1 inner
+
+@sealed

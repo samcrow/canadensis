@@ -528,6 +528,27 @@ impl ResolvedType {
             }
         }
     }
+
+    /// Returns true if this type is deprecated, or is an array of deprecated types
+    pub fn deprecated(&self) -> bool {
+        match self {
+            ResolvedType::Scalar(scalar) => scalar.deprecated(),
+            ResolvedType::FixedArray { inner, .. } => inner.deprecated(),
+            ResolvedType::VariableArray { inner, .. } => inner.deprecated(),
+        }
+    }
+
+    /// Returns the scalar type within this type
+    ///
+    /// If this type is scalar, this function returns the same type as a ScalarType. If this type
+    /// is an array, this function returns the element type.
+    pub fn scalar(&self) -> &ResolvedScalarType {
+        match self {
+            ResolvedType::Scalar(scalar) => scalar,
+            ResolvedType::FixedArray { inner, .. } => inner,
+            ResolvedType::VariableArray { inner, .. } => inner,
+        }
+    }
 }
 
 /// A scalar (non-array) type
@@ -581,6 +602,15 @@ impl ResolvedScalarType {
                 Extent::Delimited(_) => Some(ImplicitField::DelimiterHeader),
             },
             ResolvedScalarType::Primitive(_) | ResolvedScalarType::Void { .. } => None,
+        }
+    }
+
+    /// Returns true if this is a deprecated composite type
+    pub fn deprecated(&self) -> bool {
+        match self {
+            ResolvedScalarType::Composite { inner, .. } => inner.deprecated,
+            ResolvedScalarType::Primitive(_) => false,
+            ResolvedScalarType::Void { .. } => false,
         }
     }
 }

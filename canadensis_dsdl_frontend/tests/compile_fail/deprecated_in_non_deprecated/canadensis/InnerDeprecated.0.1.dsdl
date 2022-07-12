@@ -1,0 +1,5 @@
+@deprecated
+
+bool a
+
+@sealed

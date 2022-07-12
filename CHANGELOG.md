@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a new restriction on the size of some containers
 - `canadensis_dsdl_frontend`: Fixed a bug that caused service responses to
   not be marked as deprecated
+- `canadensis_dsdl_frontend`: Added a check that prohibits using a deprecated
+  type in a non-deprecated type (the specification requires this check)
 
 ### Changed
 

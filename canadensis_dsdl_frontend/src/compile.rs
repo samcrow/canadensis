@@ -8,7 +8,7 @@ use crate::type_key::{TypeFullName, TypeKey};
 use crate::types::constant::Constant;
 use crate::types::directive::evaluate_directive;
 use crate::types::expression::convert_type;
-use crate::types::{array_length_bits, PrimitiveType, ResolvedType};
+use crate::types::{array_length_bits, PrimitiveType, ResolvedScalarType, ResolvedType};
 use crate::warning::Warnings;
 use canadensis_bit_length_set::BitLengthSet;
 use canadensis_dsdl_parser::{Identifier, Span, Statement};
@@ -318,6 +318,9 @@ impl PersistentContext {
                         None => (ty_length, ty_alignment),
                     };
 
+                    // If the field type is deprecated, this type must also be deprecated.
+                    check_deprecated_in_non_deprecated(key, &state, &ty)?;
+
                     state.add_field(ty, name, total_length, total_alignment, span)?;
                 }
                 Statement::PaddingField { bits, span } => {
@@ -362,6 +365,30 @@ impl PersistentContext {
                 None => Err(Error::UnknownType(key.clone())),
             }
         }
+    }
+}
+
+/// Checks a type about to be added as a field or variant to this type, and returns an error
+/// if inner_type is deprecated and the type associated with `state` is not deprecated
+fn check_deprecated_in_non_deprecated(
+    outer_key: &TypeKey,
+    state: &FileState,
+    inner_type: &ResolvedType,
+) -> Result<(), Error> {
+    // Check if type is deprecated
+    match inner_type.scalar() {
+        ResolvedScalarType::Composite { key, inner } => {
+            if !state.deprecated && inner.deprecated {
+                Err(Error::DeprecatedInNonDeprecated {
+                    outer: outer_key.clone(),
+                    inner: key.clone(),
+                })
+            } else {
+                Ok(())
+            }
+        }
+        ResolvedScalarType::Primitive(_) => Ok(()),
+        ResolvedScalarType::Void { .. } => Ok(()),
     }
 }
 
