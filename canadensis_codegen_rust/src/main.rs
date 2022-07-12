@@ -32,7 +32,22 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             for path in input_folders {
                 package.add_files(path)?;
             }
-            let package = package.compile()?;
+            let package = match package.compile_with_warnings() {
+                Ok(package) => package,
+                Err((e, warnings)) => {
+                    for warning in warnings {
+                        eprintln!("Warning: {}", warning);
+                    }
+                    return Err(e.into());
+                }
+            };
+
+            // Report warnings
+            for warning in package.warnings() {
+                eprintln!("Warning: {}", warning);
+            }
+
+            // Generate code
             let generated = canadensis_codegen_rust::generate_code(&package, &external_packages);
 
             let mut output_file = BufWriter::new(File::create(output_file)?);

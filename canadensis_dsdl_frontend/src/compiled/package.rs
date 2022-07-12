@@ -2,26 +2,32 @@
 
 use crate::compiled::CompiledDsdl;
 use crate::type_key::TypeKey;
+use crate::warning::Warnings;
 use std::collections::btree_map;
 use std::collections::BTreeMap;
 
 /// A package of types compiled from DSDL files
 #[derive(Debug)]
 pub struct CompiledPackage {
+    /// Each compiled DSDL type
     types: BTreeMap<TypeKey, CompiledDsdl>,
+    /// Warnings reported while compiling
+    warnings: Warnings,
 }
 
 impl CompiledPackage {
-    pub(crate) fn new(types: BTreeMap<TypeKey, CompiledDsdl>) -> Self {
-        CompiledPackage { types }
+    pub(crate) fn new(types: BTreeMap<TypeKey, CompiledDsdl>, warnings: Warnings) -> Self {
+        CompiledPackage { types, warnings }
     }
 
     /// Returns a reference to the type with the provided key
+    #[inline]
     pub fn get_by_key(&self, key: &TypeKey) -> Option<&CompiledDsdl> {
         self.types.get(key)
     }
 
     /// Removes and returns the type with the provided key
+    #[inline]
     pub fn remove_by_key(&mut self, key: &TypeKey) -> Option<CompiledDsdl> {
         self.types.remove(key)
     }
@@ -29,8 +35,15 @@ impl CompiledPackage {
     /// Returns an iterator over the types in this package
     ///
     /// The order of iteration is unspecified.
+    #[inline]
     pub fn iter(&self) -> Iter<'_> {
         Iter(self.types.iter())
+    }
+
+    /// Returns the warnings reported while compiling
+    #[inline]
+    pub fn warnings(&self) -> &Warnings {
+        &self.warnings
     }
 }
 

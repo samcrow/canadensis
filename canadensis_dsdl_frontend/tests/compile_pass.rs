@@ -32,6 +32,7 @@ fn test_compile_subdirs(subdirs: &[&str]) -> Result<(), Error> {
     test_compile_directories(manifest_subdirectories)
 }
 
+/// Checks that the provided set of directories gets compiled successfully with no warnings
 fn test_compile_directories<I, P>(directories: I) -> Result<(), Error>
 where
     I: IntoIterator<Item = P>,
@@ -48,7 +49,14 @@ where
         }
     }
     match package.compile() {
-        Ok(_) => Ok(()),
+        Ok(compiled) => {
+            let warnings = compiled.warnings();
+            if warnings.is_empty() {
+                Ok(())
+            } else {
+                panic!("Unexpected warning(s) {:#?}", warnings);
+            }
+        }
         Err(e) => {
             println!("{}", e);
             Err(e)

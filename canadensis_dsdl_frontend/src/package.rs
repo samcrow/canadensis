@@ -1,7 +1,9 @@
+use crate::compile::CompileOutput;
 use crate::compiled::package::CompiledPackage;
 use crate::error::Error;
 use crate::type_key::{TypeFullName, TypeKey};
 use crate::types::keywords::{is_reserved_keyword, is_valid_identifier};
+use crate::warning::Warnings;
 use canadensis_dsdl_parser::TypeVersion;
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -154,9 +156,31 @@ impl Package {
     ///
     /// This function returns an error if any DSDL file could not be read, if any DSDL file has
     /// invalid content, or an `@assert` directive fails.
+    ///
+    /// If this function returns an error, it cannot return any warnings.
     pub fn compile(self) -> Result<CompiledPackage, Error> {
-        let result = crate::compile::compile(self.files)?;
-        Ok(CompiledPackage::new(result))
+        self.compile_with_warnings().map_err(|(e, _warnings)| e)
+    }
+    /// Compiles all input files that were previously added
+    ///
+    /// # Errors
+    ///
+    /// This function returns an error if any DSDL file could not be read, if any DSDL file has
+    /// invalid content, or an `@assert` directive fails.
+    ///
+    /// If an error occurs, this function returns the error and any warnings reported before
+    /// encountering the error.
+    pub fn compile_with_warnings(self) -> Result<CompiledPackage, (Error, Warnings)> {
+        match crate::compile::compile(self.files) {
+            CompileOutput {
+                dsdl: Ok(types),
+                warnings,
+            } => Ok(CompiledPackage::new(types, warnings)),
+            CompileOutput {
+                dsdl: Err(e),
+                warnings,
+            } => Err((e, warnings)),
+        }
     }
 }
 
@@ -202,10 +226,9 @@ fn validate_full_key(key: &TypeKey) -> Result<(), Error> {
 /// Returns true if the provided entry is a DSDL file
 fn is_dsdl(entry: &DirEntry) -> bool {
     if entry.file_type().is_file() {
-        entry
-            .path()
-            .extension()
-            .map_or(false, |extension| extension == "uavcan" || extension == "dsdl")
+        entry.path().extension().map_or(false, |extension| {
+            extension == "uavcan" || extension == "dsdl"
+        })
     } else {
         false
     }

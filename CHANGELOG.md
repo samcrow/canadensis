@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `canadensis_dsdl_frontend`: Support the new `.dsdl` extension for cyphal data types [#12](https://github.com/samcrow/canadensis/pull/12)
+- `canadensis_dsdl_frontend`: Report warnings for type and field names that do
+  not follow the DSDL case conventions
+- `canadensis_codegen_rust`: Print warnings
 
 ### Fixed
 

@@ -9,6 +9,7 @@ use crate::types::constant::Constant;
 use crate::types::directive::evaluate_directive;
 use crate::types::expression::convert_type;
 use crate::types::{array_length_bits, PrimitiveType, ResolvedType};
+use crate::warning::Warnings;
 use canadensis_bit_length_set::BitLengthSet;
 use canadensis_dsdl_parser::{Identifier, Span, Statement};
 use once_cell::sync::Lazy;
@@ -27,14 +28,25 @@ const COMPOSITE_ALIGNMENT: u32 = 8;
 /// This is used to return a reference to a bit length set when no other bit length set is available.
 static BIT_LENGTH_ZERO: Lazy<BitLengthSet> = Lazy::new(|| BitLengthSet::single(0));
 
-pub(crate) fn compile(
-    files: BTreeMap<TypeKey, DsdlFile>,
-) -> Result<BTreeMap<TypeKey, CompiledDsdl>, Error> {
-    PersistentContext {
+/// Compiles a set of files
+///
+/// This function returns the compiled DSDL or an error. In either case, it also returns
+/// a set of warnings.
+pub(crate) fn compile(files: BTreeMap<TypeKey, DsdlFile>) -> CompileOutput {
+    let context = PersistentContext {
         pending: files,
         done: BTreeMap::new(),
-    }
-    .compile()
+        warnings: Warnings::new(),
+    };
+    context.compile()
+}
+
+/// The output of a compile operation
+pub(crate) struct CompileOutput {
+    /// The compiled DSDL, or an error that prevented compilation
+    pub dsdl: Result<BTreeMap<TypeKey, CompiledDsdl>, Error>,
+    /// Any warnings reported while compiling
+    pub warnings: Warnings,
 }
 
 /// The compile context is passed to other compiling-related functions.
@@ -221,17 +233,31 @@ struct PersistentContext {
     pending: BTreeMap<TypeKey, DsdlFile>,
     /// Files that have been compiled
     done: BTreeMap<TypeKey, CompiledDsdl>,
+    /// Any reported warnings
+    warnings: Warnings,
 }
 
 impl PersistentContext {
-    fn compile(mut self) -> Result<BTreeMap<TypeKey, CompiledDsdl>, Error> {
+    fn compile(mut self) -> CompileOutput {
         while let Some(key) = self.pending.keys().next().cloned() {
             let input = self.pending.remove(&key).unwrap();
-            let output = self.compile_one(&key, input)?;
-            let existing = self.done.insert(key, output);
-            assert!(existing.is_none(), "Duplicate type in done");
+            match self.compile_one(&key, input) {
+                Ok(output) => {
+                    let existing = self.done.insert(key, output);
+                    assert!(existing.is_none(), "Duplicate type in done");
+                }
+                Err(e) => {
+                    return CompileOutput {
+                        dsdl: Err(e),
+                        warnings: self.warnings,
+                    }
+                }
+            }
         }
-        Ok(self.done)
+        CompileOutput {
+            dsdl: Ok(self.done),
+            warnings: self.warnings,
+        }
     }
 
     fn compile_one(&mut self, key: &TypeKey, input: DsdlFile) -> Result<CompiledDsdl, Error> {
@@ -245,6 +271,8 @@ impl PersistentContext {
     }
 
     fn compile_one_inner(&mut self, key: &TypeKey, input: DsdlFile) -> Result<CompiledDsdl, Error> {
+        self.warnings.check_pre_compile(key);
+
         // Create a new state for this file
         let mut state = FileState::new(key.name().path());
 
@@ -301,7 +329,10 @@ impl PersistentContext {
             }
         }
         // End of file, check that everything is here
-        state.finish(ast.eof_span, input.fixed_port_id())
+        let compiled = state.finish(ast.eof_span, input.fixed_port_id())?;
+
+        self.warnings.check_post_compile(key, &compiled);
+        Ok(compiled)
     }
 
     /// Looks up a composite type by its name and version

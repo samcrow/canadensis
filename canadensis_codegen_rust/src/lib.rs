@@ -623,7 +623,7 @@ impl ServiceTypeNames {
 
 fn make_rust_identifier(mut identifier: String) -> String {
     if identifier == "_" {
-        // Becomes _0
+        // _ is a reserved identifier, so this becomes _0
         identifier.push('0');
         identifier
     } else {

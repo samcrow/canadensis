@@ -128,6 +128,8 @@ impl Field {
     }
 
     /// Returns the name of this field, if it has one
+    ///
+    /// Padding fields do not have names. All other fields have names.
     pub fn name(&self) -> Option<&str> {
         match &self.kind {
             FieldKind::Padding(_) => None,

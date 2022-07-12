@@ -1,6 +1,7 @@
 extern crate canadensis_bit_length_set;
 extern crate canadensis_dsdl_parser;
 extern crate half;
+extern crate heck;
 extern crate num_rational;
 extern crate num_traits;
 extern crate once_cell;
@@ -26,6 +27,7 @@ pub(crate) mod operators;
 mod package;
 mod type_key;
 pub mod types;
+pub mod warning;
 
 pub use crate::error::Error;
 pub use crate::package::Package;
