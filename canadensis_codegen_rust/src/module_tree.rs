@@ -64,6 +64,8 @@ mod fmt_impl {
                     && submodule.items.iter().all(GeneratedItem::deprecated);
 
                 if deprecated {
+                    // Allow use of the deprecated type in this module only
+                    writeln!(f, "#[allow(deprecated)]")?;
                     writeln!(f, "#[deprecated]")?;
                 }
                 writeln!(f, "pub mod {} {{", sub_name)?;

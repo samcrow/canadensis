@@ -794,17 +794,17 @@ mod fmt_impl {
                 GeneratedField::Data(data) => {
                     writeln!(f, "/// `{}`\n///", data.uavcan_ty)?;
                     if data.always_aligned {
-                        writeln!(f, "/// Always aligned")?;
+                        writeln!(f, "/// Always aligned,")?;
                     } else {
-                        writeln!(f, "/// Not always aligned")?;
+                        writeln!(f, "/// Not always aligned,")?;
                     }
                     let size = data.uavcan_ty.size();
                     let size_min = size.min_value();
                     let size_max = size.max_value();
                     if size_min == size_max {
-                        writeln!(f, "/// Size {} bits", size_min)?;
+                        writeln!(f, "/// size {} bits", size_min)?;
                     } else {
-                        writeln!(f, "/// Size ranges from {} to {} bits", size_min, size_max)?;
+                        writeln!(f, "/// size ranges from {} to {} bits", size_min, size_max)?;
                     }
                     writeln!(f, "pub {}: {},", data.name, data.ty)
                 }
