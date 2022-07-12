@@ -3,18 +3,23 @@
 
 extern crate canadensis_dsdl_frontend;
 
-use canadensis_dsdl_frontend::{Error, Package};
+use canadensis_dsdl_frontend::compiled::package::CompiledPackage;
+use canadensis_dsdl_frontend::compiled::DsdlKind;
+use canadensis_dsdl_frontend::{Error, Package, TypeKey};
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::{fs, io};
 
 #[test]
 fn compile_simple_types_only() -> Result<(), Error> {
-    test_compile_subdirs(&["tests/simple_dsdl"])
+    test_compile_subdirs(&["tests/simple_dsdl"])?;
+    Ok(())
 }
 #[test]
 fn compile_regulated_types_only() -> Result<(), Error> {
     check_public_regulated_data_types_submodule()?;
-    test_compile_subdirs(&["tests/public_regulated_data_types"])
+    test_compile_subdirs(&["tests/public_regulated_data_types"])?;
+    Ok(())
 }
 #[test]
 fn compile_all() -> Result<(), Error> {
@@ -23,17 +28,43 @@ fn compile_all() -> Result<(), Error> {
         "tests/public_regulated_data_types",
         "tests/nunavut_test_types/test0",
         "tests/simple_dsdl",
-    ])
+    ])?;
+    Ok(())
 }
 
-fn test_compile_subdirs(subdirs: &[&str]) -> Result<(), Error> {
+/// Checks that when compiling a deprecated service type, both the request and response are marked
+/// as deprecated
+#[test]
+fn compile_service_response_deprecated() -> Result<(), Error> {
+    check_public_regulated_data_types_submodule()?;
+    let package = test_compile_subdirs(&[
+        "tests/public_regulated_data_types",
+        "tests/nunavut_test_types/test0",
+    ])?;
+
+    let dsdl = package
+        .get_by_key(&TypeKey::from_str("regulated.basics.DeprecatedService.0.1").unwrap())
+        .expect("Type not found");
+
+    match &dsdl.kind {
+        DsdlKind::Message(_) => panic!("Not a service"),
+        DsdlKind::Service { request, response } => {
+            assert!(request.deprecated());
+            assert!(response.deprecated());
+        }
+    }
+
+    Ok(())
+}
+
+fn test_compile_subdirs(subdirs: &[&str]) -> Result<CompiledPackage, Error> {
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let manifest_subdirectories = subdirs.iter().map(|subdir| manifest_dir.join(subdir));
     test_compile_directories(manifest_subdirectories)
 }
 
 /// Checks that the provided set of directories gets compiled successfully with no warnings
-fn test_compile_directories<I, P>(directories: I) -> Result<(), Error>
+fn test_compile_directories<I, P>(directories: I) -> Result<CompiledPackage, Error>
 where
     I: IntoIterator<Item = P>,
     P: AsRef<Path>,
@@ -52,7 +83,7 @@ where
         Ok(compiled) => {
             let warnings = compiled.warnings();
             if warnings.is_empty() {
-                Ok(())
+                Ok(compiled)
             } else {
                 panic!("Unexpected warning(s) {:#?}", warnings);
             }

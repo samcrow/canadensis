@@ -427,7 +427,8 @@ impl FileState {
             // Struct message completed
             State::MessageStruct(StructState::End(fields, extent), length) => {
                 let message = Message {
-                    deprecated: mem::take(&mut self.deprecated),
+                    // self.deprecated stays the same so that the response is also deprecated
+                    deprecated: self.deprecated,
                     extent,
                     kind: MessageKind::Struct(Struct { fields }),
                     bit_length: length,
@@ -440,7 +441,8 @@ impl FileState {
             State::MessageUnion(UnionState::End(variants, extent, length)) => {
                 let discriminant_bits = calculate_discriminant_bits(variants.len());
                 let message = Message {
-                    deprecated: mem::take(&mut self.deprecated),
+                    // self.deprecated stays the same so that the response is also deprecated
+                    deprecated: self.deprecated,
                     extent,
                     kind: MessageKind::Union(Union {
                         discriminant_bits,
@@ -614,6 +616,9 @@ impl FileState {
         }
     }
 
+    /// Handles an end of file and checks that the complete file is well-formed
+    ///
+    /// On success, this function returnes a compiled DSDL object.
     fn finish(self, eof_span: Span<'_>, fixed_port_id: Option<u32>) -> Result<CompiledDsdl, Error> {
         match self.state.expect("No state") {
             State::MessageStruct(StructState::End(fields, extent), length) => {

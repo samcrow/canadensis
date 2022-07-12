@@ -1,0 +1,8 @@
+
+@deprecated
+uint32 a
+@sealed
+---
+# The generated response type should also be deprecated
+bool b
+@sealed
