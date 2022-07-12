@@ -12,11 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_dsdl_frontend`: Report warnings for type and field names that do
   not follow the DSDL case conventions
 - `canadensis_codegen_rust`: Print warnings
+- `canadensis_codegen_rust`: Generated types are marked as deprecated if the
+  corresponding DSDL types are deprecated
 
 ### Fixed
 
 - `canadensis`: `register_client` example now compiles correctly after an update to `heapless` added
   a new restriction on the size of some containers
+- `canadensis_dsdl_frontend`: Fixed a bug that caused service responses to
+  not be marked as deprecated
 
 ### Changed
 
