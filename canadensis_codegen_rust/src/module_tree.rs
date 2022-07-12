@@ -48,6 +48,7 @@ impl FromIterator<GeneratedItem> for ModuleTree {
 
 mod fmt_impl {
     use super::ModuleTree;
+    use crate::GeneratedItem;
     use std::fmt::{Display, Formatter, Result};
 
     impl Display for ModuleTree {
@@ -56,6 +57,15 @@ mod fmt_impl {
                 writeln!(f, "{}", generated_item)?;
             }
             for (sub_name, submodule) in &self.children {
+                // If the submodule has no child modules and all its items are deprecated,
+                // mark the submodule as deprecated
+                let deprecated = submodule.children.is_empty()
+                    && !submodule.items.is_empty()
+                    && submodule.items.iter().all(GeneratedItem::deprecated);
+
+                if deprecated {
+                    writeln!(f, "#[deprecated]")?;
+                }
                 writeln!(f, "pub mod {} {{", sub_name)?;
                 Display::fmt(submodule, f)?;
                 writeln!(f, "}}")?;

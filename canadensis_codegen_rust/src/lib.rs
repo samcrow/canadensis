@@ -106,6 +106,7 @@ fn generate_from_dsdl(
                         "::canadensis_core::SubjectId::from_truncating({})",
                         subject_id
                     ),
+                    deprecated: message.deprecated(),
                 });
             }
 
@@ -115,6 +116,7 @@ fn generate_from_dsdl(
                 &rust_type,
                 message.extent().clone(),
                 MessageRole::Message,
+                message.deprecated(),
                 external_packages,
             )));
         }
@@ -135,6 +137,7 @@ fn generate_from_dsdl(
                         "::canadensis_core::ServiceId::from_truncating({})",
                         service_id
                     ),
+                    deprecated: request.deprecated(),
                 });
             }
 
@@ -144,6 +147,7 @@ fn generate_from_dsdl(
                 &rust_type.request,
                 request.extent().clone(),
                 MessageRole::Request,
+                request.deprecated(),
                 external_packages,
             )));
             items.push(GeneratedItem::Type(generate_rust_type(
@@ -152,6 +156,7 @@ fn generate_from_dsdl(
                 &rust_type.response,
                 response.extent().clone(),
                 MessageRole::Response,
+                response.deprecated(),
                 external_packages,
             )));
         }
@@ -169,6 +174,7 @@ fn generate_rust_type(
     rust_type: &RustTypeName,
     extent: Extent,
     role: MessageRole,
+    deprecated: bool,
     external_packages: &BTreeMap<Vec<String>, Vec<String>>,
 ) -> GeneratedType {
     let length = message.bit_length().clone();
@@ -181,6 +187,7 @@ fn generate_rust_type(
             role,
             uavcan_struct,
             message.constants().clone(),
+            deprecated,
             external_packages,
         ),
         MessageKind::Union(uavcan_union) => GeneratedType::new_enum(
@@ -191,6 +198,7 @@ fn generate_rust_type(
             role,
             uavcan_union,
             message.constants().clone(),
+            deprecated,
             external_packages,
         ),
     }
@@ -202,6 +210,7 @@ enum GeneratedItem {
         name: RustTypeName,
         ty: String,
         value: String,
+        deprecated: bool,
     },
 }
 
@@ -210,6 +219,14 @@ impl GeneratedItem {
         match self {
             GeneratedItem::Type(ty) => &ty.name,
             GeneratedItem::Constant { name, .. } => name,
+        }
+    }
+
+    /// Returns true if this item is deprecated
+    pub fn deprecated(&self) -> bool {
+        match self {
+            GeneratedItem::Type(ty) => ty.deprecated,
+            GeneratedItem::Constant { deprecated, .. } => *deprecated,
         }
     }
 }
@@ -222,6 +239,7 @@ struct GeneratedType {
     role: MessageRole,
     kind: GeneratedTypeKind,
     constants: Constants,
+    deprecated: bool,
 }
 
 enum GeneratedTypeKind {
@@ -238,6 +256,7 @@ impl GeneratedType {
         role: MessageRole,
         uavcan_struct: &Struct,
         constants: Constants,
+        deprecated: bool,
         external_packages: &BTreeMap<Vec<String>, Vec<String>>,
     ) -> GeneratedType {
         let fields = uavcan_struct
@@ -262,6 +281,7 @@ impl GeneratedType {
             role,
             GeneratedTypeKind::Struct(GeneratedStruct { fields }),
             constants,
+            deprecated,
         )
     }
     pub fn new_enum(
@@ -272,6 +292,7 @@ impl GeneratedType {
         role: MessageRole,
         uavcan_union: &Union,
         constants: Constants,
+        deprecated: bool,
         external_packages: &BTreeMap<Vec<String>, Vec<String>>,
     ) -> GeneratedType {
         let variants = uavcan_union
@@ -293,6 +314,7 @@ impl GeneratedType {
                 variants,
             }),
             constants,
+            deprecated,
         )
     }
 
@@ -304,6 +326,7 @@ impl GeneratedType {
         role: MessageRole,
         kind: GeneratedTypeKind,
         constants: Constants,
+        deprecated: bool,
     ) -> Self {
         GeneratedType {
             uavcan_name: key.to_string(),
@@ -313,6 +336,7 @@ impl GeneratedType {
             role,
             kind,
             constants,
+            deprecated,
         }
     }
 
@@ -657,6 +681,7 @@ mod fmt_impl {
 
     impl Display for GeneratedType {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+            // Documentation: Cyphal type name
             writeln!(f, "/// `{}`\n///", self.uavcan_name)?;
             let min_size = self.size.min_value();
             let max_size = self.size.max_value();
@@ -676,6 +701,10 @@ mod fmt_impl {
             if supports_zero_copy {
                 writeln!(f, "#[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]")?;
                 writeln!(f, "#[repr(C, packed)]")?;
+            }
+
+            if self.deprecated {
+                writeln!(f, "#[deprecated]")?;
             }
 
             match &self.kind {
@@ -824,8 +853,18 @@ mod fmt_impl {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
             match self {
                 GeneratedItem::Type(ty) => Display::fmt(ty, f),
-                GeneratedItem::Constant { name, ty, value } => {
-                    writeln!(f, "pub const {}: {} = {};", name.type_name, ty, value)
+                GeneratedItem::Constant {
+                    name,
+                    ty,
+                    value,
+                    deprecated,
+                } => {
+                    let deprecated_attr = if *deprecated { "#[deprecated]" } else { "" };
+                    writeln!(
+                        f,
+                        "{} pub const {}: {} = {};",
+                        deprecated_attr, name.type_name, ty, value
+                    )
                 }
             }
         }

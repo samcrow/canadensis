@@ -3,11 +3,11 @@ compile_error!("Zero-copy serialization requires a little-endian target");
 #[allow(unused_variables, unused_braces, unused_parens)]
 #[deny(unaligned_references)]
 pub mod reg {
-    pub mod drone {
+    pub mod udral {
         pub mod physics {
             pub mod acoustics {
                 pub mod note_0_1 {
-                    /// `reg.drone.physics.acoustics.Note.0.1`
+                    /// `reg.udral.physics.acoustics.Note.0.1`
                     ///
                     /// Fixed size 12 bytes
                     #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
@@ -64,17 +64,17 @@ pub mod reg {
             pub mod dynamics {
                 pub mod rotation {
                     pub mod planar_0_1 {
-                        /// `reg.drone.physics.dynamics.rotation.Planar.0.1`
+                        /// `reg.udral.physics.dynamics.rotation.Planar.0.1`
                         ///
                         /// Fixed size 16 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                         #[repr(C, packed)]
                         pub struct Planar {
-/// `reg.drone.physics.kinematics.rotation.Planar.0.1`
+/// `reg.udral.physics.kinematics.rotation.Planar.0.1`
 ///
 /// Always aligned
 /// Size 96 bits
-pub kinematics: crate::reg::drone::physics::kinematics::rotation::planar_0_1::Planar,
+pub kinematics: crate::reg::udral::physics::kinematics::rotation::planar_0_1::Planar,
 /// `uavcan.si.unit.torque.Scalar.1.0`
 ///
 /// Always aligned
@@ -115,7 +115,7 @@ pub torque: crate::uavcan::si::unit::torque::scalar_1_0::Scalar,
                         }
                     }
                     pub mod planar_ts_0_1 {
-                        /// `reg.drone.physics.dynamics.rotation.PlanarTs.0.1`
+                        /// `reg.udral.physics.dynamics.rotation.PlanarTs.0.1`
                         ///
                         /// Fixed size 23 bytes
                         pub struct PlanarTs {
@@ -124,11 +124,11 @@ pub torque: crate::uavcan::si::unit::torque::scalar_1_0::Scalar,
 /// Always aligned
 /// Size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-/// `reg.drone.physics.dynamics.rotation.Planar.0.1`
+/// `reg.udral.physics.dynamics.rotation.Planar.0.1`
 ///
 /// Always aligned
 /// Size 128 bits
-pub value: crate::reg::drone::physics::dynamics::rotation::planar_0_1::Planar,
+pub value: crate::reg::udral::physics::dynamics::rotation::planar_0_1::Planar,
 }
                         impl ::canadensis_encoding::DataType for PlanarTs {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -164,17 +164,17 @@ pub value: crate::reg::drone::physics::dynamics::rotation::planar_0_1::Planar,
                 }
                 pub mod translation {
                     pub mod linear_0_1 {
-                        /// `reg.drone.physics.dynamics.translation.Linear.0.1`
+                        /// `reg.udral.physics.dynamics.translation.Linear.0.1`
                         ///
                         /// Fixed size 16 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                         #[repr(C, packed)]
                         pub struct Linear {
-/// `reg.drone.physics.kinematics.translation.Linear.0.1`
+/// `reg.udral.physics.kinematics.translation.Linear.0.1`
 ///
 /// Always aligned
 /// Size 96 bits
-pub kinematics: crate::reg::drone::physics::kinematics::translation::linear_0_1::Linear,
+pub kinematics: crate::reg::udral::physics::kinematics::translation::linear_0_1::Linear,
 /// `uavcan.si.unit.force.Scalar.1.0`
 ///
 /// Always aligned
@@ -215,7 +215,7 @@ pub force: crate::uavcan::si::unit::force::scalar_1_0::Scalar,
                         }
                     }
                     pub mod linear_ts_0_1 {
-                        /// `reg.drone.physics.dynamics.translation.LinearTs.0.1`
+                        /// `reg.udral.physics.dynamics.translation.LinearTs.0.1`
                         ///
                         /// Fixed size 23 bytes
                         pub struct LinearTs {
@@ -224,11 +224,11 @@ pub force: crate::uavcan::si::unit::force::scalar_1_0::Scalar,
 /// Always aligned
 /// Size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-/// `reg.drone.physics.dynamics.translation.Linear.0.1`
+/// `reg.udral.physics.dynamics.translation.Linear.0.1`
 ///
 /// Always aligned
 /// Size 128 bits
-pub value: crate::reg::drone::physics::dynamics::translation::linear_0_1::Linear,
+pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear,
 }
                         impl ::canadensis_encoding::DataType for LinearTs {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -265,7 +265,7 @@ pub value: crate::reg::drone::physics::dynamics::translation::linear_0_1::Linear
             }
             pub mod electricity {
                 pub mod power_0_1 {
-                    /// `reg.drone.physics.electricity.Power.0.1`
+                    /// `reg.udral.physics.electricity.Power.0.1`
                     ///
                     /// Fixed size 8 bytes
                     #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
@@ -313,7 +313,7 @@ pub value: crate::reg::drone::physics::dynamics::translation::linear_0_1::Linear
                     }
                 }
                 pub mod power_ts_0_1 {
-                    /// `reg.drone.physics.electricity.PowerTs.0.1`
+                    /// `reg.udral.physics.electricity.PowerTs.0.1`
                     ///
                     /// Fixed size 15 bytes
                     pub struct PowerTs {
@@ -323,11 +323,11 @@ pub value: crate::reg::drone::physics::dynamics::translation::linear_0_1::Linear
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// `reg.drone.physics.electricity.Power.0.1`
+                        /// `reg.udral.physics.electricity.Power.0.1`
                         ///
                         /// Always aligned
                         /// Size 64 bits
-                        pub value: crate::reg::drone::physics::electricity::power_0_1::Power,
+                        pub value: crate::reg::udral::physics::electricity::power_0_1::Power,
                     }
                     impl ::canadensis_encoding::DataType for PowerTs {
                         const EXTENT_BYTES: Option<u32> = None;
@@ -358,17 +358,17 @@ pub value: crate::reg::drone::physics::dynamics::translation::linear_0_1::Linear
                     }
                 }
                 pub mod source_0_1 {
-                    /// `reg.drone.physics.electricity.Source.0.1`
+                    /// `reg.udral.physics.electricity.Source.0.1`
                     ///
                     /// Fixed size 16 bytes
                     #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                     #[repr(C, packed)]
                     pub struct Source {
-                        /// `reg.drone.physics.electricity.Power.0.1`
+                        /// `reg.udral.physics.electricity.Power.0.1`
                         ///
                         /// Always aligned
                         /// Size 64 bits
-                        pub power: crate::reg::drone::physics::electricity::power_0_1::Power,
+                        pub power: crate::reg::udral::physics::electricity::power_0_1::Power,
                         /// `uavcan.si.unit.energy.Scalar.1.0`
                         ///
                         /// Always aligned
@@ -412,7 +412,7 @@ pub value: crate::reg::drone::physics::dynamics::translation::linear_0_1::Linear
                     }
                 }
                 pub mod source_ts_0_1 {
-                    /// `reg.drone.physics.electricity.SourceTs.0.1`
+                    /// `reg.udral.physics.electricity.SourceTs.0.1`
                     ///
                     /// Fixed size 23 bytes
                     pub struct SourceTs {
@@ -422,11 +422,11 @@ pub value: crate::reg::drone::physics::dynamics::translation::linear_0_1::Linear
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// `reg.drone.physics.electricity.Source.0.1`
+                        /// `reg.udral.physics.electricity.Source.0.1`
                         ///
                         /// Always aligned
                         /// Size 128 bits
-                        pub value: crate::reg::drone::physics::electricity::source_0_1::Source,
+                        pub value: crate::reg::udral::physics::electricity::source_0_1::Source,
                     }
                     impl ::canadensis_encoding::DataType for SourceTs {
                         const EXTENT_BYTES: Option<u32> = None;
@@ -460,7 +460,7 @@ pub value: crate::reg::drone::physics::dynamics::translation::linear_0_1::Linear
             pub mod kinematics {
                 pub mod cartesian {
                     pub mod point_0_1 {
-                        /// `reg.drone.physics.kinematics.cartesian.Point.0.1`
+                        /// `reg.udral.physics.kinematics.cartesian.Point.0.1`
                         ///
                         /// Fixed size 24 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
@@ -506,18 +506,18 @@ pub value: crate::reg::drone::physics::dynamics::translation::linear_0_1::Linear
                         }
                     }
                     pub mod point_state_0_1 {
-                        /// `reg.drone.physics.kinematics.cartesian.PointState.0.1`
+                        /// `reg.udral.physics.kinematics.cartesian.PointState.0.1`
                         ///
                         /// Fixed size 36 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                         #[repr(C, packed)]
                         pub struct PointState {
-                            /// `reg.drone.physics.kinematics.cartesian.Point.0.1`
+                            /// `reg.udral.physics.kinematics.cartesian.Point.0.1`
                             ///
                             /// Always aligned
                             /// Size 192 bits
                             pub position:
-                                crate::reg::drone::physics::kinematics::cartesian::point_0_1::Point,
+                                crate::reg::udral::physics::kinematics::cartesian::point_0_1::Point,
                             /// `uavcan.si.unit.velocity.Vector3.1.0`
                             ///
                             /// Always aligned
@@ -558,22 +558,22 @@ pub value: crate::reg::drone::physics::dynamics::translation::linear_0_1::Linear
                         }
                     }
                     pub mod point_state_var_0_1 {
-                        /// `reg.drone.physics.kinematics.cartesian.PointStateVar.0.1`
+                        /// `reg.udral.physics.kinematics.cartesian.PointStateVar.0.1`
                         ///
                         /// Fixed size 60 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                         #[repr(C, packed)]
                         pub struct PointStateVar {
-/// `reg.drone.physics.kinematics.cartesian.PointVar.0.1`
+/// `reg.udral.physics.kinematics.cartesian.PointVar.0.1`
 ///
 /// Always aligned
 /// Size 288 bits
-pub position: crate::reg::drone::physics::kinematics::cartesian::point_var_0_1::PointVar,
-/// `reg.drone.physics.kinematics.translation.Velocity3Var.0.2`
+pub position: crate::reg::udral::physics::kinematics::cartesian::point_var_0_1::PointVar,
+/// `reg.udral.physics.kinematics.translation.Velocity3Var.0.2`
 ///
 /// Always aligned
 /// Size 192 bits
-pub velocity: crate::reg::drone::physics::kinematics::translation::velocity3_var_0_2::Velocity3Var,
+pub velocity: crate::reg::udral::physics::kinematics::translation::velocity3_var_0_2::Velocity3Var,
 }
                         impl ::canadensis_encoding::DataType for PointStateVar {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -609,7 +609,7 @@ pub velocity: crate::reg::drone::physics::kinematics::translation::velocity3_var
                         }
                     }
                     pub mod point_state_var_ts_0_1 {
-                        /// `reg.drone.physics.kinematics.cartesian.PointStateVarTs.0.1`
+                        /// `reg.udral.physics.kinematics.cartesian.PointStateVarTs.0.1`
                         ///
                         /// Fixed size 67 bytes
                         pub struct PointStateVarTs {
@@ -618,11 +618,11 @@ pub velocity: crate::reg::drone::physics::kinematics::translation::velocity3_var
 /// Always aligned
 /// Size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-/// `reg.drone.physics.kinematics.cartesian.PointStateVar.0.1`
+/// `reg.udral.physics.kinematics.cartesian.PointStateVar.0.1`
 ///
 /// Always aligned
 /// Size 480 bits
-pub value: crate::reg::drone::physics::kinematics::cartesian::point_state_var_0_1::PointStateVar,
+pub value: crate::reg::udral::physics::kinematics::cartesian::point_state_var_0_1::PointStateVar,
 }
                         impl ::canadensis_encoding::DataType for PointStateVarTs {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -656,18 +656,18 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::point_state_var_0_
                         }
                     }
                     pub mod point_var_0_1 {
-                        /// `reg.drone.physics.kinematics.cartesian.PointVar.0.1`
+                        /// `reg.udral.physics.kinematics.cartesian.PointVar.0.1`
                         ///
                         /// Fixed size 36 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                         #[repr(C, packed)]
                         pub struct PointVar {
-                            /// `reg.drone.physics.kinematics.cartesian.Point.0.1`
+                            /// `reg.udral.physics.kinematics.cartesian.Point.0.1`
                             ///
                             /// Always aligned
                             /// Size 192 bits
                             pub value:
-                                crate::reg::drone::physics::kinematics::cartesian::point_0_1::Point,
+                                crate::reg::udral::physics::kinematics::cartesian::point_0_1::Point,
                             /// `saturated float16[6]`
                             ///
                             /// Always aligned
@@ -708,18 +708,18 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::point_state_var_0_
                         }
                     }
                     pub mod pose_0_1 {
-                        /// `reg.drone.physics.kinematics.cartesian.Pose.0.1`
+                        /// `reg.udral.physics.kinematics.cartesian.Pose.0.1`
                         ///
                         /// Fixed size 40 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                         #[repr(C, packed)]
                         pub struct Pose {
-                            /// `reg.drone.physics.kinematics.cartesian.Point.0.1`
+                            /// `reg.udral.physics.kinematics.cartesian.Point.0.1`
                             ///
                             /// Always aligned
                             /// Size 192 bits
                             pub position:
-                                crate::reg::drone::physics::kinematics::cartesian::point_0_1::Point,
+                                crate::reg::udral::physics::kinematics::cartesian::point_0_1::Point,
                             /// `uavcan.si.unit.angle.Quaternion.1.0`
                             ///
                             /// Always aligned
@@ -761,18 +761,18 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::point_state_var_0_
                         }
                     }
                     pub mod pose_var_0_1 {
-                        /// `reg.drone.physics.kinematics.cartesian.PoseVar.0.1`
+                        /// `reg.udral.physics.kinematics.cartesian.PoseVar.0.1`
                         ///
                         /// Fixed size 82 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                         #[repr(C, packed)]
                         pub struct PoseVar {
-                            /// `reg.drone.physics.kinematics.cartesian.Pose.0.1`
+                            /// `reg.udral.physics.kinematics.cartesian.Pose.0.1`
                             ///
                             /// Always aligned
                             /// Size 320 bits
                             pub value:
-                                crate::reg::drone::physics::kinematics::cartesian::pose_0_1::Pose,
+                                crate::reg::udral::physics::kinematics::cartesian::pose_0_1::Pose,
                             /// `saturated float16[21]`
                             ///
                             /// Always aligned
@@ -813,7 +813,7 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::point_state_var_0_
                         }
                     }
                     pub mod pose_var_ts_0_1 {
-                        /// `reg.drone.physics.kinematics.cartesian.PoseVarTs.0.1`
+                        /// `reg.udral.physics.kinematics.cartesian.PoseVarTs.0.1`
                         ///
                         /// Fixed size 89 bytes
                         pub struct PoseVarTs {
@@ -822,11 +822,11 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::point_state_var_0_
 /// Always aligned
 /// Size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-/// `reg.drone.physics.kinematics.cartesian.PoseVar.0.1`
+/// `reg.udral.physics.kinematics.cartesian.PoseVar.0.1`
 ///
 /// Always aligned
 /// Size 656 bits
-pub value: crate::reg::drone::physics::kinematics::cartesian::pose_var_0_1::PoseVar,
+pub value: crate::reg::udral::physics::kinematics::cartesian::pose_var_0_1::PoseVar,
 }
                         impl ::canadensis_encoding::DataType for PoseVarTs {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -860,24 +860,24 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::pose_var_0_1::Pose
                         }
                     }
                     pub mod state_0_1 {
-                        /// `reg.drone.physics.kinematics.cartesian.State.0.1`
+                        /// `reg.udral.physics.kinematics.cartesian.State.0.1`
                         ///
                         /// Fixed size 64 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                         #[repr(C, packed)]
                         pub struct State {
-                            /// `reg.drone.physics.kinematics.cartesian.Pose.0.1`
+                            /// `reg.udral.physics.kinematics.cartesian.Pose.0.1`
                             ///
                             /// Always aligned
                             /// Size 320 bits
                             pub pose:
-                                crate::reg::drone::physics::kinematics::cartesian::pose_0_1::Pose,
-                            /// `reg.drone.physics.kinematics.cartesian.Twist.0.1`
+                                crate::reg::udral::physics::kinematics::cartesian::pose_0_1::Pose,
+                            /// `reg.udral.physics.kinematics.cartesian.Twist.0.1`
                             ///
                             /// Always aligned
                             /// Size 192 bits
                             pub twist:
-                                crate::reg::drone::physics::kinematics::cartesian::twist_0_1::Twist,
+                                crate::reg::udral::physics::kinematics::cartesian::twist_0_1::Twist,
                         }
                         impl ::canadensis_encoding::DataType for State {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -913,22 +913,22 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::pose_var_0_1::Pose
                         }
                     }
                     pub mod state_var_0_1 {
-                        /// `reg.drone.physics.kinematics.cartesian.StateVar.0.1`
+                        /// `reg.udral.physics.kinematics.cartesian.StateVar.0.1`
                         ///
                         /// Fixed size 148 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                         #[repr(C, packed)]
                         pub struct StateVar {
-/// `reg.drone.physics.kinematics.cartesian.PoseVar.0.1`
+/// `reg.udral.physics.kinematics.cartesian.PoseVar.0.1`
 ///
 /// Always aligned
 /// Size 656 bits
-pub pose: crate::reg::drone::physics::kinematics::cartesian::pose_var_0_1::PoseVar,
-/// `reg.drone.physics.kinematics.cartesian.TwistVar.0.1`
+pub pose: crate::reg::udral::physics::kinematics::cartesian::pose_var_0_1::PoseVar,
+/// `reg.udral.physics.kinematics.cartesian.TwistVar.0.1`
 ///
 /// Always aligned
 /// Size 528 bits
-pub twist: crate::reg::drone::physics::kinematics::cartesian::twist_var_0_1::TwistVar,
+pub twist: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::TwistVar,
 }
                         impl ::canadensis_encoding::DataType for StateVar {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -964,7 +964,7 @@ pub twist: crate::reg::drone::physics::kinematics::cartesian::twist_var_0_1::Twi
                         }
                     }
                     pub mod state_var_ts_0_1 {
-                        /// `reg.drone.physics.kinematics.cartesian.StateVarTs.0.1`
+                        /// `reg.udral.physics.kinematics.cartesian.StateVarTs.0.1`
                         ///
                         /// Fixed size 155 bytes
                         pub struct StateVarTs {
@@ -973,11 +973,11 @@ pub twist: crate::reg::drone::physics::kinematics::cartesian::twist_var_0_1::Twi
 /// Always aligned
 /// Size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-/// `reg.drone.physics.kinematics.cartesian.StateVar.0.1`
+/// `reg.udral.physics.kinematics.cartesian.StateVar.0.1`
 ///
 /// Always aligned
 /// Size 1184 bits
-pub value: crate::reg::drone::physics::kinematics::cartesian::state_var_0_1::StateVar,
+pub value: crate::reg::udral::physics::kinematics::cartesian::state_var_0_1::StateVar,
 }
                         impl ::canadensis_encoding::DataType for StateVarTs {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -1011,7 +1011,7 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::state_var_0_1::Sta
                         }
                     }
                     pub mod twist_0_1 {
-                        /// `reg.drone.physics.kinematics.cartesian.Twist.0.1`
+                        /// `reg.udral.physics.kinematics.cartesian.Twist.0.1`
                         ///
                         /// Fixed size 24 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
@@ -1063,18 +1063,18 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::state_var_0_1::Sta
                         }
                     }
                     pub mod twist_var_0_1 {
-                        /// `reg.drone.physics.kinematics.cartesian.TwistVar.0.1`
+                        /// `reg.udral.physics.kinematics.cartesian.TwistVar.0.1`
                         ///
                         /// Fixed size 66 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                         #[repr(C, packed)]
                         pub struct TwistVar {
-                            /// `reg.drone.physics.kinematics.cartesian.Twist.0.1`
+                            /// `reg.udral.physics.kinematics.cartesian.Twist.0.1`
                             ///
                             /// Always aligned
                             /// Size 192 bits
                             pub value:
-                                crate::reg::drone::physics::kinematics::cartesian::twist_0_1::Twist,
+                                crate::reg::udral::physics::kinematics::cartesian::twist_0_1::Twist,
                             /// `saturated float16[21]`
                             ///
                             /// Always aligned
@@ -1115,7 +1115,7 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::state_var_0_1::Sta
                         }
                     }
                     pub mod twist_var_ts_0_1 {
-                        /// `reg.drone.physics.kinematics.cartesian.TwistVarTs.0.1`
+                        /// `reg.udral.physics.kinematics.cartesian.TwistVarTs.0.1`
                         ///
                         /// Fixed size 73 bytes
                         pub struct TwistVarTs {
@@ -1124,11 +1124,11 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::state_var_0_1::Sta
 /// Always aligned
 /// Size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-/// `reg.drone.physics.kinematics.cartesian.TwistVar.0.1`
+/// `reg.udral.physics.kinematics.cartesian.TwistVar.0.1`
 ///
 /// Always aligned
 /// Size 528 bits
-pub value: crate::reg::drone::physics::kinematics::cartesian::twist_var_0_1::TwistVar,
+pub value: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::TwistVar,
 }
                         impl ::canadensis_encoding::DataType for TwistVarTs {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -1164,7 +1164,7 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::twist_var_0_1::Twi
                 }
                 pub mod geodetic {
                     pub mod point_0_1 {
-                        /// `reg.drone.physics.kinematics.geodetic.Point.0.1`
+                        /// `reg.udral.physics.kinematics.geodetic.Point.0.1`
                         ///
                         /// Fixed size 24 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
@@ -1222,18 +1222,18 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::twist_var_0_1::Twi
                         }
                     }
                     pub mod point_state_0_1 {
-                        /// `reg.drone.physics.kinematics.geodetic.PointState.0.1`
+                        /// `reg.udral.physics.kinematics.geodetic.PointState.0.1`
                         ///
                         /// Fixed size 36 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                         #[repr(C, packed)]
                         pub struct PointState {
-                            /// `reg.drone.physics.kinematics.geodetic.Point.0.1`
+                            /// `reg.udral.physics.kinematics.geodetic.Point.0.1`
                             ///
                             /// Always aligned
                             /// Size 192 bits
                             pub position:
-                                crate::reg::drone::physics::kinematics::geodetic::point_0_1::Point,
+                                crate::reg::udral::physics::kinematics::geodetic::point_0_1::Point,
                             /// `uavcan.si.unit.velocity.Vector3.1.0`
                             ///
                             /// Always aligned
@@ -1274,22 +1274,22 @@ pub value: crate::reg::drone::physics::kinematics::cartesian::twist_var_0_1::Twi
                         }
                     }
                     pub mod point_state_var_0_1 {
-                        /// `reg.drone.physics.kinematics.geodetic.PointStateVar.0.1`
+                        /// `reg.udral.physics.kinematics.geodetic.PointStateVar.0.1`
                         ///
                         /// Fixed size 60 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                         #[repr(C, packed)]
                         pub struct PointStateVar {
-/// `reg.drone.physics.kinematics.geodetic.PointVar.0.1`
+/// `reg.udral.physics.kinematics.geodetic.PointVar.0.1`
 ///
 /// Always aligned
 /// Size 288 bits
-pub position: crate::reg::drone::physics::kinematics::geodetic::point_var_0_1::PointVar,
-/// `reg.drone.physics.kinematics.translation.Velocity3Var.0.2`
+pub position: crate::reg::udral::physics::kinematics::geodetic::point_var_0_1::PointVar,
+/// `reg.udral.physics.kinematics.translation.Velocity3Var.0.2`
 ///
 /// Always aligned
 /// Size 192 bits
-pub velocity: crate::reg::drone::physics::kinematics::translation::velocity3_var_0_2::Velocity3Var,
+pub velocity: crate::reg::udral::physics::kinematics::translation::velocity3_var_0_2::Velocity3Var,
 }
                         impl ::canadensis_encoding::DataType for PointStateVar {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -1325,7 +1325,7 @@ pub velocity: crate::reg::drone::physics::kinematics::translation::velocity3_var
                         }
                     }
                     pub mod point_state_var_ts_0_1 {
-                        /// `reg.drone.physics.kinematics.geodetic.PointStateVarTs.0.1`
+                        /// `reg.udral.physics.kinematics.geodetic.PointStateVarTs.0.1`
                         ///
                         /// Fixed size 67 bytes
                         pub struct PointStateVarTs {
@@ -1334,11 +1334,11 @@ pub velocity: crate::reg::drone::physics::kinematics::translation::velocity3_var
 /// Always aligned
 /// Size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-/// `reg.drone.physics.kinematics.geodetic.PointStateVar.0.1`
+/// `reg.udral.physics.kinematics.geodetic.PointStateVar.0.1`
 ///
 /// Always aligned
 /// Size 480 bits
-pub value: crate::reg::drone::physics::kinematics::geodetic::point_state_var_0_1::PointStateVar,
+pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1::PointStateVar,
 }
                         impl ::canadensis_encoding::DataType for PointStateVarTs {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -1372,18 +1372,18 @@ pub value: crate::reg::drone::physics::kinematics::geodetic::point_state_var_0_1
                         }
                     }
                     pub mod point_var_0_1 {
-                        /// `reg.drone.physics.kinematics.geodetic.PointVar.0.1`
+                        /// `reg.udral.physics.kinematics.geodetic.PointVar.0.1`
                         ///
                         /// Fixed size 36 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                         #[repr(C, packed)]
                         pub struct PointVar {
-                            /// `reg.drone.physics.kinematics.geodetic.Point.0.1`
+                            /// `reg.udral.physics.kinematics.geodetic.Point.0.1`
                             ///
                             /// Always aligned
                             /// Size 192 bits
                             pub value:
-                                crate::reg::drone::physics::kinematics::geodetic::point_0_1::Point,
+                                crate::reg::udral::physics::kinematics::geodetic::point_0_1::Point,
                             /// `saturated float16[6]`
                             ///
                             /// Always aligned
@@ -1424,18 +1424,18 @@ pub value: crate::reg::drone::physics::kinematics::geodetic::point_state_var_0_1
                         }
                     }
                     pub mod pose_0_1 {
-                        /// `reg.drone.physics.kinematics.geodetic.Pose.0.1`
+                        /// `reg.udral.physics.kinematics.geodetic.Pose.0.1`
                         ///
                         /// Fixed size 40 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                         #[repr(C, packed)]
                         pub struct Pose {
-                            /// `reg.drone.physics.kinematics.geodetic.Point.0.1`
+                            /// `reg.udral.physics.kinematics.geodetic.Point.0.1`
                             ///
                             /// Always aligned
                             /// Size 192 bits
                             pub position:
-                                crate::reg::drone::physics::kinematics::geodetic::point_0_1::Point,
+                                crate::reg::udral::physics::kinematics::geodetic::point_0_1::Point,
                             /// `uavcan.si.unit.angle.Quaternion.1.0`
                             ///
                             /// Always aligned
@@ -1477,18 +1477,18 @@ pub value: crate::reg::drone::physics::kinematics::geodetic::point_state_var_0_1
                         }
                     }
                     pub mod pose_var_0_1 {
-                        /// `reg.drone.physics.kinematics.geodetic.PoseVar.0.1`
+                        /// `reg.udral.physics.kinematics.geodetic.PoseVar.0.1`
                         ///
                         /// Fixed size 82 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                         #[repr(C, packed)]
                         pub struct PoseVar {
-                            /// `reg.drone.physics.kinematics.geodetic.Pose.0.1`
+                            /// `reg.udral.physics.kinematics.geodetic.Pose.0.1`
                             ///
                             /// Always aligned
                             /// Size 320 bits
                             pub value:
-                                crate::reg::drone::physics::kinematics::geodetic::pose_0_1::Pose,
+                                crate::reg::udral::physics::kinematics::geodetic::pose_0_1::Pose,
                             /// `saturated float16[21]`
                             ///
                             /// Always aligned
@@ -1529,24 +1529,24 @@ pub value: crate::reg::drone::physics::kinematics::geodetic::point_state_var_0_1
                         }
                     }
                     pub mod state_0_1 {
-                        /// `reg.drone.physics.kinematics.geodetic.State.0.1`
+                        /// `reg.udral.physics.kinematics.geodetic.State.0.1`
                         ///
                         /// Fixed size 64 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                         #[repr(C, packed)]
                         pub struct State {
-                            /// `reg.drone.physics.kinematics.geodetic.Pose.0.1`
+                            /// `reg.udral.physics.kinematics.geodetic.Pose.0.1`
                             ///
                             /// Always aligned
                             /// Size 320 bits
                             pub pose:
-                                crate::reg::drone::physics::kinematics::geodetic::pose_0_1::Pose,
-                            /// `reg.drone.physics.kinematics.cartesian.Twist.0.1`
+                                crate::reg::udral::physics::kinematics::geodetic::pose_0_1::Pose,
+                            /// `reg.udral.physics.kinematics.cartesian.Twist.0.1`
                             ///
                             /// Always aligned
                             /// Size 192 bits
                             pub twist:
-                                crate::reg::drone::physics::kinematics::cartesian::twist_0_1::Twist,
+                                crate::reg::udral::physics::kinematics::cartesian::twist_0_1::Twist,
                         }
                         impl ::canadensis_encoding::DataType for State {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -1582,22 +1582,22 @@ pub value: crate::reg::drone::physics::kinematics::geodetic::point_state_var_0_1
                         }
                     }
                     pub mod state_var_0_1 {
-                        /// `reg.drone.physics.kinematics.geodetic.StateVar.0.1`
+                        /// `reg.udral.physics.kinematics.geodetic.StateVar.0.1`
                         ///
                         /// Fixed size 148 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                         #[repr(C, packed)]
                         pub struct StateVar {
-/// `reg.drone.physics.kinematics.geodetic.PoseVar.0.1`
+/// `reg.udral.physics.kinematics.geodetic.PoseVar.0.1`
 ///
 /// Always aligned
 /// Size 656 bits
-pub pose: crate::reg::drone::physics::kinematics::geodetic::pose_var_0_1::PoseVar,
-/// `reg.drone.physics.kinematics.cartesian.TwistVar.0.1`
+pub pose: crate::reg::udral::physics::kinematics::geodetic::pose_var_0_1::PoseVar,
+/// `reg.udral.physics.kinematics.cartesian.TwistVar.0.1`
 ///
 /// Always aligned
 /// Size 528 bits
-pub twist: crate::reg::drone::physics::kinematics::cartesian::twist_var_0_1::TwistVar,
+pub twist: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::TwistVar,
 }
                         impl ::canadensis_encoding::DataType for StateVar {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -1633,7 +1633,7 @@ pub twist: crate::reg::drone::physics::kinematics::cartesian::twist_var_0_1::Twi
                         }
                     }
                     pub mod state_var_ts_0_1 {
-                        /// `reg.drone.physics.kinematics.geodetic.StateVarTs.0.1`
+                        /// `reg.udral.physics.kinematics.geodetic.StateVarTs.0.1`
                         ///
                         /// Fixed size 155 bytes
                         pub struct StateVarTs {
@@ -1642,11 +1642,11 @@ pub twist: crate::reg::drone::physics::kinematics::cartesian::twist_var_0_1::Twi
 /// Always aligned
 /// Size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-/// `reg.drone.physics.kinematics.geodetic.StateVar.0.1`
+/// `reg.udral.physics.kinematics.geodetic.StateVar.0.1`
 ///
 /// Always aligned
 /// Size 1184 bits
-pub value: crate::reg::drone::physics::kinematics::geodetic::state_var_0_1::StateVar,
+pub value: crate::reg::udral::physics::kinematics::geodetic::state_var_0_1::StateVar,
 }
                         impl ::canadensis_encoding::DataType for StateVarTs {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -1682,7 +1682,7 @@ pub value: crate::reg::drone::physics::kinematics::geodetic::state_var_0_1::Stat
                 }
                 pub mod rotation {
                     pub mod planar_0_1 {
-                        /// `reg.drone.physics.kinematics.rotation.Planar.0.1`
+                        /// `reg.udral.physics.kinematics.rotation.Planar.0.1`
                         ///
                         /// Fixed size 12 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
@@ -1745,7 +1745,7 @@ pub value: crate::reg::drone::physics::kinematics::geodetic::state_var_0_1::Stat
                         }
                     }
                     pub mod planar_ts_0_1 {
-                        /// `reg.drone.physics.kinematics.rotation.PlanarTs.0.1`
+                        /// `reg.udral.physics.kinematics.rotation.PlanarTs.0.1`
                         ///
                         /// Fixed size 19 bytes
                         pub struct PlanarTs {
@@ -1754,11 +1754,11 @@ pub value: crate::reg::drone::physics::kinematics::geodetic::state_var_0_1::Stat
 /// Always aligned
 /// Size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-/// `reg.drone.physics.kinematics.rotation.Planar.0.1`
+/// `reg.udral.physics.kinematics.rotation.Planar.0.1`
 ///
 /// Always aligned
 /// Size 96 bits
-pub value: crate::reg::drone::physics::kinematics::rotation::planar_0_1::Planar,
+pub value: crate::reg::udral::physics::kinematics::rotation::planar_0_1::Planar,
 }
                         impl ::canadensis_encoding::DataType for PlanarTs {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -1794,7 +1794,7 @@ pub value: crate::reg::drone::physics::kinematics::rotation::planar_0_1::Planar,
                 }
                 pub mod translation {
                     pub mod linear_0_1 {
-                        /// `reg.drone.physics.kinematics.translation.Linear.0.1`
+                        /// `reg.udral.physics.kinematics.translation.Linear.0.1`
                         ///
                         /// Fixed size 12 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
@@ -1852,7 +1852,7 @@ pub value: crate::reg::drone::physics::kinematics::rotation::planar_0_1::Planar,
                         }
                     }
                     pub mod linear_ts_0_1 {
-                        /// `reg.drone.physics.kinematics.translation.LinearTs.0.1`
+                        /// `reg.udral.physics.kinematics.translation.LinearTs.0.1`
                         ///
                         /// Fixed size 19 bytes
                         pub struct LinearTs {
@@ -1861,11 +1861,11 @@ pub value: crate::reg::drone::physics::kinematics::rotation::planar_0_1::Planar,
 /// Always aligned
 /// Size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-/// `reg.drone.physics.kinematics.translation.Linear.0.1`
+/// `reg.udral.physics.kinematics.translation.Linear.0.1`
 ///
 /// Always aligned
 /// Size 96 bits
-pub value: crate::reg::drone::physics::kinematics::translation::linear_0_1::Linear,
+pub value: crate::reg::udral::physics::kinematics::translation::linear_0_1::Linear,
 }
                         impl ::canadensis_encoding::DataType for LinearTs {
                             const EXTENT_BYTES: Option<u32> = None;
@@ -1899,15 +1899,15 @@ pub value: crate::reg::drone::physics::kinematics::translation::linear_0_1::Line
                         }
                     }
                     pub mod linear_var_ts_0_1 {
-                        /// `reg.drone.physics.kinematics.translation.LinearVarTs.0.1`
+                        /// `reg.udral.physics.kinematics.translation.LinearVarTs.0.1`
                         ///
                         /// Fixed size 25 bytes
                         pub struct LinearVarTs {
-/// `reg.drone.physics.kinematics.translation.LinearTs.0.1`
+/// `reg.udral.physics.kinematics.translation.LinearTs.0.1`
 ///
 /// Always aligned
 /// Size 152 bits
-pub value: crate::reg::drone::physics::kinematics::translation::linear_ts_0_1::LinearTs,
+pub value: crate::reg::udral::physics::kinematics::translation::linear_ts_0_1::LinearTs,
 /// `saturated float16`
 ///
 /// Always aligned
@@ -1960,7 +1960,7 @@ pub acceleration_error_variance: ::half::f16,
                         }
                     }
                     pub mod velocity1_var_ts_0_1 {
-                        /// `reg.drone.physics.kinematics.translation.Velocity1VarTs.0.1`
+                        /// `reg.udral.physics.kinematics.translation.Velocity1VarTs.0.1`
                         ///
                         /// Fixed size 13 bytes
                         pub struct Velocity1VarTs {
@@ -2006,10 +2006,12 @@ pub acceleration_error_variance: ::half::f16,
                             }
                         }
                     }
+                    #[deprecated]
                     pub mod velocity3_var_0_1 {
-                        /// `reg.drone.physics.kinematics.translation.Velocity3Var.0.1`
+                        /// `reg.udral.physics.kinematics.translation.Velocity3Var.0.1`
                         ///
                         /// Fixed size 31 bytes
+                        #[deprecated]
                         pub struct Velocity3Var {
                             /// `uavcan.si.sample.velocity.Vector3.1.0`
                             ///
@@ -2065,7 +2067,7 @@ pub acceleration_error_variance: ::half::f16,
                         }
                     }
                     pub mod velocity3_var_0_2 {
-                        /// `reg.drone.physics.kinematics.translation.Velocity3Var.0.2`
+                        /// `reg.udral.physics.kinematics.translation.Velocity3Var.0.2`
                         ///
                         /// Fixed size 24 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
@@ -2122,7 +2124,7 @@ pub acceleration_error_variance: ::half::f16,
             }
             pub mod optics {
                 pub mod high_color_0_1 {
-                    /// `reg.drone.physics.optics.HighColor.0.1`
+                    /// `reg.udral.physics.optics.HighColor.0.1`
                     ///
                     /// Fixed size 2 bytes
                     pub struct HighColor {
@@ -2179,7 +2181,7 @@ pub acceleration_error_variance: ::half::f16,
             }
             pub mod thermodynamics {
                 pub mod pressure_temp_var_ts_0_1 {
-                    /// `reg.drone.physics.thermodynamics.PressureTempVarTs.0.1`
+                    /// `reg.udral.physics.thermodynamics.PressureTempVarTs.0.1`
                     ///
                     /// Fixed size 21 bytes
                     pub struct PressureTempVarTs {
@@ -2244,7 +2246,7 @@ pub acceleration_error_variance: ::half::f16,
             }
             pub mod time {
                 pub mod tai64_0_1 {
-                    /// `reg.drone.physics.time.TAI64.0.1`
+                    /// `reg.udral.physics.time.TAI64.0.1`
                     ///
                     /// Fixed size 8 bytes
                     #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
@@ -2286,17 +2288,17 @@ pub acceleration_error_variance: ::half::f16,
                     }
                 }
                 pub mod tai64_var_0_1 {
-                    /// `reg.drone.physics.time.TAI64Var.0.1`
+                    /// `reg.udral.physics.time.TAI64Var.0.1`
                     ///
                     /// Fixed size 12 bytes
                     #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                     #[repr(C, packed)]
                     pub struct TAI64Var {
-                        /// `reg.drone.physics.time.TAI64.0.1`
+                        /// `reg.udral.physics.time.TAI64.0.1`
                         ///
                         /// Always aligned
                         /// Size 64 bits
-                        pub value: crate::reg::drone::physics::time::tai64_0_1::TAI64,
+                        pub value: crate::reg::udral::physics::time::tai64_0_1::TAI64,
                         /// `saturated float32`
                         ///
                         /// Always aligned
@@ -2334,7 +2336,7 @@ pub acceleration_error_variance: ::half::f16,
                     }
                 }
                 pub mod tai64_var_ts_0_1 {
-                    /// `reg.drone.physics.time.TAI64VarTs.0.1`
+                    /// `reg.udral.physics.time.TAI64VarTs.0.1`
                     ///
                     /// Fixed size 19 bytes
                     pub struct TAI64VarTs {
@@ -2344,11 +2346,11 @@ pub acceleration_error_variance: ::half::f16,
                         /// Size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
-                        /// `reg.drone.physics.time.TAI64Var.0.1`
+                        /// `reg.udral.physics.time.TAI64Var.0.1`
                         ///
                         /// Always aligned
                         /// Size 96 bits
-                        pub value: crate::reg::drone::physics::time::tai64_var_0_1::TAI64Var,
+                        pub value: crate::reg::udral::physics::time::tai64_var_0_1::TAI64Var,
                     }
                     impl ::canadensis_encoding::DataType for TAI64VarTs {
                         const EXTENT_BYTES: Option<u32> = None;
@@ -2384,7 +2386,7 @@ pub acceleration_error_variance: ::half::f16,
             pub mod actuator {
                 pub mod common {
                     pub mod _0_1 {
-                        /// `reg.drone.service.actuator.common._.0.1`
+                        /// `reg.udral.service.actuator.common._.0.1`
                         ///
                         /// Fixed size 0 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
@@ -2425,7 +2427,7 @@ pub acceleration_error_variance: ::half::f16,
                         }
                     }
                     pub mod fault_flags_0_1 {
-                        /// `reg.drone.service.actuator.common.FaultFlags.0.1`
+                        /// `reg.udral.service.actuator.common.FaultFlags.0.1`
                         ///
                         /// Fixed size 2 bytes
                         pub struct FaultFlags {
@@ -2533,16 +2535,16 @@ pub acceleration_error_variance: ::half::f16,
                         }
                     }
                     pub mod feedback_0_1 {
-                        /// `reg.drone.service.actuator.common.Feedback.0.1`
+                        /// `reg.udral.service.actuator.common.Feedback.0.1`
                         ///
                         /// Fixed size 3 bytes
                         pub struct Feedback {
-                            /// `reg.drone.service.common.Heartbeat.0.1`
+                            /// `reg.udral.service.common.Heartbeat.0.1`
                             ///
                             /// Always aligned
                             /// Size 16 bits
                             pub heartbeat:
-                                crate::reg::drone::service::common::heartbeat_0_1::Heartbeat,
+                                crate::reg::udral::service::common::heartbeat_0_1::Heartbeat,
                             /// `saturated int8`
                             ///
                             /// Always aligned
@@ -2582,7 +2584,7 @@ pub acceleration_error_variance: ::half::f16,
                     }
                     pub mod sp {
                         pub mod _0_1 {
-                            /// `reg.drone.service.actuator.common.sp._.0.1`
+                            /// `reg.udral.service.actuator.common.sp._.0.1`
                             ///
                             /// Fixed size 0 bytes
                             #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
@@ -2625,7 +2627,7 @@ pub acceleration_error_variance: ::half::f16,
                             }
                         }
                         pub mod scalar_0_1 {
-                            /// `reg.drone.service.actuator.common.sp.Scalar.0.1`
+                            /// `reg.udral.service.actuator.common.sp.Scalar.0.1`
                             ///
                             /// Fixed size 2 bytes
                             #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
@@ -2673,7 +2675,7 @@ pub acceleration_error_variance: ::half::f16,
                             }
                         }
                         pub mod vector2_0_1 {
-                            /// `reg.drone.service.actuator.common.sp.Vector2.0.1`
+                            /// `reg.udral.service.actuator.common.sp.Vector2.0.1`
                             ///
                             /// Fixed size 4 bytes
                             #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
@@ -2721,7 +2723,7 @@ pub acceleration_error_variance: ::half::f16,
                             }
                         }
                         pub mod vector31_0_1 {
-                            /// `reg.drone.service.actuator.common.sp.Vector31.0.1`
+                            /// `reg.udral.service.actuator.common.sp.Vector31.0.1`
                             ///
                             /// Fixed size 62 bytes
                             #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
@@ -2769,7 +2771,7 @@ pub acceleration_error_variance: ::half::f16,
                             }
                         }
                         pub mod vector3_0_1 {
-                            /// `reg.drone.service.actuator.common.sp.Vector3.0.1`
+                            /// `reg.udral.service.actuator.common.sp.Vector3.0.1`
                             ///
                             /// Fixed size 6 bytes
                             #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
@@ -2817,7 +2819,7 @@ pub acceleration_error_variance: ::half::f16,
                             }
                         }
                         pub mod vector4_0_1 {
-                            /// `reg.drone.service.actuator.common.sp.Vector4.0.1`
+                            /// `reg.udral.service.actuator.common.sp.Vector4.0.1`
                             ///
                             /// Fixed size 8 bytes
                             #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
@@ -2865,7 +2867,7 @@ pub acceleration_error_variance: ::half::f16,
                             }
                         }
                         pub mod vector6_0_1 {
-                            /// `reg.drone.service.actuator.common.sp.Vector6.0.1`
+                            /// `reg.udral.service.actuator.common.sp.Vector6.0.1`
                             ///
                             /// Fixed size 12 bytes
                             #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
@@ -2913,7 +2915,7 @@ pub acceleration_error_variance: ::half::f16,
                             }
                         }
                         pub mod vector8_0_1 {
-                            /// `reg.drone.service.actuator.common.sp.Vector8.0.1`
+                            /// `reg.udral.service.actuator.common.sp.Vector8.0.1`
                             ///
                             /// Fixed size 16 bytes
                             #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
@@ -2962,7 +2964,7 @@ pub acceleration_error_variance: ::half::f16,
                         }
                     }
                     pub mod status_0_1 {
-                        /// `reg.drone.service.actuator.common.Status.0.1`
+                        /// `reg.udral.service.actuator.common.Status.0.1`
                         ///
                         /// Fixed size 14 bytes
                         pub struct Status {
@@ -2981,11 +2983,11 @@ pub controller_temperature: crate::uavcan::si::unit::temperature::scalar_1_0::Sc
 /// Always aligned
 /// Size 32 bits
 pub error_count: u32,
-/// `reg.drone.service.actuator.common.FaultFlags.0.1`
+/// `reg.udral.service.actuator.common.FaultFlags.0.1`
 ///
 /// Always aligned
 /// Size 16 bits
-pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::FaultFlags,
+pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::FaultFlags,
 }
                         impl ::canadensis_encoding::DataType for Status {
                             const EXTENT_BYTES: Option<u32> = Some(63);
@@ -3025,7 +3027,7 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                 }
                 pub mod esc {
                     pub mod _0_1 {
-                        /// `reg.drone.service.actuator.esc._.0.1`
+                        /// `reg.udral.service.actuator.esc._.0.1`
                         ///
                         /// Fixed size 0 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
@@ -3065,7 +3067,7 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                 }
                 pub mod servo {
                     pub mod _0_1 {
-                        /// `reg.drone.service.actuator.servo._.0.1`
+                        /// `reg.udral.service.actuator.servo._.0.1`
                         ///
                         /// Fixed size 0 bytes
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
@@ -3104,48 +3106,9 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                     }
                 }
             }
-            pub mod air_data_computer {
-                pub mod _0_1 {
-                    /// `reg.drone.service.air_data_computer._.0.1`
-                    ///
-                    /// Fixed size 0 bytes
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
-                    #[repr(C, packed)]
-                    pub struct _0 {}
-                    impl ::canadensis_encoding::DataType for _0 {
-                        const EXTENT_BYTES: Option<u32> = Some(0);
-                    }
-                    impl ::canadensis_encoding::Message for _0 {}
-                    impl _0 {
-                        pub const MAX_PUBLICATION_PERIOD: f32 = 0.1_f32;
-                    }
-                    impl ::canadensis_encoding::Serialize for _0 {
-                        fn size_bits(&self) -> usize {
-                            0
-                        }
-                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
-                        }
-                    }
-                    impl ::canadensis_encoding::Deserialize for _0 {
-                        fn deserialize(
-                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
-                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
-                        where
-                            Self: Sized,
-                        {
-                            Ok(Self::deserialize_zero_copy(cursor))
-                        }
-                    }
-                    #[test]
-                    fn test_layout() {
-                        assert_eq!(::core::mem::size_of::<_0>() * 8, 0);
-                    }
-                }
-            }
             pub mod battery {
                 pub mod _0_1 {
-                    /// `reg.drone.service.battery._.0.1`
+                    /// `reg.udral.service.battery._.0.1`
                     ///
                     /// Fixed size 0 bytes
                     #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
@@ -3180,7 +3143,7 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                     }
                 }
                 pub mod error_0_1 {
-                    /// `reg.drone.service.battery.Error.0.1`
+                    /// `reg.udral.service.battery.Error.0.1`
                     ///
                     /// Fixed size 1 bytes
                     #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
@@ -3234,10 +3197,10 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                         assert_eq!(::memoffset::offset_of!(Error, value) * 8, 0);
                     }
                 }
-                pub mod parameters_0_1 {
-                    /// `reg.drone.service.battery.Parameters.0.1`
+                pub mod parameters_0_3 {
+                    /// `reg.udral.service.battery.Parameters.0.3`
                     ///
-                    /// Fixed size 54 bytes
+                    /// Size ranges from 64 to 128 bytes
                     pub struct Parameters {
                         /// `truncated uint64`
                         ///
@@ -3289,7 +3252,7 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                         ///
                         /// Always aligned
                         /// Size 32 bits
-                        pub charge_termination_treshold:
+                        pub charge_termination_threshold:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
                         /// `uavcan.si.unit.voltage.Scalar.1.0`
                         ///
@@ -3313,21 +3276,55 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                         /// Size 7 bits
                         pub state_of_health_pct: u8,
                         // 1 bits of padding
-                        /// `reg.drone.service.battery.Technology.0.1`
+                        /// `reg.udral.service.battery.Technology.0.1`
                         ///
                         /// Always aligned
                         /// Size 8 bits
                         pub technology:
-                            crate::reg::drone::service::battery::technology_0_1::Technology,
+                            crate::reg::udral::service::battery::technology_0_1::Technology,
+                        /// `uavcan.si.unit.voltage.Scalar.1.0`
+                        ///
+                        /// Always aligned
+                        /// Size 32 bits
+                        pub nominal_voltage: crate::uavcan::si::unit::voltage::scalar_1_0::Scalar,
+                        /// `truncated uint40`
+                        ///
+                        /// Always aligned
+                        /// Size 40 bits
+                        pub unix_manufacture_time: u64,
+                        /// `saturated uint8[<=64]`
+                        ///
+                        /// Always aligned
+                        /// Size ranges from 0 to 512 bits
+                        pub name: ::heapless::Vec<u8, 64>,
                     }
                     impl ::canadensis_encoding::DataType for Parameters {
-                        const EXTENT_BYTES: Option<u32> = Some(63);
+                        const EXTENT_BYTES: Option<u32> = Some(300);
                     }
                     impl ::canadensis_encoding::Message for Parameters {}
                     impl Parameters {}
                     impl ::canadensis_encoding::Serialize for Parameters {
                         fn size_bits(&self) -> usize {
-                            432
+                            64 + 32
+                                + 32
+                                + (self.design_cell_voltage_min_max).len() * 32
+                                + 32
+                                + 32
+                                + 32
+                                + 32
+                                + 32
+                                + 32
+                                + 16
+                                + 8
+                                + 8
+                                + 7
+                                + 1
+                                + 8
+                                + 32
+                                + 40
+                                + 8
+                                + (self.name).len() * 8
+                                + 0
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                             cursor.write_aligned_u64(self.unique_id);
@@ -3340,7 +3337,7 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                             cursor.write_composite(&self.discharge_current_burst);
                             cursor.write_composite(&self.charge_current);
                             cursor.write_composite(&self.charge_current_fast);
-                            cursor.write_composite(&self.charge_termination_treshold);
+                            cursor.write_composite(&self.charge_termination_threshold);
                             cursor.write_composite(&self.charge_voltage);
                             cursor.write_aligned_u16(self.cycle_count);
                             cursor.skip_8();
@@ -3348,6 +3345,10 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                             cursor.write_u7(self.state_of_health_pct);
                             cursor.skip_1();
                             cursor.write_composite(&self.technology);
+                            cursor.write_composite(&self.nominal_voltage);
+                            cursor.write_u40(self.unix_manufacture_time);
+                            cursor.write_aligned_u8((self.name).len() as u8);
+                            cursor.write_bytes(&(self.name)[..]);
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Parameters {
@@ -3368,7 +3369,7 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                                 discharge_current_burst: { cursor.read_composite()? },
                                 charge_current: { cursor.read_composite()? },
                                 charge_current_fast: { cursor.read_composite()? },
-                                charge_termination_treshold: { cursor.read_composite()? },
+                                charge_termination_threshold: { cursor.read_composite()? },
                                 charge_voltage: { cursor.read_composite()? },
                                 cycle_count: { cursor.read_u16() as _ },
                                 series_cell_count: {
@@ -3380,407 +3381,53 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                                     cursor.skip_1();
                                     cursor.read_composite()?
                                 },
-                            })
-                        }
-                    }
-                }
-                pub mod parameters_0_2 {
-                    /// `reg.drone.service.battery.Parameters.0.2`
-                    ///
-                    /// Fixed size 54 bytes
-                    pub struct Parameters {
-                        /// `truncated uint64`
-                        ///
-                        /// Always aligned
-                        /// Size 64 bits
-                        pub unique_id: u64,
-                        /// `uavcan.si.unit.mass.Scalar.1.0`
-                        ///
-                        /// Always aligned
-                        /// Size 32 bits
-                        pub mass: crate::uavcan::si::unit::mass::scalar_1_0::Scalar,
-                        /// `uavcan.si.unit.electric_charge.Scalar.1.0`
-                        ///
-                        /// Always aligned
-                        /// Size 32 bits
-                        pub design_capacity:
-                            crate::uavcan::si::unit::electric_charge::scalar_1_0::Scalar,
-                        /// `uavcan.si.unit.voltage.Scalar.1.0[2]`
-                        ///
-                        /// Always aligned
-                        /// Size 64 bits
-                        pub design_cell_voltage_min_max:
-                            [crate::uavcan::si::unit::voltage::scalar_1_0::Scalar; 2],
-                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
-                        ///
-                        /// Always aligned
-                        /// Size 32 bits
-                        pub discharge_current:
-                            crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
-                        ///
-                        /// Always aligned
-                        /// Size 32 bits
-                        pub discharge_current_burst:
-                            crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
-                        ///
-                        /// Always aligned
-                        /// Size 32 bits
-                        pub charge_current:
-                            crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
-                        ///
-                        /// Always aligned
-                        /// Size 32 bits
-                        pub charge_current_fast:
-                            crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
-                        ///
-                        /// Always aligned
-                        /// Size 32 bits
-                        pub charge_termination_threshold:
-                            crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// `uavcan.si.unit.voltage.Scalar.1.0`
-                        ///
-                        /// Always aligned
-                        /// Size 32 bits
-                        pub charge_voltage: crate::uavcan::si::unit::voltage::scalar_1_0::Scalar,
-                        /// `saturated uint16`
-                        ///
-                        /// Always aligned
-                        /// Size 16 bits
-                        pub cycle_count: u16,
-                        // 16 bits of padding
-                        /// `saturated uint7`
-                        ///
-                        /// Always aligned
-                        /// Size 7 bits
-                        pub state_of_health_pct: u8,
-                        // 1 bits of padding
-                        /// `reg.drone.service.battery.Technology.0.1`
-                        ///
-                        /// Always aligned
-                        /// Size 8 bits
-                        pub technology:
-                            crate::reg::drone::service::battery::technology_0_1::Technology,
-                    }
-                    impl ::canadensis_encoding::DataType for Parameters {
-                        const EXTENT_BYTES: Option<u32> = Some(63);
-                    }
-                    impl ::canadensis_encoding::Message for Parameters {}
-                    impl Parameters {}
-                    impl ::canadensis_encoding::Serialize for Parameters {
-                        fn size_bits(&self) -> usize {
-                            432
-                        }
-                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_u64(self.unique_id);
-                            cursor.write_composite(&self.mass);
-                            cursor.write_composite(&self.design_capacity);
-                            for value in (self.design_cell_voltage_min_max).iter() {
-                                cursor.write_composite(value);
-                            }
-                            cursor.write_composite(&self.discharge_current);
-                            cursor.write_composite(&self.discharge_current_burst);
-                            cursor.write_composite(&self.charge_current);
-                            cursor.write_composite(&self.charge_current_fast);
-                            cursor.write_composite(&self.charge_termination_threshold);
-                            cursor.write_composite(&self.charge_voltage);
-                            cursor.write_aligned_u16(self.cycle_count);
-                            cursor.skip_16();
-                            cursor.write_u7(self.state_of_health_pct);
-                            cursor.skip_1();
-                            cursor.write_composite(&self.technology);
-                        }
-                    }
-                    impl ::canadensis_encoding::Deserialize for Parameters {
-                        fn deserialize(
-                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
-                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
-                        where
-                            Self: Sized,
-                        {
-                            Ok(Parameters {
-                                unique_id: { cursor.read_u64() as _ },
-                                mass: { cursor.read_composite()? },
-                                design_capacity: { cursor.read_composite()? },
-                                design_cell_voltage_min_max: {
-                                    [cursor.read_composite()?, cursor.read_composite()?]
-                                },
-                                discharge_current: { cursor.read_composite()? },
-                                discharge_current_burst: { cursor.read_composite()? },
-                                charge_current: { cursor.read_composite()? },
-                                charge_current_fast: { cursor.read_composite()? },
-                                charge_termination_threshold: { cursor.read_composite()? },
-                                charge_voltage: { cursor.read_composite()? },
-                                cycle_count: { cursor.read_u16() as _ },
-                                state_of_health_pct: {
-                                    cursor.skip_16();
-                                    cursor.read_u7() as _
-                                },
-                                technology: {
-                                    cursor.skip_1();
-                                    cursor.read_composite()?
-                                },
-                            })
-                        }
-                    }
-                }
-                pub mod parameters_0_3 {
-                    /// `reg.drone.service.battery.Parameters.0.3`
-                    ///
-                    /// Fixed size 58 bytes
-                    pub struct Parameters {
-                        /// `truncated uint64`
-                        ///
-                        /// Always aligned
-                        /// Size 64 bits
-                        pub unique_id: u64,
-                        /// `uavcan.si.unit.mass.Scalar.1.0`
-                        ///
-                        /// Always aligned
-                        /// Size 32 bits
-                        pub mass: crate::uavcan::si::unit::mass::scalar_1_0::Scalar,
-                        /// `uavcan.si.unit.electric_charge.Scalar.1.0`
-                        ///
-                        /// Always aligned
-                        /// Size 32 bits
-                        pub design_capacity:
-                            crate::uavcan::si::unit::electric_charge::scalar_1_0::Scalar,
-                        /// `uavcan.si.unit.voltage.Scalar.1.0[2]`
-                        ///
-                        /// Always aligned
-                        /// Size 64 bits
-                        pub design_cell_voltage_min_max:
-                            [crate::uavcan::si::unit::voltage::scalar_1_0::Scalar; 2],
-                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
-                        ///
-                        /// Always aligned
-                        /// Size 32 bits
-                        pub discharge_current:
-                            crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
-                        ///
-                        /// Always aligned
-                        /// Size 32 bits
-                        pub discharge_current_burst:
-                            crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
-                        ///
-                        /// Always aligned
-                        /// Size 32 bits
-                        pub charge_current:
-                            crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
-                        ///
-                        /// Always aligned
-                        /// Size 32 bits
-                        pub charge_current_fast:
-                            crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// `uavcan.si.unit.electric_current.Scalar.1.0`
-                        ///
-                        /// Always aligned
-                        /// Size 32 bits
-                        pub charge_termination_threshold:
-                            crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
-                        /// `uavcan.si.unit.voltage.Scalar.1.0`
-                        ///
-                        /// Always aligned
-                        /// Size 32 bits
-                        pub charge_voltage: crate::uavcan::si::unit::voltage::scalar_1_0::Scalar,
-                        /// `saturated uint16`
-                        ///
-                        /// Always aligned
-                        /// Size 16 bits
-                        pub cycle_count: u16,
-                        // 16 bits of padding
-                        /// `saturated uint7`
-                        ///
-                        /// Always aligned
-                        /// Size 7 bits
-                        pub state_of_health_pct: u8,
-                        // 1 bits of padding
-                        /// `reg.drone.service.battery.Technology.0.1`
-                        ///
-                        /// Always aligned
-                        /// Size 8 bits
-                        pub technology:
-                            crate::reg::drone::service::battery::technology_0_1::Technology,
-                        /// `uavcan.si.unit.voltage.Scalar.1.0`
-                        ///
-                        /// Always aligned
-                        /// Size 32 bits
-                        pub nominal_voltage: crate::uavcan::si::unit::voltage::scalar_1_0::Scalar,
-                    }
-                    impl ::canadensis_encoding::DataType for Parameters {
-                        const EXTENT_BYTES: Option<u32> = Some(67);
-                    }
-                    impl ::canadensis_encoding::Message for Parameters {}
-                    impl Parameters {}
-                    impl ::canadensis_encoding::Serialize for Parameters {
-                        fn size_bits(&self) -> usize {
-                            464
-                        }
-                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_u64(self.unique_id);
-                            cursor.write_composite(&self.mass);
-                            cursor.write_composite(&self.design_capacity);
-                            for value in (self.design_cell_voltage_min_max).iter() {
-                                cursor.write_composite(value);
-                            }
-                            cursor.write_composite(&self.discharge_current);
-                            cursor.write_composite(&self.discharge_current_burst);
-                            cursor.write_composite(&self.charge_current);
-                            cursor.write_composite(&self.charge_current_fast);
-                            cursor.write_composite(&self.charge_termination_threshold);
-                            cursor.write_composite(&self.charge_voltage);
-                            cursor.write_aligned_u16(self.cycle_count);
-                            cursor.skip_16();
-                            cursor.write_u7(self.state_of_health_pct);
-                            cursor.skip_1();
-                            cursor.write_composite(&self.technology);
-                            cursor.write_composite(&self.nominal_voltage);
-                        }
-                    }
-                    impl ::canadensis_encoding::Deserialize for Parameters {
-                        fn deserialize(
-                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
-                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
-                        where
-                            Self: Sized,
-                        {
-                            Ok(Parameters {
-                                unique_id: { cursor.read_u64() as _ },
-                                mass: { cursor.read_composite()? },
-                                design_capacity: { cursor.read_composite()? },
-                                design_cell_voltage_min_max: {
-                                    [cursor.read_composite()?, cursor.read_composite()?]
-                                },
-                                discharge_current: { cursor.read_composite()? },
-                                discharge_current_burst: { cursor.read_composite()? },
-                                charge_current: { cursor.read_composite()? },
-                                charge_current_fast: { cursor.read_composite()? },
-                                charge_termination_threshold: { cursor.read_composite()? },
-                                charge_voltage: { cursor.read_composite()? },
-                                cycle_count: { cursor.read_u16() as _ },
-                                state_of_health_pct: {
-                                    cursor.skip_16();
-                                    cursor.read_u7() as _
-                                },
-                                technology: {
-                                    cursor.skip_1();
-                                    cursor.read_composite()?
-                                },
                                 nominal_voltage: { cursor.read_composite()? },
-                            })
-                        }
-                    }
-                }
-                pub mod status_0_1 {
-                    /// `reg.drone.service.battery.Status.0.1`
-                    ///
-                    /// Fixed size 23 bytes
-                    pub struct Status {
-                        /// `reg.drone.service.common.Heartbeat.0.1`
-                        ///
-                        /// Always aligned
-                        /// Size 16 bits
-                        pub heartbeat: crate::reg::drone::service::common::heartbeat_0_1::Heartbeat,
-                        /// `uavcan.si.unit.temperature.Scalar.1.0[2]`
-                        ///
-                        /// Always aligned
-                        /// Size 64 bits
-                        pub temperature_min_max:
-                            [crate::uavcan::si::unit::temperature::scalar_1_0::Scalar; 2],
-                        /// `uavcan.si.unit.voltage.Scalar.1.0[2]`
-                        ///
-                        /// Always aligned
-                        /// Size 64 bits
-                        pub cell_voltage_min_max:
-                            [crate::uavcan::si::unit::voltage::scalar_1_0::Scalar; 2],
-                        /// `uavcan.si.unit.electric_charge.Scalar.1.0`
-                        ///
-                        /// Always aligned
-                        /// Size 32 bits
-                        pub available_charge:
-                            crate::uavcan::si::unit::electric_charge::scalar_1_0::Scalar,
-                        /// `reg.drone.service.battery.Error.0.1`
-                        ///
-                        /// Always aligned
-                        /// Size 8 bits
-                        pub error: crate::reg::drone::service::battery::error_0_1::Error,
-                    }
-                    impl ::canadensis_encoding::DataType for Status {
-                        const EXTENT_BYTES: Option<u32> = Some(63);
-                    }
-                    impl ::canadensis_encoding::Message for Status {}
-                    impl Status {}
-                    impl ::canadensis_encoding::Serialize for Status {
-                        fn size_bits(&self) -> usize {
-                            184
-                        }
-                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_composite(&self.heartbeat);
-                            for value in (self.temperature_min_max).iter() {
-                                cursor.write_composite(value);
-                            }
-                            for value in (self.cell_voltage_min_max).iter() {
-                                cursor.write_composite(value);
-                            }
-                            cursor.write_composite(&self.available_charge);
-                            cursor.write_composite(&self.error);
-                        }
-                    }
-                    impl ::canadensis_encoding::Deserialize for Status {
-                        fn deserialize(
-                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
-                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
-                        where
-                            Self: Sized,
-                        {
-                            Ok(Status {
-                                heartbeat: { cursor.read_composite()? },
-                                temperature_min_max: {
-                                    [cursor.read_composite()?, cursor.read_composite()?]
+                                unix_manufacture_time: { cursor.read_u40() as _ },
+                                name: {
+                                    let length = cursor.read_u8() as _;
+                                    if length <= 64 {
+                                        let mut elements = ::heapless::Vec::new();
+                                        for _ in 0..length {
+                                            let _ = elements.push(cursor.read_u8() as _);
+                                        }
+                                        elements
+                                    } else {
+                                        return Err(
+                                            ::canadensis_encoding::DeserializeError::ArrayLength,
+                                        );
+                                    }
                                 },
-                                cell_voltage_min_max: {
-                                    [cursor.read_composite()?, cursor.read_composite()?]
-                                },
-                                available_charge: { cursor.read_composite()? },
-                                error: { cursor.read_composite()? },
                             })
                         }
                     }
                 }
                 pub mod status_0_2 {
-                    /// `reg.drone.service.battery.Status.0.2`
+                    /// `reg.udral.service.battery.Status.0.2`
                     ///
-                    /// Size ranges from 24 to 534 bytes
+                    /// Size ranges from 16 to 526 bytes
                     pub struct Status {
-                        /// `reg.drone.service.common.Heartbeat.0.1`
+                        /// `reg.udral.service.common.Heartbeat.0.1`
                         ///
                         /// Always aligned
                         /// Size 16 bits
-                        pub heartbeat: crate::reg::drone::service::common::heartbeat_0_1::Heartbeat,
+                        pub heartbeat: crate::reg::udral::service::common::heartbeat_0_1::Heartbeat,
                         /// `uavcan.si.unit.temperature.Scalar.1.0[2]`
                         ///
                         /// Always aligned
                         /// Size 64 bits
                         pub temperature_min_max:
                             [crate::uavcan::si::unit::temperature::scalar_1_0::Scalar; 2],
-                        // 64 bits of padding
                         /// `uavcan.si.unit.electric_charge.Scalar.1.0`
                         ///
                         /// Always aligned
                         /// Size 32 bits
                         pub available_charge:
                             crate::uavcan::si::unit::electric_charge::scalar_1_0::Scalar,
-                        /// `reg.drone.service.battery.Error.0.1`
+                        /// `reg.udral.service.battery.Error.0.1`
                         ///
                         /// Always aligned
                         /// Size 8 bits
-                        pub error: crate::reg::drone::service::battery::error_0_1::Error,
+                        pub error: crate::reg::udral::service::battery::error_0_1::Error,
                         /// `saturated float16[<=255]`
                         ///
                         /// Always aligned
@@ -3797,7 +3444,6 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                     impl ::canadensis_encoding::Serialize for Status {
                         fn size_bits(&self) -> usize {
                             16 + (self.temperature_min_max).len() * 32
-                                + 64
                                 + 32
                                 + 8
                                 + 8
@@ -3809,7 +3455,6 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                             for value in (self.temperature_min_max).iter() {
                                 cursor.write_composite(value);
                             }
-                            cursor.skip_64();
                             cursor.write_composite(&self.available_charge);
                             cursor.write_composite(&self.error);
                             cursor.write_aligned_u8((self.cell_voltages).len() as u8);
@@ -3830,10 +3475,7 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                                 temperature_min_max: {
                                     [cursor.read_composite()?, cursor.read_composite()?]
                                 },
-                                available_charge: {
-                                    cursor.skip_64();
-                                    cursor.read_composite()?
-                                },
+                                available_charge: { cursor.read_composite()? },
                                 error: { cursor.read_composite()? },
                                 cell_voltages: {
                                     let length = cursor.read_u8() as _;
@@ -3854,7 +3496,7 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                     }
                 }
                 pub mod technology_0_1 {
-                    /// `reg.drone.service.battery.Technology.0.1`
+                    /// `reg.udral.service.battery.Technology.0.1`
                     ///
                     /// Fixed size 1 bytes
                     #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
@@ -3923,15 +3565,15 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
             }
             pub mod common {
                 pub mod heartbeat_0_1 {
-                    /// `reg.drone.service.common.Heartbeat.0.1`
+                    /// `reg.udral.service.common.Heartbeat.0.1`
                     ///
                     /// Fixed size 2 bytes
                     pub struct Heartbeat {
-                        /// `reg.drone.service.common.Readiness.0.1`
+                        /// `reg.udral.service.common.Readiness.0.1`
                         ///
                         /// Always aligned
                         /// Size 8 bits
-                        pub readiness: crate::reg::drone::service::common::readiness_0_1::Readiness,
+                        pub readiness: crate::reg::udral::service::common::readiness_0_1::Readiness,
                         /// `uavcan.node.Health.1.0`
                         ///
                         /// Always aligned
@@ -3969,7 +3611,7 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                     }
                 }
                 pub mod readiness_0_1 {
-                    /// `reg.drone.service.common.Readiness.0.1`
+                    /// `reg.udral.service.common.Readiness.0.1`
                     ///
                     /// Fixed size 1 bytes
                     pub struct Readiness {
@@ -4010,466 +3652,9 @@ pub fault_flags: crate::reg::drone::service::actuator::common::fault_flags_0_1::
                     }
                 }
             }
-            pub mod gnss {
-                pub mod _0_1 {
-                    /// `reg.drone.service.gnss._.0.1`
-                    ///
-                    /// Fixed size 0 bytes
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
-                    #[repr(C, packed)]
-                    pub struct _0 {}
-                    impl ::canadensis_encoding::DataType for _0 {
-                        const EXTENT_BYTES: Option<u32> = Some(0);
-                    }
-                    impl ::canadensis_encoding::Message for _0 {}
-                    impl _0 {}
-                    impl ::canadensis_encoding::Serialize for _0 {
-                        fn size_bits(&self) -> usize {
-                            0
-                        }
-                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
-                        }
-                    }
-                    impl ::canadensis_encoding::Deserialize for _0 {
-                        fn deserialize(
-                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
-                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
-                        where
-                            Self: Sized,
-                        {
-                            Ok(Self::deserialize_zero_copy(cursor))
-                        }
-                    }
-                    #[test]
-                    fn test_layout() {
-                        assert_eq!(::core::mem::size_of::<_0>() * 8, 0);
-                    }
-                }
-                pub mod dilution_of_precision_0_1 {
-                    /// `reg.drone.service.gnss.DilutionOfPrecision.0.1`
-                    ///
-                    /// Fixed size 14 bytes
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
-                    #[repr(C, packed)]
-                    pub struct DilutionOfPrecision {
-                        /// `saturated float16`
-                        ///
-                        /// Always aligned
-                        /// Size 16 bits
-                        pub geometric: ::half::f16,
-                        /// `saturated float16`
-                        ///
-                        /// Always aligned
-                        /// Size 16 bits
-                        pub position: ::half::f16,
-                        /// `saturated float16`
-                        ///
-                        /// Always aligned
-                        /// Size 16 bits
-                        pub horizontal: ::half::f16,
-                        /// `saturated float16`
-                        ///
-                        /// Always aligned
-                        /// Size 16 bits
-                        pub vertical: ::half::f16,
-                        /// `saturated float16`
-                        ///
-                        /// Always aligned
-                        /// Size 16 bits
-                        pub time: ::half::f16,
-                        /// `saturated float16`
-                        ///
-                        /// Always aligned
-                        /// Size 16 bits
-                        pub northing: ::half::f16,
-                        /// `saturated float16`
-                        ///
-                        /// Always aligned
-                        /// Size 16 bits
-                        pub easting: ::half::f16,
-                    }
-                    impl ::canadensis_encoding::DataType for DilutionOfPrecision {
-                        const EXTENT_BYTES: Option<u32> = None;
-                    }
-                    impl ::canadensis_encoding::Message for DilutionOfPrecision {}
-                    impl DilutionOfPrecision {}
-                    impl ::canadensis_encoding::Serialize for DilutionOfPrecision {
-                        fn size_bits(&self) -> usize {
-                            112
-                        }
-                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
-                        }
-                    }
-                    impl ::canadensis_encoding::Deserialize for DilutionOfPrecision {
-                        fn deserialize(
-                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
-                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
-                        where
-                            Self: Sized,
-                        {
-                            Ok(Self::deserialize_zero_copy(cursor))
-                        }
-                    }
-                    #[test]
-                    fn test_layout() {
-                        assert_eq!(::core::mem::size_of::<DilutionOfPrecision>() * 8, 112);
-                        assert_eq!(
-                            ::memoffset::offset_of!(DilutionOfPrecision, geometric) * 8,
-                            0
-                        );
-                        assert_eq!(
-                            ::memoffset::offset_of!(DilutionOfPrecision, position) * 8,
-                            16
-                        );
-                        assert_eq!(
-                            ::memoffset::offset_of!(DilutionOfPrecision, horizontal) * 8,
-                            32
-                        );
-                        assert_eq!(
-                            ::memoffset::offset_of!(DilutionOfPrecision, vertical) * 8,
-                            48
-                        );
-                        assert_eq!(::memoffset::offset_of!(DilutionOfPrecision, time) * 8, 64);
-                        assert_eq!(
-                            ::memoffset::offset_of!(DilutionOfPrecision, northing) * 8,
-                            80
-                        );
-                        assert_eq!(
-                            ::memoffset::offset_of!(DilutionOfPrecision, easting) * 8,
-                            96
-                        );
-                    }
-                }
-                pub mod heartbeat_0_1 {
-                    /// `reg.drone.service.gnss.Heartbeat.0.1`
-                    ///
-                    /// Fixed size 25 bytes
-                    pub struct Heartbeat {
-/// `reg.drone.service.common.Heartbeat.0.1`
-///
-/// Always aligned
-/// Size 16 bits
-pub heartbeat: crate::reg::drone::service::common::heartbeat_0_1::Heartbeat,
-/// `reg.drone.service.gnss.Sources.0.1`
-///
-/// Always aligned
-/// Size 48 bits
-pub sources: crate::reg::drone::service::gnss::sources_0_1::Sources,
-/// `reg.drone.service.gnss.DilutionOfPrecision.0.1`
-///
-/// Always aligned
-/// Size 112 bits
-pub dop: crate::reg::drone::service::gnss::dilution_of_precision_0_1::DilutionOfPrecision,
-/// `saturated uint8`
-///
-/// Always aligned
-/// Size 8 bits
-pub num_visible_satellites: u8,
-/// `saturated uint8`
-///
-/// Always aligned
-/// Size 8 bits
-pub num_used_satellites: u8,
-/// `saturated bool`
-///
-/// Always aligned
-/// Size 1 bits
-pub fix: bool,
-/// `saturated bool`
-///
-/// Not always aligned
-/// Size 1 bits
-pub rtk_fix: bool,
-}
-                    impl ::canadensis_encoding::DataType for Heartbeat {
-                        const EXTENT_BYTES: Option<u32> = Some(124);
-                    }
-                    impl ::canadensis_encoding::Message for Heartbeat {}
-                    impl Heartbeat {}
-                    impl ::canadensis_encoding::Serialize for Heartbeat {
-                        fn size_bits(&self) -> usize {
-                            200
-                        }
-                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_composite(&self.heartbeat);
-                            cursor.write_composite(&self.sources);
-                            cursor.write_composite(&self.dop);
-                            cursor.write_aligned_u8(self.num_visible_satellites);
-                            cursor.write_aligned_u8(self.num_used_satellites);
-                            cursor.write_bool(self.fix);
-                            cursor.write_bool(self.rtk_fix);
-                        }
-                    }
-                    impl ::canadensis_encoding::Deserialize for Heartbeat {
-                        fn deserialize(
-                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
-                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
-                        where
-                            Self: Sized,
-                        {
-                            Ok(Heartbeat {
-                                heartbeat: { cursor.read_composite()? },
-                                sources: { cursor.read_composite()? },
-                                dop: { cursor.read_composite()? },
-                                num_visible_satellites: { cursor.read_u8() as _ },
-                                num_used_satellites: { cursor.read_u8() as _ },
-                                fix: { cursor.read_bool() },
-                                rtk_fix: { cursor.read_bool() },
-                            })
-                        }
-                    }
-                }
-                pub mod sources_0_1 {
-                    /// `reg.drone.service.gnss.Sources.0.1`
-                    ///
-                    /// Fixed size 6 bytes
-                    pub struct Sources {
-                        /// `saturated bool`
-                        ///
-                        /// Always aligned
-                        /// Size 1 bits
-                        pub gps_l1: bool,
-                        /// `saturated bool`
-                        ///
-                        /// Not always aligned
-                        /// Size 1 bits
-                        pub gps_l2: bool,
-                        /// `saturated bool`
-                        ///
-                        /// Not always aligned
-                        /// Size 1 bits
-                        pub gps_l5: bool,
-                        /// `saturated bool`
-                        ///
-                        /// Not always aligned
-                        /// Size 1 bits
-                        pub glonass_l1: bool,
-                        /// `saturated bool`
-                        ///
-                        /// Not always aligned
-                        /// Size 1 bits
-                        pub glonass_l2: bool,
-                        /// `saturated bool`
-                        ///
-                        /// Not always aligned
-                        /// Size 1 bits
-                        pub glonass_l3: bool,
-                        /// `saturated bool`
-                        ///
-                        /// Not always aligned
-                        /// Size 1 bits
-                        pub galileo_e1: bool,
-                        /// `saturated bool`
-                        ///
-                        /// Not always aligned
-                        /// Size 1 bits
-                        pub galileo_e5a: bool,
-                        /// `saturated bool`
-                        ///
-                        /// Always aligned
-                        /// Size 1 bits
-                        pub galileo_e5b: bool,
-                        /// `saturated bool`
-                        ///
-                        /// Not always aligned
-                        /// Size 1 bits
-                        pub galileo_e6: bool,
-                        /// `saturated bool`
-                        ///
-                        /// Not always aligned
-                        /// Size 1 bits
-                        pub beidou_b1: bool,
-                        /// `saturated bool`
-                        ///
-                        /// Not always aligned
-                        /// Size 1 bits
-                        pub beidou_b2: bool,
-                        // 5 bits of padding
-                        /// `saturated bool`
-                        ///
-                        /// Not always aligned
-                        /// Size 1 bits
-                        pub sbas: bool,
-                        /// `saturated bool`
-                        ///
-                        /// Not always aligned
-                        /// Size 1 bits
-                        pub gbas: bool,
-                        /// `saturated bool`
-                        ///
-                        /// Not always aligned
-                        /// Size 1 bits
-                        pub rtk_base: bool,
-                        // 3 bits of padding
-                        /// `saturated bool`
-                        ///
-                        /// Not always aligned
-                        /// Size 1 bits
-                        pub imu: bool,
-                        /// `saturated bool`
-                        ///
-                        /// Always aligned
-                        /// Size 1 bits
-                        pub visual_odometry: bool,
-                        /// `saturated bool`
-                        ///
-                        /// Not always aligned
-                        /// Size 1 bits
-                        pub dead_reckoning: bool,
-                        /// `saturated bool`
-                        ///
-                        /// Not always aligned
-                        /// Size 1 bits
-                        pub uwb: bool,
-                        // 4 bits of padding
-                        /// `saturated bool`
-                        ///
-                        /// Not always aligned
-                        /// Size 1 bits
-                        pub magnetic_compass: bool,
-                        /// `saturated bool`
-                        ///
-                        /// Always aligned
-                        /// Size 1 bits
-                        pub gyro_compass: bool,
-                        /// `saturated bool`
-                        ///
-                        /// Not always aligned
-                        /// Size 1 bits
-                        pub other_compass: bool,
-                        // 14 bits of padding
-                    }
-                    impl ::canadensis_encoding::DataType for Sources {
-                        const EXTENT_BYTES: Option<u32> = None;
-                    }
-                    impl ::canadensis_encoding::Message for Sources {}
-                    impl Sources {}
-                    impl ::canadensis_encoding::Serialize for Sources {
-                        fn size_bits(&self) -> usize {
-                            48
-                        }
-                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_bool(self.gps_l1);
-                            cursor.write_bool(self.gps_l2);
-                            cursor.write_bool(self.gps_l5);
-                            cursor.write_bool(self.glonass_l1);
-                            cursor.write_bool(self.glonass_l2);
-                            cursor.write_bool(self.glonass_l3);
-                            cursor.write_bool(self.galileo_e1);
-                            cursor.write_bool(self.galileo_e5a);
-                            cursor.write_bool(self.galileo_e5b);
-                            cursor.write_bool(self.galileo_e6);
-                            cursor.write_bool(self.beidou_b1);
-                            cursor.write_bool(self.beidou_b2);
-                            cursor.skip_5();
-                            cursor.write_bool(self.sbas);
-                            cursor.write_bool(self.gbas);
-                            cursor.write_bool(self.rtk_base);
-                            cursor.skip_3();
-                            cursor.write_bool(self.imu);
-                            cursor.write_bool(self.visual_odometry);
-                            cursor.write_bool(self.dead_reckoning);
-                            cursor.write_bool(self.uwb);
-                            cursor.skip_4();
-                            cursor.write_bool(self.magnetic_compass);
-                            cursor.write_bool(self.gyro_compass);
-                            cursor.write_bool(self.other_compass);
-                            cursor.skip_14();
-                        }
-                    }
-                    impl ::canadensis_encoding::Deserialize for Sources {
-                        fn deserialize(
-                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
-                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
-                        where
-                            Self: Sized,
-                        {
-                            Ok(Sources {
-                                gps_l1: { cursor.read_bool() },
-                                gps_l2: { cursor.read_bool() },
-                                gps_l5: { cursor.read_bool() },
-                                glonass_l1: { cursor.read_bool() },
-                                glonass_l2: { cursor.read_bool() },
-                                glonass_l3: { cursor.read_bool() },
-                                galileo_e1: { cursor.read_bool() },
-                                galileo_e5a: { cursor.read_bool() },
-                                galileo_e5b: { cursor.read_bool() },
-                                galileo_e6: { cursor.read_bool() },
-                                beidou_b1: { cursor.read_bool() },
-                                beidou_b2: { cursor.read_bool() },
-                                sbas: {
-                                    cursor.skip_5();
-                                    cursor.read_bool()
-                                },
-                                gbas: { cursor.read_bool() },
-                                rtk_base: { cursor.read_bool() },
-                                imu: {
-                                    cursor.skip_3();
-                                    cursor.read_bool()
-                                },
-                                visual_odometry: { cursor.read_bool() },
-                                dead_reckoning: { cursor.read_bool() },
-                                uwb: { cursor.read_bool() },
-                                magnetic_compass: {
-                                    cursor.skip_4();
-                                    cursor.read_bool()
-                                },
-                                gyro_compass: { cursor.read_bool() },
-                                other_compass: { cursor.read_bool() },
-                            })
-                        }
-                    }
-                }
-                pub mod time_0_1 {
-                    /// `reg.drone.service.gnss.Time.0.1`
-                    ///
-                    /// Fixed size 21 bytes
-                    pub struct Time {
-                        /// `reg.drone.physics.time.TAI64VarTs.0.1`
-                        ///
-                        /// Always aligned
-                        /// Size 152 bits
-                        pub value: crate::reg::drone::physics::time::tai64_var_ts_0_1::TAI64VarTs,
-                        /// `uavcan.time.TAIInfo.0.1`
-                        ///
-                        /// Always aligned
-                        /// Size 16 bits
-                        pub info: crate::uavcan::time::tai_info_0_1::TAIInfo,
-                    }
-                    impl ::canadensis_encoding::DataType for Time {
-                        const EXTENT_BYTES: Option<u32> = Some(63);
-                    }
-                    impl ::canadensis_encoding::Message for Time {}
-                    impl Time {}
-                    impl ::canadensis_encoding::Serialize for Time {
-                        fn size_bits(&self) -> usize {
-                            168
-                        }
-                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_composite(&self.value);
-                            cursor.write_composite(&self.info);
-                        }
-                    }
-                    impl ::canadensis_encoding::Deserialize for Time {
-                        fn deserialize(
-                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
-                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
-                        where
-                            Self: Sized,
-                        {
-                            Ok(Time {
-                                value: { cursor.read_composite()? },
-                                info: { cursor.read_composite()? },
-                            })
-                        }
-                    }
-                }
-            }
             pub mod sensor {
                 pub mod status_0_1 {
-                    /// `reg.drone.service.sensor.Status.0.1`
+                    /// `reg.udral.service.sensor.Status.0.1`
                     ///
                     /// Fixed size 12 bytes
                     #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
@@ -4534,13 +3719,16 @@ pub rtk_fix: bool,
 #[deny(unaligned_references)]
 pub mod uavcan {
     pub mod diagnostic {
+        #[deprecated]
         pub mod record_1_0 {
+            #[deprecated]
             pub const SUBJECT: ::canadensis_core::SubjectId =
                 ::canadensis_core::SubjectId::from_truncating(8184);
 
             /// `uavcan.diagnostic.Record.1.0`
             ///
             /// Size ranges from 9 to 121 bytes
+            #[deprecated]
             pub struct Record {
                 /// `uavcan.time.SynchronizedTimestamp.1.0`
                 ///
@@ -4770,12 +3958,14 @@ pub mod uavcan {
             }
         }
         pub mod get_info_0_1 {
+            #[deprecated]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(405);
 
             /// `uavcan.file.GetInfo.0.1`
             ///
             /// Size ranges from 1 to 113 bytes
+            #[deprecated]
             pub struct GetInfoRequest {
                 /// `uavcan.file.Path.1.0`
                 ///
@@ -5010,12 +4200,14 @@ pub mod uavcan {
             }
         }
         pub mod list_0_1 {
+            #[deprecated]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(406);
 
             /// `uavcan.file.List.0.1`
             ///
             /// Size ranges from 9 to 121 bytes
+            #[deprecated]
             pub struct ListRequest {
                 /// `saturated uint32`
                 ///
@@ -5196,12 +4388,14 @@ pub mod uavcan {
             }
         }
         pub mod modify_1_0 {
+            #[deprecated]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(407);
 
             /// `uavcan.file.Modify.1.0`
             ///
             /// Size ranges from 6 to 230 bytes
+            #[deprecated]
             pub struct ModifyRequest {
                 /// `saturated bool`
                 ///
@@ -5409,10 +4603,12 @@ pub mod uavcan {
                 assert_eq!(::memoffset::offset_of!(ModifyResponse, error) * 8, 0);
             }
         }
+        #[deprecated]
         pub mod path_1_0 {
             /// `uavcan.file.Path.1.0`
             ///
             /// Size ranges from 1 to 113 bytes
+            #[deprecated]
             pub struct Path {
                 /// `saturated uint8[<=112]`
                 ///
@@ -5514,12 +4710,14 @@ pub mod uavcan {
             }
         }
         pub mod read_1_0 {
+            #[deprecated]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(408);
 
             /// `uavcan.file.Read.1.0`
             ///
             /// Size ranges from 6 to 118 bytes
+            #[deprecated]
             pub struct ReadRequest {
                 /// `truncated uint40`
                 ///
@@ -5706,12 +4904,14 @@ pub mod uavcan {
             }
         }
         pub mod write_1_0 {
+            #[deprecated]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(409);
 
             /// `uavcan.file.Write.1.0`
             ///
             /// Size ranges from 7 to 311 bytes
+            #[deprecated]
             pub struct WriteRequest {
                 /// `truncated uint40`
                 ///
@@ -5911,12 +5111,14 @@ pub mod uavcan {
     pub mod internet {
         pub mod udp {
             pub mod handle_incoming_packet_0_1 {
+                #[deprecated]
                 pub const SERVICE: ::canadensis_core::ServiceId =
                     ::canadensis_core::ServiceId::from_truncating(500);
 
                 /// `uavcan.internet.udp.HandleIncomingPacket.0.1`
                 ///
                 /// Size ranges from 4 to 313 bytes
+                #[deprecated]
                 pub struct HandleIncomingPacketRequest {
                     /// `saturated uint16`
                     ///
@@ -6106,13 +5308,16 @@ pub mod uavcan {
                     );
                 }
             }
+            #[deprecated]
             pub mod outgoing_packet_0_1 {
+                #[deprecated]
                 pub const SUBJECT: ::canadensis_core::SubjectId =
                     ::canadensis_core::SubjectId::from_truncating(8174);
 
                 /// `uavcan.internet.udp.OutgoingPacket.0.1`
                 ///
                 /// Size ranges from 8 to 313 bytes
+                #[deprecated]
                 pub struct OutgoingPacket {
                     /// `saturated uint16`
                     ///
@@ -6616,10 +5821,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     }
                 }
             }
+            #[deprecated]
             pub mod frame_0_1 {
                 /// `uavcan.metatransport.can.Frame.0.1`
                 ///
                 /// Size ranges from 12 to 78 bytes
+                #[deprecated]
                 pub struct Frame {
                     /// `uavcan.time.SynchronizedTimestamp.1.0`
                     ///
@@ -6730,10 +5937,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     }
                 }
             }
+            #[deprecated]
             pub mod manifestation_0_1 {
                 /// `uavcan.metatransport.can.Manifestation.0.1`
                 ///
                 /// Size ranges from 5 to 71 bytes
+                #[deprecated]
                 pub enum Manifestation {
                     // uavcan.metatransport.can.Error.0.1
                     Error(crate::uavcan::metatransport::can::error_0_1::Error),
@@ -6982,10 +6191,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
         }
         pub mod serial {
+            #[deprecated]
             pub mod fragment_0_1 {
                 /// `uavcan.metatransport.serial.Fragment.0.1`
                 ///
                 /// Size ranges from 9 to 265 bytes
+                #[deprecated]
                 pub struct Fragment {
                     /// `uavcan.time.SynchronizedTimestamp.1.0`
                     ///
@@ -7098,10 +6309,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
         }
         pub mod udp {
+            #[deprecated]
             pub mod endpoint_0_1 {
                 /// `uavcan.metatransport.udp.Endpoint.0.1`
                 ///
                 /// Fixed size 32 bytes
+                #[deprecated]
                 pub struct Endpoint {
                     /// `saturated uint8[16]`
                     ///
@@ -7179,10 +6392,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     }
                 }
             }
+            #[deprecated]
             pub mod frame_0_1 {
                 /// `uavcan.metatransport.udp.Frame.0.1`
                 ///
                 /// Size ranges from 74 to 9262 bytes
+                #[deprecated]
                 pub struct Frame {
                     /// `uavcan.time.SynchronizedTimestamp.1.0`
                     ///
@@ -7263,12 +6478,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
     }
     pub mod node {
         pub mod execute_command_1_0 {
+            #[deprecated]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(435);
 
             /// `uavcan.node.ExecuteCommand.1.0`
             ///
             /// Size ranges from 3 to 115 bytes
+            #[deprecated]
             pub struct ExecuteCommandRequest {
                 /// `saturated uint16`
                 ///
