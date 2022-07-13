@@ -77,7 +77,7 @@ where
             }
             Err(e) => {
                 self.error_count = self.error_count.wrapping_add(1);
-                Err(e.into())
+                Err(e)
             }
         }
     }
@@ -144,8 +144,8 @@ where
             .chain(iter::repeat(0).take(frame_stats.last_frame_padding))
             .inspect(|byte| crc.add(*byte));
         // Break into frames
-        let can_id = make_can_id(&transfer.header, &transfer.payload);
-        let mut breakdown = Breakdown::new(self.mtu, transfer.header.transfer_id().clone());
+        let can_id = make_can_id(&transfer.header, transfer.payload);
+        let mut breakdown = Breakdown::new(self.mtu, *transfer.header.transfer_id());
         let mut frames = 0;
         // Do the non-last frames
         for byte in payload_and_padding {
@@ -194,7 +194,9 @@ where
         Ok(())
     }
 
-    /// Creates a frame and adds it to a transaction
+    /// Creates a frame and sends it to the driver to be transmitted
+    ///
+    /// If the driver returns a removed lower-priority frame, this function discards it.
     fn push_frame(
         &mut self,
         timestamp: I,
@@ -207,7 +209,8 @@ where
         I: Clone,
     {
         let frame = Frame::new(timestamp, id, data);
-        driver.transmit(frame, now).map(|removed| drop(removed))
+        // If a lower-priority frame was removed, drop it
+        driver.transmit(frame, now).map(drop)
     }
 
     /// Returns the number of transfers successfully transmitted
@@ -232,7 +235,7 @@ fn make_can_id<I>(header: &Header<I, CanTransport>, payload: &[u8]) -> CanId {
     let mut bits = 0u32;
 
     // Common fields for all transfer types
-    bits |= (header.priority().clone() as u32) << 26;
+    bits |= (*header.priority() as u32) << 26;
     let source_node = header
         .source()
         .cloned()

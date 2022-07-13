@@ -8,6 +8,7 @@ use crate::input::{Input, ParsedString, Statement};
 use canadensis_dsdl_frontend::{Package, TypeKey};
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span, TokenTree};
+use std::collections::btree_map::Entry;
 use std::collections::BTreeMap;
 use std::env;
 use syn::spanned::Spanned;
@@ -33,7 +34,7 @@ fn types_from_dsdl_inner(
 
     let mut statements = input.statements.into_iter();
     // Zero or more package/inline type statements, followed by zero or one generate statement
-    while let Some(statement) = statements.next() {
+    for statement in statements.by_ref() {
         match statement {
             Statement::Function { name, arguments } => match &*name.to_string() {
                 "package" => eval_package_function(&mut package, arguments)?,
@@ -178,14 +179,15 @@ fn eval_make_external_function(
         ));
     }
 
-    if external_packages.contains_key(&uavcan_package) {
-        Err(make_error(
+    match external_packages.entry(uavcan_package) {
+        Entry::Vacant(entry) => {
+            entry.insert(rust_module);
+            Ok(())
+        }
+        Entry::Occupied(_) => Err(make_error(
             arguments_span,
             "This package has already been marked as external",
-        ))
-    } else {
-        external_packages.insert(uavcan_package, rust_module);
-        Ok(())
+        )),
     }
 }
 

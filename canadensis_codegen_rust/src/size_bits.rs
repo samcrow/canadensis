@@ -17,7 +17,7 @@ impl Display for SizeBitsExpr<'_> {
             // Just a single precalculated value
             write!(f, "{}", size_min)
         } else {
-            write_complex_size_expression(f, &self.0)
+            write_complex_size_expression(f, self.0)
         }
     }
 }

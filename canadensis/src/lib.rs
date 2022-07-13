@@ -66,7 +66,7 @@ where
 {
     fn clone(&self) -> Self {
         ResponseToken {
-            service: self.service.clone(),
+            service: self.service,
             client: self.client.clone(),
             transfer: self.transfer.clone(),
             priority: self.priority.clone(),

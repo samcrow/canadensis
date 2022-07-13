@@ -42,11 +42,7 @@ pub struct QueueOnlyDriver<I, const TC: usize, const RC: usize> {
 impl<I: Default + Clone, const TC: usize, const RC: usize> QueueOnlyDriver<I, TC, RC> {
     /// Creates a driver
     pub fn new() -> Self {
-        QueueOnlyDriver {
-            tx_queue: ArrayQueue::new(),
-            rx_queue: Deque::new(),
-            subscriptions: None,
-        }
+        Default::default()
     }
 
     /// Pushes a received frame onto the back of the receive queue
@@ -76,6 +72,16 @@ impl<I: Default + Clone, const TC: usize, const RC: usize> QueueOnlyDriver<I, TC
     /// but an out-of-memory error occurred while collecting the subscriptions
     pub fn subscriptions(&self) -> Option<&[Subscription]> {
         self.subscriptions.as_deref()
+    }
+}
+
+impl<I: Default, const TC: usize, const RC: usize> Default for QueueOnlyDriver<I, TC, RC> {
+    fn default() -> Self {
+        QueueOnlyDriver {
+            tx_queue: ArrayQueue::new(),
+            rx_queue: Deque::new(),
+            subscriptions: None,
+        }
     }
 }
 
@@ -118,7 +124,7 @@ impl<I: Default + Clone, const TC: usize, const RC: usize> ReceiveDriver<I>
             Some(subscriptions) => {
                 subscriptions.clear();
                 for subscription in new_subscriptions {
-                    if let Err(_) = FallibleVec::try_push(subscriptions, subscription) {
+                    if FallibleVec::try_push(subscriptions, subscription).is_err() {
                         // No memory. Remove subscriptions.
                         self.subscriptions = None;
                         break;
@@ -128,7 +134,7 @@ impl<I: Default + Clone, const TC: usize, const RC: usize> ReceiveDriver<I>
             None => {
                 let mut subscriptions = Vec::new();
                 for subscription in new_subscriptions {
-                    if let Err(_) = FallibleVec::try_push(&mut subscriptions, subscription) {
+                    if FallibleVec::try_push(&mut subscriptions, subscription).is_err() {
                         // No memory. Remove subscriptions.
                         self.subscriptions = None;
                         break;

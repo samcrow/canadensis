@@ -25,7 +25,7 @@ impl Display for ImplementSerialize<'_> {
         writeln!(
             f,
             "fn size_bits(&self) -> usize {{ {} }}",
-            SizeBitsExpr(&self.ty)
+            SizeBitsExpr(self.ty)
         )?;
 
         // Serialize

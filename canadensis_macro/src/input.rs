@@ -104,9 +104,7 @@ fn parse_inline_type(
     group: Group,
 ) -> Result<Statement, TokenStream> {
     match &*trees_before_group {
-        [TokenTree::Ident(type_ident), TokenTree::Literal(literal)]
-            if type_ident.to_string() == "type" =>
-        {
+        [TokenTree::Ident(type_ident), TokenTree::Literal(literal)] if type_ident == "type" => {
             Ok(Statement::InlineType {
                 name: ParsedString::from_literal(literal.clone())?,
                 dsdl: parse_string_in_group(group)?,

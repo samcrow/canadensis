@@ -2,20 +2,13 @@ use crate::GeneratedItem;
 use std::collections::BTreeMap;
 use std::iter::FromIterator;
 
+/// A tree of Rust modules that may contain items
+#[derive(Default)]
 pub(crate) struct ModuleTree {
     /// Structs at this level
     pub items: Vec<GeneratedItem>,
     /// Submodules
     pub children: BTreeMap<String, ModuleTree>,
-}
-
-impl Default for ModuleTree {
-    fn default() -> Self {
-        ModuleTree {
-            items: Vec::new(),
-            children: BTreeMap::new(),
-        }
-    }
 }
 
 impl ModuleTree {

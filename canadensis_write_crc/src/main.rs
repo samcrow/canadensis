@@ -129,7 +129,7 @@ impl std::fmt::Display for StringError {
 impl Error for StringError {}
 
 fn get_input_path() -> PathBuf {
-    match env::args_os().skip(1).next() {
+    match env::args_os().nth(1) {
         Some(path) => PathBuf::from(path),
         None => {
             eprintln!("Usage: canadensis_write_crc binary-path");

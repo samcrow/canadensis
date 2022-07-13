@@ -14,6 +14,12 @@ impl<I> SingleFrameQueue<I> {
     }
 }
 
+impl<I> Default for SingleFrameQueue<I> {
+    fn default() -> Self {
+        SingleFrameQueue::new()
+    }
+}
+
 impl<I> FrameQueue<I> for SingleFrameQueue<I> {
     fn try_reserve(&mut self, additional: usize) -> Result<(), OutOfMemoryError> {
         if self.frame.is_none() && additional == 1 {

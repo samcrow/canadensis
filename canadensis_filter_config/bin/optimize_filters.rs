@@ -34,7 +34,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         .collect();
     let optimized_filters = canadensis_filter_config::optimize(&mut filters, args.max_filters);
 
-    print_filters(&optimized_filters);
+    print_filters(optimized_filters);
 
     Ok(())
 }

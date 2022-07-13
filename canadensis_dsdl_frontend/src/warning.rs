@@ -18,6 +18,10 @@ impl std::fmt::Display for Warning {
     }
 }
 
+/// Detailed warning variants
+// False positive warning: All of these end with `Case`, but different non-case-related warnings
+// may be added in the future.
+#[allow(clippy::enum_variant_names)]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum WarningKind {
     /// Part of a package name is not in all-lowercase with _ separators
@@ -132,7 +136,7 @@ impl Warnings {
                 let suggestion = part.to_snake_case();
                 self.insert(WarningKind::PackageCase {
                     name: part.to_owned(),
-                    suggestion: suggestion,
+                    suggestion,
                 })
             }
         }
@@ -142,7 +146,7 @@ impl Warnings {
             let suggestion = actual_name.to_upper_camel_case();
             self.insert(WarningKind::TypeNameCase {
                 key: key.clone(),
-                suggestion: suggestion,
+                suggestion,
             })
         }
     }
@@ -181,7 +185,7 @@ impl Warnings {
                 self.insert(WarningKind::ConstantCase {
                     key: key.to_owned(),
                     name: name.to_owned(),
-                    suggestion: suggestion,
+                    suggestion,
                 })
             }
         }

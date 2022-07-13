@@ -50,9 +50,9 @@ pub fn generate_code(
     let mut generated_types = Vec::new();
 
     for (key, dsdl) in package {
-        if external_module(key.name().path(), &external_packages).is_none() {
+        if external_module(key.name().path(), external_packages).is_none() {
             // Generate a non-external type
-            generate_from_dsdl(key, dsdl, &external_packages, &mut generated_types);
+            generate_from_dsdl(key, dsdl, external_packages, &mut generated_types);
         }
     }
     let tree: ModuleTree = generated_types.into_iter().collect();
@@ -409,10 +409,9 @@ fn scalar_supports_zero_copy(scalar: &ResolvedScalarType) -> bool {
         ResolvedScalarType::Composite { inner, .. } => message_supports_zero_copy(&*inner),
         ResolvedScalarType::Primitive(primitive) => match primitive {
             PrimitiveType::Boolean => false,
-            PrimitiveType::Int { bits } | PrimitiveType::UInt { bits, .. } => match bits {
-                8 | 16 | 32 | 64 => true,
-                _ => false,
-            },
+            PrimitiveType::Int { bits } | PrimitiveType::UInt { bits, .. } => {
+                matches!(bits, 8 | 16 | 32 | 64)
+            }
             PrimitiveType::Float16 { .. }
             | PrimitiveType::Float32 { .. }
             | PrimitiveType::Float64 { .. } => true,
@@ -838,6 +837,7 @@ mod fmt_impl {
                     f,
                     "#[allow(unused_variables, unused_braces, unused_parens)]"
                 )?;
+                writeln!(f, "#[allow(clippy::identity_op)]")?;
                 writeln!(f, "#[deny(unaligned_references)]")?;
 
                 writeln!(f, "pub mod {} {{", sub_name)?;

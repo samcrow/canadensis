@@ -279,7 +279,7 @@ impl DsdlFile {
     /// Returns the path to this file, or None if this DSDL is not from a file
     pub(crate) fn path(&self) -> Option<&Path> {
         match &self.source {
-            FileSource::File(path) => Some(&path),
+            FileSource::File(path) => Some(path),
             FileSource::String(_) => None,
         }
     }

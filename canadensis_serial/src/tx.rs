@@ -41,6 +41,12 @@ impl<D, const C: usize> SerialTransmitter<D, C> {
     }
 }
 
+impl<D, const C: usize> Default for SerialTransmitter<D, C> {
+    fn default() -> Self {
+        SerialTransmitter::new()
+    }
+}
+
 impl<I, D, const C: usize> Transmitter<I> for SerialTransmitter<D, C>
 where
     I: Instant,
@@ -73,9 +79,8 @@ where
         // Escape the header, payload, and payload CRC into a temporary buffer
         let mut escape_buffer: Vec<u8> = FallibleVec::try_with_capacity(escaped_length)
             .map_err(|e| Error::Memory(OutOfMemoryError::from(e)))?;
-        for _ in 0..escaped_length {
-            escape_buffer.push(0);
-        }
+        escape_buffer.resize(escaped_length, 0);
+
         let data_to_escape = header
             .as_bytes()
             .iter()

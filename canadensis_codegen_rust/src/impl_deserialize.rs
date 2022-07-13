@@ -27,7 +27,7 @@ impl Display for ImplementDeserialize<'_> {
             GeneratedTypeKind::Struct(gstruct) => {
                 deserialize_struct(f, &self.ty.name, gstruct, self.zero_copy)?
             }
-            GeneratedTypeKind::Enum(genum) => deserialize_enum(f, &self.ty.name, &genum)?,
+            GeneratedTypeKind::Enum(genum) => deserialize_enum(f, &self.ty.name, genum)?,
         }
 
         // End function

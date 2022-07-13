@@ -134,11 +134,9 @@ fn parse_padding_field(field: Pair<'_, Rule>) -> Result<Statement<'_>, pest::err
 fn parse_expression(pair: Pair<'_, Rule>) -> Result<Expression<'_>, pest::error::Error<Rule>> {
     let rule = pair.as_rule();
     let pair_span = pair.as_span();
-    let children_vec: Vec<Pair<'_, Rule>> = pair.into_inner().collect();
-    let mut children = children_vec.into_iter();
+    let mut children = pair.into_inner();
     match rule {
         Rule::expression => {
-            assert_eq!(children.len(), 1);
             let result = parse_expression(children.next().expect("No child"));
             assert!(children.next().is_none());
             result

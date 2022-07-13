@@ -124,7 +124,7 @@ fn get_args() -> Args {
                         .map(|ext| (ext.package, ext.rust_module))
                         .collect()
                 })
-                .unwrap_or_else(|| BTreeMap::new()),
+                .unwrap_or_else(BTreeMap::new),
         },
         ("print-dependencies", _) => Args::PrintDependencies,
         _ => panic!("Unrecognized subcommand"),

@@ -102,6 +102,12 @@ impl TypeFullName {
             + self.name.len()
     }
 
+    /// Returns true if this name is empty
+    pub fn is_empty(&self) -> bool {
+        self.path.is_empty() && self.name.is_empty()
+    }
+
+    /// Returns a copy of this name with all components changed to lowercase
     fn to_lowercase(&self) -> TypeFullName {
         TypeFullName {
             path: self

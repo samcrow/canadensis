@@ -143,13 +143,13 @@ where
     fn receive(&mut self, now: I) -> nb::Result<Frame<I>, Self::Error> {
         loop {
             match self.can.receive() {
-                Ok(frame) => match bxcan_frame_to_uavcan(&frame, now) {
-                    Ok(frame) => break Ok(frame),
-                    Err(_) => {
-                        // Remote or basic ID, not compatible with UAVCAN
-                        // Try to receive another frame
+                Ok(frame) => {
+                    if let Ok(frame) = bxcan_frame_to_uavcan(&frame, now) {
+                        break Ok(frame);
                     }
-                },
+                    // Otherwise the frame is remote or basic ID, not compatible with UAVCAN.
+                    // Try to receive another frame.
+                }
                 Err(nb::Error::WouldBlock) => break Err(nb::Error::WouldBlock),
                 Err(nb::Error::Other(e)) => break Err(nb::Error::Other(e)),
             }
@@ -178,7 +178,7 @@ where
                 }
             },
         );
-        if let Err(_) = status {
+        if status.is_err() {
             // Not enough memory to apply the ideal filters. Just accept all frames.
             filters.clear().enable_bank(0, Mask32::accept_all());
         }
@@ -202,7 +202,7 @@ where
     C: Instance,
 {
     for mailbox in [Mailbox::Mailbox0, Mailbox::Mailbox1, Mailbox::Mailbox2].iter() {
-        if let Some(deadline) = deadlines.get(mailbox.clone()) {
+        if let Some(deadline) = deadlines.get(*mailbox) {
             if now.overflow_safe_compare(&deadline) == Ordering::Greater {
                 // Deadline has passed, abort transmission
                 // Ignore if the mailbox is really empty or the frame has been transmitted.
@@ -225,9 +225,7 @@ where
 {
     /// Creates a deadline tracker with no deadlines
     pub fn new() -> Self {
-        DeadlineTracker {
-            deadlines: [None, None, None],
-        }
+        DeadlineTracker::default()
     }
     /// Returns the deadline for a mailbox
     pub(crate) fn get(&self, mailbox: Mailbox) -> Option<I> {
@@ -238,6 +236,14 @@ where
     pub(crate) fn replace(&mut self, mailbox: Mailbox, new_deadline: I) -> Option<I> {
         let slot = &mut self.deadlines[mailbox as usize];
         slot.replace(new_deadline)
+    }
+}
+
+impl<I> Default for DeadlineTracker<I> {
+    fn default() -> Self {
+        DeadlineTracker {
+            deadlines: [None, None, None],
+        }
     }
 }
 

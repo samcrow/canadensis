@@ -144,17 +144,15 @@ impl Unescaper {
     pub fn accept(&mut self, byte: u8) -> Result<Option<u8>, DecodeZeroError> {
         if byte == 0 {
             Err(DecodeZeroError)
+        } else if self.bytes_to_copy == 0 {
+            self.bytes_to_copy = byte - 1;
+            let result = if self.pending_zero { Some(0) } else { None };
+            self.pending_zero = byte < 0xff;
+            Ok(result)
         } else {
-            if self.bytes_to_copy == 0 {
-                self.bytes_to_copy = byte - 1;
-                let result = if self.pending_zero { Some(0) } else { None };
-                self.pending_zero = byte < 0xff;
-                Ok(result)
-            } else {
-                // Pass through
-                self.bytes_to_copy -= 1;
-                Ok(Some(byte))
-            }
+            // Pass through
+            self.bytes_to_copy -= 1;
+            Ok(Some(byte))
         }
     }
 }

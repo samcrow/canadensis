@@ -105,7 +105,7 @@ where
             }
             Header::Request(service_header) => {
                 let token = ResponseToken {
-                    service: service_header.service.clone(),
+                    service: service_header.service,
                     client: service_header.source.clone(),
                     transfer: service_header.transfer_id.clone(),
                     priority: service_header.priority.clone(),

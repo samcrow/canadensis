@@ -364,10 +364,10 @@ where
                     // This may fail to allocate memory.
                     // TODO: Handle allocation failure
                     let _ = subscription.sessions.insert(
-                        source_node.clone(),
+                        *source_node,
                         Session {
                             expiration_time: subscription.timeout + header.timestamp(),
-                            last_transfer_id: header.transfer_id().clone(),
+                            last_transfer_id: *header.transfer_id(),
                         },
                     );
                 }
@@ -415,7 +415,7 @@ where
             let mut id_to_remove: Option<SerialNodeId> = None;
             for (id, session) in self.sessions.iter() {
                 if session.expiration_time.overflow_safe_compare(&now) == Ordering::Less {
-                    id_to_remove = Some(id.clone());
+                    id_to_remove = Some(*id);
                 }
             }
             match id_to_remove {
