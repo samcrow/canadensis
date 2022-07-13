@@ -67,6 +67,20 @@ pub const FRAME_CAPACITY: usize = 8;
 ///
 /// RTR/Error frames are not used and therefore not modeled here.
 /// CAN frames with 11-bit ID are not used by Cyphal/CAN and so they are not supported by the library.
+///
+/// # Loopback
+///
+/// Each frame has a loopback flag.
+///
+/// For an outgoing frame, if loopback is true the driver should place a copy of this frame
+/// in the received frame path (as if it had been received on the bus) with the copy's timestamp
+/// set to the time the frame was transmitted.
+///
+/// For an incoming frame, if loopback is true this frame was not actually received from
+/// another device. The frame timestamp is the time the original frame was sent.
+///
+/// This is useful for time synchronization.
+///
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Frame<I> {
     /// For RX frames: reception timestamp.
@@ -75,6 +89,8 @@ pub struct Frame<I> {
     timestamp: I,
     /// 29-bit extended ID
     id: CanId,
+    /// See "Loopback" in the struct documentation
+    loopback: bool,
     /// The frame data
     data: heapless::Vec<u8, FRAME_CAPACITY>,
 }
@@ -82,15 +98,31 @@ pub struct Frame<I> {
 impl<I> Frame<I> {
     /// Creates a frame
     ///
+    /// The loopback flag is set to false.
+    ///
     /// # Panics
     /// This function will panic if the length of data is greater than FRAME_CAPACITY.
     pub fn new(timestamp: I, id: CanId, data: &[u8]) -> Self {
         Frame {
             timestamp,
             id,
+            loopback: false,
             data: heapless::Vec::from_slice(data).expect("Data to large for a frame"),
         }
     }
+
+    /// Sets the loopback flag
+    #[inline]
+    pub fn set_loopback(&mut self, loopback: bool) {
+        self.loopback = loopback
+    }
+
+    /// Returns the loopback flag
+    #[inline]
+    pub fn loopback(&self) -> bool {
+        self.loopback
+    }
+
     /// Returns the ID of this frame
     #[inline]
     pub fn id(&self) -> CanId {
