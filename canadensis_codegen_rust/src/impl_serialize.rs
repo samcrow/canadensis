@@ -83,9 +83,9 @@ impl Display for ImplementSerialize<'_, '_> {
     }
 }
 
-struct SerializeField<'f>(&'f GeneratedField);
+struct SerializeField<'f, 'c>(&'f GeneratedField<'c>);
 
-impl Display for SerializeField<'_> {
+impl Display for SerializeField<'_, '_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match &self.0 {
             GeneratedField::Data(data) => {
@@ -112,9 +112,9 @@ impl Display for SerializeField<'_> {
     }
 }
 
-struct SerializeVariant<'v>(&'v GeneratedVariant);
+struct SerializeVariant<'v, 'c>(&'v GeneratedVariant<'c>);
 
-impl Display for SerializeVariant<'_> {
+impl Display for SerializeVariant<'_, '_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         Display::fmt(
             &WriteVariant {

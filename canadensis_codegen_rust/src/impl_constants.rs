@@ -22,6 +22,9 @@ impl Display for ImplementConstants<'_, '_> {
                 PrimitiveType::Float64 { .. } => "f64".into(),
             };
 
+            if !constant.comments().is_empty() {
+                writeln!(f, "#[doc = {:?}]", constant.comments())?;
+            }
             writeln!(
                 f,
                 "pub const {}: {} = {};",

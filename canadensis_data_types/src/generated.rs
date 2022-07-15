@@ -2501,7 +2501,9 @@ pub acceleration_error_variance: ::half::f16,
                         }
                         impl ::canadensis_encoding::Message for _0 {}
                         impl _0 {
+                            #[doc = "[seconds]\nThe actuator is allowed to enter a safe state (e.g., stop the controlled mechanism, disconnect itself from\nthe load, etc. depending on the specifics of the application at hand) if no setpoint or readiness control messages\nhave been received in this amount of time. Implementations are allowed to reduce this value, but never increase it."]
                             pub const CONTROL_TIMEOUT: f32 = 1_f32;
+                            #[doc = "[second]\nThis is the maximum publication period (minimum frequency) for all subjects described in this service.\nSubjects that are clocked by the setpoint should continue being published at least at this rate when setpoint is not\nbeing updated, unless the actuator is in the SLEEP state.\nThe publication periods should be consistent across the group."]
                             pub const MAX_PUBLICATION_PERIOD: u8 = 1;
                         }
                         impl ::canadensis_encoding::Serialize for _0 {
@@ -2727,6 +2729,7 @@ pub acceleration_error_variance: ::half::f16,
                             }
                             impl ::canadensis_encoding::Message for _0 {}
                             impl _0 {
+                                #[doc = "The float epsilon defined for convenience.\nSee https://en.wikipedia.org/wiki/Machine_epsilon."]
                                 pub const EPSILON: ::half::f16 = ::half::f16::from_bits(4096);
                             }
                             impl ::canadensis_encoding::Serialize for _0 {
@@ -3308,16 +3311,26 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                     }
                     impl ::canadensis_encoding::Message for Error {}
                     impl Error {
+                        #[doc = "The battery should not be used anymore. Detection criteria are implementation-defined."]
                         pub const BAD_BATTERY: u8 = 10;
+                        #[doc = "An internal error in the battery management system, not related to the battery itself."]
                         pub const BMS_ERROR: u8 = 20;
+                        #[doc = "The sum of cell voltages is far from the total pack voltage.\nThe threshold is implementation-defined."]
                         pub const CELL_COUNT: u8 = 62;
                         pub const CELL_OVERVOLTAGE: u8 = 60;
+                        #[doc = "Voltage of one of the battery cells exceeds its SOA."]
                         pub const CELL_UNDERVOLTAGE: u8 = 61;
+                        #[doc = "The battery/BMS/node/service configuration is missing or invalid."]
                         pub const CONFIGURATION: u8 = 30;
+                        #[doc = "The battery requires offline maintenance."]
                         pub const NEEDS_SERVICE: u8 = 11;
+                        #[doc = "Normal operation."]
                         pub const NONE: u8 = 0;
+                        #[doc = "The battery is discharged beyond the design limits and may have incurred damage."]
                         pub const OVERDISCHARGE: u8 = 50;
+                        #[doc = "The charge or discharge rate exceeds the safe operating limits."]
                         pub const OVERLOAD: u8 = 51;
+                        #[doc = "At least one cell is above/below the temperature SOA."]
                         pub const TEMPERATURE_COLD: u8 = 101;
                         pub const TEMPERATURE_HOT: u8 = 100;
                     }
@@ -3709,29 +3722,53 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                     }
                     impl ::canadensis_encoding::Message for Technology {}
                     impl Technology {
+                        #[doc = "Aluminum-Air"]
                         pub const AL_O2: u8 = 21;
+                        #[doc = "Electrostatic double-layer capacitor"]
                         pub const EDLC: u8 = 200;
+                        #[doc = "Lithium-thionyl chloride + bromine chloride (Li-BCX)"]
                         pub const LI_BCX: u8 = 11;
+                        #[doc = "Lithium cobalt oxide (commonly known as just \"lithium-ion\")"]
                         pub const LI_LCO: u8 = 100;
+                        #[doc = "LiCoO2 in pouch form factor, commonly known as \"lithium-ion polymer\" or \"LiPo\"."]
                         pub const LI_LCO_POUCH: u8 = 110;
+                        #[doc = "Lithium iron phosphate (LiFePO4)"]
                         pub const LI_LFP: u8 = 101;
+                        #[doc = "LiFePO4 in pouch form factor, commonly known as \"LiFePO4 polymer\"."]
                         pub const LI_LFP_POUCH: u8 = 111;
+                        #[doc = "Lithium manganese oxide"]
                         pub const LI_LMO: u8 = 104;
+                        #[doc = "Lithium-manganese dioxide (Li-MnO2) (e.g., lithium coin cell, lithium 9V)"]
                         pub const LI_MNO2: u8 = 12;
+                        #[doc = "Lithium nickel cobalt aluminium oxide"]
                         pub const LI_NCA: u8 = 103;
+                        #[doc = "Lithium nickel manganese cobalt oxide"]
                         pub const LI_NMC: u8 = 102;
+                        #[doc = "Lithium-sulfur (LiS)"]
                         pub const LI_S: u8 = 105;
+                        #[doc = "Lithium-thionyl chloride (Li-SOCl2)"]
                         pub const LI_SOCL2: u8 = 10;
+                        #[doc = "Nickel-cadmium"]
                         pub const NI_CD: u8 = 121;
+                        #[doc = "Nickel-iron"]
                         pub const NI_FE: u8 = 123;
+                        #[doc = "Nickel-metal hydride"]
                         pub const NI_MH: u8 = 120;
+                        #[doc = "Nickel-zinc"]
                         pub const NI_ZN: u8 = 122;
+                        #[doc = "The technology is not specified in this enumeration. Please submit a pull request.\nNON-RECHARGEABLE"]
                         pub const OTHER: u8 = 0;
+                        #[doc = "Lead acid"]
                         pub const PB_AC: u8 = 130;
+                        #[doc = "Also known as SLA"]
                         pub const PB_AC_SEALED: u8 = 131;
+                        #[doc = "Zinc-manganese dioxide - potassium hydroxide electrolyte (aka alkaline)\nRECHARGEABLE"]
                         pub const ZN_MNO2_KOH: u8 = 32;
+                        #[doc = "Zinc-manganese dioxide - ammonium chloride electrolyte (aka zinc-carbon)"]
                         pub const ZN_MNO2_NH4CL: u8 = 30;
+                        #[doc = "Zinc-manganese dioxide - zinc chloride electrolyte (aka heavy duty zinc-carbon)"]
                         pub const ZN_MNO2_ZNCL2: u8 = 31;
+                        #[doc = "Zinc-Air"]
                         pub const ZN_O2: u8 = 20;
                     }
                     impl ::canadensis_encoding::Serialize for Technology {
@@ -3783,6 +3820,7 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                     }
                     impl ::canadensis_encoding::Message for Heartbeat {}
                     impl Heartbeat {
+                        #[doc = "Any service that is not in the SLEEP state should publish its heartbeat (or a derived status) at least at this rate."]
                         pub const MAX_PUBLICATION_PERIOD: u8 = 1;
                     }
                     impl ::canadensis_encoding::Serialize for Heartbeat {
@@ -3826,8 +3864,11 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                     }
                     impl ::canadensis_encoding::Message for Readiness {}
                     impl Readiness {
+                        #[doc = "When ENGAGED, the subsystem is performing its main intended function at the nominal performance characteristics.\nA subsystem may require a short amount of time, possibly under a few seconds, to switch between the ENGAGED and\nSTANDBY states (in any direction).\nSome subsystems may not differentiate between STANDBY and ENGAGED (e.g., offboard communication hardware).\nThe subsystem may disengage itself autonomously in the event of a fatal malfunction, in which case\nthe reported service health status should be WARNING."]
                         pub const ENGAGED: u8 = 3;
+                        #[doc = "The long-term state of minimal power consumption.\nTypically, most subsystems are switched into the SLEEP mode when the vehicle is parked and powered off.\nSubsystems that do not support the SLEEP state should treat it as an equivalent of STANDBY.\n\nA subsystem may require a substantial amount of time to exit the sleep mode (for example, time may be needed to\nboot the operating system and run the self test procedures).\n\nWhile in the SLEEP mode, the subsystem is allowed to cease service provision and stop all network activity\nregardless of other requirements, except that it shall be able to reactivate itself if a Readiness message is\nreceived commanding any state other than SLEEP.\nValue 1 is invalid and shall never be commanded.\nImplementations receiving this value should interpret it either as SLEEP or STANDBY."]
                         pub const SLEEP: u8 = 0;
+                        #[doc = "The state of being ready to enter the normal operating mode in a short order.\nA subsystem that is in STANDBY state should be able to participate in the normal network activity.\nThis is the default state that the subsystem should reside in after power-on until explicitly commanded otherwise."]
                         pub const STANDBY: u8 = 2;
                     }
                     impl ::canadensis_encoding::Serialize for Readiness {
@@ -3891,6 +3932,7 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                     }
                     impl ::canadensis_encoding::Message for Status {}
                     impl Status {
+                        #[doc = "[second]"]
                         pub const MAX_PUBLICATION_PERIOD: u8 = 1;
                     }
                     impl ::canadensis_encoding::Serialize for Status {
@@ -4098,13 +4140,21 @@ pub mod uavcan {
             }
             impl ::canadensis_encoding::Message for Severity {}
             impl Severity {
+                #[doc = "Notifications of dangerous circumstances that demand immediate attention.\nMessages of this severity should be always enabled."]
                 pub const ALERT: u8 = 7;
+                #[doc = "Messages reporting serious problems and critical conditions.\nMessages of this severity and higher should be always enabled."]
                 pub const CRITICAL: u8 = 6;
+                #[doc = "Messages that can aid in troubleshooting.\nMessages of this severity and lower should be disabled by default."]
                 pub const DEBUG: u8 = 1;
+                #[doc = "Messages reporting problems and error conditions.\nMessages of this severity and higher should be enabled by default."]
                 pub const ERROR: u8 = 5;
+                #[doc = "General informational messages of low importance.\nMessages of this severity and lower should be disabled by default."]
                 pub const INFO: u8 = 2;
+                #[doc = "General informational messages of high importance.\nMessages of this severity and lower should be disabled by default."]
                 pub const NOTICE: u8 = 3;
+                #[doc = "Messages of this severity can be used only during development.\nThey shall not be used in a fielded operational system."]
                 pub const TRACE: u8 = 0;
+                #[doc = "Messages reporting abnormalities and warning conditions.\nMessages of this severity and higher should be enabled by default."]
                 pub const WARNING: u8 = 4;
             }
             impl ::canadensis_encoding::Serialize for Severity {
@@ -4152,8 +4202,10 @@ pub mod uavcan {
             impl Error {
                 pub const ACCESS_DENIED: u16 = 13;
                 pub const FILE_TOO_LARGE: u16 = 27;
+                #[doc = "E.g., file name is not valid for the target file system"]
                 pub const INVALID_VALUE: u16 = 22;
                 pub const IO_ERROR: u16 = 5;
+                #[doc = "I.e., attempted read/write on a path that points to a directory"]
                 pub const IS_DIRECTORY: u16 = 21;
                 pub const NOT_FOUND: u16 = 2;
                 pub const NOT_SUPPORTED: u16 = 38;
@@ -5720,6 +5772,7 @@ pub mod uavcan {
                 }
                 impl ::canadensis_encoding::Message for OutgoingPacket {}
                 impl OutgoingPacket {
+                    #[doc = "[second]\nModem nodes are required to keep the NAT table entries alive for at least this amount of time, unless the\ntable is overflowed, in which case they are allowed to remove least recently used entries in favor of\nnewer ones. Modem nodes are required to be able to accommodate at least 100 entries in the NAT table."]
                     pub const NAT_ENTRY_MIN_TTL: u32 = 86400;
                 }
                 impl ::canadensis_encoding::Serialize for OutgoingPacket {
@@ -5850,6 +5903,7 @@ pub mod uavcan {
                 }
                 impl ::canadensis_encoding::Message for OutgoingPacket {}
                 impl OutgoingPacket {
+                    #[doc = "[second]\nModem nodes are required to keep the NAT table entries alive for at least this amount of time, unless the\ntable is overflowed, in which case they are allowed to remove least recently used entries in favor of\nnewer ones. Modem nodes are required to be able to accommodate at least 100 entries in the NAT table."]
                     pub const NAT_ENTRY_MIN_TTL: u32 = 86400;
                 }
                 impl ::canadensis_encoding::Serialize for OutgoingPacket {
@@ -6866,6 +6920,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 }
                 impl ::canadensis_encoding::Message for Frame {}
                 impl Frame {
+                    #[doc = "Max jumbo frame 9 KiB, IP header min 20 B, UDP header 8 B."]
                     pub const MTU: u16 = 9188;
                 }
                 impl ::canadensis_encoding::Serialize for Frame {
@@ -6950,11 +7005,17 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
             impl ::canadensis_encoding::Request for ExecuteCommandRequest {}
             impl ExecuteCommandRequest {
+                #[doc = "Begin the software update process using uavcan.file.Read. This command makes use of the \"parameter\" field below.\nThe parameter contains the path to the new software image file to be downloaded by the server from the client\nusing the standard service uavcan.file.Read. Observe that this operation swaps the roles of the client and\nthe server.\n\nUpon reception of this command, the server (updatee) will evaluate whether it is possible to begin the\nsoftware update process. If that is deemed impossible, the command will be rejected with one of the\nerror codes defined in the response section of this definition (e.g., BAD_STATE if the node is currently\non-duty and a sudden interruption of its activities is considered unsafe, and so on).\nIf an update process is already underway, the updatee should abort the process and restart with the new file,\nunless the updatee can determine that the specified file is the same file that is already being downloaded,\nin which case it is allowed to respond SUCCESS and continue the old update process.\nIf there are no other conditions precluding the requested update, the updatee will return a SUCCESS and\ninitiate the file transfer process by invoking the standard service uavcan.file.Read repeatedly until the file\nis transferred fully (please refer to the documentation for that data type for more information about its usage).\n\nWhile the software is being updated, the updatee should set its mode (the field \"mode\" in uavcan.node.Heartbeat)\nto MODE_SOFTWARE_UPDATE. Please refer to the documentation for uavcan.node.Heartbeat for more information.\n\nIt is recognized that most systems will have to interrupt their normal services to perform the software update\n(unless some form of software hot swapping is implemented, as is the case in some high-availability systems).\n\nMicrocontrollers that are requested to update their firmware may need to stop execution of their current firmware\nand start the embedded bootloader (although other approaches are possible as well). In that case,\nwhile the embedded bootloader is running, the mode reported via the message uavcan.node.Heartbeat should be\nMODE_SOFTWARE_UPDATE as long as the bootloader is runing, even if no update-related activities\nare currently underway. For example, if the update process failed and the bootloader cannot load the software,\nthe same mode MODE_SOFTWARE_UPDATE will be reported.\nIt is also recognized that in a microcontroller setting, the application that served the update request will have\nto pass the update-related metadata (such as the node-ID of the server and the firmware image file path) to\nthe embedded bootloader. The tactics of that transaction lie outside of the scope of this specification."]
                 pub const COMMAND_BEGIN_SOFTWARE_UPDATE: u16 = 65533;
+                #[doc = "Cease activities immediately, enter a safe state until restarted.\nFurther operation may no longer be possible until a restart command is executed."]
                 pub const COMMAND_EMERGENCY_STOP: u16 = 65531;
+                #[doc = "Return the node's configuration back to the factory default settings (may require restart).\nDue to the uncertainty whether a restart is required, generic interfaces should always force a restart."]
                 pub const COMMAND_FACTORY_RESET: u16 = 65532;
+                #[doc = "Shut down the node; further access will not be possible until the power is turned back on."]
                 pub const COMMAND_POWER_OFF: u16 = 65534;
+                #[doc = "Reboot the node.\nNote that some standard commands may or may not require a restart in order to take effect; e.g., factory reset."]
                 pub const COMMAND_RESTART: u16 = 65535;
+                #[doc = "This command instructs the node to store the current configuration parameter values and other persistent states\nto the non-volatile storage. Nodes are allowed to manage persistent states automatically, obviating the need for\nthis command by committing all such data to the non-volatile memory automatically as necessary. However, some\nnodes may lack this functionality, in which case this parameter should be used. Generic interfaces should always\ninvoke this command in order to ensure that the data is stored even if the node doesn't implement automatic\npersistence management."]
                 pub const COMMAND_STORE_PERSISTENT_STATES: u16 = 65530;
             }
             impl ::canadensis_encoding::Serialize for ExecuteCommandRequest {
@@ -7079,11 +7140,17 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
             impl ::canadensis_encoding::Request for ExecuteCommandRequest {}
             impl ExecuteCommandRequest {
+                #[doc = "Begin the software update process using uavcan.file.Read. This command makes use of the \"parameter\" field below.\nThe parameter contains the path to the new software image file to be downloaded by the server from the client\nusing the standard service uavcan.file.Read. Observe that this operation swaps the roles of the client and\nthe server.\n\nUpon reception of this command, the server (updatee) will evaluate whether it is possible to begin the\nsoftware update process. If that is deemed impossible, the command will be rejected with one of the\nerror codes defined in the response section of this definition (e.g., BAD_STATE if the node is currently\non-duty and a sudden interruption of its activities is considered unsafe, and so on).\nIf an update process is already underway, the updatee should abort the process and restart with the new file,\nunless the updatee can determine that the specified file is the same file that is already being downloaded,\nin which case it is allowed to respond SUCCESS and continue the old update process.\nIf there are no other conditions precluding the requested update, the updatee will return a SUCCESS and\ninitiate the file transfer process by invoking the standard service uavcan.file.Read repeatedly until the file\nis transferred fully (please refer to the documentation for that data type for more information about its usage).\n\nWhile the software is being updated, the updatee should set its mode (the field \"mode\" in uavcan.node.Heartbeat)\nto MODE_SOFTWARE_UPDATE. Please refer to the documentation for uavcan.node.Heartbeat for more information.\n\nIt is recognized that most systems will have to interrupt their normal services to perform the software update\n(unless some form of software hot swapping is implemented, as is the case in some high-availability systems).\n\nMicrocontrollers that are requested to update their firmware may need to stop execution of their current firmware\nand start the embedded bootloader (although other approaches are possible as well). In that case,\nwhile the embedded bootloader is running, the mode reported via the message uavcan.node.Heartbeat should be\nMODE_SOFTWARE_UPDATE as long as the bootloader is runing, even if no update-related activities\nare currently underway. For example, if the update process failed and the bootloader cannot load the software,\nthe same mode MODE_SOFTWARE_UPDATE will be reported.\nIt is also recognized that in a microcontroller setting, the application that served the update request will have\nto pass the update-related metadata (such as the node-ID of the server and the firmware image file path) to\nthe embedded bootloader. The tactics of that transaction lie outside of the scope of this specification."]
                 pub const COMMAND_BEGIN_SOFTWARE_UPDATE: u16 = 65533;
+                #[doc = "Cease activities immediately, enter a safe state until restarted.\nFurther operation may no longer be possible until a restart command is executed."]
                 pub const COMMAND_EMERGENCY_STOP: u16 = 65531;
+                #[doc = "Return the node's configuration back to the factory default settings (may require restart).\nDue to the uncertainty whether a restart is required, generic interfaces should always force a restart."]
                 pub const COMMAND_FACTORY_RESET: u16 = 65532;
+                #[doc = "Shut down the node; further access will not be possible until the power is turned back on."]
                 pub const COMMAND_POWER_OFF: u16 = 65534;
+                #[doc = "Reboot the node.\nNote that some standard commands may or may not require a restart in order to take effect; e.g., factory reset."]
                 pub const COMMAND_RESTART: u16 = 65535;
+                #[doc = "This command instructs the node to store the current configuration parameter values and other persistent states\nto the non-volatile storage. Nodes are allowed to manage persistent states automatically, obviating the need for\nthis command by committing all such data to the non-volatile memory automatically as necessary. However, some\nnodes may lack this functionality, in which case this parameter should be used. Generic interfaces should always\ninvoke this command in order to ensure that the data is stored even if the node doesn't implement automatic\npersistence management."]
                 pub const COMMAND_STORE_PERSISTENT_STATES: u16 = 65530;
             }
             impl ::canadensis_encoding::Serialize for ExecuteCommandRequest {
@@ -7508,13 +7575,18 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub value: u8,
             }
             impl ::canadensis_encoding::DataType for Health {
+                /// Test
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Message for Health {}
             impl Health {
+                #[doc = "A critical parameter went out of range or the component encountered a minor failure that does not prevent\nthe subsystem from performing any of its real-time functions."]
                 pub const ADVISORY: u8 = 1;
+                #[doc = "The component encountered a major failure and is performing in a degraded mode or outside of its designed limitations."]
                 pub const CAUTION: u8 = 2;
+                #[doc = "The component is functioning properly (nominal)."]
                 pub const NOMINAL: u8 = 0;
+                #[doc = "The component suffered a fatal malfunction and is unable to perform its intended function."]
                 pub const WARNING: u8 = 3;
             }
             impl ::canadensis_encoding::Serialize for Health {
@@ -7582,7 +7654,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
             impl ::canadensis_encoding::Message for Heartbeat {}
             impl Heartbeat {
+                #[doc = "[second]\nThe publication period shall not exceed this limit.\nThe period should not change while the node is running."]
                 pub const MAX_PUBLICATION_PERIOD: u16 = 1;
+                #[doc = "[second]\nIf the last message from the node was received more than this amount of time ago, it should be considered offline."]
                 pub const OFFLINE_TIMEOUT: u16 = 3;
             }
             impl ::canadensis_encoding::Serialize for Heartbeat {
@@ -7733,9 +7807,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
             impl ::canadensis_encoding::Message for Mode {}
             impl Mode {
+                #[doc = "Initialization is in progress; this mode is entered immediately after startup."]
                 pub const INITIALIZATION: u8 = 1;
+                #[doc = "E.g., calibration, self-test, etc."]
                 pub const MAINTENANCE: u8 = 2;
+                #[doc = "Normal operating mode."]
                 pub const OPERATIONAL: u8 = 0;
+                #[doc = "New software/firmware is being loaded or the bootloader is running."]
                 pub const SOFTWARE_UPDATE: u8 = 3;
             }
             impl ::canadensis_encoding::Serialize for Mode {
@@ -7845,6 +7923,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 }
                 impl ::canadensis_encoding::Message for List {}
                 impl List {
+                    #[doc = "[seconds]\nIf the port configuration is not updated in this amount of time, the node should publish this message anyway."]
                     pub const MAX_PUBLICATION_PERIOD: u8 = 10;
                 }
                 impl ::canadensis_encoding::Serialize for List {
@@ -8199,7 +8278,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 }
                 impl ::canadensis_encoding::Request for AppendEntriesRequest {}
                 impl AppendEntriesRequest {
+                    #[doc = "[second]\nGiven the minimum election timeout and the cluster size,\nthe maximum recommended request interval can be derived as follows:\n\nmax recommended request interval = (min election timeout) / 2 requests / (cluster size - 1)\n\nThe equation assumes that the Leader requests one Follower at a time, so that there's at most one pending call\nat any moment. Such behavior is optimal as it creates a uniform bus load, although it is implementation-specific.\nObviously, the request interval can be lower than that if needed, but higher values are not recommended as they may\ncause Followers to initiate premature elections in case of frame losses or delays.\n\nThe timeout value is randomized in the range (MIN, MAX], according to the Raft paper. The randomization granularity\nshould be at least one millisecond or higher."]
                     pub const DEFAULT_MAX_ELECTION_TIMEOUT: u8 = 4;
+                    #[doc = "[second]"]
                     pub const DEFAULT_MIN_ELECTION_TIMEOUT: u8 = 2;
                 }
                 impl ::canadensis_encoding::Serialize for AppendEntriesRequest {
@@ -8325,7 +8406,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 }
                 impl ::canadensis_encoding::Message for Discovery {}
                 impl Discovery {
+                    #[doc = "[second]\nThis message should be broadcasted by the allocator at this interval until all other allocators are discovered."]
                     pub const BROADCASTING_PERIOD: u8 = 1;
+                    #[doc = "The redundant allocator cluster cannot contain more than 5 allocators."]
                     pub const MAX_CLUSTER_SIZE: u8 = 5;
                 }
                 impl ::canadensis_encoding::Serialize for Discovery {
@@ -13557,7 +13640,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
             impl ::canadensis_encoding::Message for Synchronization {}
             impl Synchronization {
+                #[doc = "[second]\nPublication period limits.\nA master should not change its publication period while running."]
                 pub const MAX_PUBLICATION_PERIOD: u8 = 1;
+                #[doc = "Synchronization slaves should normally switch to a new master if the current master was silent\nfor thrice the interval between the reception of the last two messages published by it.\nFor example, imagine that the last message was received at the time X, and the previous message\nwas received at the time (X - 0.5 seconds); the period is 0.5 seconds, and therefore the publisher\ntimeout is (0.5 seconds * 3) = 1.5 seconds. If there was no message from the current master in\nthis amount of time, all slaves will synchronize with another master with the next-higher node-ID."]
                 pub const PUBLISHER_TIMEOUT_PERIOD_MULTIPLIER: u8 = 3;
             }
             impl ::canadensis_encoding::Serialize for Synchronization {
@@ -13601,6 +13686,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
             impl ::canadensis_encoding::Message for SynchronizedTimestamp {}
             impl SynchronizedTimestamp {
+                #[doc = "Zero means that the time is not known."]
                 pub const UNKNOWN: u64 = 0;
             }
             impl ::canadensis_encoding::Serialize for SynchronizedTimestamp {
@@ -13644,6 +13730,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
             impl ::canadensis_encoding::Message for TAIInfo {}
             impl TAIInfo {
+                #[doc = "[second]\nThe fixed difference, in seconds, between TAI and GPS time. Does not change ever.\nSystems that use GPS time as a reference should convert that to TAI by adding this difference."]
                 pub const DIFFERENCE_TAI_MINUS_GPS: u8 = 19;
                 pub const DIFFERENCE_TAI_MINUS_UTC_UNKNOWN: u16 = 0;
             }
@@ -13686,8 +13773,11 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
             impl ::canadensis_encoding::Message for TimeSystem {}
             impl TimeSystem {
+                #[doc = "Application-specific time system of unknown properties."]
                 pub const APPLICATION_SPECIFIC: u8 = 15;
+                #[doc = "Monotonic time since boot.\nMonotonic time is a time reference that doesn't change rate or make leaps."]
                 pub const MONOTONIC_SINCE_BOOT: u8 = 0;
+                #[doc = "International Atomic Time; https://en.wikipedia.org/wiki/International_Atomic_Time.\nThe timestamp value contains the number of microseconds elapsed since 1970-01-01T00:00:00Z TAI.\nTAI is always a fixed integer number of seconds ahead of GPS time.\nSystems that use GPS time as a reference should convert that to TAI by adding the fixed difference.\nGPS time is not supported for reasons of consistency across different positioning systems and applications."]
                 pub const TAI: u8 = 1;
             }
             impl ::canadensis_encoding::Serialize for TimeSystem {
