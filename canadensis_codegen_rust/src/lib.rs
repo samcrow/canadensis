@@ -703,7 +703,12 @@ mod fmt_impl {
 
     impl Display for GeneratedType<'_> {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-            // Documentation: Cyphal type name
+            if !self.comments.is_empty() {
+                // Documentation from the DSDL file
+                writeln!(f, "#[doc = {:?}]", self.comments)?;
+                writeln!(f, "///")?;
+            }
+            // Additional documentation: Cyphal type name
             writeln!(f, "/// `{}`\n///", self.cyphal_name)?;
             let min_size = self.size.min_value();
             let max_size = self.size.max_value();
@@ -716,12 +721,6 @@ mod fmt_impl {
                     min_size / 8,
                     max_size / 8
                 )?;
-            }
-
-            if !self.comments.is_empty() {
-                // Additional comments from the DSDL file
-                writeln!(f, "///")?;
-                writeln!(f, "#[doc = {:?}]", self.comments)?;
             }
 
             // Derive zerocopy traits if possible
@@ -820,6 +819,12 @@ mod fmt_impl {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
             match self {
                 GeneratedField::Data(data) => {
+                    if !data.comments.is_empty() {
+                        // Documentation from DSDL
+                        writeln!(f, "#[doc = {:?}]", data.comments)?;
+                        writeln!(f, "///")?;
+                    }
+
                     writeln!(f, "/// `{}`\n///", data.cyphal_ty)?;
                     if data.always_aligned {
                         writeln!(f, "/// Always aligned,")?;
@@ -835,12 +840,6 @@ mod fmt_impl {
                         writeln!(f, "/// size ranges from {} to {} bits", size_min, size_max)?;
                     }
 
-                    if !data.comments.is_empty() {
-                        // Documentation from DSDL
-                        writeln!(f, "///")?;
-                        writeln!(f, "#[doc = {:?}]", data.comments)?;
-                    }
-
                     writeln!(f, "pub {}: {},", data.name, data.ty)
                 }
                 GeneratedField::Padding(bits) => {
@@ -852,12 +851,13 @@ mod fmt_impl {
 
     impl Display for GeneratedVariant<'_> {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-            writeln!(f, "/// {}", self.cyphal_ty)?;
             if !self.comments.is_empty() {
                 // Documentation from DSDL
-                writeln!(f, "///")?;
                 writeln!(f, "#[doc = {:?}]", self.comments)?;
+                writeln!(f, "///")?;
             }
+            writeln!(f, "/// {}", self.cyphal_ty)?;
+
             writeln!(f, "{}({}),", self.name, self.ty)
         }
     }
