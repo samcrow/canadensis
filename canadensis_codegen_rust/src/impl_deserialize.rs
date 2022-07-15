@@ -146,7 +146,7 @@ impl<'t> Display for ReadUnalignedField<'_> {
                 inner: ResolvedScalarType::Primitive(PrimitiveType::Boolean),
                 len,
             } => {
-                // Use BitArray
+                // Use BitArray with no length field
                 writeln!(
                     f,
                     "::canadensis_encoding::bits::BitArray::deserialize({}_usize, cursor)",
@@ -157,7 +157,7 @@ impl<'t> Display for ReadUnalignedField<'_> {
                 inner: ResolvedScalarType::Primitive(PrimitiveType::Boolean),
                 ..
             } => {
-                // Use BitArray
+                // Use BitArray with a length field
                 let length_bits = match &self.ty.implicit_field() {
                     Some(ImplicitField::ArrayLength { bits }) => *bits,
                     _ => unreachable!("Variable-length array does not have a length field"),

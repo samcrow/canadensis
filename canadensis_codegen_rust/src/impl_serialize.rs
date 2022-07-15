@@ -200,13 +200,29 @@ impl<'t> Display for WriteAlignedField<'_> {
             ResolvedType::FixedArray {
                 inner: ResolvedScalarType::Primitive(PrimitiveType::Boolean),
                 ..
+            } => {
+                // Use BitArray with no length field
+                writeln!(f, "({}).serialize(cursor);", self.field_expr)?;
             }
-            | ResolvedType::VariableArray {
+            ResolvedType::VariableArray {
                 inner: ResolvedScalarType::Primitive(PrimitiveType::Boolean),
                 ..
             } => {
-                // Use BitArray
-                writeln!(f, "({}).serialize(cursor);", self.field_expr)?;
+                // Use BitArray with a length field
+                if let Some(ImplicitField::ArrayLength { bits }) = self.ty.implicit_field() {
+                    // Write length and then elements
+                    Display::fmt(
+                        &CallWriteAligned {
+                            bits,
+                            name: &format!("({}).len()", self.field_expr),
+                            as_uint: true,
+                        },
+                        f,
+                    )?;
+                    writeln!(f, "({}).serialize(cursor);", self.field_expr)?;
+                } else {
+                    unreachable!("Variable-length array does not have an implicit length field");
+                }
             }
             ResolvedType::FixedArray { inner, .. } => {
                 Display::fmt(
@@ -292,13 +308,29 @@ impl Display for WriteUnalignedField<'_> {
             ResolvedType::FixedArray {
                 inner: ResolvedScalarType::Primitive(PrimitiveType::Boolean),
                 ..
+            } => {
+                // Use BitArray with no length field
+                writeln!(f, "({}).serialize(cursor);", self.field_expr)?;
             }
-            | ResolvedType::VariableArray {
+            ResolvedType::VariableArray {
                 inner: ResolvedScalarType::Primitive(PrimitiveType::Boolean),
                 ..
             } => {
-                // Use BitArray
-                writeln!(f, "({}).serialize(cursor);", self.field_expr)?;
+                // Use BitArray with a length field
+                if let Some(ImplicitField::ArrayLength { bits }) = self.ty.implicit_field() {
+                    // Write length and then elements
+                    Display::fmt(
+                        &CallWrite {
+                            bits,
+                            name: &format!("({}).len()", self.field_expr),
+                            as_uint: true,
+                        },
+                        f,
+                    )?;
+                    writeln!(f, "({}).serialize(cursor);", self.field_expr)?;
+                } else {
+                    unreachable!("Variable-length array does not have an implicit length field");
+                }
             }
             ResolvedType::FixedArray { inner, .. } => {
                 Display::fmt(

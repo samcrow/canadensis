@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_codegen_rust`: Print warnings
 - `canadensis_codegen_rust`: Generated types are marked as deprecated if the
   corresponding DSDL types are deprecated
+- `canadensis_data_types`: Generated types are marked as deprecated if the
+  corresponding DSDL types are deprecated
 
 ### Fixed
 
@@ -23,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   not be marked as deprecated
 - `canadensis_dsdl_frontend`: Added a check that prohibits using a deprecated
   type in a non-deprecated type (the specification requires this check)
+- `canadensis_codegen_rust`: Fixed a bug that caused generated code to not
+  serialize the length field of a variable-length array of bits
+- `canadensis_data_types`: Fixed a bug in generated code that caused variable-
+  length bit arrays to be serialized incorrectly (missing the length field)
 
 ### Changed
 
@@ -33,6 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_codegen_rust`: Updated `heck` dependency to 0.4.0
 - `canadensis_codegen_rust`: Application now prints help text instead of
   panicking when run with no subcommand
+- `canadensis_codegen_rust`: Improved documentation of generated fields
+- `canadensis_data_types`: Improved documentation of generated fields
 
 ## [canadensis_dsdl_frontend-v0.3.1](https://github.com/samcrow/canadensis/tree/canadensis_dsdl_frontend-v0.3.1) - 2022-06-10
 

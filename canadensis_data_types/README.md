@@ -5,8 +5,6 @@ This library provides Rust data types corresponding to [the Cyphal public regula
 # Procedure to generate/update code
 
 ```shell
-git clone https://github.com/OpenCyphal/public_regulated_data_types.git
-canadensis_codegen_rust compile -o src/generated.rs public_regulated_data_types
+canadensis_codegen_rust compile -o src/generated.rs ../canadensis_dsdl_frontend/tests/public_regulated_data_types
 rustfmt src/generated.rs
-rm -rf public_regulated_data_types
 ```

@@ -16,18 +16,18 @@ pub mod reg {
                     pub struct Note {
                         /// `uavcan.si.unit.frequency.Scalar.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub frequency: crate::uavcan::si::unit::frequency::scalar_1_0::Scalar,
                         /// `uavcan.si.unit.duration.Scalar.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub duration: crate::uavcan::si::unit::duration::scalar_1_0::Scalar,
                         /// `uavcan.si.unit.power.Scalar.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub acoustic_power: crate::uavcan::si::unit::power::scalar_1_0::Scalar,
                     }
                     impl ::canadensis_encoding::DataType for Note {
@@ -73,13 +73,13 @@ pub mod reg {
                         pub struct Planar {
 /// `reg.udral.physics.kinematics.rotation.Planar.0.1`
 ///
-/// Always aligned
-/// Size 96 bits
+/// Always aligned,
+/// size 96 bits
 pub kinematics: crate::reg::udral::physics::kinematics::rotation::planar_0_1::Planar,
 /// `uavcan.si.unit.torque.Scalar.1.0`
 ///
-/// Always aligned
-/// Size 32 bits
+/// Always aligned,
+/// size 32 bits
 pub torque: crate::uavcan::si::unit::torque::scalar_1_0::Scalar,
 }
                         impl ::canadensis_encoding::DataType for Planar {
@@ -122,13 +122,13 @@ pub torque: crate::uavcan::si::unit::torque::scalar_1_0::Scalar,
                         pub struct PlanarTs {
 /// `uavcan.time.SynchronizedTimestamp.1.0`
 ///
-/// Always aligned
-/// Size 56 bits
+/// Always aligned,
+/// size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
 /// `reg.udral.physics.dynamics.rotation.Planar.0.1`
 ///
-/// Always aligned
-/// Size 128 bits
+/// Always aligned,
+/// size 128 bits
 pub value: crate::reg::udral::physics::dynamics::rotation::planar_0_1::Planar,
 }
                         impl ::canadensis_encoding::DataType for PlanarTs {
@@ -173,13 +173,13 @@ pub value: crate::reg::udral::physics::dynamics::rotation::planar_0_1::Planar,
                         pub struct Linear {
 /// `reg.udral.physics.kinematics.translation.Linear.0.1`
 ///
-/// Always aligned
-/// Size 96 bits
+/// Always aligned,
+/// size 96 bits
 pub kinematics: crate::reg::udral::physics::kinematics::translation::linear_0_1::Linear,
 /// `uavcan.si.unit.force.Scalar.1.0`
 ///
-/// Always aligned
-/// Size 32 bits
+/// Always aligned,
+/// size 32 bits
 pub force: crate::uavcan::si::unit::force::scalar_1_0::Scalar,
 }
                         impl ::canadensis_encoding::DataType for Linear {
@@ -222,13 +222,13 @@ pub force: crate::uavcan::si::unit::force::scalar_1_0::Scalar,
                         pub struct LinearTs {
 /// `uavcan.time.SynchronizedTimestamp.1.0`
 ///
-/// Always aligned
-/// Size 56 bits
+/// Always aligned,
+/// size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
 /// `reg.udral.physics.dynamics.translation.Linear.0.1`
 ///
-/// Always aligned
-/// Size 128 bits
+/// Always aligned,
+/// size 128 bits
 pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear,
 }
                         impl ::canadensis_encoding::DataType for LinearTs {
@@ -274,13 +274,13 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                     pub struct Power {
                         /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub current: crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
                         /// `uavcan.si.unit.voltage.Scalar.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub voltage: crate::uavcan::si::unit::voltage::scalar_1_0::Scalar,
                     }
                     impl ::canadensis_encoding::DataType for Power {
@@ -320,14 +320,14 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                     pub struct PowerTs {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `reg.udral.physics.electricity.Power.0.1`
                         ///
-                        /// Always aligned
-                        /// Size 64 bits
+                        /// Always aligned,
+                        /// size 64 bits
                         pub value: crate::reg::udral::physics::electricity::power_0_1::Power,
                     }
                     impl ::canadensis_encoding::DataType for PowerTs {
@@ -367,18 +367,18 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                     pub struct Source {
                         /// `reg.udral.physics.electricity.Power.0.1`
                         ///
-                        /// Always aligned
-                        /// Size 64 bits
+                        /// Always aligned,
+                        /// size 64 bits
                         pub power: crate::reg::udral::physics::electricity::power_0_1::Power,
                         /// `uavcan.si.unit.energy.Scalar.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub energy: crate::uavcan::si::unit::energy::scalar_1_0::Scalar,
                         /// `uavcan.si.unit.energy.Scalar.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub full_energy: crate::uavcan::si::unit::energy::scalar_1_0::Scalar,
                     }
                     impl ::canadensis_encoding::DataType for Source {
@@ -419,14 +419,14 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                     pub struct SourceTs {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `reg.udral.physics.electricity.Source.0.1`
                         ///
-                        /// Always aligned
-                        /// Size 128 bits
+                        /// Always aligned,
+                        /// size 128 bits
                         pub value: crate::reg::udral::physics::electricity::source_0_1::Source,
                     }
                     impl ::canadensis_encoding::DataType for SourceTs {
@@ -469,8 +469,8 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                         pub struct Point {
                             /// `uavcan.si.unit.length.WideVector3.1.0`
                             ///
-                            /// Always aligned
-                            /// Size 192 bits
+                            /// Always aligned,
+                            /// size 192 bits
                             pub value:
                                 crate::uavcan::si::unit::length::wide_vector3_1_0::WideVector3,
                         }
@@ -515,14 +515,14 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                         pub struct PointState {
                             /// `reg.udral.physics.kinematics.cartesian.Point.0.1`
                             ///
-                            /// Always aligned
-                            /// Size 192 bits
+                            /// Always aligned,
+                            /// size 192 bits
                             pub position:
                                 crate::reg::udral::physics::kinematics::cartesian::point_0_1::Point,
                             /// `uavcan.si.unit.velocity.Vector3.1.0`
                             ///
-                            /// Always aligned
-                            /// Size 96 bits
+                            /// Always aligned,
+                            /// size 96 bits
                             pub velocity: crate::uavcan::si::unit::velocity::vector3_1_0::Vector3,
                         }
                         impl ::canadensis_encoding::DataType for PointState {
@@ -567,13 +567,13 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                         pub struct PointStateVar {
 /// `reg.udral.physics.kinematics.cartesian.PointVar.0.1`
 ///
-/// Always aligned
-/// Size 288 bits
+/// Always aligned,
+/// size 288 bits
 pub position: crate::reg::udral::physics::kinematics::cartesian::point_var_0_1::PointVar,
 /// `reg.udral.physics.kinematics.translation.Velocity3Var.0.2`
 ///
-/// Always aligned
-/// Size 192 bits
+/// Always aligned,
+/// size 192 bits
 pub velocity: crate::reg::udral::physics::kinematics::translation::velocity3_var_0_2::Velocity3Var,
 }
                         impl ::canadensis_encoding::DataType for PointStateVar {
@@ -616,13 +616,13 @@ pub velocity: crate::reg::udral::physics::kinematics::translation::velocity3_var
                         pub struct PointStateVarTs {
 /// `uavcan.time.SynchronizedTimestamp.1.0`
 ///
-/// Always aligned
-/// Size 56 bits
+/// Always aligned,
+/// size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
 /// `reg.udral.physics.kinematics.cartesian.PointStateVar.0.1`
 ///
-/// Always aligned
-/// Size 480 bits
+/// Always aligned,
+/// size 480 bits
 pub value: crate::reg::udral::physics::kinematics::cartesian::point_state_var_0_1::PointStateVar,
 }
                         impl ::canadensis_encoding::DataType for PointStateVarTs {
@@ -665,14 +665,14 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::point_state_var_0_
                         pub struct PointVar {
                             /// `reg.udral.physics.kinematics.cartesian.Point.0.1`
                             ///
-                            /// Always aligned
-                            /// Size 192 bits
+                            /// Always aligned,
+                            /// size 192 bits
                             pub value:
                                 crate::reg::udral::physics::kinematics::cartesian::point_0_1::Point,
                             /// `saturated float16[6]`
                             ///
-                            /// Always aligned
-                            /// Size 96 bits
+                            /// Always aligned,
+                            /// size 96 bits
                             pub covariance_urt: [::half::f16; 6],
                         }
                         impl ::canadensis_encoding::DataType for PointVar {
@@ -717,14 +717,14 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::point_state_var_0_
                         pub struct Pose {
                             /// `reg.udral.physics.kinematics.cartesian.Point.0.1`
                             ///
-                            /// Always aligned
-                            /// Size 192 bits
+                            /// Always aligned,
+                            /// size 192 bits
                             pub position:
                                 crate::reg::udral::physics::kinematics::cartesian::point_0_1::Point,
                             /// `uavcan.si.unit.angle.Quaternion.1.0`
                             ///
-                            /// Always aligned
-                            /// Size 128 bits
+                            /// Always aligned,
+                            /// size 128 bits
                             pub orientation:
                                 crate::uavcan::si::unit::angle::quaternion_1_0::Quaternion,
                         }
@@ -770,14 +770,14 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::point_state_var_0_
                         pub struct PoseVar {
                             /// `reg.udral.physics.kinematics.cartesian.Pose.0.1`
                             ///
-                            /// Always aligned
-                            /// Size 320 bits
+                            /// Always aligned,
+                            /// size 320 bits
                             pub value:
                                 crate::reg::udral::physics::kinematics::cartesian::pose_0_1::Pose,
                             /// `saturated float16[21]`
                             ///
-                            /// Always aligned
-                            /// Size 336 bits
+                            /// Always aligned,
+                            /// size 336 bits
                             pub covariance_urt: [::half::f16; 21],
                         }
                         impl ::canadensis_encoding::DataType for PoseVar {
@@ -820,13 +820,13 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::point_state_var_0_
                         pub struct PoseVarTs {
 /// `uavcan.time.SynchronizedTimestamp.1.0`
 ///
-/// Always aligned
-/// Size 56 bits
+/// Always aligned,
+/// size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
 /// `reg.udral.physics.kinematics.cartesian.PoseVar.0.1`
 ///
-/// Always aligned
-/// Size 656 bits
+/// Always aligned,
+/// size 656 bits
 pub value: crate::reg::udral::physics::kinematics::cartesian::pose_var_0_1::PoseVar,
 }
                         impl ::canadensis_encoding::DataType for PoseVarTs {
@@ -869,14 +869,14 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::pose_var_0_1::Pose
                         pub struct State {
                             /// `reg.udral.physics.kinematics.cartesian.Pose.0.1`
                             ///
-                            /// Always aligned
-                            /// Size 320 bits
+                            /// Always aligned,
+                            /// size 320 bits
                             pub pose:
                                 crate::reg::udral::physics::kinematics::cartesian::pose_0_1::Pose,
                             /// `reg.udral.physics.kinematics.cartesian.Twist.0.1`
                             ///
-                            /// Always aligned
-                            /// Size 192 bits
+                            /// Always aligned,
+                            /// size 192 bits
                             pub twist:
                                 crate::reg::udral::physics::kinematics::cartesian::twist_0_1::Twist,
                         }
@@ -922,13 +922,13 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::pose_var_0_1::Pose
                         pub struct StateVar {
 /// `reg.udral.physics.kinematics.cartesian.PoseVar.0.1`
 ///
-/// Always aligned
-/// Size 656 bits
+/// Always aligned,
+/// size 656 bits
 pub pose: crate::reg::udral::physics::kinematics::cartesian::pose_var_0_1::PoseVar,
 /// `reg.udral.physics.kinematics.cartesian.TwistVar.0.1`
 ///
-/// Always aligned
-/// Size 528 bits
+/// Always aligned,
+/// size 528 bits
 pub twist: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::TwistVar,
 }
                         impl ::canadensis_encoding::DataType for StateVar {
@@ -971,13 +971,13 @@ pub twist: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::Twi
                         pub struct StateVarTs {
 /// `uavcan.time.SynchronizedTimestamp.1.0`
 ///
-/// Always aligned
-/// Size 56 bits
+/// Always aligned,
+/// size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
 /// `reg.udral.physics.kinematics.cartesian.StateVar.0.1`
 ///
-/// Always aligned
-/// Size 1184 bits
+/// Always aligned,
+/// size 1184 bits
 pub value: crate::reg::udral::physics::kinematics::cartesian::state_var_0_1::StateVar,
 }
                         impl ::canadensis_encoding::DataType for StateVarTs {
@@ -1020,13 +1020,13 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::state_var_0_1::Sta
                         pub struct Twist {
                             /// `uavcan.si.unit.velocity.Vector3.1.0`
                             ///
-                            /// Always aligned
-                            /// Size 96 bits
+                            /// Always aligned,
+                            /// size 96 bits
                             pub linear: crate::uavcan::si::unit::velocity::vector3_1_0::Vector3,
                             /// `uavcan.si.unit.angular_velocity.Vector3.1.0`
                             ///
-                            /// Always aligned
-                            /// Size 96 bits
+                            /// Always aligned,
+                            /// size 96 bits
                             pub angular:
                                 crate::uavcan::si::unit::angular_velocity::vector3_1_0::Vector3,
                         }
@@ -1072,14 +1072,14 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::state_var_0_1::Sta
                         pub struct TwistVar {
                             /// `reg.udral.physics.kinematics.cartesian.Twist.0.1`
                             ///
-                            /// Always aligned
-                            /// Size 192 bits
+                            /// Always aligned,
+                            /// size 192 bits
                             pub value:
                                 crate::reg::udral::physics::kinematics::cartesian::twist_0_1::Twist,
                             /// `saturated float16[21]`
                             ///
-                            /// Always aligned
-                            /// Size 336 bits
+                            /// Always aligned,
+                            /// size 336 bits
                             pub covariance_urt: [::half::f16; 21],
                         }
                         impl ::canadensis_encoding::DataType for TwistVar {
@@ -1122,13 +1122,13 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::state_var_0_1::Sta
                         pub struct TwistVarTs {
 /// `uavcan.time.SynchronizedTimestamp.1.0`
 ///
-/// Always aligned
-/// Size 56 bits
+/// Always aligned,
+/// size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
 /// `reg.udral.physics.kinematics.cartesian.TwistVar.0.1`
 ///
-/// Always aligned
-/// Size 528 bits
+/// Always aligned,
+/// size 528 bits
 pub value: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::TwistVar,
 }
                         impl ::canadensis_encoding::DataType for TwistVarTs {
@@ -1173,18 +1173,18 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::Twi
                         pub struct Point {
                             /// `saturated float64`
                             ///
-                            /// Always aligned
-                            /// Size 64 bits
+                            /// Always aligned,
+                            /// size 64 bits
                             pub latitude: f64,
                             /// `saturated float64`
                             ///
-                            /// Always aligned
-                            /// Size 64 bits
+                            /// Always aligned,
+                            /// size 64 bits
                             pub longitude: f64,
                             /// `uavcan.si.unit.length.WideScalar.1.0`
                             ///
-                            /// Always aligned
-                            /// Size 64 bits
+                            /// Always aligned,
+                            /// size 64 bits
                             pub altitude:
                                 crate::uavcan::si::unit::length::wide_scalar_1_0::WideScalar,
                         }
@@ -1231,14 +1231,14 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::Twi
                         pub struct PointState {
                             /// `reg.udral.physics.kinematics.geodetic.Point.0.1`
                             ///
-                            /// Always aligned
-                            /// Size 192 bits
+                            /// Always aligned,
+                            /// size 192 bits
                             pub position:
                                 crate::reg::udral::physics::kinematics::geodetic::point_0_1::Point,
                             /// `uavcan.si.unit.velocity.Vector3.1.0`
                             ///
-                            /// Always aligned
-                            /// Size 96 bits
+                            /// Always aligned,
+                            /// size 96 bits
                             pub velocity: crate::uavcan::si::unit::velocity::vector3_1_0::Vector3,
                         }
                         impl ::canadensis_encoding::DataType for PointState {
@@ -1283,13 +1283,13 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::Twi
                         pub struct PointStateVar {
 /// `reg.udral.physics.kinematics.geodetic.PointVar.0.1`
 ///
-/// Always aligned
-/// Size 288 bits
+/// Always aligned,
+/// size 288 bits
 pub position: crate::reg::udral::physics::kinematics::geodetic::point_var_0_1::PointVar,
 /// `reg.udral.physics.kinematics.translation.Velocity3Var.0.2`
 ///
-/// Always aligned
-/// Size 192 bits
+/// Always aligned,
+/// size 192 bits
 pub velocity: crate::reg::udral::physics::kinematics::translation::velocity3_var_0_2::Velocity3Var,
 }
                         impl ::canadensis_encoding::DataType for PointStateVar {
@@ -1332,13 +1332,13 @@ pub velocity: crate::reg::udral::physics::kinematics::translation::velocity3_var
                         pub struct PointStateVarTs {
 /// `uavcan.time.SynchronizedTimestamp.1.0`
 ///
-/// Always aligned
-/// Size 56 bits
+/// Always aligned,
+/// size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
 /// `reg.udral.physics.kinematics.geodetic.PointStateVar.0.1`
 ///
-/// Always aligned
-/// Size 480 bits
+/// Always aligned,
+/// size 480 bits
 pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1::PointStateVar,
 }
                         impl ::canadensis_encoding::DataType for PointStateVarTs {
@@ -1381,14 +1381,14 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1
                         pub struct PointVar {
                             /// `reg.udral.physics.kinematics.geodetic.Point.0.1`
                             ///
-                            /// Always aligned
-                            /// Size 192 bits
+                            /// Always aligned,
+                            /// size 192 bits
                             pub value:
                                 crate::reg::udral::physics::kinematics::geodetic::point_0_1::Point,
                             /// `saturated float16[6]`
                             ///
-                            /// Always aligned
-                            /// Size 96 bits
+                            /// Always aligned,
+                            /// size 96 bits
                             pub covariance_urt: [::half::f16; 6],
                         }
                         impl ::canadensis_encoding::DataType for PointVar {
@@ -1433,14 +1433,14 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1
                         pub struct Pose {
                             /// `reg.udral.physics.kinematics.geodetic.Point.0.1`
                             ///
-                            /// Always aligned
-                            /// Size 192 bits
+                            /// Always aligned,
+                            /// size 192 bits
                             pub position:
                                 crate::reg::udral::physics::kinematics::geodetic::point_0_1::Point,
                             /// `uavcan.si.unit.angle.Quaternion.1.0`
                             ///
-                            /// Always aligned
-                            /// Size 128 bits
+                            /// Always aligned,
+                            /// size 128 bits
                             pub orientation:
                                 crate::uavcan::si::unit::angle::quaternion_1_0::Quaternion,
                         }
@@ -1486,14 +1486,14 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1
                         pub struct PoseVar {
                             /// `reg.udral.physics.kinematics.geodetic.Pose.0.1`
                             ///
-                            /// Always aligned
-                            /// Size 320 bits
+                            /// Always aligned,
+                            /// size 320 bits
                             pub value:
                                 crate::reg::udral::physics::kinematics::geodetic::pose_0_1::Pose,
                             /// `saturated float16[21]`
                             ///
-                            /// Always aligned
-                            /// Size 336 bits
+                            /// Always aligned,
+                            /// size 336 bits
                             pub covariance_urt: [::half::f16; 21],
                         }
                         impl ::canadensis_encoding::DataType for PoseVar {
@@ -1538,14 +1538,14 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1
                         pub struct State {
                             /// `reg.udral.physics.kinematics.geodetic.Pose.0.1`
                             ///
-                            /// Always aligned
-                            /// Size 320 bits
+                            /// Always aligned,
+                            /// size 320 bits
                             pub pose:
                                 crate::reg::udral::physics::kinematics::geodetic::pose_0_1::Pose,
                             /// `reg.udral.physics.kinematics.cartesian.Twist.0.1`
                             ///
-                            /// Always aligned
-                            /// Size 192 bits
+                            /// Always aligned,
+                            /// size 192 bits
                             pub twist:
                                 crate::reg::udral::physics::kinematics::cartesian::twist_0_1::Twist,
                         }
@@ -1591,13 +1591,13 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1
                         pub struct StateVar {
 /// `reg.udral.physics.kinematics.geodetic.PoseVar.0.1`
 ///
-/// Always aligned
-/// Size 656 bits
+/// Always aligned,
+/// size 656 bits
 pub pose: crate::reg::udral::physics::kinematics::geodetic::pose_var_0_1::PoseVar,
 /// `reg.udral.physics.kinematics.cartesian.TwistVar.0.1`
 ///
-/// Always aligned
-/// Size 528 bits
+/// Always aligned,
+/// size 528 bits
 pub twist: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::TwistVar,
 }
                         impl ::canadensis_encoding::DataType for StateVar {
@@ -1640,13 +1640,13 @@ pub twist: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::Twi
                         pub struct StateVarTs {
 /// `uavcan.time.SynchronizedTimestamp.1.0`
 ///
-/// Always aligned
-/// Size 56 bits
+/// Always aligned,
+/// size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
 /// `reg.udral.physics.kinematics.geodetic.StateVar.0.1`
 ///
-/// Always aligned
-/// Size 1184 bits
+/// Always aligned,
+/// size 1184 bits
 pub value: crate::reg::udral::physics::kinematics::geodetic::state_var_0_1::StateVar,
 }
                         impl ::canadensis_encoding::DataType for StateVarTs {
@@ -1691,20 +1691,20 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::state_var_0_1::Stat
                         pub struct Planar {
                             /// `uavcan.si.unit.angle.Scalar.1.0`
                             ///
-                            /// Always aligned
-                            /// Size 32 bits
+                            /// Always aligned,
+                            /// size 32 bits
                             pub angular_position:
                                 crate::uavcan::si::unit::angle::scalar_1_0::Scalar,
                             /// `uavcan.si.unit.angular_velocity.Scalar.1.0`
                             ///
-                            /// Always aligned
-                            /// Size 32 bits
+                            /// Always aligned,
+                            /// size 32 bits
                             pub angular_velocity:
                                 crate::uavcan::si::unit::angular_velocity::scalar_1_0::Scalar,
                             /// `uavcan.si.unit.angular_acceleration.Scalar.1.0`
                             ///
-                            /// Always aligned
-                            /// Size 32 bits
+                            /// Always aligned,
+                            /// size 32 bits
                             pub angular_acceleration:
                                 crate::uavcan::si::unit::angular_acceleration::scalar_1_0::Scalar,
                         }
@@ -1752,13 +1752,13 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::state_var_0_1::Stat
                         pub struct PlanarTs {
 /// `uavcan.time.SynchronizedTimestamp.1.0`
 ///
-/// Always aligned
-/// Size 56 bits
+/// Always aligned,
+/// size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
 /// `reg.udral.physics.kinematics.rotation.Planar.0.1`
 ///
-/// Always aligned
-/// Size 96 bits
+/// Always aligned,
+/// size 96 bits
 pub value: crate::reg::udral::physics::kinematics::rotation::planar_0_1::Planar,
 }
                         impl ::canadensis_encoding::DataType for PlanarTs {
@@ -1803,18 +1803,18 @@ pub value: crate::reg::udral::physics::kinematics::rotation::planar_0_1::Planar,
                         pub struct Linear {
                             /// `uavcan.si.unit.length.Scalar.1.0`
                             ///
-                            /// Always aligned
-                            /// Size 32 bits
+                            /// Always aligned,
+                            /// size 32 bits
                             pub position: crate::uavcan::si::unit::length::scalar_1_0::Scalar,
                             /// `uavcan.si.unit.velocity.Scalar.1.0`
                             ///
-                            /// Always aligned
-                            /// Size 32 bits
+                            /// Always aligned,
+                            /// size 32 bits
                             pub velocity: crate::uavcan::si::unit::velocity::scalar_1_0::Scalar,
                             /// `uavcan.si.unit.acceleration.Scalar.1.0`
                             ///
-                            /// Always aligned
-                            /// Size 32 bits
+                            /// Always aligned,
+                            /// size 32 bits
                             pub acceleration:
                                 crate::uavcan::si::unit::acceleration::scalar_1_0::Scalar,
                         }
@@ -1859,13 +1859,13 @@ pub value: crate::reg::udral::physics::kinematics::rotation::planar_0_1::Planar,
                         pub struct LinearTs {
 /// `uavcan.time.SynchronizedTimestamp.1.0`
 ///
-/// Always aligned
-/// Size 56 bits
+/// Always aligned,
+/// size 56 bits
 pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
 /// `reg.udral.physics.kinematics.translation.Linear.0.1`
 ///
-/// Always aligned
-/// Size 96 bits
+/// Always aligned,
+/// size 96 bits
 pub value: crate::reg::udral::physics::kinematics::translation::linear_0_1::Linear,
 }
                         impl ::canadensis_encoding::DataType for LinearTs {
@@ -1906,23 +1906,23 @@ pub value: crate::reg::udral::physics::kinematics::translation::linear_0_1::Line
                         pub struct LinearVarTs {
 /// `reg.udral.physics.kinematics.translation.LinearTs.0.1`
 ///
-/// Always aligned
-/// Size 152 bits
+/// Always aligned,
+/// size 152 bits
 pub value: crate::reg::udral::physics::kinematics::translation::linear_ts_0_1::LinearTs,
 /// `saturated float16`
 ///
-/// Always aligned
-/// Size 16 bits
+/// Always aligned,
+/// size 16 bits
 pub position_error_variance: ::half::f16,
 /// `saturated float16`
 ///
-/// Always aligned
-/// Size 16 bits
+/// Always aligned,
+/// size 16 bits
 pub velocity_error_variance: ::half::f16,
 /// `saturated float16`
 ///
-/// Always aligned
-/// Size 16 bits
+/// Always aligned,
+/// size 16 bits
 pub acceleration_error_variance: ::half::f16,
 }
                         impl ::canadensis_encoding::DataType for LinearVarTs {
@@ -1967,13 +1967,13 @@ pub acceleration_error_variance: ::half::f16,
                         pub struct Velocity1VarTs {
                             /// `uavcan.si.sample.velocity.Scalar.1.0`
                             ///
-                            /// Always aligned
-                            /// Size 88 bits
+                            /// Always aligned,
+                            /// size 88 bits
                             pub value: crate::uavcan::si::sample::velocity::scalar_1_0::Scalar,
                             /// `saturated float16`
                             ///
-                            /// Always aligned
-                            /// Size 16 bits
+                            /// Always aligned,
+                            /// size 16 bits
                             pub error_variance: ::half::f16,
                         }
                         impl ::canadensis_encoding::DataType for Velocity1VarTs {
@@ -2007,20 +2007,23 @@ pub acceleration_error_variance: ::half::f16,
                             }
                         }
                     }
+                    #[allow(deprecated)]
+                    #[deprecated]
                     pub mod velocity3_var_0_1 {
                         /// `reg.udral.physics.kinematics.translation.Velocity3Var.0.1`
                         ///
                         /// Fixed size 31 bytes
+                        #[deprecated]
                         pub struct Velocity3Var {
                             /// `uavcan.si.sample.velocity.Vector3.1.0`
                             ///
-                            /// Always aligned
-                            /// Size 152 bits
+                            /// Always aligned,
+                            /// size 152 bits
                             pub value: crate::uavcan::si::sample::velocity::vector3_1_0::Vector3,
                             /// `saturated float16[6]`
                             ///
-                            /// Always aligned
-                            /// Size 96 bits
+                            /// Always aligned,
+                            /// size 96 bits
                             pub covariance_urt: [::half::f16; 6],
                         }
                         impl ::canadensis_encoding::DataType for Velocity3Var {
@@ -2074,13 +2077,13 @@ pub acceleration_error_variance: ::half::f16,
                         pub struct Velocity3Var {
                             /// `uavcan.si.unit.velocity.Vector3.1.0`
                             ///
-                            /// Always aligned
-                            /// Size 96 bits
+                            /// Always aligned,
+                            /// size 96 bits
                             pub value: crate::uavcan::si::unit::velocity::vector3_1_0::Vector3,
                             /// `saturated float16[6]`
                             ///
-                            /// Always aligned
-                            /// Size 96 bits
+                            /// Always aligned,
+                            /// size 96 bits
                             pub covariance_urt: [::half::f16; 6],
                         }
                         impl ::canadensis_encoding::DataType for Velocity3Var {
@@ -2129,18 +2132,18 @@ pub acceleration_error_variance: ::half::f16,
                     pub struct HighColor {
                         /// `saturated uint5`
                         ///
-                        /// Always aligned
-                        /// Size 5 bits
+                        /// Always aligned,
+                        /// size 5 bits
                         pub red: u8,
                         /// `saturated uint6`
                         ///
-                        /// Not always aligned
-                        /// Size 6 bits
+                        /// Not always aligned,
+                        /// size 6 bits
                         pub green: u8,
                         /// `saturated uint5`
                         ///
-                        /// Not always aligned
-                        /// Size 5 bits
+                        /// Not always aligned,
+                        /// size 5 bits
                         pub blue: u8,
                     }
                     impl ::canadensis_encoding::DataType for HighColor {
@@ -2186,24 +2189,24 @@ pub acceleration_error_variance: ::half::f16,
                     pub struct PressureTempVarTs {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `uavcan.si.unit.pressure.Scalar.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub pressure: crate::uavcan::si::unit::pressure::scalar_1_0::Scalar,
                         /// `uavcan.si.unit.temperature.Scalar.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub temperature: crate::uavcan::si::unit::temperature::scalar_1_0::Scalar,
                         /// `saturated float16[3]`
                         ///
-                        /// Always aligned
-                        /// Size 48 bits
+                        /// Always aligned,
+                        /// size 48 bits
                         pub covariance_urt: [::half::f16; 3],
                     }
                     impl ::canadensis_encoding::DataType for PressureTempVarTs {
@@ -2253,8 +2256,8 @@ pub acceleration_error_variance: ::half::f16,
                     pub struct TAI64 {
                         /// `saturated int64`
                         ///
-                        /// Always aligned
-                        /// Size 64 bits
+                        /// Always aligned,
+                        /// size 64 bits
                         pub tai64n: i64,
                     }
                     impl ::canadensis_encoding::DataType for TAI64 {
@@ -2295,13 +2298,13 @@ pub acceleration_error_variance: ::half::f16,
                     pub struct TAI64Var {
                         /// `reg.udral.physics.time.TAI64.0.1`
                         ///
-                        /// Always aligned
-                        /// Size 64 bits
+                        /// Always aligned,
+                        /// size 64 bits
                         pub value: crate::reg::udral::physics::time::tai64_0_1::TAI64,
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub error_variance: f32,
                     }
                     impl ::canadensis_encoding::DataType for TAI64Var {
@@ -2341,14 +2344,14 @@ pub acceleration_error_variance: ::half::f16,
                     pub struct TAI64VarTs {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `reg.udral.physics.time.TAI64Var.0.1`
                         ///
-                        /// Always aligned
-                        /// Size 96 bits
+                        /// Always aligned,
+                        /// size 96 bits
                         pub value: crate::reg::udral::physics::time::tai64_var_0_1::TAI64Var,
                     }
                     impl ::canadensis_encoding::DataType for TAI64VarTs {
@@ -2432,54 +2435,54 @@ pub acceleration_error_variance: ::half::f16,
                         pub struct FaultFlags {
                             /// `saturated bool`
                             ///
-                            /// Always aligned
-                            /// Size 1 bits
+                            /// Always aligned,
+                            /// size 1 bits
                             pub overload: bool,
                             /// `saturated bool`
                             ///
-                            /// Not always aligned
-                            /// Size 1 bits
+                            /// Not always aligned,
+                            /// size 1 bits
                             pub voltage: bool,
                             /// `saturated bool`
                             ///
-                            /// Not always aligned
-                            /// Size 1 bits
+                            /// Not always aligned,
+                            /// size 1 bits
                             pub motor_temperature: bool,
                             /// `saturated bool`
                             ///
-                            /// Not always aligned
-                            /// Size 1 bits
+                            /// Not always aligned,
+                            /// size 1 bits
                             pub controller_temperature: bool,
                             /// `saturated bool`
                             ///
-                            /// Not always aligned
-                            /// Size 1 bits
+                            /// Not always aligned,
+                            /// size 1 bits
                             pub velocity: bool,
                             /// `saturated bool`
                             ///
-                            /// Not always aligned
-                            /// Size 1 bits
+                            /// Not always aligned,
+                            /// size 1 bits
                             pub mechanical: bool,
                             /// `saturated bool`
                             ///
-                            /// Not always aligned
-                            /// Size 1 bits
+                            /// Not always aligned,
+                            /// size 1 bits
                             pub vibration: bool,
                             /// `saturated bool`
                             ///
-                            /// Not always aligned
-                            /// Size 1 bits
+                            /// Not always aligned,
+                            /// size 1 bits
                             pub configuration: bool,
                             /// `saturated bool`
                             ///
-                            /// Always aligned
-                            /// Size 1 bits
+                            /// Always aligned,
+                            /// size 1 bits
                             pub control_mode: bool,
                             // 6 bits of padding
                             /// `saturated bool`
                             ///
-                            /// Not always aligned
-                            /// Size 1 bits
+                            /// Not always aligned,
+                            /// size 1 bits
                             pub other: bool,
                         }
                         impl ::canadensis_encoding::DataType for FaultFlags {
@@ -2540,14 +2543,14 @@ pub acceleration_error_variance: ::half::f16,
                         pub struct Feedback {
                             /// `reg.udral.service.common.Heartbeat.0.1`
                             ///
-                            /// Always aligned
-                            /// Size 16 bits
+                            /// Always aligned,
+                            /// size 16 bits
                             pub heartbeat:
                                 crate::reg::udral::service::common::heartbeat_0_1::Heartbeat,
                             /// `saturated int8`
                             ///
-                            /// Always aligned
-                            /// Size 8 bits
+                            /// Always aligned,
+                            /// size 8 bits
                             pub demand_factor_pct: i8,
                         }
                         impl ::canadensis_encoding::DataType for Feedback {
@@ -2634,8 +2637,8 @@ pub acceleration_error_variance: ::half::f16,
                             pub struct Scalar {
                                 /// `saturated float16`
                                 ///
-                                /// Always aligned
-                                /// Size 16 bits
+                                /// Always aligned,
+                                /// size 16 bits
                                 pub value: ::half::f16,
                             }
                             impl ::canadensis_encoding::DataType for Scalar {
@@ -2682,8 +2685,8 @@ pub acceleration_error_variance: ::half::f16,
                             pub struct Vector2 {
                                 /// `saturated float16[2]`
                                 ///
-                                /// Always aligned
-                                /// Size 32 bits
+                                /// Always aligned,
+                                /// size 32 bits
                                 pub value: [::half::f16; 2],
                             }
                             impl ::canadensis_encoding::DataType for Vector2 {
@@ -2730,8 +2733,8 @@ pub acceleration_error_variance: ::half::f16,
                             pub struct Vector31 {
                                 /// `saturated float16[31]`
                                 ///
-                                /// Always aligned
-                                /// Size 496 bits
+                                /// Always aligned,
+                                /// size 496 bits
                                 pub value: [::half::f16; 31],
                             }
                             impl ::canadensis_encoding::DataType for Vector31 {
@@ -2778,8 +2781,8 @@ pub acceleration_error_variance: ::half::f16,
                             pub struct Vector3 {
                                 /// `saturated float16[3]`
                                 ///
-                                /// Always aligned
-                                /// Size 48 bits
+                                /// Always aligned,
+                                /// size 48 bits
                                 pub value: [::half::f16; 3],
                             }
                             impl ::canadensis_encoding::DataType for Vector3 {
@@ -2826,8 +2829,8 @@ pub acceleration_error_variance: ::half::f16,
                             pub struct Vector4 {
                                 /// `saturated float16[4]`
                                 ///
-                                /// Always aligned
-                                /// Size 64 bits
+                                /// Always aligned,
+                                /// size 64 bits
                                 pub value: [::half::f16; 4],
                             }
                             impl ::canadensis_encoding::DataType for Vector4 {
@@ -2874,8 +2877,8 @@ pub acceleration_error_variance: ::half::f16,
                             pub struct Vector6 {
                                 /// `saturated float16[6]`
                                 ///
-                                /// Always aligned
-                                /// Size 96 bits
+                                /// Always aligned,
+                                /// size 96 bits
                                 pub value: [::half::f16; 6],
                             }
                             impl ::canadensis_encoding::DataType for Vector6 {
@@ -2922,8 +2925,8 @@ pub acceleration_error_variance: ::half::f16,
                             pub struct Vector8 {
                                 /// `saturated float16[8]`
                                 ///
-                                /// Always aligned
-                                /// Size 128 bits
+                                /// Always aligned,
+                                /// size 128 bits
                                 pub value: [::half::f16; 8],
                             }
                             impl ::canadensis_encoding::DataType for Vector8 {
@@ -2969,23 +2972,23 @@ pub acceleration_error_variance: ::half::f16,
                         pub struct Status {
 /// `uavcan.si.unit.temperature.Scalar.1.0`
 ///
-/// Always aligned
-/// Size 32 bits
+/// Always aligned,
+/// size 32 bits
 pub motor_temperature: crate::uavcan::si::unit::temperature::scalar_1_0::Scalar,
 /// `uavcan.si.unit.temperature.Scalar.1.0`
 ///
-/// Always aligned
-/// Size 32 bits
+/// Always aligned,
+/// size 32 bits
 pub controller_temperature: crate::uavcan::si::unit::temperature::scalar_1_0::Scalar,
 /// `saturated uint32`
 ///
-/// Always aligned
-/// Size 32 bits
+/// Always aligned,
+/// size 32 bits
 pub error_count: u32,
 /// `reg.udral.service.actuator.common.FaultFlags.0.1`
 ///
-/// Always aligned
-/// Size 16 bits
+/// Always aligned,
+/// size 16 bits
 pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::FaultFlags,
 }
                         impl ::canadensis_encoding::DataType for Status {
@@ -3150,8 +3153,8 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                     pub struct Error {
                         /// `saturated uint8`
                         ///
-                        /// Always aligned
-                        /// Size 8 bits
+                        /// Always aligned,
+                        /// size 8 bits
                         pub value: u8,
                     }
                     impl ::canadensis_encoding::DataType for Error {
@@ -3203,98 +3206,98 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                     pub struct Parameters {
                         /// `truncated uint64`
                         ///
-                        /// Always aligned
-                        /// Size 64 bits
+                        /// Always aligned,
+                        /// size 64 bits
                         pub unique_id: u64,
                         /// `uavcan.si.unit.mass.Scalar.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub mass: crate::uavcan::si::unit::mass::scalar_1_0::Scalar,
                         /// `uavcan.si.unit.electric_charge.Scalar.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub design_capacity:
                             crate::uavcan::si::unit::electric_charge::scalar_1_0::Scalar,
                         /// `uavcan.si.unit.voltage.Scalar.1.0[2]`
                         ///
-                        /// Always aligned
-                        /// Size 64 bits
+                        /// Always aligned,
+                        /// size 64 bits
                         pub design_cell_voltage_min_max:
                             [crate::uavcan::si::unit::voltage::scalar_1_0::Scalar; 2],
                         /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub discharge_current:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
                         /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub discharge_current_burst:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
                         /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub charge_current:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
                         /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub charge_current_fast:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
                         /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub charge_termination_threshold:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
                         /// `uavcan.si.unit.voltage.Scalar.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub charge_voltage: crate::uavcan::si::unit::voltage::scalar_1_0::Scalar,
                         /// `saturated uint16`
                         ///
-                        /// Always aligned
-                        /// Size 16 bits
+                        /// Always aligned,
+                        /// size 16 bits
                         pub cycle_count: u16,
                         // 8 bits of padding
                         /// `saturated uint8`
                         ///
-                        /// Always aligned
-                        /// Size 8 bits
+                        /// Always aligned,
+                        /// size 8 bits
                         pub series_cell_count: u8,
                         /// `saturated uint7`
                         ///
-                        /// Always aligned
-                        /// Size 7 bits
+                        /// Always aligned,
+                        /// size 7 bits
                         pub state_of_health_pct: u8,
                         // 1 bits of padding
                         /// `reg.udral.service.battery.Technology.0.1`
                         ///
-                        /// Always aligned
-                        /// Size 8 bits
+                        /// Always aligned,
+                        /// size 8 bits
                         pub technology:
                             crate::reg::udral::service::battery::technology_0_1::Technology,
                         /// `uavcan.si.unit.voltage.Scalar.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub nominal_voltage: crate::uavcan::si::unit::voltage::scalar_1_0::Scalar,
                         /// `truncated uint40`
                         ///
-                        /// Always aligned
-                        /// Size 40 bits
+                        /// Always aligned,
+                        /// size 40 bits
                         pub unix_manufacture_time: u64,
                         /// `saturated uint8[<=64]`
                         ///
-                        /// Always aligned
-                        /// Size ranges from 0 to 512 bits
+                        /// Always aligned,
+                        /// size ranges from 0 to 512 bits
                         pub name: ::heapless::Vec<u8, 64>,
                     }
                     impl ::canadensis_encoding::DataType for Parameters {
@@ -3407,30 +3410,30 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                     pub struct Status {
                         /// `reg.udral.service.common.Heartbeat.0.1`
                         ///
-                        /// Always aligned
-                        /// Size 16 bits
+                        /// Always aligned,
+                        /// size 16 bits
                         pub heartbeat: crate::reg::udral::service::common::heartbeat_0_1::Heartbeat,
                         /// `uavcan.si.unit.temperature.Scalar.1.0[2]`
                         ///
-                        /// Always aligned
-                        /// Size 64 bits
+                        /// Always aligned,
+                        /// size 64 bits
                         pub temperature_min_max:
                             [crate::uavcan::si::unit::temperature::scalar_1_0::Scalar; 2],
                         /// `uavcan.si.unit.electric_charge.Scalar.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub available_charge:
                             crate::uavcan::si::unit::electric_charge::scalar_1_0::Scalar,
                         /// `reg.udral.service.battery.Error.0.1`
                         ///
-                        /// Always aligned
-                        /// Size 8 bits
+                        /// Always aligned,
+                        /// size 8 bits
                         pub error: crate::reg::udral::service::battery::error_0_1::Error,
                         /// `saturated float16[<=255]`
                         ///
-                        /// Always aligned
-                        /// Size ranges from 0 to 4080 bits
+                        /// Always aligned,
+                        /// size ranges from 0 to 4080 bits
                         pub cell_voltages: ::heapless::Vec<::half::f16, 255>,
                     }
                     impl ::canadensis_encoding::DataType for Status {
@@ -3503,8 +3506,8 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                     pub struct Technology {
                         /// `saturated uint8`
                         ///
-                        /// Always aligned
-                        /// Size 8 bits
+                        /// Always aligned,
+                        /// size 8 bits
                         pub value: u8,
                     }
                     impl ::canadensis_encoding::DataType for Technology {
@@ -3570,13 +3573,13 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                     pub struct Heartbeat {
                         /// `reg.udral.service.common.Readiness.0.1`
                         ///
-                        /// Always aligned
-                        /// Size 8 bits
+                        /// Always aligned,
+                        /// size 8 bits
                         pub readiness: crate::reg::udral::service::common::readiness_0_1::Readiness,
                         /// `uavcan.node.Health.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 8 bits
+                        /// Always aligned,
+                        /// size 8 bits
                         pub health: crate::uavcan::node::health_1_0::Health,
                     }
                     impl ::canadensis_encoding::DataType for Heartbeat {
@@ -3616,8 +3619,8 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                     pub struct Readiness {
                         /// `truncated uint2`
                         ///
-                        /// Always aligned
-                        /// Size 2 bits
+                        /// Always aligned,
+                        /// size 2 bits
                         pub value: u8,
                     }
                     impl ::canadensis_encoding::DataType for Readiness {
@@ -3661,19 +3664,19 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                     pub struct Status {
                         /// `uavcan.si.unit.duration.Scalar.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub data_validity_period:
                             crate::uavcan::si::unit::duration::scalar_1_0::Scalar,
                         /// `saturated uint32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub error_count: u32,
                         /// `uavcan.si.unit.temperature.Scalar.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub sensor_temperature:
                             crate::uavcan::si::unit::temperature::scalar_1_0::Scalar,
                     }
@@ -3719,29 +3722,33 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
 #[deny(unaligned_references)]
 pub mod uavcan {
     pub mod diagnostic {
+        #[allow(deprecated)]
+        #[deprecated]
         pub mod record_1_0 {
+            #[deprecated]
             pub const SUBJECT: ::canadensis_core::SubjectId =
                 ::canadensis_core::SubjectId::from_truncating(8184);
 
             /// `uavcan.diagnostic.Record.1.0`
             ///
             /// Size ranges from 9 to 121 bytes
+            #[deprecated]
             pub struct Record {
                 /// `uavcan.time.SynchronizedTimestamp.1.0`
                 ///
-                /// Always aligned
-                /// Size 56 bits
+                /// Always aligned,
+                /// size 56 bits
                 pub timestamp:
                     crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                 /// `uavcan.diagnostic.Severity.1.0`
                 ///
-                /// Always aligned
-                /// Size 8 bits
+                /// Always aligned,
+                /// size 8 bits
                 pub severity: crate::uavcan::diagnostic::severity_1_0::Severity,
                 /// `saturated uint8[<=112]`
                 ///
-                /// Always aligned
-                /// Size ranges from 0 to 896 bits
+                /// Always aligned,
+                /// size ranges from 0 to 896 bits
                 pub text: ::heapless::Vec<u8, 112>,
             }
             impl ::canadensis_encoding::DataType for Record {
@@ -3796,19 +3803,19 @@ pub mod uavcan {
             pub struct Record {
                 /// `uavcan.time.SynchronizedTimestamp.1.0`
                 ///
-                /// Always aligned
-                /// Size 56 bits
+                /// Always aligned,
+                /// size 56 bits
                 pub timestamp:
                     crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                 /// `uavcan.diagnostic.Severity.1.0`
                 ///
-                /// Always aligned
-                /// Size 8 bits
+                /// Always aligned,
+                /// size 8 bits
                 pub severity: crate::uavcan::diagnostic::severity_1_0::Severity,
                 /// `saturated uint8[<=255]`
                 ///
-                /// Always aligned
-                /// Size ranges from 0 to 2040 bits
+                /// Always aligned,
+                /// size ranges from 0 to 2040 bits
                 pub text: ::heapless::Vec<u8, 255>,
             }
             impl ::canadensis_encoding::DataType for Record {
@@ -3860,8 +3867,8 @@ pub mod uavcan {
             pub struct Severity {
                 /// `saturated uint3`
                 ///
-                /// Always aligned
-                /// Size 3 bits
+                /// Always aligned,
+                /// size 3 bits
                 pub value: u8,
             }
             impl ::canadensis_encoding::DataType for Severity {
@@ -3910,8 +3917,8 @@ pub mod uavcan {
             pub struct Error {
                 /// `saturated uint16`
                 ///
-                /// Always aligned
-                /// Size 16 bits
+                /// Always aligned,
+                /// size 16 bits
                 pub value: u16,
             }
             impl ::canadensis_encoding::DataType for Error {
@@ -3954,18 +3961,22 @@ pub mod uavcan {
                 assert_eq!(::memoffset::offset_of!(Error, value) * 8, 0);
             }
         }
+        #[allow(deprecated)]
+        #[deprecated]
         pub mod get_info_0_1 {
+            #[deprecated]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(405);
 
             /// `uavcan.file.GetInfo.0.1`
             ///
             /// Size ranges from 1 to 113 bytes
+            #[deprecated]
             pub struct GetInfoRequest {
                 /// `uavcan.file.Path.1.0`
                 ///
-                /// Always aligned
-                /// Size ranges from 8 to 904 bits
+                /// Always aligned,
+                /// size ranges from 8 to 904 bits
                 pub path: crate::uavcan::file::path_1_0::Path,
             }
             impl ::canadensis_encoding::DataType for GetInfoRequest {
@@ -3997,41 +4008,42 @@ pub mod uavcan {
             /// `uavcan.file.GetInfo.0.1`
             ///
             /// Fixed size 13 bytes
+            #[deprecated]
             pub struct GetInfoResponse {
                 /// `uavcan.file.Error.1.0`
                 ///
-                /// Always aligned
-                /// Size 16 bits
+                /// Always aligned,
+                /// size 16 bits
                 pub error: crate::uavcan::file::error_1_0::Error,
                 /// `truncated uint40`
                 ///
-                /// Always aligned
-                /// Size 40 bits
+                /// Always aligned,
+                /// size 40 bits
                 pub size: u64,
                 /// `truncated uint40`
                 ///
-                /// Always aligned
-                /// Size 40 bits
+                /// Always aligned,
+                /// size 40 bits
                 pub unix_timestamp_of_last_modification: u64,
                 /// `saturated bool`
                 ///
-                /// Always aligned
-                /// Size 1 bits
+                /// Always aligned,
+                /// size 1 bits
                 pub is_file_not_directory: bool,
                 /// `saturated bool`
                 ///
-                /// Not always aligned
-                /// Size 1 bits
+                /// Not always aligned,
+                /// size 1 bits
                 pub is_link: bool,
                 /// `saturated bool`
                 ///
-                /// Not always aligned
-                /// Size 1 bits
+                /// Not always aligned,
+                /// size 1 bits
                 pub is_readable: bool,
                 /// `saturated bool`
                 ///
-                /// Not always aligned
-                /// Size 1 bits
+                /// Not always aligned,
+                /// size 1 bits
                 pub is_writeable: bool,
                 // 4 bits of padding
             }
@@ -4084,8 +4096,8 @@ pub mod uavcan {
             pub struct GetInfoRequest {
                 /// `uavcan.file.Path.2.0`
                 ///
-                /// Always aligned
-                /// Size ranges from 8 to 2048 bits
+                /// Always aligned,
+                /// size ranges from 8 to 2048 bits
                 pub path: crate::uavcan::file::path_2_0::Path,
             }
             impl ::canadensis_encoding::DataType for GetInfoRequest {
@@ -4120,38 +4132,38 @@ pub mod uavcan {
             pub struct GetInfoResponse {
                 /// `uavcan.file.Error.1.0`
                 ///
-                /// Always aligned
-                /// Size 16 bits
+                /// Always aligned,
+                /// size 16 bits
                 pub error: crate::uavcan::file::error_1_0::Error,
                 /// `truncated uint40`
                 ///
-                /// Always aligned
-                /// Size 40 bits
+                /// Always aligned,
+                /// size 40 bits
                 pub size: u64,
                 /// `truncated uint40`
                 ///
-                /// Always aligned
-                /// Size 40 bits
+                /// Always aligned,
+                /// size 40 bits
                 pub unix_timestamp_of_last_modification: u64,
                 /// `saturated bool`
                 ///
-                /// Always aligned
-                /// Size 1 bits
+                /// Always aligned,
+                /// size 1 bits
                 pub is_file_not_directory: bool,
                 /// `saturated bool`
                 ///
-                /// Not always aligned
-                /// Size 1 bits
+                /// Not always aligned,
+                /// size 1 bits
                 pub is_link: bool,
                 /// `saturated bool`
                 ///
-                /// Not always aligned
-                /// Size 1 bits
+                /// Not always aligned,
+                /// size 1 bits
                 pub is_readable: bool,
                 /// `saturated bool`
                 ///
-                /// Not always aligned
-                /// Size 1 bits
+                /// Not always aligned,
+                /// size 1 bits
                 pub is_writeable: bool,
                 // 4 bits of padding
             }
@@ -4194,24 +4206,28 @@ pub mod uavcan {
                 }
             }
         }
+        #[allow(deprecated)]
+        #[deprecated]
         pub mod list_0_1 {
+            #[deprecated]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(406);
 
             /// `uavcan.file.List.0.1`
             ///
             /// Size ranges from 9 to 121 bytes
+            #[deprecated]
             pub struct ListRequest {
                 /// `saturated uint32`
                 ///
-                /// Always aligned
-                /// Size 32 bits
+                /// Always aligned,
+                /// size 32 bits
                 pub entry_index: u32,
                 // 32 bits of padding
                 /// `uavcan.file.Path.1.0`
                 ///
-                /// Always aligned
-                /// Size ranges from 8 to 904 bits
+                /// Always aligned,
+                /// size ranges from 8 to 904 bits
                 pub directory_path: crate::uavcan::file::path_1_0::Path,
             }
             impl ::canadensis_encoding::DataType for ListRequest {
@@ -4249,12 +4265,13 @@ pub mod uavcan {
             /// `uavcan.file.List.0.1`
             ///
             /// Size ranges from 5 to 117 bytes
+            #[deprecated]
             pub struct ListResponse {
                 // 32 bits of padding
                 /// `uavcan.file.Path.1.0`
                 ///
-                /// Always aligned
-                /// Size ranges from 8 to 904 bits
+                /// Always aligned,
+                /// size ranges from 8 to 904 bits
                 pub entry_base_name: crate::uavcan::file::path_1_0::Path,
             }
             impl ::canadensis_encoding::DataType for ListResponse {
@@ -4297,14 +4314,14 @@ pub mod uavcan {
             pub struct ListRequest {
                 /// `saturated uint32`
                 ///
-                /// Always aligned
-                /// Size 32 bits
+                /// Always aligned,
+                /// size 32 bits
                 pub entry_index: u32,
                 // 32 bits of padding
                 /// `uavcan.file.Path.2.0`
                 ///
-                /// Always aligned
-                /// Size ranges from 8 to 2048 bits
+                /// Always aligned,
+                /// size ranges from 8 to 2048 bits
                 pub directory_path: crate::uavcan::file::path_2_0::Path,
             }
             impl ::canadensis_encoding::DataType for ListRequest {
@@ -4346,8 +4363,8 @@ pub mod uavcan {
                 // 32 bits of padding
                 /// `uavcan.file.Path.2.0`
                 ///
-                /// Always aligned
-                /// Size ranges from 8 to 2048 bits
+                /// Always aligned,
+                /// size ranges from 8 to 2048 bits
                 pub entry_base_name: crate::uavcan::file::path_2_0::Path,
             }
             impl ::canadensis_encoding::DataType for ListResponse {
@@ -4380,34 +4397,38 @@ pub mod uavcan {
                 }
             }
         }
+        #[allow(deprecated)]
+        #[deprecated]
         pub mod modify_1_0 {
+            #[deprecated]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(407);
 
             /// `uavcan.file.Modify.1.0`
             ///
             /// Size ranges from 6 to 230 bytes
+            #[deprecated]
             pub struct ModifyRequest {
                 /// `saturated bool`
                 ///
-                /// Always aligned
-                /// Size 1 bits
+                /// Always aligned,
+                /// size 1 bits
                 pub preserve_source: bool,
                 /// `saturated bool`
                 ///
-                /// Not always aligned
-                /// Size 1 bits
+                /// Not always aligned,
+                /// size 1 bits
                 pub overwrite_destination: bool,
                 // 30 bits of padding
                 /// `uavcan.file.Path.1.0`
                 ///
-                /// Always aligned
-                /// Size ranges from 8 to 904 bits
+                /// Always aligned,
+                /// size ranges from 8 to 904 bits
                 pub source: crate::uavcan::file::path_1_0::Path,
                 /// `uavcan.file.Path.1.0`
                 ///
-                /// Always aligned
-                /// Size ranges from 8 to 904 bits
+                /// Always aligned,
+                /// size ranges from 8 to 904 bits
                 pub destination: crate::uavcan::file::path_1_0::Path,
             }
             impl ::canadensis_encoding::DataType for ModifyRequest {
@@ -4451,11 +4472,12 @@ pub mod uavcan {
             /// Fixed size 2 bytes
             #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
             #[repr(C, packed)]
+            #[deprecated]
             pub struct ModifyResponse {
                 /// `uavcan.file.Error.1.0`
                 ///
-                /// Always aligned
-                /// Size 16 bits
+                /// Always aligned,
+                /// size 16 bits
                 pub error: crate::uavcan::file::error_1_0::Error,
             }
             impl ::canadensis_encoding::DataType for ModifyResponse {
@@ -4497,24 +4519,24 @@ pub mod uavcan {
             pub struct ModifyRequest {
                 /// `saturated bool`
                 ///
-                /// Always aligned
-                /// Size 1 bits
+                /// Always aligned,
+                /// size 1 bits
                 pub preserve_source: bool,
                 /// `saturated bool`
                 ///
-                /// Not always aligned
-                /// Size 1 bits
+                /// Not always aligned,
+                /// size 1 bits
                 pub overwrite_destination: bool,
                 // 30 bits of padding
                 /// `uavcan.file.Path.2.0`
                 ///
-                /// Always aligned
-                /// Size ranges from 8 to 2048 bits
+                /// Always aligned,
+                /// size ranges from 8 to 2048 bits
                 pub source: crate::uavcan::file::path_2_0::Path,
                 /// `uavcan.file.Path.2.0`
                 ///
-                /// Always aligned
-                /// Size ranges from 8 to 2048 bits
+                /// Always aligned,
+                /// size ranges from 8 to 2048 bits
                 pub destination: crate::uavcan::file::path_2_0::Path,
             }
             impl ::canadensis_encoding::DataType for ModifyRequest {
@@ -4561,8 +4583,8 @@ pub mod uavcan {
             pub struct ModifyResponse {
                 /// `uavcan.file.Error.1.0`
                 ///
-                /// Always aligned
-                /// Size 16 bits
+                /// Always aligned,
+                /// size 16 bits
                 pub error: crate::uavcan::file::error_1_0::Error,
             }
             impl ::canadensis_encoding::DataType for ModifyResponse {
@@ -4594,15 +4616,18 @@ pub mod uavcan {
                 assert_eq!(::memoffset::offset_of!(ModifyResponse, error) * 8, 0);
             }
         }
+        #[allow(deprecated)]
+        #[deprecated]
         pub mod path_1_0 {
             /// `uavcan.file.Path.1.0`
             ///
             /// Size ranges from 1 to 113 bytes
+            #[deprecated]
             pub struct Path {
                 /// `saturated uint8[<=112]`
                 ///
-                /// Always aligned
-                /// Size ranges from 0 to 896 bits
+                /// Always aligned,
+                /// size ranges from 0 to 896 bits
                 pub path: ::heapless::Vec<u8, 112>,
             }
             impl ::canadensis_encoding::DataType for Path {
@@ -4653,8 +4678,8 @@ pub mod uavcan {
             pub struct Path {
                 /// `saturated uint8[<=255]`
                 ///
-                /// Always aligned
-                /// Size ranges from 0 to 2040 bits
+                /// Always aligned,
+                /// size ranges from 0 to 2040 bits
                 pub path: ::heapless::Vec<u8, 255>,
             }
             impl ::canadensis_encoding::DataType for Path {
@@ -4698,23 +4723,27 @@ pub mod uavcan {
                 }
             }
         }
+        #[allow(deprecated)]
+        #[deprecated]
         pub mod read_1_0 {
+            #[deprecated]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(408);
 
             /// `uavcan.file.Read.1.0`
             ///
             /// Size ranges from 6 to 118 bytes
+            #[deprecated]
             pub struct ReadRequest {
                 /// `truncated uint40`
                 ///
-                /// Always aligned
-                /// Size 40 bits
+                /// Always aligned,
+                /// size 40 bits
                 pub offset: u64,
                 /// `uavcan.file.Path.1.0`
                 ///
-                /// Always aligned
-                /// Size ranges from 8 to 904 bits
+                /// Always aligned,
+                /// size ranges from 8 to 904 bits
                 pub path: crate::uavcan::file::path_1_0::Path,
             }
             impl ::canadensis_encoding::DataType for ReadRequest {
@@ -4748,16 +4777,17 @@ pub mod uavcan {
             /// `uavcan.file.Read.1.0`
             ///
             /// Size ranges from 4 to 260 bytes
+            #[deprecated]
             pub struct ReadResponse {
                 /// `uavcan.file.Error.1.0`
                 ///
-                /// Always aligned
-                /// Size 16 bits
+                /// Always aligned,
+                /// size 16 bits
                 pub error: crate::uavcan::file::error_1_0::Error,
                 /// `saturated uint8[<=256]`
                 ///
-                /// Always aligned
-                /// Size ranges from 0 to 2048 bits
+                /// Always aligned,
+                /// size ranges from 0 to 2048 bits
                 pub data: ::heapless::Vec<u8, 256>,
             }
             impl ::canadensis_encoding::DataType for ReadResponse {
@@ -4810,13 +4840,13 @@ pub mod uavcan {
             pub struct ReadRequest {
                 /// `truncated uint40`
                 ///
-                /// Always aligned
-                /// Size 40 bits
+                /// Always aligned,
+                /// size 40 bits
                 pub offset: u64,
                 /// `uavcan.file.Path.2.0`
                 ///
-                /// Always aligned
-                /// Size ranges from 8 to 2048 bits
+                /// Always aligned,
+                /// size ranges from 8 to 2048 bits
                 pub path: crate::uavcan::file::path_2_0::Path,
             }
             impl ::canadensis_encoding::DataType for ReadRequest {
@@ -4853,13 +4883,13 @@ pub mod uavcan {
             pub struct ReadResponse {
                 /// `uavcan.file.Error.1.0`
                 ///
-                /// Always aligned
-                /// Size 16 bits
+                /// Always aligned,
+                /// size 16 bits
                 pub error: crate::uavcan::file::error_1_0::Error,
                 /// `uavcan.primitive.Unstructured.1.0`
                 ///
-                /// Always aligned
-                /// Size ranges from 16 to 2064 bits
+                /// Always aligned,
+                /// size ranges from 16 to 2064 bits
                 pub data: crate::uavcan::primitive::unstructured_1_0::Unstructured,
             }
             impl ::canadensis_encoding::DataType for ReadResponse {
@@ -4890,28 +4920,32 @@ pub mod uavcan {
                 }
             }
         }
+        #[allow(deprecated)]
+        #[deprecated]
         pub mod write_1_0 {
+            #[deprecated]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(409);
 
             /// `uavcan.file.Write.1.0`
             ///
             /// Size ranges from 7 to 311 bytes
+            #[deprecated]
             pub struct WriteRequest {
                 /// `truncated uint40`
                 ///
-                /// Always aligned
-                /// Size 40 bits
+                /// Always aligned,
+                /// size 40 bits
                 pub offset: u64,
                 /// `uavcan.file.Path.1.0`
                 ///
-                /// Always aligned
-                /// Size ranges from 8 to 904 bits
+                /// Always aligned,
+                /// size ranges from 8 to 904 bits
                 pub path: crate::uavcan::file::path_1_0::Path,
                 /// `saturated uint8[<=192]`
                 ///
-                /// Always aligned
-                /// Size ranges from 0 to 1536 bits
+                /// Always aligned,
+                /// size ranges from 0 to 1536 bits
                 pub data: ::heapless::Vec<u8, 192>,
             }
             impl ::canadensis_encoding::DataType for WriteRequest {
@@ -4961,11 +4995,12 @@ pub mod uavcan {
             /// Fixed size 2 bytes
             #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
             #[repr(C, packed)]
+            #[deprecated]
             pub struct WriteResponse {
                 /// `uavcan.file.Error.1.0`
                 ///
-                /// Always aligned
-                /// Size 16 bits
+                /// Always aligned,
+                /// size 16 bits
                 pub error: crate::uavcan::file::error_1_0::Error,
             }
             impl ::canadensis_encoding::DataType for WriteResponse {
@@ -5007,18 +5042,18 @@ pub mod uavcan {
             pub struct WriteRequest {
                 /// `truncated uint40`
                 ///
-                /// Always aligned
-                /// Size 40 bits
+                /// Always aligned,
+                /// size 40 bits
                 pub offset: u64,
                 /// `uavcan.file.Path.2.0`
                 ///
-                /// Always aligned
-                /// Size ranges from 8 to 2048 bits
+                /// Always aligned,
+                /// size ranges from 8 to 2048 bits
                 pub path: crate::uavcan::file::path_2_0::Path,
                 /// `uavcan.primitive.Unstructured.1.0`
                 ///
-                /// Always aligned
-                /// Size ranges from 16 to 2064 bits
+                /// Always aligned,
+                /// size ranges from 16 to 2064 bits
                 pub data: crate::uavcan::primitive::unstructured_1_0::Unstructured,
             }
             impl ::canadensis_encoding::DataType for WriteRequest {
@@ -5059,8 +5094,8 @@ pub mod uavcan {
             pub struct WriteResponse {
                 /// `uavcan.file.Error.1.0`
                 ///
-                /// Always aligned
-                /// Size 16 bits
+                /// Always aligned,
+                /// size 16 bits
                 pub error: crate::uavcan::file::error_1_0::Error,
             }
             impl ::canadensis_encoding::DataType for WriteResponse {
@@ -5095,23 +5130,27 @@ pub mod uavcan {
     }
     pub mod internet {
         pub mod udp {
+            #[allow(deprecated)]
+            #[deprecated]
             pub mod handle_incoming_packet_0_1 {
+                #[deprecated]
                 pub const SERVICE: ::canadensis_core::ServiceId =
                     ::canadensis_core::ServiceId::from_truncating(500);
 
                 /// `uavcan.internet.udp.HandleIncomingPacket.0.1`
                 ///
                 /// Size ranges from 4 to 313 bytes
+                #[deprecated]
                 pub struct HandleIncomingPacketRequest {
                     /// `saturated uint16`
                     ///
-                    /// Always aligned
-                    /// Size 16 bits
+                    /// Always aligned,
+                    /// size 16 bits
                     pub session_id: u16,
                     /// `saturated uint8[<=309]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 2472 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 2472 bits
                     pub payload: ::heapless::Vec<u8, 309>,
                 }
                 impl ::canadensis_encoding::DataType for HandleIncomingPacketRequest {
@@ -5161,6 +5200,7 @@ pub mod uavcan {
                 /// Fixed size 0 bytes
                 #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                 #[repr(C, packed)]
+                #[deprecated]
                 pub struct HandleIncomingPacketResponse {}
                 impl ::canadensis_encoding::DataType for HandleIncomingPacketResponse {
                     const EXTENT_BYTES: Option<u32> = Some(63);
@@ -5203,13 +5243,13 @@ pub mod uavcan {
                 pub struct HandleIncomingPacketRequest {
                     /// `saturated uint16`
                     ///
-                    /// Always aligned
-                    /// Size 16 bits
+                    /// Always aligned,
+                    /// size 16 bits
                     pub session_id: u16,
                     /// `saturated uint8[<=508]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 4064 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 4064 bits
                     pub payload: ::heapless::Vec<u8, 508>,
                 }
                 impl ::canadensis_encoding::DataType for HandleIncomingPacketRequest {
@@ -5291,44 +5331,48 @@ pub mod uavcan {
                     );
                 }
             }
+            #[allow(deprecated)]
+            #[deprecated]
             pub mod outgoing_packet_0_1 {
+                #[deprecated]
                 pub const SUBJECT: ::canadensis_core::SubjectId =
                     ::canadensis_core::SubjectId::from_truncating(8174);
 
                 /// `uavcan.internet.udp.OutgoingPacket.0.1`
                 ///
                 /// Size ranges from 8 to 313 bytes
+                #[deprecated]
                 pub struct OutgoingPacket {
                     /// `saturated uint16`
                     ///
-                    /// Always aligned
-                    /// Size 16 bits
+                    /// Always aligned,
+                    /// size 16 bits
                     pub session_id: u16,
                     /// `saturated uint16`
                     ///
-                    /// Always aligned
-                    /// Size 16 bits
+                    /// Always aligned,
+                    /// size 16 bits
                     pub destination_port: u16,
                     /// `saturated uint8[<=45]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 360 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 360 bits
                     pub destination_address: ::heapless::Vec<u8, 45>,
                     /// `saturated bool`
                     ///
-                    /// Always aligned
-                    /// Size 1 bits
+                    /// Always aligned,
+                    /// size 1 bits
                     pub use_masquerading: bool,
                     /// `saturated bool`
                     ///
-                    /// Not always aligned
-                    /// Size 1 bits
+                    /// Not always aligned,
+                    /// size 1 bits
                     pub use_dtls: bool,
                     // 6 bits of padding
                     /// `saturated uint8[<=260]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 2080 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 2080 bits
                     pub payload: ::heapless::Vec<u8, 260>,
                 }
                 impl ::canadensis_encoding::DataType for OutgoingPacket {
@@ -5417,34 +5461,34 @@ pub mod uavcan {
                 pub struct OutgoingPacket {
                     /// `saturated uint16`
                     ///
-                    /// Always aligned
-                    /// Size 16 bits
+                    /// Always aligned,
+                    /// size 16 bits
                     pub session_id: u16,
                     /// `saturated uint16`
                     ///
-                    /// Always aligned
-                    /// Size 16 bits
+                    /// Always aligned,
+                    /// size 16 bits
                     pub destination_port: u16,
                     /// `saturated uint8[<=45]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 360 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 360 bits
                     pub destination_address: ::heapless::Vec<u8, 45>,
                     /// `saturated bool`
                     ///
-                    /// Always aligned
-                    /// Size 1 bits
+                    /// Always aligned,
+                    /// size 1 bits
                     pub use_masquerading: bool,
                     /// `saturated bool`
                     ///
-                    /// Not always aligned
-                    /// Size 1 bits
+                    /// Not always aligned,
+                    /// size 1 bits
                     pub use_dtls: bool,
                     // 6 bits of padding
                     /// `saturated uint8[<=508]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 4064 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 4064 bits
                     pub payload: ::heapless::Vec<u8, 508>,
                 }
                 impl ::canadensis_encoding::DataType for OutgoingPacket {
@@ -5581,8 +5625,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct BaseArbitrationID {
                     /// `truncated uint11`
                     ///
-                    /// Always aligned
-                    /// Size 11 bits
+                    /// Always aligned,
+                    /// size 11 bits
                     pub value: u16,
                     // 21 bits of padding
                 }
@@ -5620,14 +5664,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct DataClassic {
                     /// `uavcan.metatransport.can.ArbitrationID.0.1`
                     ///
-                    /// Always aligned
-                    /// Size 40 bits
+                    /// Always aligned,
+                    /// size 40 bits
                     pub arbitration_id:
                         crate::uavcan::metatransport::can::arbitration_id_0_1::ArbitrationID,
                     /// `saturated uint8[<=8]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 64 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 64 bits
                     pub data: ::heapless::Vec<u8, 8>,
                 }
                 impl ::canadensis_encoding::DataType for DataClassic {
@@ -5679,14 +5723,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct DataFD {
                     /// `uavcan.metatransport.can.ArbitrationID.0.1`
                     ///
-                    /// Always aligned
-                    /// Size 40 bits
+                    /// Always aligned,
+                    /// size 40 bits
                     pub arbitration_id:
                         crate::uavcan::metatransport::can::arbitration_id_0_1::ArbitrationID,
                     /// `saturated uint8[<=64]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 512 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 512 bits
                     pub data: ::heapless::Vec<u8, 64>,
                 }
                 impl ::canadensis_encoding::DataType for DataFD {
@@ -5769,8 +5813,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct ExtendedArbitrationID {
                     /// `truncated uint29`
                     ///
-                    /// Always aligned
-                    /// Size 29 bits
+                    /// Always aligned,
+                    /// size 29 bits
                     pub value: u32,
                     // 3 bits of padding
                 }
@@ -5801,21 +5845,24 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     }
                 }
             }
+            #[allow(deprecated)]
+            #[deprecated]
             pub mod frame_0_1 {
                 /// `uavcan.metatransport.can.Frame.0.1`
                 ///
                 /// Size ranges from 12 to 78 bytes
+                #[deprecated]
                 pub struct Frame {
                     /// `uavcan.time.SynchronizedTimestamp.1.0`
                     ///
-                    /// Always aligned
-                    /// Size 56 bits
+                    /// Always aligned,
+                    /// size 56 bits
                     pub timestamp:
                         crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                     /// `uavcan.metatransport.can.Manifestation.0.1`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 40 to 568 bits
+                    /// Always aligned,
+                    /// size ranges from 40 to 568 bits
                     pub manifestation:
                         crate::uavcan::metatransport::can::manifestation_0_1::Manifestation,
                 }
@@ -5915,10 +5962,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     }
                 }
             }
+            #[allow(deprecated)]
+            #[deprecated]
             pub mod manifestation_0_1 {
                 /// `uavcan.metatransport.can.Manifestation.0.1`
                 ///
                 /// Size ranges from 5 to 71 bytes
+                #[deprecated]
                 pub enum Manifestation {
                     // uavcan.metatransport.can.Error.0.1
                     Error(crate::uavcan::metatransport::can::error_0_1::Error),
@@ -5990,8 +6040,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct RTR {
                     /// `uavcan.metatransport.can.ArbitrationID.0.1`
                     ///
-                    /// Always aligned
-                    /// Size 40 bits
+                    /// Always aligned,
+                    /// size 40 bits
                     pub arbitration_id:
                         crate::uavcan::metatransport::can::arbitration_id_0_1::ArbitrationID,
                 }
@@ -6032,8 +6082,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct EtherType {
                     /// `saturated uint16`
                     ///
-                    /// Always aligned
-                    /// Size 16 bits
+                    /// Always aligned,
+                    /// size 16 bits
                     pub value: u16,
                 }
                 impl ::canadensis_encoding::DataType for EtherType {
@@ -6076,24 +6126,24 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Frame {
                     /// `saturated uint8[6]`
                     ///
-                    /// Always aligned
-                    /// Size 48 bits
+                    /// Always aligned,
+                    /// size 48 bits
                     pub destination: [u8; 6],
                     /// `saturated uint8[6]`
                     ///
-                    /// Always aligned
-                    /// Size 48 bits
+                    /// Always aligned,
+                    /// size 48 bits
                     pub source: [u8; 6],
                     /// `uavcan.metatransport.ethernet.EtherType.0.1`
                     ///
-                    /// Always aligned
-                    /// Size 16 bits
+                    /// Always aligned,
+                    /// size 16 bits
                     pub ethertype:
                         crate::uavcan::metatransport::ethernet::ether_type_0_1::EtherType,
                     /// `saturated uint8[<=9216]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 73728 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 73728 bits
                     pub payload: ::heapless::Vec<u8, 9216>,
                 }
                 impl ::canadensis_encoding::DataType for Frame {
@@ -6167,21 +6217,24 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
         }
         pub mod serial {
+            #[allow(deprecated)]
+            #[deprecated]
             pub mod fragment_0_1 {
                 /// `uavcan.metatransport.serial.Fragment.0.1`
                 ///
                 /// Size ranges from 9 to 265 bytes
+                #[deprecated]
                 pub struct Fragment {
                     /// `uavcan.time.SynchronizedTimestamp.1.0`
                     ///
-                    /// Always aligned
-                    /// Size 56 bits
+                    /// Always aligned,
+                    /// size 56 bits
                     pub timestamp:
                         crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                     /// `saturated uint8[<=256]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 2048 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 2048 bits
                     pub data: ::heapless::Vec<u8, 256>,
                 }
                 impl ::canadensis_encoding::DataType for Fragment {
@@ -6235,8 +6288,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Fragment {
                     /// `saturated uint8[<=2048]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 16384 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 16384 bits
                     pub data: ::heapless::Vec<u8, 2048>,
                 }
                 impl ::canadensis_encoding::DataType for Fragment {
@@ -6283,25 +6336,28 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
         }
         pub mod udp {
+            #[allow(deprecated)]
+            #[deprecated]
             pub mod endpoint_0_1 {
                 /// `uavcan.metatransport.udp.Endpoint.0.1`
                 ///
                 /// Fixed size 32 bytes
+                #[deprecated]
                 pub struct Endpoint {
                     /// `saturated uint8[16]`
                     ///
-                    /// Always aligned
-                    /// Size 128 bits
+                    /// Always aligned,
+                    /// size 128 bits
                     pub ip_address: [u8; 16],
                     /// `saturated uint8[6]`
                     ///
-                    /// Always aligned
-                    /// Size 48 bits
+                    /// Always aligned,
+                    /// size 48 bits
                     pub mac_address: [u8; 6],
                     /// `saturated uint16`
                     ///
-                    /// Always aligned
-                    /// Size 16 bits
+                    /// Always aligned,
+                    /// size 16 bits
                     pub port: u16,
                     // 64 bits of padding
                 }
@@ -6364,32 +6420,35 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     }
                 }
             }
+            #[allow(deprecated)]
+            #[deprecated]
             pub mod frame_0_1 {
                 /// `uavcan.metatransport.udp.Frame.0.1`
                 ///
                 /// Size ranges from 74 to 9262 bytes
+                #[deprecated]
                 pub struct Frame {
                     /// `uavcan.time.SynchronizedTimestamp.1.0`
                     ///
-                    /// Always aligned
-                    /// Size 56 bits
+                    /// Always aligned,
+                    /// size 56 bits
                     pub timestamp:
                         crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                     // 8 bits of padding
                     /// `uavcan.metatransport.udp.Endpoint.0.1`
                     ///
-                    /// Always aligned
-                    /// Size 256 bits
+                    /// Always aligned,
+                    /// size 256 bits
                     pub source: crate::uavcan::metatransport::udp::endpoint_0_1::Endpoint,
                     /// `uavcan.metatransport.udp.Endpoint.0.1`
                     ///
-                    /// Always aligned
-                    /// Size 256 bits
+                    /// Always aligned,
+                    /// size 256 bits
                     pub destination: crate::uavcan::metatransport::udp::endpoint_0_1::Endpoint,
                     /// `saturated uint8[<=9188]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 73504 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 73504 bits
                     pub data: ::heapless::Vec<u8, 9188>,
                 }
                 impl ::canadensis_encoding::DataType for Frame {
@@ -6447,23 +6506,27 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
         }
     }
     pub mod node {
+        #[allow(deprecated)]
+        #[deprecated]
         pub mod execute_command_1_0 {
+            #[deprecated]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(435);
 
             /// `uavcan.node.ExecuteCommand.1.0`
             ///
             /// Size ranges from 3 to 115 bytes
+            #[deprecated]
             pub struct ExecuteCommandRequest {
                 /// `saturated uint16`
                 ///
-                /// Always aligned
-                /// Size 16 bits
+                /// Always aligned,
+                /// size 16 bits
                 pub command: u16,
                 /// `saturated uint8[<=112]`
                 ///
-                /// Always aligned
-                /// Size ranges from 0 to 896 bits
+                /// Always aligned,
+                /// size ranges from 0 to 896 bits
                 pub parameter: ::heapless::Vec<u8, 112>,
             }
             impl ::canadensis_encoding::DataType for ExecuteCommandRequest {
@@ -6518,11 +6581,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             /// Fixed size 1 bytes
             #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
             #[repr(C, packed)]
+            #[deprecated]
             pub struct ExecuteCommandResponse {
                 /// `saturated uint8`
                 ///
-                /// Always aligned
-                /// Size 8 bits
+                /// Always aligned,
+                /// size 8 bits
                 pub status: u8,
             }
             impl ::canadensis_encoding::DataType for ExecuteCommandResponse {
@@ -6575,13 +6639,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             pub struct ExecuteCommandRequest {
                 /// `saturated uint16`
                 ///
-                /// Always aligned
-                /// Size 16 bits
+                /// Always aligned,
+                /// size 16 bits
                 pub command: u16,
                 /// `saturated uint8[<=255]`
                 ///
-                /// Always aligned
-                /// Size ranges from 0 to 2040 bits
+                /// Always aligned,
+                /// size ranges from 0 to 2040 bits
                 pub parameter: ::heapless::Vec<u8, 255>,
             }
             impl ::canadensis_encoding::DataType for ExecuteCommandRequest {
@@ -6639,8 +6703,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             pub struct ExecuteCommandResponse {
                 /// `saturated uint8`
                 ///
-                /// Always aligned
-                /// Size 8 bits
+                /// Always aligned,
+                /// size 8 bits
                 pub status: u8,
             }
             impl ::canadensis_encoding::DataType for ExecuteCommandResponse {
@@ -6727,43 +6791,43 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             pub struct GetInfoResponse {
                 /// `uavcan.node.Version.1.0`
                 ///
-                /// Always aligned
-                /// Size 16 bits
+                /// Always aligned,
+                /// size 16 bits
                 pub protocol_version: crate::uavcan::node::version_1_0::Version,
                 /// `uavcan.node.Version.1.0`
                 ///
-                /// Always aligned
-                /// Size 16 bits
+                /// Always aligned,
+                /// size 16 bits
                 pub hardware_version: crate::uavcan::node::version_1_0::Version,
                 /// `uavcan.node.Version.1.0`
                 ///
-                /// Always aligned
-                /// Size 16 bits
+                /// Always aligned,
+                /// size 16 bits
                 pub software_version: crate::uavcan::node::version_1_0::Version,
                 /// `saturated uint64`
                 ///
-                /// Always aligned
-                /// Size 64 bits
+                /// Always aligned,
+                /// size 64 bits
                 pub software_vcs_revision_id: u64,
                 /// `saturated uint8[16]`
                 ///
-                /// Always aligned
-                /// Size 128 bits
+                /// Always aligned,
+                /// size 128 bits
                 pub unique_id: [u8; 16],
                 /// `saturated uint8[<=50]`
                 ///
-                /// Always aligned
-                /// Size ranges from 0 to 400 bits
+                /// Always aligned,
+                /// size ranges from 0 to 400 bits
                 pub name: ::heapless::Vec<u8, 50>,
                 /// `saturated uint64[<=1]`
                 ///
-                /// Always aligned
-                /// Size ranges from 0 to 64 bits
+                /// Always aligned,
+                /// size ranges from 0 to 64 bits
                 pub software_image_crc: ::heapless::Vec<u64, 1>,
                 /// `saturated uint8[<=222]`
                 ///
-                /// Always aligned
-                /// Size ranges from 0 to 1776 bits
+                /// Always aligned,
+                /// size ranges from 0 to 1776 bits
                 pub certificate_of_authenticity: ::heapless::Vec<u8, 222>,
             }
             impl ::canadensis_encoding::DataType for GetInfoResponse {
@@ -6920,13 +6984,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             pub struct GetTransportStatisticsResponse {
                 /// `uavcan.node.IOStatistics.0.1`
                 ///
-                /// Always aligned
-                /// Size 120 bits
+                /// Always aligned,
+                /// size 120 bits
                 pub transfer_statistics: crate::uavcan::node::io_statistics_0_1::IOStatistics,
                 /// `uavcan.node.IOStatistics.0.1[<=3]`
                 ///
-                /// Always aligned
-                /// Size ranges from 0 to 360 bits
+                /// Always aligned,
+                /// size ranges from 0 to 360 bits
                 pub network_interface_statistics:
                     ::heapless::Vec<crate::uavcan::node::io_statistics_0_1::IOStatistics, 3>,
             }
@@ -6981,8 +7045,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             pub struct Health {
                 /// `saturated uint2`
                 ///
-                /// Always aligned
-                /// Size 2 bits
+                /// Always aligned,
+                /// size 2 bits
                 pub value: u8,
             }
             impl ::canadensis_encoding::DataType for Health {
@@ -7026,23 +7090,23 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             pub struct Heartbeat {
                 /// `saturated uint32`
                 ///
-                /// Always aligned
-                /// Size 32 bits
+                /// Always aligned,
+                /// size 32 bits
                 pub uptime: u32,
                 /// `uavcan.node.Health.1.0`
                 ///
-                /// Always aligned
-                /// Size 8 bits
+                /// Always aligned,
+                /// size 8 bits
                 pub health: crate::uavcan::node::health_1_0::Health,
                 /// `uavcan.node.Mode.1.0`
                 ///
-                /// Always aligned
-                /// Size 8 bits
+                /// Always aligned,
+                /// size 8 bits
                 pub mode: crate::uavcan::node::mode_1_0::Mode,
                 /// `saturated uint8`
                 ///
-                /// Always aligned
-                /// Size 8 bits
+                /// Always aligned,
+                /// size 8 bits
                 pub vendor_specific_status_code: u8,
             }
             impl ::canadensis_encoding::DataType for Heartbeat {
@@ -7089,8 +7153,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             pub struct ID {
                 /// `saturated uint16`
                 ///
-                /// Always aligned
-                /// Size 16 bits
+                /// Always aligned,
+                /// size 16 bits
                 pub value: u16,
             }
             impl ::canadensis_encoding::DataType for ID {
@@ -7129,18 +7193,18 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             pub struct IOStatistics {
                 /// `truncated uint40`
                 ///
-                /// Always aligned
-                /// Size 40 bits
+                /// Always aligned,
+                /// size 40 bits
                 pub num_emitted: u64,
                 /// `truncated uint40`
                 ///
-                /// Always aligned
-                /// Size 40 bits
+                /// Always aligned,
+                /// size 40 bits
                 pub num_received: u64,
                 /// `truncated uint40`
                 ///
-                /// Always aligned
-                /// Size 40 bits
+                /// Always aligned,
+                /// size 40 bits
                 pub num_errored: u64,
             }
             impl ::canadensis_encoding::DataType for IOStatistics {
@@ -7180,8 +7244,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             pub struct Mode {
                 /// `saturated uint3`
                 ///
-                /// Always aligned
-                /// Size 3 bits
+                /// Always aligned,
+                /// size 3 bits
                 pub value: u8,
             }
             impl ::canadensis_encoding::DataType for Mode {
@@ -7273,23 +7337,23 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct List {
                     /// `uavcan.node.port.SubjectIDList.0.1`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 8 to 8200 bits
+                    /// Always aligned,
+                    /// size ranges from 8 to 8200 bits
                     pub publishers: crate::uavcan::node::port::subject_id_list_0_1::SubjectIDList,
                     /// `uavcan.node.port.SubjectIDList.0.1`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 8 to 8200 bits
+                    /// Always aligned,
+                    /// size ranges from 8 to 8200 bits
                     pub subscribers: crate::uavcan::node::port::subject_id_list_0_1::SubjectIDList,
                     /// `uavcan.node.port.ServiceIDList.0.1`
                     ///
-                    /// Always aligned
-                    /// Size 512 bits
+                    /// Always aligned,
+                    /// size 512 bits
                     pub clients: crate::uavcan::node::port::service_id_list_0_1::ServiceIDList,
                     /// `uavcan.node.port.ServiceIDList.0.1`
                     ///
-                    /// Always aligned
-                    /// Size 512 bits
+                    /// Always aligned,
+                    /// size 512 bits
                     pub servers: crate::uavcan::node::port::service_id_list_0_1::ServiceIDList,
                 }
                 impl ::canadensis_encoding::DataType for List {
@@ -7340,8 +7404,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct ServiceID {
                     /// `saturated uint9`
                     ///
-                    /// Always aligned
-                    /// Size 9 bits
+                    /// Always aligned,
+                    /// size 9 bits
                     pub value: u16,
                 }
                 impl ::canadensis_encoding::DataType for ServiceID {
@@ -7379,8 +7443,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct ServiceIDList {
                     /// `saturated bool[512]`
                     ///
-                    /// Always aligned
-                    /// Size 512 bits
+                    /// Always aligned,
+                    /// size 512 bits
                     pub mask: ::canadensis_encoding::bits::BitArray<64>,
                 }
                 impl ::canadensis_encoding::DataType for ServiceIDList {
@@ -7422,8 +7486,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct SubjectID {
                     /// `saturated uint13`
                     ///
-                    /// Always aligned
-                    /// Size 13 bits
+                    /// Always aligned,
+                    /// size 13 bits
                     pub value: u16,
                 }
                 impl ::canadensis_encoding::DataType for SubjectID {
@@ -7546,13 +7610,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             pub struct Version {
                 /// `saturated uint8`
                 ///
-                /// Always aligned
-                /// Size 8 bits
+                /// Always aligned,
+                /// size 8 bits
                 pub major: u8,
                 /// `saturated uint8`
                 ///
-                /// Always aligned
-                /// Size 8 bits
+                /// Always aligned,
+                /// size 8 bits
                 pub minor: u8,
             }
             impl ::canadensis_encoding::DataType for Version {
@@ -7598,28 +7662,28 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct AppendEntriesRequest {
                     /// `saturated uint32`
                     ///
-                    /// Always aligned
-                    /// Size 32 bits
+                    /// Always aligned,
+                    /// size 32 bits
                     pub term: u32,
                     /// `saturated uint32`
                     ///
-                    /// Always aligned
-                    /// Size 32 bits
+                    /// Always aligned,
+                    /// size 32 bits
                     pub prev_log_term: u32,
                     /// `saturated uint16`
                     ///
-                    /// Always aligned
-                    /// Size 16 bits
+                    /// Always aligned,
+                    /// size 16 bits
                     pub prev_log_index: u16,
                     /// `saturated uint16`
                     ///
-                    /// Always aligned
-                    /// Size 16 bits
+                    /// Always aligned,
+                    /// size 16 bits
                     pub leader_commit: u16,
                     /// `uavcan.pnp.cluster.Entry.1.0[<=1]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 176 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 176 bits
                     pub entries: ::heapless::Vec<crate::uavcan::pnp::cluster::entry_1_0::Entry, 1>,
                 }
                 impl ::canadensis_encoding::DataType for AppendEntriesRequest {
@@ -7681,13 +7745,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct AppendEntriesResponse {
                     /// `saturated uint32`
                     ///
-                    /// Always aligned
-                    /// Size 32 bits
+                    /// Always aligned,
+                    /// size 32 bits
                     pub term: u32,
                     /// `saturated bool`
                     ///
-                    /// Always aligned
-                    /// Size 1 bits
+                    /// Always aligned,
+                    /// size 1 bits
                     pub success: bool,
                 }
                 impl ::canadensis_encoding::DataType for AppendEntriesResponse {
@@ -7728,14 +7792,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Discovery {
                     /// `saturated uint3`
                     ///
-                    /// Always aligned
-                    /// Size 3 bits
+                    /// Always aligned,
+                    /// size 3 bits
                     pub configured_cluster_size: u8,
                     // 5 bits of padding
                     /// `uavcan.node.ID.1.0[<=5]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 80 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 80 bits
                     pub known_nodes: ::heapless::Vec<crate::uavcan::node::id_1_0::ID, 5>,
                 }
                 impl ::canadensis_encoding::DataType for Discovery {
@@ -7796,18 +7860,18 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Entry {
                     /// `saturated uint32`
                     ///
-                    /// Always aligned
-                    /// Size 32 bits
+                    /// Always aligned,
+                    /// size 32 bits
                     pub term: u32,
                     /// `saturated uint8[16]`
                     ///
-                    /// Always aligned
-                    /// Size 128 bits
+                    /// Always aligned,
+                    /// size 128 bits
                     pub unique_id: [u8; 16],
                     /// `uavcan.node.ID.1.0`
                     ///
-                    /// Always aligned
-                    /// Size 16 bits
+                    /// Always aligned,
+                    /// size 16 bits
                     pub node_id: crate::uavcan::node::id_1_0::ID,
                 }
                 impl ::canadensis_encoding::DataType for Entry {
@@ -7853,18 +7917,18 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct RequestVoteRequest {
                     /// `saturated uint32`
                     ///
-                    /// Always aligned
-                    /// Size 32 bits
+                    /// Always aligned,
+                    /// size 32 bits
                     pub term: u32,
                     /// `saturated uint32`
                     ///
-                    /// Always aligned
-                    /// Size 32 bits
+                    /// Always aligned,
+                    /// size 32 bits
                     pub last_log_term: u32,
                     /// `saturated uint16`
                     ///
-                    /// Always aligned
-                    /// Size 16 bits
+                    /// Always aligned,
+                    /// size 16 bits
                     pub last_log_index: u16,
                 }
                 impl ::canadensis_encoding::DataType for RequestVoteRequest {
@@ -7910,13 +7974,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct RequestVoteResponse {
                     /// `saturated uint32`
                     ///
-                    /// Always aligned
-                    /// Size 32 bits
+                    /// Always aligned,
+                    /// size 32 bits
                     pub term: u32,
                     /// `saturated bool`
                     ///
-                    /// Always aligned
-                    /// Size 1 bits
+                    /// Always aligned,
+                    /// size 1 bits
                     pub vote_granted: bool,
                 }
                 impl ::canadensis_encoding::DataType for RequestVoteResponse {
@@ -7958,13 +8022,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             pub struct NodeIDAllocationData {
                 /// `truncated uint48`
                 ///
-                /// Always aligned
-                /// Size 48 bits
+                /// Always aligned,
+                /// size 48 bits
                 pub unique_id_hash: u64,
                 /// `uavcan.node.ID.1.0[<=1]`
                 ///
-                /// Always aligned
-                /// Size ranges from 0 to 16 bits
+                /// Always aligned,
+                /// size ranges from 0 to 16 bits
                 pub allocated_node_id: ::heapless::Vec<crate::uavcan::node::id_1_0::ID, 1>,
             }
             impl ::canadensis_encoding::DataType for NodeIDAllocationData {
@@ -8021,13 +8085,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             pub struct NodeIDAllocationData {
                 /// `uavcan.node.ID.1.0`
                 ///
-                /// Always aligned
-                /// Size 16 bits
+                /// Always aligned,
+                /// size 16 bits
                 pub node_id: crate::uavcan::node::id_1_0::ID,
                 /// `saturated uint8[16]`
                 ///
-                /// Always aligned
-                /// Size 128 bits
+                /// Always aligned,
+                /// size 128 bits
                 pub unique_id: [u8; 16],
             }
             impl ::canadensis_encoding::DataType for NodeIDAllocationData {
@@ -8076,8 +8140,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Bit {
                     /// `saturated bool[<=2048]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 2048 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 2048 bits
                     pub value: ::canadensis_encoding::bits::BitArray<256>,
                 }
                 impl ::canadensis_encoding::DataType for Bit {
@@ -8090,6 +8154,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         16 + (self.value).len() * 1 + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                        cursor.write_aligned_u16((self.value).len() as u16);
                         (self.value).serialize(cursor);
                     }
                 }
@@ -8120,8 +8185,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Integer16 {
                     /// `saturated int16[<=128]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 2048 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 2048 bits
                     pub value: ::heapless::Vec<i16, 128>,
                 }
                 impl ::canadensis_encoding::DataType for Integer16 {
@@ -8173,8 +8238,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Integer32 {
                     /// `saturated int32[<=64]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 2048 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 2048 bits
                     pub value: ::heapless::Vec<i32, 64>,
                 }
                 impl ::canadensis_encoding::DataType for Integer32 {
@@ -8226,8 +8291,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Integer64 {
                     /// `saturated int64[<=32]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 2048 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 2048 bits
                     pub value: ::heapless::Vec<i64, 32>,
                 }
                 impl ::canadensis_encoding::DataType for Integer64 {
@@ -8279,8 +8344,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Integer8 {
                     /// `saturated int8[<=256]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 2048 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 2048 bits
                     pub value: ::heapless::Vec<i8, 256>,
                 }
                 impl ::canadensis_encoding::DataType for Integer8 {
@@ -8332,8 +8397,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Natural16 {
                     /// `saturated uint16[<=128]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 2048 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 2048 bits
                     pub value: ::heapless::Vec<u16, 128>,
                 }
                 impl ::canadensis_encoding::DataType for Natural16 {
@@ -8385,8 +8450,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Natural32 {
                     /// `saturated uint32[<=64]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 2048 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 2048 bits
                     pub value: ::heapless::Vec<u32, 64>,
                 }
                 impl ::canadensis_encoding::DataType for Natural32 {
@@ -8438,8 +8503,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Natural64 {
                     /// `saturated uint64[<=32]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 2048 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 2048 bits
                     pub value: ::heapless::Vec<u64, 32>,
                 }
                 impl ::canadensis_encoding::DataType for Natural64 {
@@ -8491,8 +8556,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Natural8 {
                     /// `saturated uint8[<=256]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 2048 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 2048 bits
                     pub value: ::heapless::Vec<u8, 256>,
                 }
                 impl ::canadensis_encoding::DataType for Natural8 {
@@ -8542,8 +8607,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Real16 {
                     /// `saturated float16[<=128]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 2048 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 2048 bits
                     pub value: ::heapless::Vec<::half::f16, 128>,
                 }
                 impl ::canadensis_encoding::DataType for Real16 {
@@ -8595,8 +8660,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Real32 {
                     /// `saturated float32[<=64]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 2048 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 2048 bits
                     pub value: ::heapless::Vec<f32, 64>,
                 }
                 impl ::canadensis_encoding::DataType for Real32 {
@@ -8648,8 +8713,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Real64 {
                     /// `saturated float64[<=32]`
                     ///
-                    /// Always aligned
-                    /// Size ranges from 0 to 2048 bits
+                    /// Always aligned,
+                    /// size ranges from 0 to 2048 bits
                     pub value: ::heapless::Vec<f64, 32>,
                 }
                 impl ::canadensis_encoding::DataType for Real64 {
@@ -8738,8 +8803,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Bit {
                     /// `saturated bool`
                     ///
-                    /// Always aligned
-                    /// Size 1 bits
+                    /// Always aligned,
+                    /// size 1 bits
                     pub value: bool,
                 }
                 impl ::canadensis_encoding::DataType for Bit {
@@ -8777,8 +8842,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Integer16 {
                     /// `saturated int16`
                     ///
-                    /// Always aligned
-                    /// Size 16 bits
+                    /// Always aligned,
+                    /// size 16 bits
                     pub value: i16,
                 }
                 impl ::canadensis_encoding::DataType for Integer16 {
@@ -8819,8 +8884,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Integer32 {
                     /// `saturated int32`
                     ///
-                    /// Always aligned
-                    /// Size 32 bits
+                    /// Always aligned,
+                    /// size 32 bits
                     pub value: i32,
                 }
                 impl ::canadensis_encoding::DataType for Integer32 {
@@ -8861,8 +8926,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Integer64 {
                     /// `saturated int64`
                     ///
-                    /// Always aligned
-                    /// Size 64 bits
+                    /// Always aligned,
+                    /// size 64 bits
                     pub value: i64,
                 }
                 impl ::canadensis_encoding::DataType for Integer64 {
@@ -8903,8 +8968,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Integer8 {
                     /// `saturated int8`
                     ///
-                    /// Always aligned
-                    /// Size 8 bits
+                    /// Always aligned,
+                    /// size 8 bits
                     pub value: i8,
                 }
                 impl ::canadensis_encoding::DataType for Integer8 {
@@ -8945,8 +9010,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Natural16 {
                     /// `saturated uint16`
                     ///
-                    /// Always aligned
-                    /// Size 16 bits
+                    /// Always aligned,
+                    /// size 16 bits
                     pub value: u16,
                 }
                 impl ::canadensis_encoding::DataType for Natural16 {
@@ -8987,8 +9052,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Natural32 {
                     /// `saturated uint32`
                     ///
-                    /// Always aligned
-                    /// Size 32 bits
+                    /// Always aligned,
+                    /// size 32 bits
                     pub value: u32,
                 }
                 impl ::canadensis_encoding::DataType for Natural32 {
@@ -9029,8 +9094,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Natural64 {
                     /// `saturated uint64`
                     ///
-                    /// Always aligned
-                    /// Size 64 bits
+                    /// Always aligned,
+                    /// size 64 bits
                     pub value: u64,
                 }
                 impl ::canadensis_encoding::DataType for Natural64 {
@@ -9071,8 +9136,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Natural8 {
                     /// `saturated uint8`
                     ///
-                    /// Always aligned
-                    /// Size 8 bits
+                    /// Always aligned,
+                    /// size 8 bits
                     pub value: u8,
                 }
                 impl ::canadensis_encoding::DataType for Natural8 {
@@ -9113,8 +9178,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Real16 {
                     /// `saturated float16`
                     ///
-                    /// Always aligned
-                    /// Size 16 bits
+                    /// Always aligned,
+                    /// size 16 bits
                     pub value: ::half::f16,
                 }
                 impl ::canadensis_encoding::DataType for Real16 {
@@ -9155,8 +9220,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Real32 {
                     /// `saturated float32`
                     ///
-                    /// Always aligned
-                    /// Size 32 bits
+                    /// Always aligned,
+                    /// size 32 bits
                     pub value: f32,
                 }
                 impl ::canadensis_encoding::DataType for Real32 {
@@ -9197,8 +9262,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub struct Real64 {
                     /// `saturated float64`
                     ///
-                    /// Always aligned
-                    /// Size 64 bits
+                    /// Always aligned,
+                    /// size 64 bits
                     pub value: f64,
                 }
                 impl ::canadensis_encoding::DataType for Real64 {
@@ -9238,8 +9303,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             pub struct String {
                 /// `saturated uint8[<=256]`
                 ///
-                /// Always aligned
-                /// Size ranges from 0 to 2048 bits
+                /// Always aligned,
+                /// size ranges from 0 to 2048 bits
                 pub value: ::heapless::Vec<u8, 256>,
             }
             impl ::canadensis_encoding::DataType for String {
@@ -9287,8 +9352,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             pub struct Unstructured {
                 /// `saturated uint8[<=256]`
                 ///
-                /// Always aligned
-                /// Size ranges from 0 to 2048 bits
+                /// Always aligned,
+                /// size ranges from 0 to 2048 bits
                 pub value: ::heapless::Vec<u8, 256>,
             }
             impl ::canadensis_encoding::DataType for Unstructured {
@@ -9341,13 +9406,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             pub struct AccessRequest {
                 /// `uavcan.register.Name.1.0`
                 ///
-                /// Always aligned
-                /// Size ranges from 8 to 2048 bits
+                /// Always aligned,
+                /// size ranges from 8 to 2048 bits
                 pub name: crate::uavcan::register::name_1_0::Name,
                 /// `uavcan.register.Value.1.0`
                 ///
-                /// Always aligned
-                /// Size ranges from 8 to 2072 bits
+                /// Always aligned,
+                /// size ranges from 8 to 2072 bits
                 pub value: crate::uavcan::register::value_1_0::Value,
             }
             impl ::canadensis_encoding::DataType for AccessRequest {
@@ -9384,25 +9449,25 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             pub struct AccessResponse {
                 /// `uavcan.time.SynchronizedTimestamp.1.0`
                 ///
-                /// Always aligned
-                /// Size 56 bits
+                /// Always aligned,
+                /// size 56 bits
                 pub timestamp:
                     crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                 /// `saturated bool`
                 ///
-                /// Always aligned
-                /// Size 1 bits
+                /// Always aligned,
+                /// size 1 bits
                 pub mutable: bool,
                 /// `saturated bool`
                 ///
-                /// Not always aligned
-                /// Size 1 bits
+                /// Not always aligned,
+                /// size 1 bits
                 pub persistent: bool,
                 // 6 bits of padding
                 /// `uavcan.register.Value.1.0`
                 ///
-                /// Always aligned
-                /// Size ranges from 8 to 2072 bits
+                /// Always aligned,
+                /// size ranges from 8 to 2072 bits
                 pub value: crate::uavcan::register::value_1_0::Value,
             }
             impl ::canadensis_encoding::DataType for AccessResponse {
@@ -9453,8 +9518,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             pub struct ListRequest {
                 /// `saturated uint16`
                 ///
-                /// Always aligned
-                /// Size 16 bits
+                /// Always aligned,
+                /// size 16 bits
                 pub index: u16,
             }
             impl ::canadensis_encoding::DataType for ListRequest {
@@ -9492,8 +9557,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             pub struct ListResponse {
                 /// `uavcan.register.Name.1.0`
                 ///
-                /// Always aligned
-                /// Size ranges from 8 to 2048 bits
+                /// Always aligned,
+                /// size ranges from 8 to 2048 bits
                 pub name: crate::uavcan::register::name_1_0::Name,
             }
             impl ::canadensis_encoding::DataType for ListResponse {
@@ -9529,8 +9594,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             pub struct Name {
                 /// `saturated uint8[<=255]`
                 ///
-                /// Always aligned
-                /// Size ranges from 0 to 2040 bits
+                /// Always aligned,
+                /// size ranges from 0 to 2040 bits
                 pub name: ::heapless::Vec<u8, 255>,
             }
             impl ::canadensis_encoding::DataType for Name {
@@ -9736,14 +9801,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub meter_per_second_per_second: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -9781,14 +9846,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Vector3 {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32[3]`
                         ///
-                        /// Always aligned
-                        /// Size 96 bits
+                        /// Always aligned,
+                        /// size 96 bits
                         pub meter_per_second_per_second: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
@@ -9832,14 +9897,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Quaternion {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32[4]`
                         ///
-                        /// Always aligned
-                        /// Size 128 bits
+                        /// Always aligned,
+                        /// size 128 bits
                         pub wxyz: [f32; 4],
                     }
                     impl ::canadensis_encoding::DataType for Quaternion {
@@ -9886,14 +9951,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub radian: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -9933,14 +9998,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub radian_per_second_per_second: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -9978,14 +10043,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Vector3 {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32[3]`
                         ///
-                        /// Always aligned
-                        /// Size 96 bits
+                        /// Always aligned,
+                        /// size 96 bits
                         pub radian_per_second_per_second: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
@@ -10029,14 +10094,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub radian_per_second: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -10074,14 +10139,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Vector3 {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32[3]`
                         ///
-                        /// Always aligned
-                        /// Size 96 bits
+                        /// Always aligned,
+                        /// size 96 bits
                         pub radian_per_second: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
@@ -10125,14 +10190,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub second: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -10170,14 +10235,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct WideScalar {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float64`
                         ///
-                        /// Always aligned
-                        /// Size 64 bits
+                        /// Always aligned,
+                        /// size 64 bits
                         pub second: f64,
                     }
                     impl ::canadensis_encoding::DataType for WideScalar {
@@ -10217,14 +10282,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub coulomb: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -10264,14 +10329,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub ampere: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -10311,14 +10376,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub joule: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -10358,14 +10423,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub newton: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -10403,14 +10468,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Vector3 {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32[3]`
                         ///
-                        /// Always aligned
-                        /// Size 96 bits
+                        /// Always aligned,
+                        /// size 96 bits
                         pub newton: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
@@ -10454,14 +10519,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub hertz: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -10501,14 +10566,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub meter: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -10546,14 +10611,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Vector3 {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32[3]`
                         ///
-                        /// Always aligned
-                        /// Size 96 bits
+                        /// Always aligned,
+                        /// size 96 bits
                         pub meter: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
@@ -10595,14 +10660,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct WideScalar {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float64`
                         ///
-                        /// Always aligned
-                        /// Size 64 bits
+                        /// Always aligned,
+                        /// size 64 bits
                         pub meter: f64,
                     }
                     impl ::canadensis_encoding::DataType for WideScalar {
@@ -10640,14 +10705,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct WideVector3 {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float64[3]`
                         ///
-                        /// Always aligned
-                        /// Size 192 bits
+                        /// Always aligned,
+                        /// size 192 bits
                         pub meter: [f64; 3],
                     }
                     impl ::canadensis_encoding::DataType for WideVector3 {
@@ -10691,14 +10756,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub tesla: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -10736,14 +10801,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Vector3 {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32[3]`
                         ///
-                        /// Always aligned
-                        /// Size 96 bits
+                        /// Always aligned,
+                        /// size 96 bits
                         pub tesla: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
@@ -10787,14 +10852,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub kilogram: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -10834,14 +10899,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub watt: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -10881,14 +10946,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub pascal: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -10928,14 +10993,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub kelvin: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -10975,14 +11040,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub newton_meter: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -11020,14 +11085,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Vector3 {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32[3]`
                         ///
-                        /// Always aligned
-                        /// Size 96 bits
+                        /// Always aligned,
+                        /// size 96 bits
                         pub newton_meter: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
@@ -11071,14 +11136,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub meter_per_second: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -11116,14 +11181,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Vector3 {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32[3]`
                         ///
-                        /// Always aligned
-                        /// Size 96 bits
+                        /// Always aligned,
+                        /// size 96 bits
                         pub meter_per_second: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
@@ -11167,14 +11232,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub volt: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -11214,14 +11279,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub cubic_meter: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -11261,14 +11326,14 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `uavcan.time.SynchronizedTimestamp.1.0`
                         ///
-                        /// Always aligned
-                        /// Size 56 bits
+                        /// Always aligned,
+                        /// size 56 bits
                         pub timestamp:
                             crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub cubic_meter_per_second: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -11312,8 +11377,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub meter_per_second_per_second: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -11357,8 +11422,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Vector3 {
                         /// `saturated float32[3]`
                         ///
-                        /// Always aligned
-                        /// Size 96 bits
+                        /// Always aligned,
+                        /// size 96 bits
                         pub meter_per_second_per_second: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
@@ -11404,8 +11469,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Quaternion {
                         /// `saturated float32[4]`
                         ///
-                        /// Always aligned
-                        /// Size 128 bits
+                        /// Always aligned,
+                        /// size 128 bits
                         pub wxyz: [f32; 4],
                     }
                     impl ::canadensis_encoding::DataType for Quaternion {
@@ -11446,8 +11511,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub radian: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -11490,8 +11555,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub radian_per_second_per_second: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -11535,8 +11600,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Vector3 {
                         /// `saturated float32[3]`
                         ///
-                        /// Always aligned
-                        /// Size 96 bits
+                        /// Always aligned,
+                        /// size 96 bits
                         pub radian_per_second_per_second: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
@@ -11582,8 +11647,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub radian_per_second: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -11624,8 +11689,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Vector3 {
                         /// `saturated float32[3]`
                         ///
-                        /// Always aligned
-                        /// Size 96 bits
+                        /// Always aligned,
+                        /// size 96 bits
                         pub radian_per_second: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
@@ -11668,8 +11733,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub second: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -11710,8 +11775,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct WideScalar {
                         /// `saturated float64`
                         ///
-                        /// Always aligned
-                        /// Size 64 bits
+                        /// Always aligned,
+                        /// size 64 bits
                         pub second: f64,
                     }
                     impl ::canadensis_encoding::DataType for WideScalar {
@@ -11754,8 +11819,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub coulomb: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -11798,8 +11863,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub ampere: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -11842,8 +11907,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub joule: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -11886,8 +11951,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub newton: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -11928,8 +11993,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Vector3 {
                         /// `saturated float32[3]`
                         ///
-                        /// Always aligned
-                        /// Size 96 bits
+                        /// Always aligned,
+                        /// size 96 bits
                         pub newton: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
@@ -11972,8 +12037,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub hertz: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -12016,8 +12081,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub meter: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -12058,8 +12123,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Vector3 {
                         /// `saturated float32[3]`
                         ///
-                        /// Always aligned
-                        /// Size 96 bits
+                        /// Always aligned,
+                        /// size 96 bits
                         pub meter: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
@@ -12100,8 +12165,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct WideScalar {
                         /// `saturated float64`
                         ///
-                        /// Always aligned
-                        /// Size 64 bits
+                        /// Always aligned,
+                        /// size 64 bits
                         pub meter: f64,
                     }
                     impl ::canadensis_encoding::DataType for WideScalar {
@@ -12142,8 +12207,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct WideVector3 {
                         /// `saturated float64[3]`
                         ///
-                        /// Always aligned
-                        /// Size 192 bits
+                        /// Always aligned,
+                        /// size 192 bits
                         pub meter: [f64; 3],
                     }
                     impl ::canadensis_encoding::DataType for WideVector3 {
@@ -12186,8 +12251,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub tesla: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -12228,8 +12293,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Vector3 {
                         /// `saturated float32[3]`
                         ///
-                        /// Always aligned
-                        /// Size 96 bits
+                        /// Always aligned,
+                        /// size 96 bits
                         pub tesla: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
@@ -12272,8 +12337,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub kilogram: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -12316,8 +12381,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub watt: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -12360,8 +12425,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub pascal: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -12404,8 +12469,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub kelvin: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -12448,8 +12513,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub newton_meter: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -12490,8 +12555,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Vector3 {
                         /// `saturated float32[3]`
                         ///
-                        /// Always aligned
-                        /// Size 96 bits
+                        /// Always aligned,
+                        /// size 96 bits
                         pub newton_meter: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
@@ -12534,8 +12599,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub meter_per_second: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -12576,8 +12641,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Vector3 {
                         /// `saturated float32[3]`
                         ///
-                        /// Always aligned
-                        /// Size 96 bits
+                        /// Always aligned,
+                        /// size 96 bits
                         pub meter_per_second: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
@@ -12620,8 +12685,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub volt: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -12664,8 +12729,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub cubic_meter: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -12708,8 +12773,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub struct Scalar {
                         /// `saturated float32`
                         ///
-                        /// Always aligned
-                        /// Size 32 bits
+                        /// Always aligned,
+                        /// size 32 bits
                         pub cubic_meter_per_second: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
@@ -12795,18 +12860,18 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             pub struct GetSynchronizationMasterInfoResponse {
                 /// `saturated float32`
                 ///
-                /// Always aligned
-                /// Size 32 bits
+                /// Always aligned,
+                /// size 32 bits
                 pub error_variance: f32,
                 /// `uavcan.time.TimeSystem.0.1`
                 ///
-                /// Always aligned
-                /// Size 8 bits
+                /// Always aligned,
+                /// size 8 bits
                 pub time_system: crate::uavcan::time::time_system_0_1::TimeSystem,
                 /// `uavcan.time.TAIInfo.0.1`
                 ///
-                /// Always aligned
-                /// Size 16 bits
+                /// Always aligned,
+                /// size 16 bits
                 pub tai_info: crate::uavcan::time::tai_info_0_1::TAIInfo,
             }
             impl ::canadensis_encoding::DataType for GetSynchronizationMasterInfoResponse {
@@ -12849,8 +12914,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             pub struct Synchronization {
                 /// `truncated uint56`
                 ///
-                /// Always aligned
-                /// Size 56 bits
+                /// Always aligned,
+                /// size 56 bits
                 pub previous_transmission_timestamp_microsecond: u64,
             }
             impl ::canadensis_encoding::DataType for Synchronization {
@@ -12889,8 +12954,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             pub struct SynchronizedTimestamp {
                 /// `truncated uint56`
                 ///
-                /// Always aligned
-                /// Size 56 bits
+                /// Always aligned,
+                /// size 56 bits
                 pub microsecond: u64,
             }
             impl ::canadensis_encoding::DataType for SynchronizedTimestamp {
@@ -12928,8 +12993,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             pub struct TAIInfo {
                 /// `saturated uint10`
                 ///
-                /// Always aligned
-                /// Size 10 bits
+                /// Always aligned,
+                /// size 10 bits
                 pub difference_tai_minus_utc: u16,
             }
             impl ::canadensis_encoding::DataType for TAIInfo {
@@ -12968,8 +13033,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             pub struct TimeSystem {
                 /// `truncated uint4`
                 ///
-                /// Always aligned
-                /// Size 4 bits
+                /// Always aligned,
+                /// size 4 bits
                 pub value: u8,
             }
             impl ::canadensis_encoding::DataType for TimeSystem {
