@@ -173,7 +173,7 @@ pub struct GeneratedModule<'c> {
 
 fn generate_rust_type<'c>(
     key: &TypeKey,
-    message: &Message,
+    message: &'c Message,
     rust_type: &RustTypeName,
     extent: Extent,
     role: MessageRole,
@@ -243,15 +243,15 @@ struct GeneratedType<'c> {
     size: BitLengthSet,
     extent: Extent,
     role: MessageRole,
-    kind: GeneratedTypeKind,
+    kind: GeneratedTypeKind<'c>,
     constants: Constants,
     deprecated: bool,
     comments: &'c str,
 }
 
-enum GeneratedTypeKind {
-    Struct(GeneratedStruct),
-    Enum(GeneratedEnum),
+enum GeneratedTypeKind<'c> {
+    Struct(GeneratedStruct<'c>),
+    Enum(GeneratedEnum<'c>),
 }
 
 impl<'c> GeneratedType<'c> {
@@ -261,7 +261,7 @@ impl<'c> GeneratedType<'c> {
         size: BitLengthSet,
         extent: Extent,
         role: MessageRole,
-        cyphal_struct: &Struct,
+        cyphal_struct: &'c Struct,
         constants: Constants,
         deprecated: bool,
         comments: &'c str,
@@ -276,7 +276,7 @@ impl<'c> GeneratedType<'c> {
                     ty.clone(),
                     name.clone(),
                     field.always_aligned(),
-                    field.comments().to_owned(),
+                    field.comments(),
                     external_packages,
                 ),
             })
@@ -299,7 +299,7 @@ impl<'c> GeneratedType<'c> {
         size: BitLengthSet,
         extent: Extent,
         role: MessageRole,
-        cyphal_union: &Union,
+        cyphal_union: &'c Union,
         constants: Constants,
         deprecated: bool,
         comments: &'c str,
@@ -308,13 +308,12 @@ impl<'c> GeneratedType<'c> {
         let variants = cyphal_union
             .variants
             .iter()
-            .cloned()
             .map(|variant| {
                 GeneratedVariant::new(
                     variant.ty().clone(),
                     variant.name().to_owned(),
                     external_packages,
-                    variant.comments().to_owned(),
+                    variant.comments(),
                 )
             })
             .collect();
@@ -340,7 +339,7 @@ impl<'c> GeneratedType<'c> {
         size: BitLengthSet,
         extent: Extent,
         role: MessageRole,
-        kind: GeneratedTypeKind,
+        kind: GeneratedTypeKind<'c>,
         constants: Constants,
         deprecated: bool,
         comments: &'c str,
@@ -389,27 +388,27 @@ impl<'c> GeneratedType<'c> {
     }
 }
 
-struct GeneratedStruct {
-    fields: Vec<GeneratedField>,
+struct GeneratedStruct<'c> {
+    fields: Vec<GeneratedField<'c>>,
 }
 
-enum GeneratedField {
-    Data(GeneratedDataField),
+enum GeneratedField<'c> {
+    Data(GeneratedDataField<'c>),
     /// A padding field
     ///
     /// The enclosed value is the number of bits
     Padding(u8),
 }
 
-struct GeneratedDataField {
+struct GeneratedDataField<'c> {
     name: String,
     ty: String,
     cyphal_ty: ResolvedType,
     always_aligned: bool,
-    comments: String,
+    comments: &'c str,
 }
 
-impl GeneratedDataField {
+impl GeneratedDataField<'_> {
     pub fn supports_zero_copy(&self) -> bool {
         type_supports_zero_copy(&self.cyphal_ty)
     }
@@ -464,12 +463,12 @@ fn message_supports_zero_copy(message: &Message) -> bool {
     }
 }
 
-impl GeneratedField {
+impl<'c> GeneratedField<'c> {
     pub fn data(
         ty: ResolvedType,
         name: String,
         always_aligned: bool,
-        comments: String,
+        comments: &'c str,
         external_packages: &BTreeMap<Vec<String>, Vec<String>>,
     ) -> Self {
         GeneratedField::Data(GeneratedDataField {
@@ -482,26 +481,26 @@ impl GeneratedField {
     }
 }
 
-struct GeneratedEnum {
+struct GeneratedEnum<'c> {
     /// The number of bits used for the discriminant, which identifies the active variant
     discriminant_bits: u8,
     /// The enum variants
-    variants: Vec<GeneratedVariant>,
+    variants: Vec<GeneratedVariant<'c>>,
 }
 
-struct GeneratedVariant {
+struct GeneratedVariant<'c> {
     name: String,
     ty: String,
     cyphal_ty: ResolvedType,
-    comments: String,
+    comments: &'c str,
 }
 
-impl GeneratedVariant {
+impl<'c> GeneratedVariant<'c> {
     pub fn new(
         ty: ResolvedType,
         name: String,
         external_packages: &BTreeMap<Vec<String>, Vec<String>>,
-        comments: String,
+        comments: &'c str,
     ) -> Self {
         GeneratedVariant {
             name: make_rust_identifier(name).to_upper_camel_case(),
@@ -817,7 +816,7 @@ mod fmt_impl {
         }
     }
 
-    impl Display for GeneratedField {
+    impl Display for GeneratedField<'_> {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
             match self {
                 GeneratedField::Data(data) => {
@@ -851,7 +850,7 @@ mod fmt_impl {
         }
     }
 
-    impl Display for GeneratedVariant {
+    impl Display for GeneratedVariant<'_> {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
             writeln!(f, "/// {}", self.cyphal_ty)?;
             if !self.comments.is_empty() {
