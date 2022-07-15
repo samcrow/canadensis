@@ -6,6 +6,7 @@ extern crate canadensis_dsdl_frontend;
 use canadensis_dsdl_frontend::compiled::package::CompiledPackage;
 use canadensis_dsdl_frontend::compiled::DsdlKind;
 use canadensis_dsdl_frontend::{Error, Package, TypeKey};
+use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::{fs, io};
@@ -30,6 +31,32 @@ fn compile_all() -> Result<(), Error> {
         "tests/simple_dsdl",
     ])?;
     Ok(())
+}
+
+/// Checks that the library returns a reasonable error and does not loop forever
+/// when DSDL types have cyclic dependencies.
+#[test]
+fn test_cycle() {
+    let status = test_compile_subdirs(&["tests/cycle"]);
+    match status {
+        Ok(_) => panic!("Compilation succeeded with cyclic dependency"),
+        Err(e) => {
+            // Expect this error:
+            // Failed to compile one of the two files
+            // |- Failed to compile the other one of the two files
+            //    |- Couldn't find the type in the outermost file
+            match &e {
+                Error::CompileFile { inner, .. } => match inner.deref() {
+                    Error::CompileFile { inner, .. } => match inner.deref() {
+                        Error::UnknownType(_) => { /* OK */ }
+                        _ => panic!("Unexpected error {:#?}", e),
+                    },
+                    _ => panic!("Unexpected error {:#?}", e),
+                },
+                _ => panic!("Unexpected error {:#?}", e),
+            }
+        }
+    }
 }
 
 /// Checks that when compiling a deprecated service type, both the request and response are marked

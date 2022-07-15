@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis`: `register_client` example now compiles correctly after an update to `heapless` added
   a new restriction on the size of some containers
 
+### Changed
+
+- `canadensis_dsdl_frontend`: Added tests for reasonable handling of cyclic dependencies between DSDL types
+
 ## [canadensis_data_types-v0.2.2](https://github.com/samcrow/canadensis/tree/canadensis_data_types-v0.2.2) - 2022-07-14
 
 ### Added

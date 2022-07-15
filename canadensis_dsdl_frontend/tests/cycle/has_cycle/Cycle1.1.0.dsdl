@@ -1,0 +1,5 @@
+# Cycle1 and Cycle2 have a cyclic dependency
+
+Cycle2.1.0 cycle
+
+@sealed

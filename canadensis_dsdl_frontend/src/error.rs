@@ -53,7 +53,15 @@ pub enum Error {
         inner: Box<Error>,
     },
     #[error("{0}")]
-    Compile(#[from] canadensis_dsdl_parser::Error),
+    Compile(
+        #[from]
+        #[source]
+        canadensis_dsdl_parser::Error,
+    ),
+    /// A type could not be found
+    ///
+    /// This sometimes indicates a cyclic dependency between DSDL types if the type not found
+    /// is also being compiled further up the call stack.
     #[error("Type {0} not found")]
     UnknownType(TypeKey),
     #[error("Input/output error")]
