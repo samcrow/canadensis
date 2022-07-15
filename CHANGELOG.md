@@ -11,9 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_dsdl_frontend`: Support the new `.dsdl` extension for cyphal data types [#12](https://github.com/samcrow/canadensis/pull/12)
 - `canadensis_dsdl_frontend`: Report warnings for type and field names that do
   not follow the DSDL case conventions
-- `canadensis_codegen_rust`: Print warnings
-- `canadensis_codegen_rust`: Generated types are marked as deprecated if the
-  corresponding DSDL types are deprecated
 - `canadensis_data_types`: Generated types are marked as deprecated if the
   corresponding DSDL types are deprecated
 
@@ -25,8 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   not be marked as deprecated
 - `canadensis_dsdl_frontend`: Added a check that prohibits using a deprecated
   type in a non-deprecated type (the specification requires this check)
-- `canadensis_codegen_rust`: Fixed a bug that caused generated code to not
-  serialize the length field of a variable-length array of bits
 - `canadensis_data_types`: Fixed a bug in generated code that caused variable-
   length bit arrays to be serialized incorrectly (missing the length field)
 
@@ -36,11 +31,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   impact any downstream code, but `git clone --recursive` is now required to make all the tests pass.
   [#13](https://github.com/samcrow/canadensis/pull/13)
 - `canadensis_dsdl_frontend`: Improved performance by adding a special case for BitLengthSet % integer
-- `canadensis_codegen_rust`: Updated `heck` dependency to 0.4.0
-- `canadensis_codegen_rust`: Application now prints help text instead of
-  panicking when run with no subcommand
-- `canadensis_codegen_rust`: Improved documentation of generated fields
 - `canadensis_data_types`: Improved documentation of generated fields
+
+## [canadensis_codegen_rust-v0.3.1](https://github.com/samcrow/canadensis/tree/canadensis_codegen_rust-v0.3.1) - 2022-07-14
+
+### Added
+
+- The compile process now reports warnings when it detects names using
+  non-standard case conventions
+- Generated types are marked as deprecated if the
+  corresponding DSDL types are deprecated
+
+### Fixed
+
+- Fixed a bug that caused generated code to not
+  serialize the length field of a variable-length array of bits
+
+### Changed
+
+- Updated private `heck` dependency to 0.4.0
+- Application now prints help text instead of
+  panicking when run with no subcommand
+- Improved documentation of generated fields
+
 
 ## [canadensis_dsdl_frontend-v0.3.1](https://github.com/samcrow/canadensis/tree/canadensis_dsdl_frontend-v0.3.1) - 2022-06-10
 
