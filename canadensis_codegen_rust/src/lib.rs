@@ -181,7 +181,7 @@ fn generate_rust_type<'c>(
     comments: &'c str,
     external_packages: &BTreeMap<Vec<String>, Vec<String>>,
 ) -> GeneratedType<'c> {
-    let length = message.bit_length().clone();
+    let length = message.bit_length();
     match message.kind() {
         MessageKind::Struct(cyphal_struct) => GeneratedType::new_struct(
             key,
@@ -190,7 +190,7 @@ fn generate_rust_type<'c>(
             extent,
             role,
             cyphal_struct,
-            message.constants().clone(),
+            message.constants(),
             deprecated,
             comments,
             external_packages,
@@ -202,7 +202,7 @@ fn generate_rust_type<'c>(
             extent,
             role,
             cyphal_union,
-            message.constants().clone(),
+            message.constants(),
             deprecated,
             comments,
             external_packages,
@@ -240,11 +240,11 @@ impl<'c> GeneratedItem<'c> {
 struct GeneratedType<'c> {
     cyphal_name: String,
     name: RustTypeName,
-    size: BitLengthSet,
+    size: &'c BitLengthSet,
     extent: Extent,
     role: MessageRole,
     kind: GeneratedTypeKind<'c>,
-    constants: Constants,
+    constants: &'c Constants,
     deprecated: bool,
     comments: &'c str,
 }
@@ -258,11 +258,11 @@ impl<'c> GeneratedType<'c> {
     pub fn new_struct(
         key: &TypeKey,
         name: RustTypeName,
-        size: BitLengthSet,
+        size: &'c BitLengthSet,
         extent: Extent,
         role: MessageRole,
         cyphal_struct: &'c Struct,
-        constants: Constants,
+        constants: &'c Constants,
         deprecated: bool,
         comments: &'c str,
         external_packages: &BTreeMap<Vec<String>, Vec<String>>,
@@ -273,7 +273,7 @@ impl<'c> GeneratedType<'c> {
             .map(|field| match field.kind() {
                 FieldKind::Padding(bits) => GeneratedField::Padding(*bits),
                 FieldKind::Data { ty, name } => GeneratedField::data(
-                    ty.clone(),
+                    ty,
                     name.clone(),
                     field.always_aligned(),
                     field.comments(),
@@ -296,11 +296,11 @@ impl<'c> GeneratedType<'c> {
     pub fn new_enum(
         key: &TypeKey,
         name: RustTypeName,
-        size: BitLengthSet,
+        size: &'c BitLengthSet,
         extent: Extent,
         role: MessageRole,
         cyphal_union: &'c Union,
-        constants: Constants,
+        constants: &'c Constants,
         deprecated: bool,
         comments: &'c str,
         external_packages: &BTreeMap<Vec<String>, Vec<String>>,
@@ -336,11 +336,11 @@ impl<'c> GeneratedType<'c> {
     fn new(
         key: &TypeKey,
         name: RustTypeName,
-        size: BitLengthSet,
+        size: &'c BitLengthSet,
         extent: Extent,
         role: MessageRole,
         kind: GeneratedTypeKind<'c>,
-        constants: Constants,
+        constants: &'c Constants,
         deprecated: bool,
         comments: &'c str,
     ) -> Self {
@@ -403,14 +403,14 @@ enum GeneratedField<'c> {
 struct GeneratedDataField<'c> {
     name: String,
     ty: String,
-    cyphal_ty: ResolvedType,
+    cyphal_ty: &'c ResolvedType,
     always_aligned: bool,
     comments: &'c str,
 }
 
 impl GeneratedDataField<'_> {
     pub fn supports_zero_copy(&self) -> bool {
-        type_supports_zero_copy(&self.cyphal_ty)
+        type_supports_zero_copy(self.cyphal_ty)
     }
 }
 
@@ -465,7 +465,7 @@ fn message_supports_zero_copy(message: &Message) -> bool {
 
 impl<'c> GeneratedField<'c> {
     pub fn data(
-        ty: ResolvedType,
+        ty: &'c ResolvedType,
         name: String,
         always_aligned: bool,
         comments: &'c str,
@@ -473,7 +473,7 @@ impl<'c> GeneratedField<'c> {
     ) -> Self {
         GeneratedField::Data(GeneratedDataField {
             name: make_rust_identifier(name),
-            ty: to_rust_type(&ty, external_packages),
+            ty: to_rust_type(ty, external_packages),
             cyphal_ty: ty,
             always_aligned,
             comments,

@@ -93,7 +93,7 @@ impl Display for SerializeField<'_, '_> {
                     Display::fmt(
                         &WriteAlignedField {
                             field_expr: &format!("self.{}", data.name),
-                            ty: &data.cyphal_ty,
+                            ty: data.cyphal_ty,
                         },
                         f,
                     )
@@ -101,7 +101,7 @@ impl Display for SerializeField<'_, '_> {
                     Display::fmt(
                         &WriteUnalignedField {
                             field_expr: &format!("self.{}", data.name),
-                            ty: &data.cyphal_ty,
+                            ty: data.cyphal_ty,
                         },
                         f,
                     )
