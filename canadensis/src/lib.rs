@@ -2,9 +2,9 @@
 #![deny(missing_docs, unaligned_references)]
 
 //!
-//! # Canadensis: An implementation of UAVCAN v1
+//! # Canadensis: An implementation of Cyphal
 //!
-//! This library (`canadensis`) provides all the basic UAVCAN functionality, with some re-exports
+//! This library (`canadensis`) provides all the basic Cyphal functionality, with some re-exports
 //! from other canadensis crates.
 //!
 
@@ -18,7 +18,7 @@ extern crate canadensis_encoding;
 
 // Re-exports from other crates
 pub mod core {
-    //! Basic UAVCAN types
+    //! Basic Cyphal types
     pub use canadensis_core::*;
 }
 pub mod encoding {
@@ -275,7 +275,7 @@ where
     }
 }
 
-/// A UAVCAN node
+/// A Cyphal node
 ///
 /// A node has a node ID (it is not anonymous), a clock, a queue of outgoing frames waiting to be
 /// sent, and information about the subjects and services it is using.

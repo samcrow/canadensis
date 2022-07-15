@@ -1,5 +1,5 @@
 //!
-//! This library parses UAVCAN data structure definition language (DSDL) files.
+//! This library parses Cyphal data structure definition language (DSDL) files.
 //!
 
 pub extern crate num_bigint;

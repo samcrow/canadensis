@@ -3,7 +3,7 @@ use half::f16;
 use crate::Serialize;
 use core::convert::TryInto;
 
-/// A cursor over a byte slice for easy serializing of UAVCAN data types
+/// A cursor over a byte slice for easy serializing of Cyphal data types
 ///
 /// Functions that write values will panic if no space is available in the slice.
 pub struct WriteCursor<'b> {
@@ -17,7 +17,7 @@ pub struct WriteCursor<'b> {
     /// The number of bits in the current byte that have already been filled
     ///
     /// Multiple values within a byte are filled from right to left:
-    /// <https://github.com/UAVCAN/specification/issues/70>
+    /// <https://github.com/OpenCyphal/specification/issues/70>
     ///
     /// Invariant: This is in the range 0..=7.
     bit_index: u8,

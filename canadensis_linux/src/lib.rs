@@ -1,5 +1,5 @@
 //!
-//! Utilities for running UAVCAN nodes on Linux using the SocketCAN interface
+//! Utilities for running Cyphal nodes on Linux using the SocketCAN interface
 //!
 
 #![deny(missing_docs)]
@@ -79,12 +79,12 @@ impl ReceiveDriver<Microseconds64> for LinuxCan {
         loop {
             let socketcan_frame = self.socket.read_frame()?;
             if socketcan_frame.data().len() <= canadensis_can::FRAME_CAPACITY {
-                let uavcan_frame = canadensis_can::Frame::new(
+                let cyphal_frame = canadensis_can::Frame::new(
                     now,
                     socketcan_frame.id().try_into().expect("Invalid CAN ID"),
                     socketcan_frame.data(),
                 );
-                return Ok(uavcan_frame);
+                return Ok(cyphal_frame);
             } else {
                 log::warn!(
                     "Ignoring a frame {} bytes long, which is too large",

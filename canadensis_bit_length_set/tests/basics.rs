@@ -1,4 +1,4 @@
-//! Examples from the UAVCAN specification
+//! Examples from the Cyphal specification
 
 extern crate canadensis_bit_length_set;
 

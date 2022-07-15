@@ -1,4 +1,4 @@
-//! Data types used for UAVCAN/CAN
+//! Data types used for Cyphal/CAN
 
 use canadensis_core::transport::{TransferId, Transport};
 use canadensis_core::{InvalidValue, OutOfMemoryError, Priority};
@@ -8,7 +8,7 @@ use core::fmt::Debug;
 use core::ops::RangeInclusive;
 use hash32_derive::Hash32;
 
-/// The UAVCAN/CAN transport
+/// The Cyphal/CAN transport
 pub struct CanTransport(());
 
 impl Transport for CanTransport {

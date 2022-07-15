@@ -1,4 +1,4 @@
-//! Runs a UAVCAN node that connects to another node and gets information about its registers
+//! Runs a Cyphal node that connects to another node and gets information about its registers
 //!
 //! Usage: `register_client [SocketCAN interface name] [Local node ID] [Target node ID]`
 //!

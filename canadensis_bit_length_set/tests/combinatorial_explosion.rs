@@ -1,7 +1,7 @@
 //!
 //! Calculates the bit length set of a pathological data type that has a huge bit length set
 //!
-//! Based on: <https://github.com/UAVCAN/nunavut/blob/main/verification/nunavut_test_types/test0/regulated/CombinatorialExplosion.0.1.uavcan>
+//! Based on: <https://github.com/OpenCyphal/nunavut/blob/main/verification/nunavut_test_types/test0/regulated/CombinatorialExplosion.0.1.uavcan>
 //!
 //! If this takes too long, performance has regressed and combinatorial explosion is probably
 //! happening.

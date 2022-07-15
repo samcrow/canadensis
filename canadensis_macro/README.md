@@ -1,4 +1,4 @@
-# Macros to generate code from UAVCAN DSDL
+# Macros to generate code from Cyphal DSDL
 
 ## Dependencies
 

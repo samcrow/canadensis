@@ -68,7 +68,7 @@ enum Args {
         output_file: OsString,
         /// DSDL packages that should not be generated, but instead refer to some other Rust module
         ///
-        /// Each key is a list of UAVCAN package name segments (like ["uavcan", "node"]).
+        /// Each key is a list of Cyphal package name segments (like ["uavcan", "node"]).
         /// Each value is the path to a Rust module
         external_packages: BTreeMap<Vec<String>, Vec<String>>,
     },
@@ -78,7 +78,7 @@ enum Args {
 fn get_args() -> Args {
     let app = clap::App::new("canadensis_generate_code")
         .version(clap::crate_version!())
-        .about("Generates Rust data types and serialization code from UAVCAN DSDL files")
+        .about("Generates Rust data types and serialization code from Cyphal DSDL files")
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .subcommand(SubCommand::with_name("compile").about("Parses DSDL files and generates Rust code")
         .arg(
@@ -101,7 +101,7 @@ fn get_args() -> Args {
                 .long("external-package")
                 .multiple(true)
                 .validator(validate_external_package)
-                .value_name("uavcan-package,rust-module-path")
+                .value_name("cyphal-package,rust-module-path")
                 .help("A DSDL package name and corresponding Rust module path that will not be generated"),
         ))
         .subcommand(SubCommand::with_name("print-dependencies")
@@ -135,7 +135,7 @@ fn get_args() -> Args {
 fn validate_external_package(package: String) -> Result<(), String> {
     ExternalPackage::parse(&package)
         .ok_or_else(|| {
-            "Invalid external package, expected [uavcan-package],[rust-module-path]".into()
+            "Invalid external package, expected [cyphal-package],[rust-module-path]".into()
         })
         .map(drop)
 }

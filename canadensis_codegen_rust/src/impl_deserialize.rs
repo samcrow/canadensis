@@ -64,7 +64,7 @@ fn deserialize_struct(
                         f,
                         "{} }},",
                         ReadUnalignedField {
-                            ty: &field.uavcan_ty
+                            ty: &field.cyphal_ty
                         }
                     )?;
                 }
@@ -99,7 +99,7 @@ fn deserialize_enum(f: &mut Formatter<'_>, name: &RustTypeName, genum: &Generate
             name.type_name,
             variant.name,
             ReadUnalignedField {
-                ty: &variant.uavcan_ty
+                ty: &variant.cyphal_ty
             }
         )?;
 

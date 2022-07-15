@@ -69,7 +69,7 @@ where
     ///
     /// A message larger than this will need to be split into multiple frames.
     ///
-    /// For example, UAVCAN/CAN over classic CAN can transfer up to 7 bytes per frame (the eighth
+    /// For example, Cyphal/CAN over classic CAN can transfer up to 7 bytes per frame (the eighth
     /// byte is used up by the tail byte), so it would return 7.
     fn mtu(&self) -> usize;
 }

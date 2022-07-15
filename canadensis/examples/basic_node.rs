@@ -1,4 +1,4 @@
-//! Runs a basic UAVCAN node that sends Heartbeat messages, responds to node information requests,
+//! Runs a basic Cyphal node that sends Heartbeat messages, responds to node information requests,
 //! and sends port list messages
 //!
 //! Usage: `basic_node [SocketCAN interface name] [Node ID]`

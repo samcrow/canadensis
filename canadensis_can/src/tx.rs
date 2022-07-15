@@ -1,5 +1,5 @@
 //!
-//! UAVCAN transmission
+//! Cyphal message transmission
 //!
 
 use core::convert::TryFrom;

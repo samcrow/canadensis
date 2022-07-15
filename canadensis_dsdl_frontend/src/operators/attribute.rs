@@ -93,7 +93,7 @@ fn evaluate_type_attr(
     span: Span<'_>,
 ) -> Result<Value, Error> {
     // The _bit_length_ special attribute is not part of the specification (v1.0-beta),
-    // but pyuavcan implements it and some of the public regulated data types use it.
+    // but pydsdl implements it and some of the public regulated data types use it.
     match rhs {
         "_bit_length_" => {
             let bit_length = ty.bit_length_set(cx, span)?;

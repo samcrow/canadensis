@@ -15,7 +15,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `canadensis`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+- `canadensis_bit_length_set`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+- `canadensis_bxcan`: Renamed more occurrences of UAVCAN to Cyphal, renamed frame conversion functions
+  (the original names are still available as deprecated aliases)
+- `canadensis_can`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+- `canadensis_codegen_rust`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+- `canadensis_core`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
 - `canadensis_dsdl_frontend`: Added tests for reasonable handling of cyclic dependencies between DSDL types
+- `canadensis_dsdl_frontend`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+- `canadensis_dsdl_parser`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+- `canadensis_dsdl_parser`: Removed copy of the public regulated data types. The test code uses the submodule under
+  `canadensis_dsdl_frontend` instead.
+- `canadensis_encoding`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+- `canadensis_filter_config`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+- `canadensis_linux`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+- `canadensis_macro`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+- `canadensis_pnp_client`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+- `canadensis_serial`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+- `canadensis_udp`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
 
 ## [canadensis_data_types-v0.2.2](https://github.com/samcrow/canadensis/tree/canadensis_data_types-v0.2.2) - 2022-07-14
 

@@ -1,4 +1,4 @@
-//! Runs a minimal UAVCAN node, sending Heartbeat messages (and doing nothing else)
+//! Runs a minimal Cyphal node, sending Heartbeat messages (and doing nothing else)
 //!
 //! Usage: `minimal_node [SocketCAN interface name] [Node ID]`
 //!

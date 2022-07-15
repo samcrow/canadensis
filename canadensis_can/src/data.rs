@@ -1,5 +1,5 @@
 //!
-//! Common UAVCAN data types
+//! Common Cyphal data types
 //!
 
 use core::convert::TryFrom;
@@ -66,7 +66,7 @@ pub const FRAME_CAPACITY: usize = 8;
 /// CAN or CAN FD data frame with up to 64 bytes of data and an extended 29-bit ID
 ///
 /// RTR/Error frames are not used and therefore not modeled here.
-/// CAN frames with 11-bit ID are not used by UAVCAN/CAN and so they are not supported by the library.
+/// CAN frames with 11-bit ID are not used by Cyphal/CAN and so they are not supported by the library.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Frame<I> {
     /// For RX frames: reception timestamp.

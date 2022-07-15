@@ -12,9 +12,8 @@ use walkdir::{DirEntry, WalkDir};
 #[test]
 fn parse_public_regulated_data_types() -> io::Result<()> {
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let prdt_dir = manifest_dir
-        .join("tests")
-        .join("public_regulated_data_types");
+    let prdt_dir =
+        manifest_dir.join("../canadensis_dsdl_frontend/tests/public_regulated_data_types");
 
     for entry in WalkDir::new(prdt_dir) {
         let entry = entry?;
@@ -28,7 +27,7 @@ fn parse_public_regulated_data_types() -> io::Result<()> {
 fn is_dsdl_file(entry: &DirEntry) -> bool {
     if entry.file_type().is_file() {
         match entry.file_name().to_str() {
-            Some(name) if name.ends_with(".uavcan") => true,
+            Some(name) if name.ends_with(".uavcan") || name.ends_with(".dsdl") => true,
             Some(_) | None => false,
         }
     } else {

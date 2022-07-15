@@ -1,7 +1,7 @@
 extern crate canadensis_macro;
 
 canadensis_macro::types_from_dsdl! {
-    // Load all the UAVCAN public regulated data types
+    // Load all the Cyphal public regulated data types
     package($CARGO_MANIFEST_DIR, "/../canadensis_dsdl_frontend/tests/public_regulated_data_types")
     // Declare the two packages from the public regulated data types as external, coming from
     // canadensis_data_types

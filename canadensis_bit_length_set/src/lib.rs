@@ -12,7 +12,7 @@ use crate::operator::Operator;
 
 /// A non-empty set of possible lengths (in bits) for a data type
 ///
-/// This is based on the Python version: <https://github.com/UAVCAN/pydsdl/blob/master/pydsdl/_bit_length_set/_bit_length_set.py>
+/// This is based on the Python version: <https://github.com/OpenCyphal/pydsdl/blob/master/pydsdl/_bit_length_set/_bit_length_set.py>
 #[derive(Debug, Clone)]
 pub struct BitLengthSet {
     operator: Operator,

@@ -1,7 +1,7 @@
 //!
-//! # UAVCAN/UDP transport
+//! # Cyphal/UDP transport
 //!
-//! The current version of the transport is documented at <https://pyuavcan.readthedocs.io/en/latest/api/pyuavcan.transport.udp.html>.
+//! The current version of the transport is documented at <https://pycyphal.readthedocs.io/en/latest/api/pycyphal.transport.udp.html>.
 //!
 //! This implementation requires the `std` library for sockets.
 //!
@@ -65,9 +65,9 @@ mod header;
 mod rx;
 mod tx;
 
-/// The UAVCAN/UDP transport
+/// The Cyphal/UDP transport
 ///
-/// This matches [the pyuavcan implementation](https://pyuavcan.readthedocs.io/en/latest/api/pyuavcan.transport.udp.html).
+/// This matches [the pycyphal implementation](https://pycyphal.readthedocs.io/en/latest/api/pycyphal.transport.udp.html).
 pub struct UdpTransport(());
 
 impl Transport for UdpTransport {

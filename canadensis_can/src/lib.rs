@@ -2,9 +2,9 @@
 #![deny(missing_docs)]
 
 //!
-//! # CAN and CAN FD transport for UAVCAN v1.0
+//! # CAN and CAN FD transport for Cyphal
 //!
-//! This library implements the UAVCAN/CAN transport layer. It splits transfers into frames,
+//! This library implements the Cyphal/CAN transport layer. It splits transfers into frames,
 //! reassembles frames into transfers, and keeps track of subscriptions.
 //!
 

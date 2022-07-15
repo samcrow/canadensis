@@ -45,7 +45,7 @@ uavcan.node.Health.1.0 health1
 @sealed
 ```
 
-This data type depends on the `Health` type from the UAVCAN public regulated
+This data type depends on the `Health` type from the Cyphal public regulated
 data types. Normally, you would need to compile both packages together:
 `canadensis_codegen_rust compile -o lib.rs public_regulated_data_types depends_on_prdt`.
 That would generate a file with all the public regulated data types and the

@@ -8,7 +8,7 @@ use half::f16;
 
 use crate::{Deserialize, DeserializeError};
 
-/// A cursor over a byte slice for easy deserializing of UAVCAN data types
+/// A cursor over a byte slice for easy deserializing of Cyphal data types
 ///
 /// Functions that read values will return zero when reading beyond the end of the bytes,
 /// in accordance with the implicit zero extension rule (specification section 3.7.1.5)
@@ -22,7 +22,7 @@ pub struct ReadCursor<'b> {
     /// The number of bits in the current byte that have already been read
     ///
     /// Multiple values within a byte are read from right to left:
-    /// <https://github.com/UAVCAN/specification/issues/70>
+    /// <https://github.com/OpenCyphal/specification/issues/70>
     ///
     /// Invariant: This is in the range 0..=7.
     bit_index: u8,

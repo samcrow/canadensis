@@ -23,7 +23,7 @@ const PER_FRAME_UNESCAPED_OVERHEAD: usize = 1 + 1;
 /// The frame delimiter character
 const DELIMITER: u8 = 0x0;
 
-/// A transmitter for the UAVCAN/serial transport
+/// A transmitter for the Cyphal/serial transport
 ///
 /// C is the size of the transmit queue in bytes
 pub struct SerialTransmitter<D, const C: usize> {

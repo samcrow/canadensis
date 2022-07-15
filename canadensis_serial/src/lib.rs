@@ -28,9 +28,9 @@ pub(crate) mod header_collector;
 mod rx;
 mod tx;
 
-/// The UAVCAN/Serial transport
+/// The Cyphal/Serial transport
 ///
-/// This matches [the pyuavcan implementation](https://pyuavcan.readthedocs.io/en/latest/api/pyuavcan.transport.serial.html).
+/// This matches [the pycyphal implementation](https://pycyphal.readthedocs.io/en/latest/api/pycyphal.transport.serial.html).
 pub struct SerialTransport(());
 
 impl Transport for SerialTransport {

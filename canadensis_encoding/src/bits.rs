@@ -4,7 +4,7 @@ use crate::{ReadCursor, WriteCursor};
 use core::cmp::Ordering;
 use core::fmt;
 
-/// An array of bits in a format compatible with UAVCAN serialization
+/// An array of bits in a format compatible with Cyphal serialization
 ///
 /// Because the const generics feature is incomplete, the integer generic parameter is a number
 /// of bytes (= 8 bits), not a number of bits. The functions still use bit indexes.
@@ -112,7 +112,7 @@ impl<const BYTES: usize> BitArray<BYTES> {
     /// This function panics if bit_index is greater than or equal to `self.len()`.
     fn split_index(&self, bit_index: usize) -> (usize, u8) {
         assert!(bit_index < self.bit_length);
-        // The UAVCAN serialization makes this simple
+        // The Cyphal serialization makes this simple
         let byte = bit_index / 8;
         let bit_in_byte = (bit_index % 8) as u8;
         (byte, bit_in_byte)

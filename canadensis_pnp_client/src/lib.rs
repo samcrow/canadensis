@@ -1,7 +1,7 @@
 //!
 //! # Canadensis plug-and-play client
 //!
-//! This library implements the UAVCAN plug-and-play node ID allocation protocol.
+//! This library implements the Cyphal plug-and-play node ID allocation protocol.
 //!
 
 #![no_std]

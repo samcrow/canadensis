@@ -1,4 +1,4 @@
-//! Checks that this library can compile the UAVCAN public regulated data types, Nunavut test
+//! Checks that this library can compile the Cyphal public regulated data types, Nunavut test
 //! types, and a few additional Canadensis test types
 
 extern crate canadensis_dsdl_frontend;

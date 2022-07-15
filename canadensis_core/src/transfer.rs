@@ -272,7 +272,7 @@ impl<I, T: Transport + ?Sized> Header<I, T> {
     }
 }
 
-/// A UAVCAN transfer (either incoming or outgoing)
+/// A Cyphal transfer (either incoming or outgoing)
 pub struct Transfer<A, I, T: Transport + ?Sized> {
     /// The transfer header
     pub header: Header<I, T>,

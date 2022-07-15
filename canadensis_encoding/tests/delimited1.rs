@@ -1,7 +1,7 @@
 //!
 //! Delimited serialization example
 //!
-//! <https://forum.uavcan.org/t/delimited-serialization-example/975>
+//! <https://forum.opencyphal.org/t/delimited-serialization-example/975>
 //!
 
 extern crate canadensis_encoding;

@@ -1,5 +1,5 @@
 //!
-//! UAVCAN reception
+//! Cyphal message reception and assembly
 //!
 
 mod buildup;

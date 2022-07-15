@@ -10,7 +10,7 @@ use core::ops::Add;
 
 /// A moment in time relative to some point in the past
 ///
-/// This trait defines the basic properties of an instant that UAVCAN requires.
+/// This trait defines the basic properties of an instant that Cyphal requires.
 ///
 /// # Clock requirements
 ///

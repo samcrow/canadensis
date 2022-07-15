@@ -94,7 +94,7 @@ where
         match deadline.overflow_safe_compare(&now) {
             Ordering::Greater | Ordering::Equal => {
                 // Deadline is now or in the future. Continue to transmit.
-                let frame = uavcan_frame_to_bxcan(&frame);
+                let frame = cyphal_frame_to_bxcan(&frame);
                 match self.can.transmit(&frame) {
                     Ok(status) => {
                         // Store the deadline for this frame
@@ -103,11 +103,11 @@ where
                             (status.dequeued_frame(), replaced_deadline)
                         {
                             if let Ok(removed_frame) =
-                                bxcan_frame_to_uavcan(removed_frame, removed_frame_deadline)
+                                bxcan_frame_to_cyphal(removed_frame, removed_frame_deadline)
                             {
                                 Ok(Some(removed_frame))
                             } else {
-                                // Frame that was removed is not compatible with UAVCAN, so ignore it
+                                // Frame that was removed is not compatible with Cyphal, so ignore it
                                 Ok(None)
                             }
                         } else {
@@ -144,10 +144,10 @@ where
         loop {
             match self.can.receive() {
                 Ok(frame) => {
-                    if let Ok(frame) = bxcan_frame_to_uavcan(&frame, now) {
+                    if let Ok(frame) = bxcan_frame_to_cyphal(&frame, now) {
                         break Ok(frame);
                     }
-                    // Otherwise the frame is remote or basic ID, not compatible with UAVCAN.
+                    // Otherwise the frame is remote or basic ID, not compatible with Cyphal.
                     // Try to receive another frame.
                 }
                 Err(nb::Error::WouldBlock) => break Err(nb::Error::WouldBlock),
@@ -252,17 +252,23 @@ impl<I> Default for DeadlineTracker<I> {
 /// # Panics
 ///
 /// This function panics if the provided frame has more than 8 bytes of data.
-pub fn uavcan_frame_to_bxcan<I>(frame: &canadensis_can::Frame<I>) -> bxcan::Frame {
+pub fn cyphal_frame_to_bxcan<I>(frame: &canadensis_can::Frame<I>) -> bxcan::Frame {
     let bxcan_id = bxcan::ExtendedId::new(frame.id().into()).unwrap();
     let bxcan_data = bxcan::Data::new(frame.data()).expect("Frame data more than 8 bytes");
     bxcan::Frame::new_data(bxcan_id, bxcan_data)
+}
+
+/// This function is a deprecated alias for `cyphal_frame_to_bxcan`.
+#[deprecated(note = "Renamed to cyphal_frame_to_bxcan")]
+pub fn uavcan_frame_to_bxcan<I>(frame: &canadensis_can::Frame<I>) -> bxcan::Frame {
+    cyphal_frame_to_bxcan(frame)
 }
 
 /// Converts a bxCAN frame into a Canadensis frame
 ///
 /// This function returns an error if the frame does not have an extended ID, has an ID with an
 /// invalid format, or does not have any data.
-pub fn bxcan_frame_to_uavcan<I>(
+pub fn bxcan_frame_to_cyphal<I>(
     frame: &bxcan::Frame,
     timestamp: I,
 ) -> Result<canadensis_can::Frame<I>, InvalidFrameFormat> {
@@ -270,15 +276,24 @@ pub fn bxcan_frame_to_uavcan<I>(
         bxcan::Id::Extended(extended_id) => extended_id.as_raw(),
         bxcan::Id::Standard(_) => return Err(InvalidFrameFormat),
     };
-    let uavcan_id = canadensis_can::CanId::try_from(id_bits).map_err(|_| InvalidFrameFormat)?;
-    let uavcan_data = frame.data().ok_or(InvalidFrameFormat)?;
+    let cyphal_id = canadensis_can::CanId::try_from(id_bits).map_err(|_| InvalidFrameFormat)?;
+    let cyphal_data = frame.data().ok_or(InvalidFrameFormat)?;
     Ok(canadensis_can::Frame::new(
         timestamp,
-        uavcan_id,
-        uavcan_data.as_ref(),
+        cyphal_id,
+        cyphal_data.as_ref(),
     ))
 }
 
-/// An error indicating that a frame did not have the correct format for use with UAVCAN
+/// This function is a deprecated alias for `bxcan_frame_to_cyphal`.
+#[deprecated(note = "Renamed to bxcan_frame_to_cyphal")]
+pub fn bxcan_frame_to_uavcan<I>(
+    frame: &bxcan::Frame,
+    timestamp: I,
+) -> Result<canadensis_can::Frame<I>, InvalidFrameFormat> {
+    bxcan_frame_to_cyphal(frame, timestamp)
+}
+
+/// An error indicating that a frame did not have the correct format for use with Cyphal
 #[derive(Debug)]
 pub struct InvalidFrameFormat;

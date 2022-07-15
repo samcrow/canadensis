@@ -1,10 +1,10 @@
 //!
-//! # UAVCAN acceptance filter configuration
+//! # Cyphal acceptance filter configuration
 //!
 //! This library implements the automatic hardware acceptance filter configuration described
-//! in section 4.2.4.4 of the UAVCAN specification.
+//! in section 4.2.4.4 of the Cyphal specification.
 //!
-//! To reduce the amount of CPU time spent processing messages, a UAVCAN device can use hardware
+//! To reduce the amount of CPU time spent processing messages, a Cyphal device can use hardware
 //! acceptance filters to ignore CAN messages that it is not interested in. When the application
 //! is interested in more message IDs than the number of filters that the hardware supports,
 //! this library can find a quasi-optimal set of filters that accepts all interesting message

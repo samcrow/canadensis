@@ -33,7 +33,7 @@ fn write_complex_size_expression(f: &mut Formatter, ty: &GeneratedType) -> Resul
                     GeneratedField::Data(field) => {
                         Display::fmt(
                             &WriteFieldSize {
-                                ty: &field.uavcan_ty,
+                                ty: &field.cyphal_ty,
                                 expr: &format!("self.{}", field.name),
                             },
                             f,
@@ -56,7 +56,7 @@ fn write_complex_size_expression(f: &mut Formatter, ty: &GeneratedType) -> Resul
                 writeln!(f, "{}::{}(inner) => {{", ty.name.type_name, variant.name)?;
                 Display::fmt(
                     &WriteFieldSize {
-                        ty: &variant.uavcan_ty,
+                        ty: &variant.cyphal_ty,
                         expr: "inner",
                     },
                     f,

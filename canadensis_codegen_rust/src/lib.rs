@@ -179,24 +179,24 @@ fn generate_rust_type(
 ) -> GeneratedType {
     let length = message.bit_length().clone();
     match message.kind() {
-        MessageKind::Struct(uavcan_struct) => GeneratedType::new_struct(
+        MessageKind::Struct(cyphal_struct) => GeneratedType::new_struct(
             key,
             rust_type.clone(),
             length,
             extent,
             role,
-            uavcan_struct,
+            cyphal_struct,
             message.constants().clone(),
             deprecated,
             external_packages,
         ),
-        MessageKind::Union(uavcan_union) => GeneratedType::new_enum(
+        MessageKind::Union(cyphal_union) => GeneratedType::new_enum(
             key,
             rust_type.clone(),
             length,
             extent,
             role,
-            uavcan_union,
+            cyphal_union,
             message.constants().clone(),
             deprecated,
             external_packages,
@@ -232,7 +232,7 @@ impl GeneratedItem {
 }
 
 struct GeneratedType {
-    uavcan_name: String,
+    cyphal_name: String,
     name: RustTypeName,
     size: BitLengthSet,
     extent: Extent,
@@ -254,15 +254,14 @@ impl GeneratedType {
         size: BitLengthSet,
         extent: Extent,
         role: MessageRole,
-        uavcan_struct: &Struct,
+        cyphal_struct: &Struct,
         constants: Constants,
         deprecated: bool,
         external_packages: &BTreeMap<Vec<String>, Vec<String>>,
     ) -> GeneratedType {
-        let fields = uavcan_struct
+        let fields = cyphal_struct
             .fields
             .iter()
-            .cloned()
             .map(|field| match field.kind() {
                 FieldKind::Padding(bits) => GeneratedField::Padding(*bits),
                 FieldKind::Data { ty, name } => GeneratedField::data(
@@ -290,12 +289,12 @@ impl GeneratedType {
         size: BitLengthSet,
         extent: Extent,
         role: MessageRole,
-        uavcan_union: &Union,
+        cyphal_union: &Union,
         constants: Constants,
         deprecated: bool,
         external_packages: &BTreeMap<Vec<String>, Vec<String>>,
     ) -> GeneratedType {
-        let variants = uavcan_union
+        let variants = cyphal_union
             .variants
             .iter()
             .cloned()
@@ -310,7 +309,7 @@ impl GeneratedType {
             extent,
             role,
             GeneratedTypeKind::Enum(GeneratedEnum {
-                discriminant_bits: uavcan_union.discriminant_bits,
+                discriminant_bits: cyphal_union.discriminant_bits,
                 variants,
             }),
             constants,
@@ -329,7 +328,7 @@ impl GeneratedType {
         deprecated: bool,
     ) -> Self {
         GeneratedType {
-            uavcan_name: key.to_string(),
+            cyphal_name: key.to_string(),
             name,
             size,
             extent,
@@ -386,13 +385,13 @@ enum GeneratedField {
 struct GeneratedDataField {
     name: String,
     ty: String,
-    uavcan_ty: ResolvedType,
+    cyphal_ty: ResolvedType,
     always_aligned: bool,
 }
 
 impl GeneratedDataField {
     pub fn supports_zero_copy(&self) -> bool {
-        type_supports_zero_copy(&self.uavcan_ty)
+        type_supports_zero_copy(&self.cyphal_ty)
     }
 }
 
@@ -455,7 +454,7 @@ impl GeneratedField {
         GeneratedField::Data(GeneratedDataField {
             name: make_rust_identifier(name),
             ty: to_rust_type(&ty, external_packages),
-            uavcan_ty: ty,
+            cyphal_ty: ty,
             always_aligned,
         })
     }
@@ -471,7 +470,7 @@ struct GeneratedEnum {
 struct GeneratedVariant {
     name: String,
     ty: String,
-    uavcan_ty: ResolvedType,
+    cyphal_ty: ResolvedType,
 }
 
 impl GeneratedVariant {
@@ -483,7 +482,7 @@ impl GeneratedVariant {
         GeneratedVariant {
             name: make_rust_identifier(name).to_upper_camel_case(),
             ty: to_rust_type(&ty, external_packages),
-            uavcan_ty: ty,
+            cyphal_ty: ty,
         }
     }
 }
@@ -589,7 +588,7 @@ impl RustTypeName {
         match external_module(key.name().path(), external_packages) {
             Some(mut external_module) => {
                 // For external types:
-                // [UAVCAN package path]::[snake case type name][version]::[type name]
+                // [Cyphal package path]::[snake case type name][version]::[type name]
 
                 external_module.push(version_module);
                 RustTypeName {
@@ -600,7 +599,7 @@ impl RustTypeName {
             }
             None => {
                 // For internal types:
-                // crate::[UAVCAN package path]::[snake case type name][version]::[type name]
+                // crate::[Cyphal package path]::[snake case type name][version]::[type name]
 
                 let path = key
                     .name()
@@ -632,7 +631,7 @@ impl ServiceTypeNames {
         external_packages: &BTreeMap<Vec<String>, Vec<String>>,
     ) -> Self {
         // For service types:
-        // [UAVCAN package path]::[snake case type name][version]::[type name][Request/Response]
+        // [Cyphal package path]::[snake case type name][version]::[type name][Request/Response]
 
         let base = RustTypeName::for_message_type(key, external_packages);
         let mut request = base.clone();
@@ -681,7 +680,7 @@ mod fmt_impl {
     impl Display for GeneratedType {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
             // Documentation: Cyphal type name
-            writeln!(f, "/// `{}`\n///", self.uavcan_name)?;
+            writeln!(f, "/// `{}`\n///", self.cyphal_name)?;
             let min_size = self.size.min_value();
             let max_size = self.size.max_value();
             if min_size == max_size {
@@ -764,7 +763,7 @@ mod fmt_impl {
                                     )?;
 
                                     // Update expected offset for the next field
-                                    let field_size = field.uavcan_ty.size();
+                                    let field_size = field.cyphal_ty.size();
                                     let field_size_min = field_size.min_value();
                                     let field_size_max = field_size.max_value();
                                     assert_eq!(field_size_min, field_size_max);
@@ -791,13 +790,13 @@ mod fmt_impl {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
             match self {
                 GeneratedField::Data(data) => {
-                    writeln!(f, "/// `{}`\n///", data.uavcan_ty)?;
+                    writeln!(f, "/// `{}`\n///", data.cyphal_ty)?;
                     if data.always_aligned {
                         writeln!(f, "/// Always aligned,")?;
                     } else {
                         writeln!(f, "/// Not always aligned,")?;
                     }
-                    let size = data.uavcan_ty.size();
+                    let size = data.cyphal_ty.size();
                     let size_min = size.min_value();
                     let size_max = size.max_value();
                     if size_min == size_max {
@@ -816,7 +815,7 @@ mod fmt_impl {
 
     impl Display for GeneratedVariant {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-            writeln!(f, "// {}", self.uavcan_ty)?;
+            writeln!(f, "// {}", self.cyphal_ty)?;
             writeln!(f, "{}({}),", self.name, self.ty)
         }
     }

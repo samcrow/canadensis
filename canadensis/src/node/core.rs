@@ -15,7 +15,7 @@ use crate::requester::{Requester, TransferIdTracker};
 use crate::serialize::do_serialize;
 use crate::{Node, PublishToken, ResponseToken, ServiceToken, StartSendError, TransferHandler};
 
-/// Basic UAVCAN node functionality
+/// Basic Cyphal node functionality
 ///
 /// Type parameters:
 /// * `C`: The clock used to get the current time

@@ -95,24 +95,24 @@ fn eval_make_external_function(
     external_packages: &mut BTreeMap<Vec<String>, Vec<String>>,
     arguments: proc_macro2::TokenStream,
 ) -> Result<(), proc_macro2::TokenStream> {
-    // Expect two arguments: a UAVCAN package and a Rust module path
+    // Expect two arguments: a Cyphal package and a Rust module path
     let arguments_span = arguments.span();
-    let mut uavcan_package = Vec::new();
+    let mut cyphal_package = Vec::new();
     let mut rust_module = Vec::new();
 
     let mut iter = arguments.into_iter();
-    // Loop 1: get UAVCAN package name
+    // Loop 1: get Cyphal package name
     while let Some(tree) = iter.next() {
         match tree {
             TokenTree::Ident(ident) => {
-                uavcan_package.push(ident.to_string());
+                cyphal_package.push(ident.to_string());
                 // After a package name segment, expect . or ,
                 match iter.next() {
                     Some(TokenTree::Punct(punct)) if punct.as_char() == '.' => {
                         // OK, check for the next identifier
                     }
                     Some(TokenTree::Punct(punct)) if punct.as_char() == ',' => {
-                        // OK, end of UAVCAN package
+                        // OK, end of Cyphal package
                         break;
                     }
                     Some(other) => {
@@ -130,10 +130,10 @@ fn eval_make_external_function(
         }
     }
     // Check that we got a package
-    if uavcan_package.is_empty() {
+    if cyphal_package.is_empty() {
         return Err(make_error(
             arguments_span,
-            "Expected at least one UAVCAN package name segment before comma",
+            "Expected at least one Cyphal package name segment before comma",
         ));
     }
     // Loop 2: get Rust module name
@@ -179,7 +179,7 @@ fn eval_make_external_function(
         ));
     }
 
-    match external_packages.entry(uavcan_package) {
+    match external_packages.entry(cyphal_package) {
         Entry::Vacant(entry) => {
             entry.insert(rust_module);
             Ok(())

@@ -158,17 +158,47 @@ impl TryFrom<PortId> for ServiceId {
     }
 }
 
-/// Transfer priority level mnemonics per the recommendations given in the UAVCAN Specification
-#[allow(missing_docs)]
+/// Basic transfer priority levels that all transports should support
+///
+/// Transports can define their own priority levels with more detail.
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub enum Priority {
+    /// The bus designer can ignore these messages when calculating bus load since they should
+    /// only be sent when a total system failure has occurred. For example, a self-destruct message
+    /// on a rocket would use this priority. Another analogy is an NMI on a microcontroller.
     Exceptional = 0,
+    /// Immediate is a “high priority message” but with additional latency constraints. Since
+    /// exceptional messages are not considered when designing a bus, the latency of immediate
+    /// messages can be determined by considering only immediate messages.
     Immediate = 1,
+    /// Fast and immediate are both “high priority messages” but with additional latency
+    /// constraints. Since exceptional messages are not considered when designing a bus, the latency
+    /// of fast messages can be determined by considering only immediate and fast messages.
     Fast = 2,
+    /// High priority messages are more important than nominal messages but have looser latency
+    /// requirements than fast messages. This priority is used so that, in the presence of rogue
+    /// nominal messages,important commands can be received. For example, one might envision a
+    /// failure mode where a temperature sensor starts to load a vehicle bus with nominal messages.
+    /// The vehicle remains operational (for a time) because the controller is exchanging fast and
+    /// immediate messages with sensors and actuators. A system safety monitor is able to detect the
+    /// distressed bus and command the vehicle to a safe state by sending high priority messages to
+    /// the controller.
     High = 3,
+    /// This is what all messages should use by default. Specifically the heartbeat messages should
+    /// use this priority.
     Nominal = 4,
+    /// Low priority messages are expected to be sent on a bus under all conditions but cannot
+    /// prevent the delivery of nominal messages. They are allowed to be delayed but latency should
+    /// be constrained by the bus designer.
     Low = 5,
+    /// Slow messages are low priority messages that have no time sensitivity at all. The bus
+    /// designer need only ensure that, for all possible system states, these messages will
+    /// eventually be sent.
     Slow = 6,
+    /// These messages might never be sent (theoretically) for some possible system states. The
+    /// system shall tolerate never exchanging optional messages in every possible state. The bus
+    /// designer can ignore these messages when calculating bus load. This should be the priority
+    /// used for diagnostic or debug messages that are not required on an operational system.
     Optional = 7,
 }
 

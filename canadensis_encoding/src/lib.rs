@@ -1,5 +1,5 @@
 //!
-//! # UAVCAN data type serialization and deserialization
+//! # Cyphal data type serialization and deserialization
 //!
 
 #![cfg_attr(not(test), no_std)]
@@ -16,13 +16,13 @@ pub use crate::cursor::serialize::WriteCursor;
 use core::cmp;
 use zerocopy::{AsBytes, FromBytes};
 
-/// Trait for types that can be encoded into UAVCAN transfers, or decoded from transfers
+/// Trait for types that can be encoded into Cyphal transfers, or decoded from transfers
 pub trait DataType {
     /// The sealed or delimited property of this type
     const EXTENT_BYTES: Option<u32>;
 }
 
-/// Trait for types that can be serialized into UAVCAN transfers
+/// Trait for types that can be serialized into Cyphal transfers
 pub trait Serialize: DataType {
     /// Returns the size of the encoded form of this value, in bits
     ///
@@ -43,7 +43,7 @@ pub trait Serialize: DataType {
     }
 }
 
-/// Trait for types that can be deserialized from UAVCAN transfers
+/// Trait for types that can be deserialized from Cyphal transfers
 pub trait Deserialize: DataType {
     /// Deserializes a value and returns it
     fn deserialize(cursor: &mut ReadCursor<'_>) -> Result<Self, DeserializeError>
