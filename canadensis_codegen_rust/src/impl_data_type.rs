@@ -5,9 +5,9 @@ use std::fmt::{Display, Formatter, Result};
 use crate::{GeneratedType, MessageRole};
 
 /// Implements DataType and Message, Request, or Response as appropriate
-pub(crate) struct ImplementDataType<'t>(pub &'t GeneratedType);
+pub(crate) struct ImplementDataType<'t, 'c>(pub &'t GeneratedType<'c>);
 
-impl Display for ImplementDataType<'_> {
+impl Display for ImplementDataType<'_, '_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         // Part 1: DataType and extent
         writeln!(

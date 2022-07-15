@@ -4,15 +4,15 @@ use std::iter::FromIterator;
 
 /// A tree of Rust modules that may contain items
 #[derive(Default)]
-pub(crate) struct ModuleTree {
+pub(crate) struct ModuleTree<'c> {
     /// Structs at this level
-    pub items: Vec<GeneratedItem>,
+    pub items: Vec<GeneratedItem<'c>>,
     /// Submodules
-    pub children: BTreeMap<String, ModuleTree>,
+    pub children: BTreeMap<String, ModuleTree<'c>>,
 }
 
-impl ModuleTree {
-    fn add_item(&mut self, path: &[String], generated: GeneratedItem) {
+impl<'c> ModuleTree<'c> {
+    fn add_item(&mut self, path: &[String], generated: GeneratedItem<'c>) {
         match path {
             [] => {
                 // It goes here
@@ -26,8 +26,8 @@ impl ModuleTree {
     }
 }
 
-impl FromIterator<GeneratedItem> for ModuleTree {
-    fn from_iter<T: IntoIterator<Item = GeneratedItem>>(iter: T) -> Self {
+impl<'c> FromIterator<GeneratedItem<'c>> for ModuleTree<'c> {
+    fn from_iter<T: IntoIterator<Item = GeneratedItem<'c>>>(iter: T) -> Self {
         let mut tree = ModuleTree::default();
 
         for generated_item in iter {
@@ -44,7 +44,7 @@ mod fmt_impl {
     use crate::GeneratedItem;
     use std::fmt::{Display, Formatter, Result};
 
-    impl Display for ModuleTree {
+    impl Display for ModuleTree<'_> {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
             for generated_item in &self.items {
                 writeln!(f, "{}", generated_item)?;

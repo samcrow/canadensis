@@ -22,6 +22,10 @@ pub struct Constant {
     /// The possibly-simplified value of this constant that is exposed to client code in other
     /// crates and can be used to generate code
     value: ConstantValue,
+    /// Documentation comments for this constant
+    comments: String,
+    /// The offset, in bytes into the file, of the end of this constant definition
+    end_offset: usize,
 }
 
 impl Constant {
@@ -34,6 +38,7 @@ impl Constant {
     ) -> Result<Self, Error> {
         let ty: PrimitiveType = ty.into();
         let value_span = value.span.clone();
+        let end_offset = value_span.end();
         if is_reserved_keyword(name.name) {
             return Err(span_error!(
                 name.span,
@@ -48,6 +53,8 @@ impl Constant {
             ty,
             dsdl_value,
             value,
+            comments: String::new(),
+            end_offset,
         })
     }
 
@@ -64,6 +71,25 @@ impl Constant {
     /// Returns the value of the constant
     pub fn value(&self) -> &ConstantValue {
         &self.value
+    }
+
+    /// Returns the documentation comments for this constant
+    pub fn comments(&self) -> &str {
+        &self.comments
+    }
+
+    /// Appends a newline if self.comments is not empty,
+    /// followed by the provided string, to the comments of this constant
+    pub(crate) fn append_comment(&mut self, comment: &str) {
+        if !self.comments.is_empty() {
+            self.comments.push('\n');
+        }
+        self.comments.push_str(comment);
+    }
+    /// Returns the offset in bytes from the beginning of the file of the end of the declaration
+    /// of this constant
+    pub(crate) fn end_offset(&self) -> usize {
+        self.end_offset
     }
 }
 

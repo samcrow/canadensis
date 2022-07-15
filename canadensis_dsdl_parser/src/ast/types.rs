@@ -225,6 +225,8 @@ pub enum Statement<'i> {
     PaddingField { bits: u8, span: Span<'i> },
     /// The `---` marker that separates the request and response fields in a service type
     ServiceResponseMarker(Span<'i>),
+    /// A comment, not including the # character
+    Comment(Span<'i>),
 }
 
 /// The top-level abstract syntax tree of a DSDL file

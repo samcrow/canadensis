@@ -5,12 +5,15 @@ pub mod package;
 use crate::constants::Constants;
 use crate::types::ResolvedType;
 use canadensis_bit_length_set::BitLengthSet;
+use canadensis_dsdl_parser::Span;
 
 /// A compiled DSDL type
 #[derive(Debug)]
 pub struct CompiledDsdl {
     pub fixed_port_id: Option<u32>,
     pub kind: DsdlKind,
+    /// Top-level documentation comments from the beginning of the DSDL file
+    pub comments: String,
 }
 
 /// The two types of compiled DSDL files
@@ -93,6 +96,10 @@ pub struct Field {
     kind: FieldKind,
     /// True if this field is always aligned to a multiple of 8 bits
     always_aligned: bool,
+    /// Documentation comments
+    comments: String,
+    /// The offset, in bytes into the file, of the end of this field definition
+    end_offset: usize,
 }
 
 impl Field {
@@ -101,6 +108,23 @@ impl Field {
     }
     pub fn always_aligned(&self) -> bool {
         self.always_aligned
+    }
+    /// Returns the documentation comments for this variant
+    pub fn comments(&self) -> &str {
+        &self.comments
+    }
+    /// Appends a newline if self.comments is not empty,
+    /// followed by the provided string, to the comments of this field
+    pub(crate) fn append_comment(&mut self, comment: &str) {
+        if !self.comments.is_empty() {
+            self.comments.push('\n');
+        }
+        self.comments.push_str(comment);
+    }
+    /// Returns the offset in bytes from the beginning of the file of the end of the declaration
+    /// of this field
+    pub(crate) fn end_offset(&self) -> usize {
+        self.end_offset
     }
 }
 
@@ -112,18 +136,27 @@ pub enum FieldKind {
 
 impl Field {
     /// A convenience constructor that makes a data field
-    pub(crate) fn data(ty: ResolvedType, name: String, always_aligned: bool) -> Self {
+    pub(crate) fn data(
+        ty: ResolvedType,
+        name: String,
+        always_aligned: bool,
+        span: Span<'_>,
+    ) -> Self {
         Field {
             kind: FieldKind::Data { ty, name },
             always_aligned,
+            comments: String::new(),
+            end_offset: span.end(),
         }
     }
 
     /// A convenience constructor that makes a padding field
-    pub(crate) fn padding(bits: u8, always_aligned: bool) -> Self {
+    pub(crate) fn padding(bits: u8, always_aligned: bool, span: Span<'_>) -> Self {
         Field {
             kind: FieldKind::Padding(bits),
             always_aligned,
+            comments: String::new(),
+            end_offset: span.end(),
         }
     }
 
@@ -141,13 +174,49 @@ impl Field {
 /// A variant of a union
 #[derive(Debug, Clone)]
 pub struct Variant {
-    pub ty: ResolvedType,
-    pub name: String,
+    /// The type of this variant
+    ty: ResolvedType,
+    /// The name of this variant
+    name: String,
+    /// Documentation comments
+    comments: String,
+    /// The offset, in bytes into the file, of the end of this variant definition
+    end_offset: usize,
 }
 
 impl Variant {
     /// A convenience function that makes a `Variant`
-    pub(crate) fn new(ty: ResolvedType, name: String) -> Self {
-        Variant { ty, name }
+    pub(crate) fn new(ty: ResolvedType, name: String, span: Span<'_>) -> Self {
+        Variant {
+            ty,
+            name,
+            comments: String::new(),
+            end_offset: span.end(),
+        }
+    }
+    /// Returns the type of this variant's value
+    pub fn ty(&self) -> &ResolvedType {
+        &self.ty
+    }
+    /// Returns the name of this variant
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+    /// Returns the comments that describe this variant
+    pub fn comments(&self) -> &str {
+        &self.comments
+    }
+    /// Appends a newline if self.comments is not empty,
+    /// followed by the provided string, to the comments of this variant
+    pub(crate) fn append_comment(&mut self, comment: &str) {
+        if !self.comments.is_empty() {
+            self.comments.push('\n');
+        }
+        self.comments.push_str(comment);
+    }
+    /// Returns the offset in bytes from the beginning of the file of the end of the declaration
+    /// of this variant
+    pub(crate) fn end_offset(&self) -> usize {
+        self.end_offset
     }
 }

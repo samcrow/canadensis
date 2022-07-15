@@ -8,12 +8,12 @@ use canadensis_dsdl_frontend::types::{
 use std::fmt::{Display, Formatter, Result};
 
 /// Implements Serialize for a type
-pub(crate) struct ImplementSerialize<'t> {
-    pub ty: &'t GeneratedType,
+pub(crate) struct ImplementSerialize<'t, 'c> {
+    pub ty: &'t GeneratedType<'c>,
     pub zero_copy: bool,
 }
 
-impl Display for ImplementSerialize<'_> {
+impl Display for ImplementSerialize<'_, '_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         writeln!(
             f,

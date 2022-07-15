@@ -40,6 +40,7 @@ pub(crate) fn parse_to_ast(
             Rule::statement_padding_field => {
                 ast_statements.push(parse_padding_field(statement)?);
             }
+            Rule::comment_content => ast_statements.push(Statement::Comment(statement.as_span())),
             Rule::EOI => {
                 eof_span = Some(statement.as_span());
             }
