@@ -9,9 +9,9 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 use std::collections::btree_map::Entry;
 use std::collections::BTreeMap;
-use std::iter;
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
+use std::{fs, iter};
 use walkdir::{DirEntry, WalkDir};
 
 /// The maximum length of a type name in characters, including the package name and .s but not
@@ -54,6 +54,10 @@ impl Package {
         P: AsRef<Path>,
     {
         let root = root.as_ref();
+        let metadata = fs::metadata(root)?;
+        if !metadata.is_dir() {
+            return Err(Error::NotDirectory(root.to_owned()));
+        }
         for entry in WalkDir::new(root) {
             let entry = entry.map_err(walk_dir_error(root))?;
             if is_dsdl(&entry) {

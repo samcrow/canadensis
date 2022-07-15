@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `canadensis`: `register_client` example now compiles correctly after an update to `heapless` added
   a new restriction on the size of some containers
+- `canadensis_dsdl_frontend`: `Package::add_files` now returns an error if passed a path that is not a directory
+  (this is consistent with the existing documentation)
 
 ### Changed
 

@@ -14,6 +14,8 @@ pub enum Error {
         #[source]
         inner: walkdir::Error,
     },
+    #[error("Path {} is not a directory", .0.display())]
+    NotDirectory(PathBuf),
     #[error("Failed to read DSDL file {}", .path.display())]
     FileRead {
         path: PathBuf,
