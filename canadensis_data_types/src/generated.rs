@@ -33,6 +33,7 @@ pub mod reg {
                         pub acoustic_power: crate::uavcan::si::unit::power::scalar_1_0::Scalar,
                     }
                     impl ::canadensis_encoding::DataType for Note {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Note {}
@@ -89,6 +90,7 @@ pub kinematics: crate::reg::udral::physics::kinematics::rotation::planar_0_1::Pl
 pub torque: crate::uavcan::si::unit::torque::scalar_1_0::Scalar,
 }
                         impl ::canadensis_encoding::DataType for Planar {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for Planar {}
@@ -138,6 +140,7 @@ pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTime
 pub value: crate::reg::udral::physics::dynamics::rotation::planar_0_1::Planar,
 }
                         impl ::canadensis_encoding::DataType for PlanarTs {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for PlanarTs {}
@@ -193,6 +196,7 @@ pub kinematics: crate::reg::udral::physics::kinematics::translation::linear_0_1:
 pub force: crate::uavcan::si::unit::force::scalar_1_0::Scalar,
 }
                         impl ::canadensis_encoding::DataType for Linear {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for Linear {}
@@ -242,6 +246,7 @@ pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTime
 pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear,
 }
                         impl ::canadensis_encoding::DataType for LinearTs {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for LinearTs {}
@@ -296,6 +301,7 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                         pub voltage: crate::uavcan::si::unit::voltage::scalar_1_0::Scalar,
                     }
                     impl ::canadensis_encoding::DataType for Power {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Power {}
@@ -343,6 +349,7 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                         pub value: crate::reg::udral::physics::electricity::power_0_1::Power,
                     }
                     impl ::canadensis_encoding::DataType for PowerTs {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for PowerTs {}
@@ -402,6 +409,7 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                         pub full_energy: crate::uavcan::si::unit::energy::scalar_1_0::Scalar,
                     }
                     impl ::canadensis_encoding::DataType for Source {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Source {}
@@ -450,6 +458,7 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                         pub value: crate::reg::udral::physics::electricity::source_0_1::Source,
                     }
                     impl ::canadensis_encoding::DataType for SourceTs {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for SourceTs {}
@@ -497,6 +506,7 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                                 crate::uavcan::si::unit::length::wide_vector3_1_0::WideVector3,
                         }
                         impl ::canadensis_encoding::DataType for Point {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for Point {}
@@ -550,6 +560,7 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                             pub velocity: crate::uavcan::si::unit::velocity::vector3_1_0::Vector3,
                         }
                         impl ::canadensis_encoding::DataType for PointState {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for PointState {}
@@ -603,6 +614,7 @@ pub position: crate::reg::udral::physics::kinematics::cartesian::point_var_0_1::
 pub velocity: crate::reg::udral::physics::kinematics::translation::velocity3_var_0_2::Velocity3Var,
 }
                         impl ::canadensis_encoding::DataType for PointStateVar {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for PointStateVar {}
@@ -652,6 +664,7 @@ pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTime
 pub value: crate::reg::udral::physics::kinematics::cartesian::point_state_var_0_1::PointStateVar,
 }
                         impl ::canadensis_encoding::DataType for PointStateVarTs {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for PointStateVarTs {}
@@ -704,6 +717,7 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::point_state_var_0_
                             pub covariance_urt: [::half::f16; 6],
                         }
                         impl ::canadensis_encoding::DataType for PointVar {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for PointVar {}
@@ -757,6 +771,7 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::point_state_var_0_
                                 crate::uavcan::si::unit::angle::quaternion_1_0::Quaternion,
                         }
                         impl ::canadensis_encoding::DataType for Pose {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for Pose {}
@@ -811,6 +826,7 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::point_state_var_0_
                             pub covariance_urt: [::half::f16; 21],
                         }
                         impl ::canadensis_encoding::DataType for PoseVar {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for PoseVar {}
@@ -860,6 +876,7 @@ pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTime
 pub value: crate::reg::udral::physics::kinematics::cartesian::pose_var_0_1::PoseVar,
 }
                         impl ::canadensis_encoding::DataType for PoseVarTs {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for PoseVarTs {}
@@ -913,6 +930,7 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::pose_var_0_1::Pose
                                 crate::reg::udral::physics::kinematics::cartesian::twist_0_1::Twist,
                         }
                         impl ::canadensis_encoding::DataType for State {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for State {}
@@ -966,6 +984,7 @@ pub pose: crate::reg::udral::physics::kinematics::cartesian::pose_var_0_1::PoseV
 pub twist: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::TwistVar,
 }
                         impl ::canadensis_encoding::DataType for StateVar {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for StateVar {}
@@ -1015,6 +1034,7 @@ pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTime
 pub value: crate::reg::udral::physics::kinematics::cartesian::state_var_0_1::StateVar,
 }
                         impl ::canadensis_encoding::DataType for StateVarTs {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for StateVarTs {}
@@ -1071,6 +1091,7 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::state_var_0_1::Sta
                                 crate::uavcan::si::unit::angular_velocity::vector3_1_0::Vector3,
                         }
                         impl ::canadensis_encoding::DataType for Twist {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for Twist {}
@@ -1125,6 +1146,7 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::state_var_0_1::Sta
                             pub covariance_urt: [::half::f16; 21],
                         }
                         impl ::canadensis_encoding::DataType for TwistVar {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for TwistVar {}
@@ -1174,6 +1196,7 @@ pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTime
 pub value: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::TwistVar,
 }
                         impl ::canadensis_encoding::DataType for TwistVarTs {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for TwistVarTs {}
@@ -1239,6 +1262,7 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::Twi
                                 crate::uavcan::si::unit::length::wide_scalar_1_0::WideScalar,
                         }
                         impl ::canadensis_encoding::DataType for Point {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for Point {}
@@ -1294,6 +1318,7 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::Twi
                             pub velocity: crate::uavcan::si::unit::velocity::vector3_1_0::Vector3,
                         }
                         impl ::canadensis_encoding::DataType for PointState {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for PointState {}
@@ -1347,6 +1372,7 @@ pub position: crate::reg::udral::physics::kinematics::geodetic::point_var_0_1::P
 pub velocity: crate::reg::udral::physics::kinematics::translation::velocity3_var_0_2::Velocity3Var,
 }
                         impl ::canadensis_encoding::DataType for PointStateVar {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for PointStateVar {}
@@ -1396,6 +1422,7 @@ pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTime
 pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1::PointStateVar,
 }
                         impl ::canadensis_encoding::DataType for PointStateVarTs {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for PointStateVarTs {}
@@ -1448,6 +1475,7 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1
                             pub covariance_urt: [::half::f16; 6],
                         }
                         impl ::canadensis_encoding::DataType for PointVar {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for PointVar {}
@@ -1503,6 +1531,7 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1
                                 crate::uavcan::si::unit::angle::quaternion_1_0::Quaternion,
                         }
                         impl ::canadensis_encoding::DataType for Pose {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for Pose {}
@@ -1557,6 +1586,7 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1
                             pub covariance_urt: [::half::f16; 21],
                         }
                         impl ::canadensis_encoding::DataType for PoseVar {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for PoseVar {}
@@ -1612,6 +1642,7 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1
                                 crate::reg::udral::physics::kinematics::cartesian::twist_0_1::Twist,
                         }
                         impl ::canadensis_encoding::DataType for State {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for State {}
@@ -1665,6 +1696,7 @@ pub pose: crate::reg::udral::physics::kinematics::geodetic::pose_var_0_1::PoseVa
 pub twist: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::TwistVar,
 }
                         impl ::canadensis_encoding::DataType for StateVar {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for StateVar {}
@@ -1714,6 +1746,7 @@ pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTime
 pub value: crate::reg::udral::physics::kinematics::geodetic::state_var_0_1::StateVar,
 }
                         impl ::canadensis_encoding::DataType for StateVarTs {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for StateVarTs {}
@@ -1775,6 +1808,7 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::state_var_0_1::Stat
                                 crate::uavcan::si::unit::angular_acceleration::scalar_1_0::Scalar,
                         }
                         impl ::canadensis_encoding::DataType for Planar {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for Planar {}
@@ -1828,6 +1862,7 @@ pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTime
 pub value: crate::reg::udral::physics::kinematics::rotation::planar_0_1::Planar,
 }
                         impl ::canadensis_encoding::DataType for PlanarTs {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for PlanarTs {}
@@ -1887,6 +1922,7 @@ pub value: crate::reg::udral::physics::kinematics::rotation::planar_0_1::Planar,
                                 crate::uavcan::si::unit::acceleration::scalar_1_0::Scalar,
                         }
                         impl ::canadensis_encoding::DataType for Linear {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for Linear {}
@@ -1937,6 +1973,7 @@ pub timestamp: crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTime
 pub value: crate::reg::udral::physics::kinematics::translation::linear_0_1::Linear,
 }
                         impl ::canadensis_encoding::DataType for LinearTs {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for LinearTs {}
@@ -2002,6 +2039,7 @@ pub velocity_error_variance: ::half::f16,
 pub acceleration_error_variance: ::half::f16,
 }
                         impl ::canadensis_encoding::DataType for LinearVarTs {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for LinearVarTs {}
@@ -2057,6 +2095,7 @@ pub acceleration_error_variance: ::half::f16,
                             pub error_variance: ::half::f16,
                         }
                         impl ::canadensis_encoding::DataType for Velocity1VarTs {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for Velocity1VarTs {}
@@ -2111,6 +2150,7 @@ pub acceleration_error_variance: ::half::f16,
                             pub covariance_urt: [::half::f16; 6],
                         }
                         impl ::canadensis_encoding::DataType for Velocity3Var {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for Velocity3Var {}
@@ -2175,6 +2215,7 @@ pub acceleration_error_variance: ::half::f16,
                             pub covariance_urt: [::half::f16; 6],
                         }
                         impl ::canadensis_encoding::DataType for Velocity3Var {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for Velocity3Var {}
@@ -2237,6 +2278,7 @@ pub acceleration_error_variance: ::half::f16,
                         pub blue: u8,
                     }
                     impl ::canadensis_encoding::DataType for HighColor {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for HighColor {}
@@ -2304,6 +2346,7 @@ pub acceleration_error_variance: ::half::f16,
                         pub covariance_urt: [::half::f16; 3],
                     }
                     impl ::canadensis_encoding::DataType for PressureTempVarTs {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for PressureTempVarTs {}
@@ -2359,6 +2402,7 @@ pub acceleration_error_variance: ::half::f16,
                         pub tai64n: i64,
                     }
                     impl ::canadensis_encoding::DataType for TAI64 {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for TAI64 {}
@@ -2408,6 +2452,7 @@ pub acceleration_error_variance: ::half::f16,
                         pub error_variance: f32,
                     }
                     impl ::canadensis_encoding::DataType for TAI64Var {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for TAI64Var {}
@@ -2455,6 +2500,7 @@ pub acceleration_error_variance: ::half::f16,
                         pub value: crate::reg::udral::physics::time::tai64_var_0_1::TAI64Var,
                     }
                     impl ::canadensis_encoding::DataType for TAI64VarTs {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for TAI64VarTs {}
@@ -2497,6 +2543,7 @@ pub acceleration_error_variance: ::half::f16,
                         #[repr(C, packed)]
                         pub struct _0 {}
                         impl ::canadensis_encoding::DataType for _0 {
+                            /// This type is delimited with an extent of 0 bytes.
                             const EXTENT_BYTES: Option<u32> = Some(0);
                         }
                         impl ::canadensis_encoding::Message for _0 {}
@@ -2610,6 +2657,7 @@ pub acceleration_error_variance: ::half::f16,
                             pub other: bool,
                         }
                         impl ::canadensis_encoding::DataType for FaultFlags {
+                            /// This type is sealed.
                             const EXTENT_BYTES: Option<u32> = None;
                         }
                         impl ::canadensis_encoding::Message for FaultFlags {}
@@ -2684,6 +2732,7 @@ pub acceleration_error_variance: ::half::f16,
                             pub demand_factor_pct: i8,
                         }
                         impl ::canadensis_encoding::DataType for Feedback {
+                            /// This type is delimited with an extent of 63 bytes.
                             const EXTENT_BYTES: Option<u32> = Some(63);
                         }
                         impl ::canadensis_encoding::Message for Feedback {}
@@ -2725,6 +2774,7 @@ pub acceleration_error_variance: ::half::f16,
                             #[repr(C, packed)]
                             pub struct _0 {}
                             impl ::canadensis_encoding::DataType for _0 {
+                                /// This type is delimited with an extent of 0 bytes.
                                 const EXTENT_BYTES: Option<u32> = Some(0);
                             }
                             impl ::canadensis_encoding::Message for _0 {}
@@ -2775,6 +2825,7 @@ pub acceleration_error_variance: ::half::f16,
                                 pub value: ::half::f16,
                             }
                             impl ::canadensis_encoding::DataType for Scalar {
+                                /// This type is delimited with an extent of 512 bytes.
                                 const EXTENT_BYTES: Option<u32> = Some(512);
                             }
                             impl ::canadensis_encoding::Message for Scalar {}
@@ -2823,6 +2874,7 @@ pub acceleration_error_variance: ::half::f16,
                                 pub value: [::half::f16; 2],
                             }
                             impl ::canadensis_encoding::DataType for Vector2 {
+                                /// This type is delimited with an extent of 512 bytes.
                                 const EXTENT_BYTES: Option<u32> = Some(512);
                             }
                             impl ::canadensis_encoding::Message for Vector2 {}
@@ -2871,6 +2923,7 @@ pub acceleration_error_variance: ::half::f16,
                                 pub value: [::half::f16; 31],
                             }
                             impl ::canadensis_encoding::DataType for Vector31 {
+                                /// This type is delimited with an extent of 512 bytes.
                                 const EXTENT_BYTES: Option<u32> = Some(512);
                             }
                             impl ::canadensis_encoding::Message for Vector31 {}
@@ -2919,6 +2972,7 @@ pub acceleration_error_variance: ::half::f16,
                                 pub value: [::half::f16; 3],
                             }
                             impl ::canadensis_encoding::DataType for Vector3 {
+                                /// This type is delimited with an extent of 512 bytes.
                                 const EXTENT_BYTES: Option<u32> = Some(512);
                             }
                             impl ::canadensis_encoding::Message for Vector3 {}
@@ -2967,6 +3021,7 @@ pub acceleration_error_variance: ::half::f16,
                                 pub value: [::half::f16; 4],
                             }
                             impl ::canadensis_encoding::DataType for Vector4 {
+                                /// This type is delimited with an extent of 512 bytes.
                                 const EXTENT_BYTES: Option<u32> = Some(512);
                             }
                             impl ::canadensis_encoding::Message for Vector4 {}
@@ -3015,6 +3070,7 @@ pub acceleration_error_variance: ::half::f16,
                                 pub value: [::half::f16; 6],
                             }
                             impl ::canadensis_encoding::DataType for Vector6 {
+                                /// This type is delimited with an extent of 512 bytes.
                                 const EXTENT_BYTES: Option<u32> = Some(512);
                             }
                             impl ::canadensis_encoding::Message for Vector6 {}
@@ -3063,6 +3119,7 @@ pub acceleration_error_variance: ::half::f16,
                                 pub value: [::half::f16; 8],
                             }
                             impl ::canadensis_encoding::DataType for Vector8 {
+                                /// This type is delimited with an extent of 512 bytes.
                                 const EXTENT_BYTES: Option<u32> = Some(512);
                             }
                             impl ::canadensis_encoding::Message for Vector8 {}
@@ -3133,6 +3190,7 @@ pub error_count: u32,
 pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::FaultFlags,
 }
                         impl ::canadensis_encoding::DataType for Status {
+                            /// This type is delimited with an extent of 63 bytes.
                             const EXTENT_BYTES: Option<u32> = Some(63);
                         }
                         impl ::canadensis_encoding::Message for Status {}
@@ -3179,6 +3237,7 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                         #[repr(C, packed)]
                         pub struct _0 {}
                         impl ::canadensis_encoding::DataType for _0 {
+                            /// This type is delimited with an extent of 0 bytes.
                             const EXTENT_BYTES: Option<u32> = Some(0);
                         }
                         impl ::canadensis_encoding::Message for _0 {}
@@ -3221,6 +3280,7 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                         #[repr(C, packed)]
                         pub struct _0 {}
                         impl ::canadensis_encoding::DataType for _0 {
+                            /// This type is delimited with an extent of 0 bytes.
                             const EXTENT_BYTES: Option<u32> = Some(0);
                         }
                         impl ::canadensis_encoding::Message for _0 {}
@@ -3264,6 +3324,7 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                     #[repr(C, packed)]
                     pub struct _0 {}
                     impl ::canadensis_encoding::DataType for _0 {
+                        /// This type is delimited with an extent of 0 bytes.
                         const EXTENT_BYTES: Option<u32> = Some(0);
                     }
                     impl ::canadensis_encoding::Message for _0 {}
@@ -3307,6 +3368,7 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                         pub value: u8,
                     }
                     impl ::canadensis_encoding::DataType for Error {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Error {}
@@ -3496,6 +3558,7 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                         pub name: ::heapless::Vec<u8, 64>,
                     }
                     impl ::canadensis_encoding::DataType for Parameters {
+                        /// This type is delimited with an extent of 300 bytes.
                         const EXTENT_BYTES: Option<u32> = Some(300);
                     }
                     impl ::canadensis_encoding::Message for Parameters {}
@@ -3642,6 +3705,7 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                         pub cell_voltages: ::heapless::Vec<::half::f16, 255>,
                     }
                     impl ::canadensis_encoding::DataType for Status {
+                        /// This type is delimited with an extent of 600 bytes.
                         const EXTENT_BYTES: Option<u32> = Some(600);
                     }
                     impl ::canadensis_encoding::Message for Status {}
@@ -3718,6 +3782,7 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                         pub value: u8,
                     }
                     impl ::canadensis_encoding::DataType for Technology {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Technology {}
@@ -3816,6 +3881,7 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                         pub health: crate::uavcan::node::health_1_0::Health,
                     }
                     impl ::canadensis_encoding::DataType for Heartbeat {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Heartbeat {}
@@ -3860,6 +3926,7 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                         pub value: u8,
                     }
                     impl ::canadensis_encoding::DataType for Readiness {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Readiness {}
@@ -3928,6 +3995,7 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                             crate::uavcan::si::unit::temperature::scalar_1_0::Scalar,
                     }
                     impl ::canadensis_encoding::DataType for Status {
+                        /// This type is delimited with an extent of 63 bytes.
                         const EXTENT_BYTES: Option<u32> = Some(63);
                     }
                     impl ::canadensis_encoding::Message for Status {}
@@ -4006,6 +4074,7 @@ pub mod uavcan {
                 pub text: ::heapless::Vec<u8, 112>,
             }
             impl ::canadensis_encoding::DataType for Record {
+                /// This type is delimited with an extent of 300 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(300);
             }
             impl ::canadensis_encoding::Message for Record {}
@@ -4079,6 +4148,7 @@ pub mod uavcan {
                 pub text: ::heapless::Vec<u8, 255>,
             }
             impl ::canadensis_encoding::DataType for Record {
+                /// This type is delimited with an extent of 300 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(300);
             }
             impl ::canadensis_encoding::Message for Record {}
@@ -4136,6 +4206,7 @@ pub mod uavcan {
                 pub value: u8,
             }
             impl ::canadensis_encoding::DataType for Severity {
+                /// This type is sealed.
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Message for Severity {}
@@ -4196,6 +4267,7 @@ pub mod uavcan {
                 pub value: u16,
             }
             impl ::canadensis_encoding::DataType for Error {
+                /// This type is sealed.
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Message for Error {}
@@ -4258,6 +4330,7 @@ pub mod uavcan {
                 pub path: crate::uavcan::file::path_1_0::Path,
             }
             impl ::canadensis_encoding::DataType for GetInfoRequest {
+                /// This type is delimited with an extent of 300 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(300);
             }
             impl ::canadensis_encoding::Request for GetInfoRequest {}
@@ -4342,6 +4415,7 @@ pub mod uavcan {
                 // 4 bits of padding
             }
             impl ::canadensis_encoding::DataType for GetInfoResponse {
+                /// This type is delimited with an extent of 48 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(48);
             }
             impl ::canadensis_encoding::Response for GetInfoResponse {}
@@ -4397,6 +4471,7 @@ pub mod uavcan {
                 pub path: crate::uavcan::file::path_2_0::Path,
             }
             impl ::canadensis_encoding::DataType for GetInfoRequest {
+                /// This type is delimited with an extent of 300 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(300);
             }
             impl ::canadensis_encoding::Request for GetInfoRequest {}
@@ -4480,6 +4555,7 @@ pub mod uavcan {
                 // 4 bits of padding
             }
             impl ::canadensis_encoding::DataType for GetInfoResponse {
+                /// This type is delimited with an extent of 48 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(48);
             }
             impl ::canadensis_encoding::Response for GetInfoResponse {}
@@ -4545,6 +4621,7 @@ pub mod uavcan {
                 pub directory_path: crate::uavcan::file::path_1_0::Path,
             }
             impl ::canadensis_encoding::DataType for ListRequest {
+                /// This type is delimited with an extent of 300 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(300);
             }
             impl ::canadensis_encoding::Request for ListRequest {}
@@ -4593,6 +4670,7 @@ pub mod uavcan {
                 pub entry_base_name: crate::uavcan::file::path_1_0::Path,
             }
             impl ::canadensis_encoding::DataType for ListResponse {
+                /// This type is delimited with an extent of 300 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(300);
             }
             impl ::canadensis_encoding::Response for ListResponse {}
@@ -4645,6 +4723,7 @@ pub mod uavcan {
                 pub directory_path: crate::uavcan::file::path_2_0::Path,
             }
             impl ::canadensis_encoding::DataType for ListRequest {
+                /// This type is delimited with an extent of 300 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(300);
             }
             impl ::canadensis_encoding::Request for ListRequest {}
@@ -4692,6 +4771,7 @@ pub mod uavcan {
                 pub entry_base_name: crate::uavcan::file::path_2_0::Path,
             }
             impl ::canadensis_encoding::DataType for ListResponse {
+                /// This type is delimited with an extent of 300 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(300);
             }
             impl ::canadensis_encoding::Response for ListResponse {}
@@ -4762,6 +4842,7 @@ pub mod uavcan {
                 pub destination: crate::uavcan::file::path_1_0::Path,
             }
             impl ::canadensis_encoding::DataType for ModifyRequest {
+                /// This type is delimited with an extent of 600 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(600);
             }
             impl ::canadensis_encoding::Request for ModifyRequest {}
@@ -4813,6 +4894,7 @@ pub mod uavcan {
                 pub error: crate::uavcan::file::error_1_0::Error,
             }
             impl ::canadensis_encoding::DataType for ModifyResponse {
+                /// This type is delimited with an extent of 48 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(48);
             }
             impl ::canadensis_encoding::Response for ModifyResponse {}
@@ -4878,6 +4960,7 @@ pub mod uavcan {
                 pub destination: crate::uavcan::file::path_2_0::Path,
             }
             impl ::canadensis_encoding::DataType for ModifyRequest {
+                /// This type is delimited with an extent of 600 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(600);
             }
             impl ::canadensis_encoding::Request for ModifyRequest {}
@@ -4928,6 +5011,7 @@ pub mod uavcan {
                 pub error: crate::uavcan::file::error_1_0::Error,
             }
             impl ::canadensis_encoding::DataType for ModifyResponse {
+                /// This type is delimited with an extent of 48 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(48);
             }
             impl ::canadensis_encoding::Response for ModifyResponse {}
@@ -4973,6 +5057,7 @@ pub mod uavcan {
                 pub path: ::heapless::Vec<u8, 112>,
             }
             impl ::canadensis_encoding::DataType for Path {
+                /// This type is sealed.
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Message for Path {}
@@ -5027,6 +5112,7 @@ pub mod uavcan {
                 pub path: ::heapless::Vec<u8, 255>,
             }
             impl ::canadensis_encoding::DataType for Path {
+                /// This type is sealed.
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Message for Path {}
@@ -5093,6 +5179,7 @@ pub mod uavcan {
                 pub path: crate::uavcan::file::path_1_0::Path,
             }
             impl ::canadensis_encoding::DataType for ReadRequest {
+                /// This type is delimited with an extent of 300 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(300);
             }
             impl ::canadensis_encoding::Request for ReadRequest {}
@@ -5139,6 +5226,7 @@ pub mod uavcan {
                 pub data: ::heapless::Vec<u8, 256>,
             }
             impl ::canadensis_encoding::DataType for ReadResponse {
+                /// This type is delimited with an extent of 300 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(300);
             }
             impl ::canadensis_encoding::Response for ReadResponse {}
@@ -5200,6 +5288,7 @@ pub mod uavcan {
                 pub path: crate::uavcan::file::path_2_0::Path,
             }
             impl ::canadensis_encoding::DataType for ReadRequest {
+                /// This type is delimited with an extent of 300 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(300);
             }
             impl ::canadensis_encoding::Request for ReadRequest {}
@@ -5245,6 +5334,7 @@ pub mod uavcan {
                 pub data: crate::uavcan::primitive::unstructured_1_0::Unstructured,
             }
             impl ::canadensis_encoding::DataType for ReadResponse {
+                /// This type is delimited with an extent of 300 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(300);
             }
             impl ::canadensis_encoding::Response for ReadResponse {}
@@ -5305,6 +5395,7 @@ pub mod uavcan {
                 pub data: ::heapless::Vec<u8, 192>,
             }
             impl ::canadensis_encoding::DataType for WriteRequest {
+                /// This type is delimited with an extent of 600 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(600);
             }
             impl ::canadensis_encoding::Request for WriteRequest {}
@@ -5362,6 +5453,7 @@ pub mod uavcan {
                 pub error: crate::uavcan::file::error_1_0::Error,
             }
             impl ::canadensis_encoding::DataType for WriteResponse {
+                /// This type is delimited with an extent of 48 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(48);
             }
             impl ::canadensis_encoding::Response for WriteResponse {}
@@ -5417,6 +5509,7 @@ pub mod uavcan {
                 pub data: crate::uavcan::primitive::unstructured_1_0::Unstructured,
             }
             impl ::canadensis_encoding::DataType for WriteRequest {
+                /// This type is delimited with an extent of 600 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(600);
             }
             impl ::canadensis_encoding::Request for WriteRequest {}
@@ -5461,6 +5554,7 @@ pub mod uavcan {
                 pub error: crate::uavcan::file::error_1_0::Error,
             }
             impl ::canadensis_encoding::DataType for WriteResponse {
+                /// This type is delimited with an extent of 48 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(48);
             }
             impl ::canadensis_encoding::Response for WriteResponse {}
@@ -5522,6 +5616,7 @@ pub mod uavcan {
                     pub payload: ::heapless::Vec<u8, 309>,
                 }
                 impl ::canadensis_encoding::DataType for HandleIncomingPacketRequest {
+                    /// This type is delimited with an extent of 600 bytes.
                     const EXTENT_BYTES: Option<u32> = Some(600);
                 }
                 impl ::canadensis_encoding::Request for HandleIncomingPacketRequest {}
@@ -5573,6 +5668,7 @@ pub mod uavcan {
                 #[deprecated]
                 pub struct HandleIncomingPacketResponse {}
                 impl ::canadensis_encoding::DataType for HandleIncomingPacketResponse {
+                    /// This type is delimited with an extent of 63 bytes.
                     const EXTENT_BYTES: Option<u32> = Some(63);
                 }
                 impl ::canadensis_encoding::Response for HandleIncomingPacketResponse {}
@@ -5629,6 +5725,7 @@ pub mod uavcan {
                     pub payload: ::heapless::Vec<u8, 508>,
                 }
                 impl ::canadensis_encoding::DataType for HandleIncomingPacketRequest {
+                    /// This type is delimited with an extent of 600 bytes.
                     const EXTENT_BYTES: Option<u32> = Some(600);
                 }
                 impl ::canadensis_encoding::Request for HandleIncomingPacketRequest {}
@@ -5679,6 +5776,7 @@ pub mod uavcan {
                 #[repr(C, packed)]
                 pub struct HandleIncomingPacketResponse {}
                 impl ::canadensis_encoding::DataType for HandleIncomingPacketResponse {
+                    /// This type is delimited with an extent of 63 bytes.
                     const EXTENT_BYTES: Option<u32> = Some(63);
                 }
                 impl ::canadensis_encoding::Response for HandleIncomingPacketResponse {}
@@ -5768,6 +5866,7 @@ pub mod uavcan {
                     pub payload: ::heapless::Vec<u8, 260>,
                 }
                 impl ::canadensis_encoding::DataType for OutgoingPacket {
+                    /// This type is delimited with an extent of 600 bytes.
                     const EXTENT_BYTES: Option<u32> = Some(600);
                 }
                 impl ::canadensis_encoding::Message for OutgoingPacket {}
@@ -5899,6 +5998,7 @@ pub mod uavcan {
                     pub payload: ::heapless::Vec<u8, 508>,
                 }
                 impl ::canadensis_encoding::DataType for OutgoingPacket {
+                    /// This type is delimited with an extent of 600 bytes.
                     const EXTENT_BYTES: Option<u32> = Some(600);
                 }
                 impl ::canadensis_encoding::Message for OutgoingPacket {}
@@ -5992,6 +6092,7 @@ Base(crate::uavcan::metatransport::can::base_arbitration_id_0_1::BaseArbitration
 Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::ExtendedArbitrationID),
 }
                 impl ::canadensis_encoding::DataType for ArbitrationID {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for ArbitrationID {}
@@ -6043,6 +6144,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     // 21 bits of padding
                 }
                 impl ::canadensis_encoding::DataType for BaseArbitrationID {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for BaseArbitrationID {}
@@ -6089,6 +6191,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub data: ::heapless::Vec<u8, 8>,
                 }
                 impl ::canadensis_encoding::DataType for DataClassic {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for DataClassic {}
@@ -6150,6 +6253,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub data: ::heapless::Vec<u8, 64>,
                 }
                 impl ::canadensis_encoding::DataType for DataFD {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for DataFD {}
@@ -6201,6 +6305,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     // 32 bits of padding
                 }
                 impl ::canadensis_encoding::DataType for Error {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Error {}
@@ -6239,6 +6344,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     // 3 bits of padding
                 }
                 impl ::canadensis_encoding::DataType for ExtendedArbitrationID {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for ExtendedArbitrationID {}
@@ -6289,6 +6395,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         crate::uavcan::metatransport::can::manifestation_0_1::Manifestation,
                 }
                 impl ::canadensis_encoding::DataType for Frame {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Frame {}
@@ -6341,6 +6448,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     RemoteTransmissionRequest(crate::uavcan::metatransport::can::rtr_0_1::RTR),
                 }
                 impl ::canadensis_encoding::DataType for Frame {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Frame {}
@@ -6422,6 +6530,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     RemoteTransmissionRequest(crate::uavcan::metatransport::can::rtr_0_1::RTR),
                 }
                 impl ::canadensis_encoding::DataType for Manifestation {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Manifestation {}
@@ -6490,6 +6599,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         crate::uavcan::metatransport::can::arbitration_id_0_1::ArbitrationID,
                 }
                 impl ::canadensis_encoding::DataType for RTR {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for RTR {}
@@ -6533,6 +6643,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: u16,
                 }
                 impl ::canadensis_encoding::DataType for EtherType {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for EtherType {}
@@ -6597,6 +6708,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub payload: ::heapless::Vec<u8, 9216>,
                 }
                 impl ::canadensis_encoding::DataType for Frame {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Frame {}
@@ -6690,6 +6802,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub data: ::heapless::Vec<u8, 256>,
                 }
                 impl ::canadensis_encoding::DataType for Fragment {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Fragment {}
@@ -6747,6 +6860,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub data: ::heapless::Vec<u8, 2048>,
                 }
                 impl ::canadensis_encoding::DataType for Fragment {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Fragment {}
@@ -6824,6 +6938,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     // 64 bits of padding
                 }
                 impl ::canadensis_encoding::DataType for Endpoint {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Endpoint {}
@@ -6916,6 +7031,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub data: ::heapless::Vec<u8, 9188>,
                 }
                 impl ::canadensis_encoding::DataType for Frame {
+                    /// This type is delimited with an extent of 10240 bytes.
                     const EXTENT_BYTES: Option<u32> = Some(10240);
                 }
                 impl ::canadensis_encoding::Message for Frame {}
@@ -7001,6 +7117,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub parameter: ::heapless::Vec<u8, 112>,
             }
             impl ::canadensis_encoding::DataType for ExecuteCommandRequest {
+                /// This type is delimited with an extent of 300 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(300);
             }
             impl ::canadensis_encoding::Request for ExecuteCommandRequest {}
@@ -7071,6 +7188,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub status: u8,
             }
             impl ::canadensis_encoding::DataType for ExecuteCommandResponse {
+                /// This type is delimited with an extent of 48 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(48);
             }
             impl ::canadensis_encoding::Response for ExecuteCommandResponse {}
@@ -7136,6 +7254,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub parameter: ::heapless::Vec<u8, 255>,
             }
             impl ::canadensis_encoding::DataType for ExecuteCommandRequest {
+                /// This type is delimited with an extent of 300 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(300);
             }
             impl ::canadensis_encoding::Request for ExecuteCommandRequest {}
@@ -7205,6 +7324,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub status: u8,
             }
             impl ::canadensis_encoding::DataType for ExecuteCommandResponse {
+                /// This type is delimited with an extent of 48 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(48);
             }
             impl ::canadensis_encoding::Response for ExecuteCommandResponse {}
@@ -7257,6 +7377,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             #[repr(C, packed)]
             pub struct GetInfoRequest {}
             impl ::canadensis_encoding::DataType for GetInfoRequest {
+                /// This type is sealed.
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Request for GetInfoRequest {}
@@ -7346,6 +7467,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub certificate_of_authenticity: ::heapless::Vec<u8, 222>,
             }
             impl ::canadensis_encoding::DataType for GetInfoResponse {
+                /// This type is delimited with an extent of 448 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(448);
             }
             impl ::canadensis_encoding::Response for GetInfoResponse {}
@@ -7465,6 +7587,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             #[repr(C, packed)]
             pub struct GetTransportStatisticsRequest {}
             impl ::canadensis_encoding::DataType for GetTransportStatisticsRequest {
+                /// This type is sealed.
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Request for GetTransportStatisticsRequest {}
@@ -7518,6 +7641,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ::heapless::Vec<crate::uavcan::node::io_statistics_0_1::IOStatistics, 3>,
             }
             impl ::canadensis_encoding::DataType for GetTransportStatisticsResponse {
+                /// This type is delimited with an extent of 192 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(192);
             }
             impl ::canadensis_encoding::Response for GetTransportStatisticsResponse {}
@@ -7575,7 +7699,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub value: u8,
             }
             impl ::canadensis_encoding::DataType for Health {
-                /// Test
+                /// This type is sealed.
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Message for Health {}
@@ -7650,6 +7774,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub vendor_specific_status_code: u8,
             }
             impl ::canadensis_encoding::DataType for Heartbeat {
+                /// This type is delimited with an extent of 12 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(12);
             }
             impl ::canadensis_encoding::Message for Heartbeat {}
@@ -7702,6 +7827,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub value: u16,
             }
             impl ::canadensis_encoding::DataType for ID {
+                /// This type is sealed.
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Message for ID {}
@@ -7760,6 +7886,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub num_errored: u64,
             }
             impl ::canadensis_encoding::DataType for IOStatistics {
+                /// This type is sealed.
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Message for IOStatistics {}
@@ -7803,6 +7930,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub value: u8,
             }
             impl ::canadensis_encoding::DataType for Mode {
+                /// This type is sealed.
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Message for Mode {}
@@ -7851,6 +7979,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     ServiceId(crate::uavcan::node::port::service_id_1_0::ServiceID),
                 }
                 impl ::canadensis_encoding::DataType for ID {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for ID {}
@@ -7919,6 +8048,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub servers: crate::uavcan::node::port::service_id_list_0_1::ServiceIDList,
                 }
                 impl ::canadensis_encoding::DataType for List {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for List {}
@@ -7974,6 +8104,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: u16,
                 }
                 impl ::canadensis_encoding::DataType for ServiceID {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for ServiceID {}
@@ -8017,6 +8148,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub mask: ::canadensis_encoding::bits::BitArray<64>,
                 }
                 impl ::canadensis_encoding::DataType for ServiceIDList {
+                    /// This type is delimited with an extent of 128 bytes.
                     const EXTENT_BYTES: Option<u32> = Some(128);
                 }
                 impl ::canadensis_encoding::Message for ServiceIDList {}
@@ -8062,6 +8194,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: u16,
                 }
                 impl ::canadensis_encoding::DataType for SubjectID {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for SubjectID {}
@@ -8112,6 +8245,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     Total(crate::uavcan::primitive::empty_1_0::Empty),
                 }
                 impl ::canadensis_encoding::DataType for SubjectIDList {
+                    /// This type is delimited with an extent of 4097 bytes.
                     const EXTENT_BYTES: Option<u32> = Some(4097);
                 }
                 impl ::canadensis_encoding::Message for SubjectIDList {}
@@ -8201,6 +8335,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub minor: u8,
             }
             impl ::canadensis_encoding::DataType for Version {
+                /// This type is sealed.
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Message for Version {}
@@ -8274,6 +8409,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub entries: ::heapless::Vec<crate::uavcan::pnp::cluster::entry_1_0::Entry, 1>,
                 }
                 impl ::canadensis_encoding::DataType for AppendEntriesRequest {
+                    /// This type is delimited with an extent of 96 bytes.
                     const EXTENT_BYTES: Option<u32> = Some(96);
                 }
                 impl ::canadensis_encoding::Request for AppendEntriesRequest {}
@@ -8348,6 +8484,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub success: bool,
                 }
                 impl ::canadensis_encoding::DataType for AppendEntriesResponse {
+                    /// This type is delimited with an extent of 48 bytes.
                     const EXTENT_BYTES: Option<u32> = Some(48);
                 }
                 impl ::canadensis_encoding::Response for AppendEntriesResponse {}
@@ -8402,6 +8539,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub known_nodes: ::heapless::Vec<crate::uavcan::node::id_1_0::ID, 5>,
                 }
                 impl ::canadensis_encoding::DataType for Discovery {
+                    /// This type is delimited with an extent of 96 bytes.
                     const EXTENT_BYTES: Option<u32> = Some(96);
                 }
                 impl ::canadensis_encoding::Message for Discovery {}
@@ -8484,6 +8622,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub node_id: crate::uavcan::node::id_1_0::ID,
                 }
                 impl ::canadensis_encoding::DataType for Entry {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Entry {}
@@ -8545,6 +8684,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub last_log_index: u16,
                 }
                 impl ::canadensis_encoding::DataType for RequestVoteRequest {
+                    /// This type is delimited with an extent of 48 bytes.
                     const EXTENT_BYTES: Option<u32> = Some(48);
                 }
                 impl ::canadensis_encoding::Request for RequestVoteRequest {}
@@ -8601,6 +8741,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub vote_granted: bool,
                 }
                 impl ::canadensis_encoding::DataType for RequestVoteResponse {
+                    /// This type is delimited with an extent of 48 bytes.
                     const EXTENT_BYTES: Option<u32> = Some(48);
                 }
                 impl ::canadensis_encoding::Response for RequestVoteResponse {}
@@ -8655,6 +8796,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub allocated_node_id: ::heapless::Vec<crate::uavcan::node::id_1_0::ID, 1>,
             }
             impl ::canadensis_encoding::DataType for NodeIDAllocationData {
+                /// This type is sealed.
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Message for NodeIDAllocationData {}
@@ -8724,6 +8866,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub unique_id: [u8; 16],
             }
             impl ::canadensis_encoding::DataType for NodeIDAllocationData {
+                /// This type is delimited with an extent of 48 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(48);
             }
             impl ::canadensis_encoding::Message for NodeIDAllocationData {}
@@ -8776,6 +8919,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: ::canadensis_encoding::bits::BitArray<256>,
                 }
                 impl ::canadensis_encoding::DataType for Bit {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Bit {}
@@ -8821,6 +8965,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: ::heapless::Vec<i16, 128>,
                 }
                 impl ::canadensis_encoding::DataType for Integer16 {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Integer16 {}
@@ -8874,6 +9019,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: ::heapless::Vec<i32, 64>,
                 }
                 impl ::canadensis_encoding::DataType for Integer32 {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Integer32 {}
@@ -8927,6 +9073,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: ::heapless::Vec<i64, 32>,
                 }
                 impl ::canadensis_encoding::DataType for Integer64 {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Integer64 {}
@@ -8980,6 +9127,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: ::heapless::Vec<i8, 256>,
                 }
                 impl ::canadensis_encoding::DataType for Integer8 {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Integer8 {}
@@ -9033,6 +9181,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: ::heapless::Vec<u16, 128>,
                 }
                 impl ::canadensis_encoding::DataType for Natural16 {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Natural16 {}
@@ -9086,6 +9235,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: ::heapless::Vec<u32, 64>,
                 }
                 impl ::canadensis_encoding::DataType for Natural32 {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Natural32 {}
@@ -9139,6 +9289,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: ::heapless::Vec<u64, 32>,
                 }
                 impl ::canadensis_encoding::DataType for Natural64 {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Natural64 {}
@@ -9192,6 +9343,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: ::heapless::Vec<u8, 256>,
                 }
                 impl ::canadensis_encoding::DataType for Natural8 {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Natural8 {}
@@ -9245,6 +9397,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: ::heapless::Vec<::half::f16, 128>,
                 }
                 impl ::canadensis_encoding::DataType for Real16 {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Real16 {}
@@ -9300,6 +9453,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: ::heapless::Vec<f32, 64>,
                 }
                 impl ::canadensis_encoding::DataType for Real32 {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Real32 {}
@@ -9355,6 +9509,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: ::heapless::Vec<f64, 32>,
                 }
                 impl ::canadensis_encoding::DataType for Real64 {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Real64 {}
@@ -9405,6 +9560,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             #[repr(C, packed)]
             pub struct Empty {}
             impl ::canadensis_encoding::DataType for Empty {
+                /// This type is sealed.
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Message for Empty {}
@@ -9445,6 +9601,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: bool,
                 }
                 impl ::canadensis_encoding::DataType for Bit {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Bit {}
@@ -9484,6 +9641,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: i16,
                 }
                 impl ::canadensis_encoding::DataType for Integer16 {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Integer16 {}
@@ -9526,6 +9684,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: i32,
                 }
                 impl ::canadensis_encoding::DataType for Integer32 {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Integer32 {}
@@ -9568,6 +9727,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: i64,
                 }
                 impl ::canadensis_encoding::DataType for Integer64 {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Integer64 {}
@@ -9610,6 +9770,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: i8,
                 }
                 impl ::canadensis_encoding::DataType for Integer8 {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Integer8 {}
@@ -9652,6 +9813,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: u16,
                 }
                 impl ::canadensis_encoding::DataType for Natural16 {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Natural16 {}
@@ -9694,6 +9856,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: u32,
                 }
                 impl ::canadensis_encoding::DataType for Natural32 {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Natural32 {}
@@ -9736,6 +9899,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: u64,
                 }
                 impl ::canadensis_encoding::DataType for Natural64 {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Natural64 {}
@@ -9778,6 +9942,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: u8,
                 }
                 impl ::canadensis_encoding::DataType for Natural8 {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Natural8 {}
@@ -9822,6 +9987,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: ::half::f16,
                 }
                 impl ::canadensis_encoding::DataType for Real16 {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Real16 {}
@@ -9866,6 +10032,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: f32,
                 }
                 impl ::canadensis_encoding::DataType for Real32 {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Real32 {}
@@ -9910,6 +10077,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     pub value: f64,
                 }
                 impl ::canadensis_encoding::DataType for Real64 {
+                    /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
                 }
                 impl ::canadensis_encoding::Message for Real64 {}
@@ -9953,6 +10121,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub value: ::heapless::Vec<u8, 256>,
             }
             impl ::canadensis_encoding::DataType for String {
+                /// This type is sealed.
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Message for String {}
@@ -10004,6 +10173,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub value: ::heapless::Vec<u8, 256>,
             }
             impl ::canadensis_encoding::DataType for Unstructured {
+                /// This type is sealed.
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Message for Unstructured {}
@@ -10069,6 +10239,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub value: crate::uavcan::register::value_1_0::Value,
             }
             impl ::canadensis_encoding::DataType for AccessRequest {
+                /// This type is sealed.
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Request for AccessRequest {}
@@ -10134,6 +10305,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub value: crate::uavcan::register::value_1_0::Value,
             }
             impl ::canadensis_encoding::DataType for AccessResponse {
+                /// This type is sealed.
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Response for AccessResponse {}
@@ -10188,6 +10360,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub index: u16,
             }
             impl ::canadensis_encoding::DataType for ListRequest {
+                /// This type is sealed.
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Request for ListRequest {}
@@ -10231,6 +10404,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub name: crate::uavcan::register::name_1_0::Name,
             }
             impl ::canadensis_encoding::DataType for ListResponse {
+                /// This type is sealed.
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Response for ListResponse {}
@@ -10270,6 +10444,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub name: ::heapless::Vec<u8, 255>,
             }
             impl ::canadensis_encoding::DataType for Name {
+                /// This type is sealed.
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Message for Name {}
@@ -10376,6 +10551,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 Real16(crate::uavcan::primitive::array::real16_1_0::Real16),
             }
             impl ::canadensis_encoding::DataType for Value {
+                /// This type is sealed.
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Message for Value {}
@@ -10515,6 +10691,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub meter_per_second_per_second: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -10560,6 +10737,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub meter_per_second_per_second: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Vector3 {}
@@ -10611,6 +10789,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub wxyz: [f32; 4],
                     }
                     impl ::canadensis_encoding::DataType for Quaternion {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Quaternion {}
@@ -10665,6 +10844,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub radian: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -10712,6 +10892,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub radian_per_second_per_second: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -10757,6 +10938,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub radian_per_second_per_second: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Vector3 {}
@@ -10808,6 +10990,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub radian_per_second: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -10853,6 +11036,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub radian_per_second: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Vector3 {}
@@ -10904,6 +11088,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub second: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -10949,6 +11134,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub second: f64,
                     }
                     impl ::canadensis_encoding::DataType for WideScalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for WideScalar {}
@@ -10996,6 +11182,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub coulomb: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -11043,6 +11230,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub ampere: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -11090,6 +11278,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub joule: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -11137,6 +11326,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub newton: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -11182,6 +11372,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub newton: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Vector3 {}
@@ -11233,6 +11424,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub hertz: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -11280,6 +11472,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub meter: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -11325,6 +11518,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub meter: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Vector3 {}
@@ -11374,6 +11568,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub meter: f64,
                     }
                     impl ::canadensis_encoding::DataType for WideScalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for WideScalar {}
@@ -11419,6 +11614,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub meter: [f64; 3],
                     }
                     impl ::canadensis_encoding::DataType for WideVector3 {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for WideVector3 {}
@@ -11470,6 +11666,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub tesla: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -11515,6 +11712,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub tesla: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Vector3 {}
@@ -11566,6 +11764,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub kilogram: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -11613,6 +11812,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub watt: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -11660,6 +11860,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub pascal: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -11707,6 +11908,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub kelvin: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -11754,6 +11956,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub newton_meter: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -11799,6 +12002,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub newton_meter: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Vector3 {}
@@ -11850,6 +12054,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub meter_per_second: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -11895,6 +12100,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub meter_per_second: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Vector3 {}
@@ -11946,6 +12152,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub volt: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -11993,6 +12200,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub cubic_meter: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -12040,6 +12248,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub cubic_meter_per_second: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -12085,6 +12294,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub meter_per_second_per_second: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -12130,6 +12340,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub meter_per_second_per_second: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Vector3 {}
@@ -12177,6 +12388,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub wxyz: [f32; 4],
                     }
                     impl ::canadensis_encoding::DataType for Quaternion {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Quaternion {}
@@ -12219,6 +12431,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub radian: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -12263,6 +12476,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub radian_per_second_per_second: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -12308,6 +12522,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub radian_per_second_per_second: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Vector3 {}
@@ -12355,6 +12570,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub radian_per_second: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -12397,6 +12613,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub radian_per_second: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Vector3 {}
@@ -12441,6 +12658,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub second: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -12483,6 +12701,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub second: f64,
                     }
                     impl ::canadensis_encoding::DataType for WideScalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for WideScalar {}
@@ -12527,6 +12746,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub coulomb: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -12571,6 +12791,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub ampere: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -12615,6 +12836,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub joule: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -12659,6 +12881,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub newton: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -12701,6 +12924,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub newton: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Vector3 {}
@@ -12745,6 +12969,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub hertz: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -12789,6 +13014,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub meter: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -12831,6 +13057,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub meter: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Vector3 {}
@@ -12873,6 +13100,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub meter: f64,
                     }
                     impl ::canadensis_encoding::DataType for WideScalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for WideScalar {}
@@ -12915,6 +13143,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub meter: [f64; 3],
                     }
                     impl ::canadensis_encoding::DataType for WideVector3 {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for WideVector3 {}
@@ -12959,6 +13188,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub tesla: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -13001,6 +13231,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub tesla: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Vector3 {}
@@ -13045,6 +13276,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub kilogram: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -13089,6 +13321,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub watt: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -13133,6 +13366,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub pascal: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -13177,6 +13411,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub kelvin: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -13221,6 +13456,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub newton_meter: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -13263,6 +13499,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub newton_meter: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Vector3 {}
@@ -13307,6 +13544,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub meter_per_second: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -13349,6 +13587,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub meter_per_second: [f32; 3],
                     }
                     impl ::canadensis_encoding::DataType for Vector3 {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Vector3 {}
@@ -13393,6 +13632,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub volt: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -13437,6 +13677,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub cubic_meter: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -13481,6 +13722,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                         pub cubic_meter_per_second: f32,
                     }
                     impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
                         const EXTENT_BYTES: Option<u32> = None;
                     }
                     impl ::canadensis_encoding::Message for Scalar {}
@@ -13529,6 +13771,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             #[repr(C, packed)]
             pub struct GetSynchronizationMasterInfoRequest {}
             impl ::canadensis_encoding::DataType for GetSynchronizationMasterInfoRequest {
+                /// This type is delimited with an extent of 48 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(48);
             }
             impl ::canadensis_encoding::Request for GetSynchronizationMasterInfoRequest {}
@@ -13588,6 +13831,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub tai_info: crate::uavcan::time::tai_info_0_1::TAIInfo,
             }
             impl ::canadensis_encoding::DataType for GetSynchronizationMasterInfoResponse {
+                /// This type is delimited with an extent of 192 bytes.
                 const EXTENT_BYTES: Option<u32> = Some(192);
             }
             impl ::canadensis_encoding::Response for GetSynchronizationMasterInfoResponse {}
@@ -13636,6 +13880,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub previous_transmission_timestamp_microsecond: u64,
             }
             impl ::canadensis_encoding::DataType for Synchronization {
+                /// This type is sealed.
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Message for Synchronization {}
@@ -13682,6 +13927,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub microsecond: u64,
             }
             impl ::canadensis_encoding::DataType for SynchronizedTimestamp {
+                /// This type is sealed.
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Message for SynchronizedTimestamp {}
@@ -13726,6 +13972,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub difference_tai_minus_utc: u16,
             }
             impl ::canadensis_encoding::DataType for TAIInfo {
+                /// This type is sealed.
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Message for TAIInfo {}
@@ -13769,6 +14016,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub value: u8,
             }
             impl ::canadensis_encoding::DataType for TimeSystem {
+                /// This type is sealed.
                 const EXTENT_BYTES: Option<u32> = None;
             }
             impl ::canadensis_encoding::Message for TimeSystem {}

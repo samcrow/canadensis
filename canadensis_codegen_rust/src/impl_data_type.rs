@@ -16,10 +16,19 @@ impl Display for ImplementDataType<'_, '_> {
             self.0.name.type_name
         )?;
         match self.0.extent {
-            Extent::Sealed => writeln!(f, "const EXTENT_BYTES: Option<u32> = None;")?,
+            Extent::Sealed => {
+                writeln!(f, "/// This type is sealed.")?;
+                writeln!(f, "const EXTENT_BYTES: Option<u32> = None;")?;
+            }
             Extent::Delimited(extent_bits) => {
                 let extent_bytes = extent_bits / 8;
                 let extent_bytes = u32::try_from(extent_bytes).expect("Extent too large for u32");
+
+                writeln!(
+                    f,
+                    "/// This type is delimited with an extent of {} bytes.",
+                    extent_bytes
+                )?;
                 writeln!(
                     f,
                     "const EXTENT_BYTES: Option<u32> = Some({});",
