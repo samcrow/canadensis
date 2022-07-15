@@ -258,7 +258,7 @@ pub fn cyphal_frame_to_bxcan<I>(frame: &canadensis_can::Frame<I>) -> bxcan::Fram
     bxcan::Frame::new_data(bxcan_id, bxcan_data)
 }
 
-/// This function is a deprecated alias for `cyphal_frame_to_bxcan`.
+/// This function is a deprecated alias for [`cyphal_frame_to_bxcan`].
 #[deprecated(note = "Renamed to cyphal_frame_to_bxcan")]
 pub fn uavcan_frame_to_bxcan<I>(frame: &canadensis_can::Frame<I>) -> bxcan::Frame {
     cyphal_frame_to_bxcan(frame)
@@ -285,7 +285,7 @@ pub fn bxcan_frame_to_cyphal<I>(
     ))
 }
 
-/// This function is a deprecated alias for `bxcan_frame_to_cyphal`.
+/// This function is a deprecated alias for [`bxcan_frame_to_cyphal`].
 #[deprecated(note = "Renamed to bxcan_frame_to_cyphal")]
 pub fn bxcan_frame_to_uavcan<I>(
     frame: &bxcan::Frame,
