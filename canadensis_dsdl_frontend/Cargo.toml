@@ -1,6 +1,6 @@
 [package]
 name = "canadensis_dsdl_frontend"
-version = "0.3.1"
+version = "0.3.2"
 edition = "2018"
 keywords = ["uavcan", "cyphal"]
 description = "Compiler front-end for the Cyphal Data Structure Description Language"
