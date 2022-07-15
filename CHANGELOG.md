@@ -6,32 +6,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### Added
-
-- `canadensis_dsdl_frontend`: Support the new `.dsdl` extension for cyphal data types [#12](https://github.com/samcrow/canadensis/pull/12)
-- `canadensis_dsdl_frontend`: Report warnings for type and field names that do
-  not follow the DSDL case conventions
-- `canadensis_data_types`: Generated types are marked as deprecated if the
-  corresponding DSDL types are deprecated
-
 ### Fixed
 
 - `canadensis`: `register_client` example now compiles correctly after an update to `heapless` added
   a new restriction on the size of some containers
-- `canadensis_dsdl_frontend`: Fixed a bug that caused service responses to
-  not be marked as deprecated
-- `canadensis_dsdl_frontend`: Added a check that prohibits using a deprecated
-  type in a non-deprecated type (the specification requires this check)
-- `canadensis_data_types`: Fixed a bug in generated code that caused variable-
+
+## [canadensis_data_types-v0.2.2](https://github.com/samcrow/canadensis/tree/canadensis_data_types-v0.2.2) - 2022-07-14
+
+### Added
+
+- Generated types are marked as deprecated if the
+  corresponding DSDL types are deprecated
+
+### Fixed
+
+- Fixed a bug in generated code that caused variable-
   length bit arrays to be serialized incorrectly (missing the length field)
 
 ### Changed
 
-- `canadensis_dsdl_frontend`: The public regulated data types in `canadensis_dsdl_frontend` are now a submodule. This should not
-  impact any downstream code, but `git clone --recursive` is now required to make all the tests pass.
-  [#13](https://github.com/samcrow/canadensis/pull/13)
-- `canadensis_dsdl_frontend`: Improved performance by adding a special case for BitLengthSet % integer
-- `canadensis_data_types`: Improved documentation of generated fields
+- Improved documentation of generated fields
 
 ## [canadensis_codegen_rust-v0.3.1](https://github.com/samcrow/canadensis/tree/canadensis_codegen_rust-v0.3.1) - 2022-07-14
 
@@ -54,6 +48,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   panicking when run with no subcommand
 - Improved documentation of generated fields
 
+## [canadensis_dsdl_frontend-v0.3.2](https://github.com/samcrow/canadensis/tree/canadensis_dsdl_frontend-v0.3.2) - 2022-07-14
+
+### Added
+
+- Support the new `.dsdl` extension for cyphal data types [#12](https://github.com/samcrow/canadensis/pull/12)
+- Report warnings for type and field names that do
+  not follow the DSDL case conventions
+
+### Fixed
+
+- Fixed a bug that caused service responses to
+  not be marked as deprecated
+- Added a check that prohibits using a deprecated
+  type in a non-deprecated type (the specification requires this check)
+
+### Changed
+
+- The public regulated data types in `canadensis_dsdl_frontend` are now a submodule. This should not
+  impact any downstream code, but `git clone --recursive` is now required to make all the tests pass.
+  [#13](https://github.com/samcrow/canadensis/pull/13)
+- Improved performance by adding a special case for BitLengthSet % integer
 
 ## [canadensis_dsdl_frontend-v0.3.1](https://github.com/samcrow/canadensis/tree/canadensis_dsdl_frontend-v0.3.1) - 2022-06-10
 
