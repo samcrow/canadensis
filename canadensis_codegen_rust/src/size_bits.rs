@@ -33,7 +33,7 @@ fn write_complex_size_expression(f: &mut Formatter, ty: &GeneratedType) -> Resul
                     GeneratedField::Data(field) => {
                         Display::fmt(
                             &WriteFieldSize {
-                                ty: &field.cyphal_ty,
+                                ty: field.cyphal_ty,
                                 expr: &format!("self.{}", field.name),
                             },
                             f,

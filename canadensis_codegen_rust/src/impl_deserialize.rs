@@ -64,7 +64,7 @@ fn deserialize_struct(
                         f,
                         "{} }},",
                         ReadUnalignedField {
-                            ty: &field.cyphal_ty
+                            ty: field.cyphal_ty
                         }
                     )?;
                 }
