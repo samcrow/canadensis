@@ -1,6 +1,7 @@
 definition  = _{ SOI ~ line ~ (end_of_line ~ line)* ~ EOI } // An empty file is a valid definition. Trailing end-of-line is optional.
 line        = _{ statement? ~ ws? ~ comment? }    // An empty line is a valid line.
-comment     = _{ "#" ~ (!("\r" | "\n") ~ ANY)* }  // ~r"#[^\r\n]*" (silent rule)
+comment     = _{ "#" ~ comment_content }  // (silent rule)
+comment_content = { (!("\r" | "\n") ~ ANY)* } // ~r"#[^\r\n]*"
 end_of_line = _{ "\r"? ~ "\n" }                 // Optional CR, then LF
 ws  = _{ (" " | "\t")+ }               // White space (silent rule)
 

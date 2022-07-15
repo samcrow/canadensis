@@ -9,12 +9,12 @@ use crate::{
     GeneratedEnum, GeneratedField, GeneratedStruct, GeneratedType, GeneratedTypeKind, RustTypeName,
 };
 
-pub(crate) struct ImplementDeserialize<'t> {
-    pub ty: &'t GeneratedType,
+pub(crate) struct ImplementDeserialize<'t, 'c> {
+    pub ty: &'t GeneratedType<'c>,
     pub zero_copy: bool,
 }
 
-impl Display for ImplementDeserialize<'_> {
+impl Display for ImplementDeserialize<'_, '_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         writeln!(
             f,

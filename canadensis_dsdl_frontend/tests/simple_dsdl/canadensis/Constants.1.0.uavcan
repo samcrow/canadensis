@@ -1,3 +1,5 @@
+# This is a type with some constants and assertions
+
 uint8 A = 37
 uint16 B = 9 / 2 * 4
 uint16 C = A * B

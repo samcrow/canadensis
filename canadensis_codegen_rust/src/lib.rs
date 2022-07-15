@@ -43,10 +43,10 @@ memoffset = "0.6.4"
 /// `external_packages` is a map from DSDL package names to Rust module paths. A DSDL type in
 /// one of these packages (or any subpackage) will not have Rust code generated. Instead, any
 /// references to that type will refer to external Rust code in the corresponding module.
-pub fn generate_code(
-    package: &CompiledPackage,
+pub fn generate_code<'c>(
+    package: &'c CompiledPackage,
     external_packages: &BTreeMap<Vec<String>, Vec<String>>,
-) -> GeneratedModule {
+) -> GeneratedModule<'c> {
     let mut generated_types = Vec::new();
 
     for (key, dsdl) in package {
@@ -82,11 +82,11 @@ fn external_module(
     None
 }
 
-fn generate_from_dsdl(
+fn generate_from_dsdl<'c>(
     key: &TypeKey,
-    dsdl: &CompiledDsdl,
+    dsdl: &'c CompiledDsdl,
     external_packages: &BTreeMap<Vec<String>, Vec<String>>,
-    items: &mut Vec<GeneratedItem>,
+    items: &mut Vec<GeneratedItem<'c>>,
 ) {
     match &dsdl.kind {
         DsdlKind::Message(message) => {
@@ -117,6 +117,7 @@ fn generate_from_dsdl(
                 message.extent().clone(),
                 MessageRole::Message,
                 message.deprecated(),
+                &dsdl.comments,
                 external_packages,
             )));
         }
@@ -148,6 +149,7 @@ fn generate_from_dsdl(
                 request.extent().clone(),
                 MessageRole::Request,
                 request.deprecated(),
+                &dsdl.comments,
                 external_packages,
             )));
             items.push(GeneratedItem::Type(generate_rust_type(
@@ -157,6 +159,7 @@ fn generate_from_dsdl(
                 response.extent().clone(),
                 MessageRole::Response,
                 response.deprecated(),
+                &dsdl.comments,
                 external_packages,
             )));
         }
@@ -164,19 +167,20 @@ fn generate_from_dsdl(
 }
 
 /// A module of generated Rust code
-pub struct GeneratedModule {
-    tree: ModuleTree,
+pub struct GeneratedModule<'c> {
+    tree: ModuleTree<'c>,
 }
 
-fn generate_rust_type(
+fn generate_rust_type<'c>(
     key: &TypeKey,
     message: &Message,
     rust_type: &RustTypeName,
     extent: Extent,
     role: MessageRole,
     deprecated: bool,
+    comments: &'c str,
     external_packages: &BTreeMap<Vec<String>, Vec<String>>,
-) -> GeneratedType {
+) -> GeneratedType<'c> {
     let length = message.bit_length().clone();
     match message.kind() {
         MessageKind::Struct(cyphal_struct) => GeneratedType::new_struct(
@@ -188,6 +192,7 @@ fn generate_rust_type(
             cyphal_struct,
             message.constants().clone(),
             deprecated,
+            comments,
             external_packages,
         ),
         MessageKind::Union(cyphal_union) => GeneratedType::new_enum(
@@ -199,13 +204,14 @@ fn generate_rust_type(
             cyphal_union,
             message.constants().clone(),
             deprecated,
+            comments,
             external_packages,
         ),
     }
 }
 
-enum GeneratedItem {
-    Type(GeneratedType),
+enum GeneratedItem<'c> {
+    Type(GeneratedType<'c>),
     Constant {
         name: RustTypeName,
         ty: String,
@@ -214,7 +220,7 @@ enum GeneratedItem {
     },
 }
 
-impl GeneratedItem {
+impl<'c> GeneratedItem<'c> {
     pub fn name(&self) -> &RustTypeName {
         match self {
             GeneratedItem::Type(ty) => &ty.name,
@@ -231,7 +237,7 @@ impl GeneratedItem {
     }
 }
 
-struct GeneratedType {
+struct GeneratedType<'c> {
     cyphal_name: String,
     name: RustTypeName,
     size: BitLengthSet,
@@ -240,6 +246,7 @@ struct GeneratedType {
     kind: GeneratedTypeKind,
     constants: Constants,
     deprecated: bool,
+    comments: &'c str,
 }
 
 enum GeneratedTypeKind {
@@ -247,7 +254,7 @@ enum GeneratedTypeKind {
     Enum(GeneratedEnum),
 }
 
-impl GeneratedType {
+impl<'c> GeneratedType<'c> {
     pub fn new_struct(
         key: &TypeKey,
         name: RustTypeName,
@@ -257,8 +264,9 @@ impl GeneratedType {
         cyphal_struct: &Struct,
         constants: Constants,
         deprecated: bool,
+        comments: &'c str,
         external_packages: &BTreeMap<Vec<String>, Vec<String>>,
-    ) -> GeneratedType {
+    ) -> Self {
         let fields = cyphal_struct
             .fields
             .iter()
@@ -268,6 +276,7 @@ impl GeneratedType {
                     ty.clone(),
                     name.clone(),
                     field.always_aligned(),
+                    field.comments().to_owned(),
                     external_packages,
                 ),
             })
@@ -281,6 +290,7 @@ impl GeneratedType {
             GeneratedTypeKind::Struct(GeneratedStruct { fields }),
             constants,
             deprecated,
+            comments,
         )
     }
     pub fn new_enum(
@@ -292,14 +302,20 @@ impl GeneratedType {
         cyphal_union: &Union,
         constants: Constants,
         deprecated: bool,
+        comments: &'c str,
         external_packages: &BTreeMap<Vec<String>, Vec<String>>,
-    ) -> GeneratedType {
+    ) -> Self {
         let variants = cyphal_union
             .variants
             .iter()
             .cloned()
             .map(|variant| {
-                GeneratedVariant::new(variant.ty.clone(), variant.name, external_packages)
+                GeneratedVariant::new(
+                    variant.ty().clone(),
+                    variant.name().to_owned(),
+                    external_packages,
+                    variant.comments().to_owned(),
+                )
             })
             .collect();
         GeneratedType::new(
@@ -314,6 +330,7 @@ impl GeneratedType {
             }),
             constants,
             deprecated,
+            comments,
         )
     }
 
@@ -326,6 +343,7 @@ impl GeneratedType {
         kind: GeneratedTypeKind,
         constants: Constants,
         deprecated: bool,
+        comments: &'c str,
     ) -> Self {
         GeneratedType {
             cyphal_name: key.to_string(),
@@ -336,6 +354,7 @@ impl GeneratedType {
             kind,
             constants,
             deprecated,
+            comments,
         }
     }
 
@@ -387,6 +406,7 @@ struct GeneratedDataField {
     ty: String,
     cyphal_ty: ResolvedType,
     always_aligned: bool,
+    comments: String,
 }
 
 impl GeneratedDataField {
@@ -449,6 +469,7 @@ impl GeneratedField {
         ty: ResolvedType,
         name: String,
         always_aligned: bool,
+        comments: String,
         external_packages: &BTreeMap<Vec<String>, Vec<String>>,
     ) -> Self {
         GeneratedField::Data(GeneratedDataField {
@@ -456,6 +477,7 @@ impl GeneratedField {
             ty: to_rust_type(&ty, external_packages),
             cyphal_ty: ty,
             always_aligned,
+            comments,
         })
     }
 }
@@ -471,6 +493,7 @@ struct GeneratedVariant {
     name: String,
     ty: String,
     cyphal_ty: ResolvedType,
+    comments: String,
 }
 
 impl GeneratedVariant {
@@ -478,11 +501,13 @@ impl GeneratedVariant {
         ty: ResolvedType,
         name: String,
         external_packages: &BTreeMap<Vec<String>, Vec<String>>,
+        comments: String,
     ) -> Self {
         GeneratedVariant {
             name: make_rust_identifier(name).to_upper_camel_case(),
             ty: to_rust_type(&ty, external_packages),
             cyphal_ty: ty,
+            comments,
         }
     }
 }
@@ -677,7 +702,7 @@ mod fmt_impl {
         }
     }
 
-    impl Display for GeneratedType {
+    impl Display for GeneratedType<'_> {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
             // Documentation: Cyphal type name
             writeln!(f, "/// `{}`\n///", self.cyphal_name)?;
@@ -692,6 +717,12 @@ mod fmt_impl {
                     min_size / 8,
                     max_size / 8
                 )?;
+            }
+
+            if !self.comments.is_empty() {
+                // Additional comments from the DSDL file
+                writeln!(f, "///")?;
+                writeln!(f, "#[doc = {:?}]", self.comments)?;
             }
 
             // Derive zerocopy traits if possible
@@ -804,6 +835,13 @@ mod fmt_impl {
                     } else {
                         writeln!(f, "/// size ranges from {} to {} bits", size_min, size_max)?;
                     }
+
+                    if !data.comments.is_empty() {
+                        // Documentation from DSDL
+                        writeln!(f, "///")?;
+                        writeln!(f, "#[doc = {:?}]", data.comments)?;
+                    }
+
                     writeln!(f, "pub {}: {},", data.name, data.ty)
                 }
                 GeneratedField::Padding(bits) => {
@@ -815,12 +853,17 @@ mod fmt_impl {
 
     impl Display for GeneratedVariant {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-            writeln!(f, "// {}", self.cyphal_ty)?;
+            writeln!(f, "/// {}", self.cyphal_ty)?;
+            if !self.comments.is_empty() {
+                // Documentation from DSDL
+                writeln!(f, "///")?;
+                writeln!(f, "#[doc = {:?}]", self.comments)?;
+            }
             writeln!(f, "{}({}),", self.name, self.ty)
         }
     }
 
-    impl Display for GeneratedModule {
+    impl Display for GeneratedModule<'_> {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
             writeln!(
                 f,
@@ -848,7 +891,7 @@ mod fmt_impl {
         }
     }
 
-    impl Display for GeneratedItem {
+    impl Display for GeneratedItem<'_> {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
             match self {
                 GeneratedItem::Type(ty) => Display::fmt(ty, f),

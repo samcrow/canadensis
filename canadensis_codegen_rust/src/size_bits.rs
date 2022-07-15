@@ -7,9 +7,9 @@ use canadensis_dsdl_frontend::types::{
 };
 use std::fmt::{Display, Formatter, Result};
 
-pub(crate) struct SizeBitsExpr<'t>(pub &'t GeneratedType);
+pub(crate) struct SizeBitsExpr<'t, 'c>(pub &'t GeneratedType<'c>);
 
-impl Display for SizeBitsExpr<'_> {
+impl Display for SizeBitsExpr<'_, '_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let size_min = self.0.size.min_value();
         let size_max = self.0.size.max_value();

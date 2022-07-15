@@ -329,6 +329,7 @@ impl PersistentContext {
                 Statement::ServiceResponseMarker(span) => {
                     state.handle_service_response_marker(span)?
                 }
+                Statement::Comment(comment) => state.handle_comment(comment.as_str().trim())?,
             }
         }
         // End of file, check that everything is here
@@ -426,6 +427,8 @@ struct FileState {
     ///
     /// This is always Some, except during functions that match on the current state.
     state: Option<State>,
+    /// Documentation comments from the top of the file
+    comments: String,
 }
 
 impl Default for FileState {
@@ -435,6 +438,7 @@ impl Default for FileState {
             constants: BTreeMap::new(),
             deprecated: false,
             state: Some(State::Message),
+            comments: String::new(),
         }
     }
 }
@@ -443,9 +447,7 @@ impl FileState {
     fn new(path: &[String]) -> Self {
         FileState {
             path: path.to_vec(),
-            constants: BTreeMap::new(),
-            deprecated: false,
-            state: Some(State::Message),
+            ..FileState::default()
         }
     }
 
@@ -505,13 +507,13 @@ impl FileState {
         match self.state.take().expect("No state") {
             State::Message => {
                 self.state = Some(State::MessageStruct(
-                    StructState::Collecting(vec![Field::padding(bits, true)]),
+                    StructState::Collecting(vec![Field::padding(bits, true, span)]),
                     bits_added,
                 ));
                 Ok(())
             }
             State::MessageStruct(StructState::Collecting(mut fields), length) => {
-                fields.push(Field::padding(bits, length.is_byte_aligned()));
+                fields.push(Field::padding(bits, length.is_byte_aligned(), span));
                 self.state = Some(State::MessageStruct(
                     StructState::Collecting(fields),
                     length.concatenate([bits_added]),
@@ -521,13 +523,13 @@ impl FileState {
             State::Response(req) => {
                 self.state = Some(State::ResponseStruct(
                     req,
-                    StructState::Collecting(vec![Field::padding(bits, true)]),
+                    StructState::Collecting(vec![Field::padding(bits, true, span)]),
                     bits_added,
                 ));
                 Ok(())
             }
             State::ResponseStruct(req, StructState::Collecting(mut fields), length) => {
-                fields.push(Field::padding(bits, length.is_byte_aligned()));
+                fields.push(Field::padding(bits, length.is_byte_aligned(), span));
                 self.state = Some(State::ResponseStruct(
                     req,
                     StructState::Collecting(fields),
@@ -566,7 +568,7 @@ impl FileState {
             // No fields, enter struct mode and add the first one
             State::Message => {
                 self.state = Some(State::MessageStruct(
-                    StructState::Collecting(vec![Field::data(ty, name, true)]),
+                    StructState::Collecting(vec![Field::data(ty, name, true, span)]),
                     // Initial bit length matches the first field
                     update_struct_length(BitLengthSet::single(0)),
                 ));
@@ -575,7 +577,7 @@ impl FileState {
             State::Response(req) => {
                 self.state = Some(State::ResponseStruct(
                     req,
-                    StructState::Collecting(vec![Field::data(ty, name, true)]),
+                    StructState::Collecting(vec![Field::data(ty, name, true, span)]),
                     // Initial bit length matches the first field
                     update_struct_length(BitLengthSet::single(0)),
                 ));
@@ -587,7 +589,7 @@ impl FileState {
                     return Err(span_error!(span, "A field named {} already exists", name));
                 }
 
-                fields.push(Field::data(ty, name, length.is_byte_aligned()));
+                fields.push(Field::data(ty, name, length.is_byte_aligned(), span));
                 self.state = Some(State::MessageStruct(
                     StructState::Collecting(fields),
                     update_struct_length(length),
@@ -599,7 +601,7 @@ impl FileState {
                     return Err(span_error!(span, "A field named {} already exists", name));
                 }
 
-                fields.push(Field::data(ty, name, length.is_byte_aligned()));
+                fields.push(Field::data(ty, name, length.is_byte_aligned(), span));
                 self.state = Some(State::ResponseStruct(
                     req,
                     StructState::Collecting(fields),
@@ -609,20 +611,20 @@ impl FileState {
             }
             // Add a variant to a union
             State::MessageUnion(UnionState::Collecting(mut variants)) => {
-                if variants.iter().any(|existing| existing.name == name) {
+                if variants.iter().any(|existing| existing.name() == name) {
                     return Err(span_error!(span, "A variant named {} already exists", name));
                 }
 
-                variants.push(Variant::new(ty, name));
+                variants.push(Variant::new(ty, name, span));
                 self.state = Some(State::MessageUnion(UnionState::Collecting(variants)));
                 Ok(())
             }
             State::ResponseUnion(req, UnionState::Collecting(mut variants)) => {
-                if variants.iter().any(|existing| existing.name == name) {
+                if variants.iter().any(|existing| existing.name() == name) {
                     return Err(span_error!(span, "A variant named {} already exists", name));
                 }
 
-                variants.push(Variant::new(ty, name));
+                variants.push(Variant::new(ty, name, span));
                 self.state = Some(State::ResponseUnion(req, UnionState::Collecting(variants)));
                 Ok(())
             }
@@ -643,6 +645,52 @@ impl FileState {
         }
     }
 
+    fn handle_comment(&mut self, comment: &str) -> Result<(), Error> {
+        // If state is not State::Message, the comment applies to the most recent field, variant,
+        // or constant.
+        // Find the most recent constant for comparison.
+        let last_constant: Option<&mut Constant> =
+            self.constants.values_mut().max_by_key(|c| c.end_offset());
+
+        match self.state.as_mut().expect("No state") {
+            State::Message => {
+                if let Some(last_constant) = last_constant {
+                    // Have at least one constant, comment belongs there
+                    last_constant.append_comment(comment);
+                } else {
+                    // Comment applies to top-level
+                    if !self.comments.is_empty() {
+                        self.comments.push('\n');
+                    }
+                    self.comments.push_str(comment);
+                }
+            }
+            State::MessageStruct(StructState::Collecting(fields), _) => {
+                // Comment applies to most recent field or constant, whichever is later in the file
+                apply_comment_to_constant_or_field(last_constant, fields.last_mut(), comment);
+            }
+            State::MessageUnion(
+                UnionState::Collecting(variants) | UnionState::End(variants, _, _),
+            ) => {
+                apply_comment_to_constant_or_variant(last_constant, variants.last_mut(), comment);
+            }
+            State::Response(_) => {
+                // Don't expect a comment here, ignore
+            }
+            State::ResponseStruct(_, StructState::Collecting(fields), _) => {
+                apply_comment_to_constant_or_field(last_constant, fields.last_mut(), comment);
+            }
+            State::ResponseUnion(
+                _,
+                UnionState::Collecting(variants) | UnionState::UsedOffset(variants, _),
+            ) => {
+                apply_comment_to_constant_or_variant(last_constant, variants.last_mut(), comment);
+            }
+            _ => { /* Don't expect a comment here, ignore */ }
+        }
+        Ok(())
+    }
+
     /// Handles an end of file and checks that the complete file is well-formed
     ///
     /// On success, this function returnes a compiled DSDL object.
@@ -659,6 +707,7 @@ impl FileState {
                 Ok(CompiledDsdl {
                     fixed_port_id,
                     kind: DsdlKind::Message(message),
+                    comments: self.comments,
                 })
             }
             State::ResponseStruct(request, StructState::End(fields, extent), length) => {
@@ -672,6 +721,7 @@ impl FileState {
                 Ok(CompiledDsdl {
                     fixed_port_id,
                     kind: DsdlKind::Service { request, response },
+                    comments: self.comments,
                 })
             }
             State::MessageUnion(UnionState::End(variants, extent, length)) => {
@@ -689,6 +739,7 @@ impl FileState {
                 Ok(CompiledDsdl {
                     fixed_port_id,
                     kind: DsdlKind::Message(message),
+                    comments: self.comments,
                 })
             }
             State::ResponseUnion(request, UnionState::End(variants, extent, length)) => {
@@ -706,6 +757,7 @@ impl FileState {
                 Ok(CompiledDsdl {
                     fixed_port_id,
                     kind: DsdlKind::Service { request, response },
+                    comments: self.comments,
                 })
             }
             State::Message
@@ -726,6 +778,45 @@ impl FileState {
     #[must_use]
     fn take_constants(&mut self) -> Constants {
         Constants::from_map(mem::take(&mut self.constants))
+    }
+}
+
+/// Applies a comment to last_constant or last_field, whichever is later in the file
+fn apply_comment_to_constant_or_field(
+    last_constant: Option<&mut Constant>,
+    last_field: Option<&mut Field>,
+    comment: &str,
+) {
+    match (last_constant, last_field) {
+        (None, None) => {}
+        (Some(last_constant), None) => last_constant.append_comment(comment),
+        (None, Some(last_field)) => last_field.append_comment(comment),
+        (Some(last_constant), Some(last_field)) => {
+            if last_constant.end_offset() > last_field.end_offset() {
+                last_constant.append_comment(comment)
+            } else {
+                last_field.append_comment(comment)
+            }
+        }
+    }
+}
+/// Applies a comment to last_constant or last_variant, whichever is later in the file
+fn apply_comment_to_constant_or_variant(
+    last_constant: Option<&mut Constant>,
+    last_variant: Option<&mut Variant>,
+    comment: &str,
+) {
+    match (last_constant, last_variant) {
+        (None, None) => {}
+        (Some(last_constant), None) => last_constant.append_comment(comment),
+        (None, Some(last_variant)) => last_variant.append_comment(comment),
+        (Some(last_constant), Some(last_variant)) => {
+            if last_constant.end_offset() > last_variant.end_offset() {
+                last_constant.append_comment(comment)
+            } else {
+                last_variant.append_comment(comment)
+            }
+        }
     }
 }
 
@@ -890,7 +981,7 @@ fn make_union_bit_length(variants: &[Variant]) -> BitLengthSet {
     let discriminant_length = BitLengthSet::single(discriminant_bits.into());
     let variant_lengths = variants
         .iter()
-        .map(|variant| variant.ty.size())
+        .map(|variant| variant.ty().size())
         .reduce(|size1, size2| size1.unite([size2]))
         .unwrap_or_else(|| BitLengthSet::single(0));
     // Concatenate the discriminant and the variant lengths

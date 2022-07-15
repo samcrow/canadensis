@@ -174,7 +174,7 @@ impl Warnings {
             }
             MessageKind::Union(union_data) => {
                 for variant in &union_data.variants {
-                    self.check_field_name(key, &variant.name);
+                    self.check_field_name(key, variant.name());
                 }
             }
         }
