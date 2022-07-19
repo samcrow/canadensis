@@ -1,0 +1,6 @@
+
+uint2 a
+uint3 b
+uint2[<=5] c
+
+@sealed

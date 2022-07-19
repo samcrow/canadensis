@@ -1,4 +1,5 @@
 extern crate canadensis_dsdl_frontend;
+use canadensis_dsdl_frontend::compiled::DsdlKind;
 use canadensis_dsdl_frontend::{Error, Package};
 use std::env;
 use std::process;
@@ -30,9 +31,18 @@ fn run() -> Result<(), Error> {
 
     let compiled = package.compile()?;
 
-    if let Some((key, compiled_dsdl)) = compiled.iter().next() {
+    for (key, compiled_dsdl) in compiled {
         println!("{}:", key);
         println!("{:#?}", compiled_dsdl);
+        match compiled_dsdl.kind {
+            DsdlKind::Message(message) => {
+                println!("Message bit length {:?}", message.bit_length().expand())
+            }
+            DsdlKind::Service { request, response } => {
+                println!("Request bit length {:?}", request.bit_length().expand());
+                println!("Response bit length {:?}", response.bit_length().expand());
+            }
+        }
     }
 
     Ok(())

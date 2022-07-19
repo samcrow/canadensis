@@ -26,7 +26,7 @@ pub trait DataType {
 pub trait Serialize: DataType {
     /// Returns the size of the encoded form of this value, in bits
     ///
-    /// For composite types, this must be a multiple of 8.
+    /// The returned value may not be a multiple of 8.
     fn size_bits(&self) -> usize;
 
     /// Serializes this value into a buffer

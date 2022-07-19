@@ -248,6 +248,8 @@ impl<'b> WriteCursor<'b> {
         }
         // Now serialize the components
         value.serialize(self);
+        // If not at an 8-byte boundary, advance to the next one
+        // This ensures that the composite is aligned to 8 bits.
         self.align_to_8_bits();
     }
 
