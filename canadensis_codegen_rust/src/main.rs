@@ -222,7 +222,7 @@ impl std::fmt::Display for ErrorContext {
 }
 
 impl std::error::Error for ErrorContext {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         Some(&*self.inner)
     }
 }
