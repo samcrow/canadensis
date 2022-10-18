@@ -5,9 +5,10 @@ extern crate clap;
 use canadensis_dsdl_frontend::Package;
 use clap::{AppSettings, Arg, SubCommand};
 use std::collections::BTreeMap;
-use std::ffi::OsString;
+use std::ffi::{OsStr, OsString};
 use std::fs::File;
 use std::io::{BufWriter, Write};
+use std::process::Command;
 use std::{env, process};
 
 fn main() {
@@ -25,8 +26,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     match args {
         Args::Compile {
             input_folders,
-            output_file,
+            output_file: output_path,
             external_packages,
+            rustfmt,
         } => {
             let mut package = Package::new();
             for path in input_folders {
@@ -50,14 +52,41 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             // Generate code
             let generated = canadensis_codegen_rust::generate_code(&package, &external_packages);
 
-            let mut output_file = BufWriter::new(File::create(output_file)?);
+            let mut output_file = BufWriter::new(File::create(&output_path)?);
             writeln!(output_file, "{}", generated)?;
+            drop(output_file);
+            // Format
+            if rustfmt {
+                run_rustfmt(&output_path)?;
+            }
         }
         Args::PrintDependencies => {
             print!("{}", canadensis_codegen_rust::generated_code_dependencies());
         }
     }
     Ok(())
+}
+
+/// Finds rustfmt in the default path and runs it to format the code at the provided path
+fn run_rustfmt(output_path: &OsStr) -> Result<(), Box<dyn std::error::Error>> {
+    let start_status = Command::new("rustfmt").arg(output_path).status();
+    match start_status {
+        Ok(exit_status) => {
+            if exit_status.success() {
+                Ok(())
+            } else {
+                let message = match exit_status.code() {
+                    Some(code) => format!("rustfmt exited with status code {}", code),
+                    None => String::from("rustfmt exited with unknown status"),
+                };
+                Err(Box::new(StringError(message)))
+            }
+        }
+        Err(start_error) => Err(Box::new(ErrorContext::new(
+            "Failed to run rustfmt".to_owned(),
+            Box::new(start_error),
+        ))),
+    }
 }
 
 enum Args {
@@ -71,6 +100,8 @@ enum Args {
         /// Each key is a list of Cyphal package name segments (like ["uavcan", "node"]).
         /// Each value is the path to a Rust module
         external_packages: BTreeMap<Vec<String>, Vec<String>>,
+        /// Run rustfmt on the generated code
+        rustfmt: bool,
     },
     PrintDependencies,
 }
@@ -103,6 +134,10 @@ fn get_args() -> Args {
                 .validator(validate_external_package)
                 .value_name("cyphal-package,rust-module-path")
                 .help("A DSDL package name and corresponding Rust module path that will not be generated"),
+        )
+            .arg(Arg::with_name("rustfmt")
+                .long("rustfmt")
+                .help("Run rustfmt to format the generated code")
         ))
         .subcommand(SubCommand::with_name("print-dependencies")
             .about("Prints the packages that the generated code depends on (for use in Cargo.toml)"));
@@ -125,6 +160,7 @@ fn get_args() -> Args {
                         .collect()
                 })
                 .unwrap_or_else(BTreeMap::new),
+            rustfmt: matches.is_present("rustfmt"),
         },
         ("print-dependencies", _) => Args::PrintDependencies,
         _ => panic!("Unrecognized subcommand"),
@@ -165,3 +201,40 @@ fn print_error(e: &dyn std::error::Error) {
         print_error(source);
     }
 }
+
+/// Wraps an error with a message
+#[derive(Debug)]
+struct ErrorContext {
+    context: String,
+    inner: Box<dyn std::error::Error>,
+}
+
+impl ErrorContext {
+    pub fn new(context: String, inner: Box<dyn std::error::Error>) -> Self {
+        ErrorContext { context, inner }
+    }
+}
+
+impl std::fmt::Display for ErrorContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.context)
+    }
+}
+
+impl std::error::Error for ErrorContext {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        Some(&*self.inner)
+    }
+}
+
+/// An error that contains only a message
+#[derive(Debug)]
+struct StringError(String);
+
+impl std::fmt::Display for StringError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl std::error::Error for StringError {}

@@ -35,6 +35,11 @@ The generated code depends on a few external libraries for data types and serial
 Run `canadensis_codegen_rust print-dependencies` to show the dependency specifications.
 You should include the output in the package's `Cargo.toml` file.
 
+#### Formatting
+
+By default, the generated code does not have consistent formatting. To format it, add the `--rustfmt` option when running
+`canadensis_codegen_rust`. This option requires a preinstalled `rustfmt` binary in the default path.
+
 ### External modules
 
 For motivation, suppose you have this file `depends_on_prdt/canadensis/test/ContainsHealth.1.0.uavcan`:

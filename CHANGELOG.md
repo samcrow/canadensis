@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- `canadensis_codegen_rust`: Added `--rustfmt` option to format the generated code
+
 ### Fixed
 
 - `canadensis`: `register_client` example now compiles correctly after an update to `heapless` added
