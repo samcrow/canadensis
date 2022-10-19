@@ -6,38 +6,104 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### Added
-
-- `canadensis_codegen_rust`: Added `--rustfmt` option to format the generated code
-
-### Fixed
-
-- `canadensis`: `register_client` example now compiles correctly after an update to `heapless` added
-  a new restriction on the size of some containers
-- `canadensis_dsdl_frontend`: `Package::add_files` now returns an error if passed a path that is not a directory
-  (this is consistent with the existing documentation)
+## [canadensis_core-v0.2.3](https://github.com/samcrow/canadensis/tree/canadensis_core-v0.2.3) - 2022-10-18
 
 ### Changed
-
-- `canadensis`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
-- `canadensis_bit_length_set`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
-- `canadensis_bxcan`: Renamed more occurrences of UAVCAN to Cyphal, renamed frame conversion functions
-  (the original names are still available as deprecated aliases)
-- `canadensis_can`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
-- `canadensis_codegen_rust`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
 - `canadensis_core`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
-- `canadensis_dsdl_frontend`: Added tests for reasonable handling of cyclic dependencies between DSDL types
-- `canadensis_dsdl_frontend`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+
+## [canadensis_encoding-v0.2.2](https://github.com/samcrow/canadensis/tree/canadensis_encoding-v0.2.2) - 2022-10-18
+
+### Changed
+- `canadensis_encoding`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+
+## [canadensis_data_types-v0.2.3](https://github.com/samcrow/canadensis/tree/canadensis_data_types-v0.2.3) - 2022-10-18
+
+### Changed
+- Updated instructions in readme to use the `--rustfmt` option instead of a separate formatting step
+
+## [canadensis-v0.2.4](https://github.com/samcrow/canadensis/tree/canadensis-v0.2.4) - 2022-10-18
+### Fixed
+- `canadensis`: `register_client` example now compiles correctly after an update to `heapless` added
+  a new restriction on the size of some containers
+### Changed
+- `canadensis`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+
+## [canadensis_filter_config-v0.2.2](https://github.com/samcrow/canadensis/tree/canadensis_filter_config-v0.2.2) - 2022-10-18
+
+### Changed
+- `canadensis_filter_config`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+
+## [canadensis_can-v0.2.2](https://github.com/samcrow/canadensis/tree/canadensis_can-v0.2.2) - 2022-10-18
+
+### Changed
+- `canadensis_can`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+
+## [canadensis_linux-v0.2.2](https://github.com/samcrow/canadensis/tree/canadensis_linux-v0.2.2) - 2022-10-18
+
+### Changed
+- `canadensis_linux`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+
+## [canadensis_serial-v0.2.2](https://github.com/samcrow/canadensis/tree/canadensis_serial-v0.2.2) - 2022-10-18
+
+### Changed
+- `canadensis_serial`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+
+## [canadensis_udp-v0.2.2](https://github.com/samcrow/canadensis/tree/canadensis_udp-v0.2.2) - 2022-10-18
+
+### Changed
+- `canadensis_udp`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+
+## [canadensis_bit_length_set-v0.3.1](https://github.com/samcrow/canadensis/tree/canadensis_bit_length_set-v0.3.1) - 2022-10-18
+
+### Changed
+- `canadensis_bit_length_set`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+
+## [canadensis_pnp_client-v0.2.2](https://github.com/samcrow/canadensis/tree/canadensis_pnp_client-v0.2.2) - 2022-10-18
+
+### Changed
+- `canadensis_pnp_client`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+
+## [canadensis_bxcan-v0.2.2](https://github.com/samcrow/canadensis/tree/canadensis_bxcan-v0.2.2) - 2022-10-18
+
+### Changed
+- `canadensis_bxcan`: Renamed more occurrences of UAVCAN to Cyphal
+- Renamed frame conversion functions
+  (the original names are still available as deprecated aliases)
+
+## [canadensis_dsdl_parser-v0.2.3](https://github.com/samcrow/canadensis/tree/canadensis_dsdl_parser-v0.2.3) - 2022-10-18
+
+### Changed
 - `canadensis_dsdl_parser`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
 - `canadensis_dsdl_parser`: Removed copy of the public regulated data types. The test code uses the submodule under
   `canadensis_dsdl_frontend` instead.
-- `canadensis_encoding`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
-- `canadensis_filter_config`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
-- `canadensis_linux`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+
+## [canadensis_dsdl_frontend-v0.3.3](https://github.com/samcrow/canadensis/tree/canadensis_dsdl_frontend-v0.3.3) - 2022-10-18
+
+### Added
+- `canadensis_dsdl_frontend`: Added tests for reasonable handling of cyclic dependencies between DSDL types
+### Changed
+- `canadensis_dsdl_frontend`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+### Fixed
+- `canadensis_dsdl_frontend`: `Package::add_files` now returns an error if passed a path that is not a directory
+  (this is consistent with the existing documentation)
+
+## [canadensis_codegen_rust-v0.3.2](https://github.com/samcrow/canadensis/tree/canadensis_codegen_rust-v0.3.2) - 2022-10-18
+
+### Added
+- `canadensis_codegen_rust`: Added `--rustfmt` option to format the generated code
+
+### Changed
+- `canadensis_codegen_rust`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+
+## [canadensis_macro-v0.2.3](https://github.com/samcrow/canadensis/tree/canadensis_macro-v0.2.3) - 2022-10-18
+
+### Changed
 - `canadensis_macro`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
-- `canadensis_pnp_client`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
-- `canadensis_serial`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
-- `canadensis_udp`: Renamed more occurrences of UAVCAN to Cyphal (no public API changes)
+
+## [canadensis_write_crc-v0.1.3](https://github.com/samcrow/canadensis/tree/canadensis_write_crc-v0.1.3) - 2022-10-18
+
+### Changed
+- Minor code cleanup (this did not warrant a release)
 
 ## [canadensis_data_types-v0.2.2](https://github.com/samcrow/canadensis/tree/canadensis_data_types-v0.2.2) - 2022-07-14
 
