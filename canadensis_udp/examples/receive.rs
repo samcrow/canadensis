@@ -3,18 +3,19 @@ extern crate canadensis_linux;
 extern crate canadensis_udp;
 extern crate simplelog;
 
-use log::LevelFilter;
-use simplelog::{ColorChoice, TermLogger};
 use std::convert::{TryFrom, TryInto};
 use std::net::Ipv4Addr;
 use std::thread;
 use std::time::Duration;
 
+use log::LevelFilter;
+use simplelog::{ColorChoice, TermLogger};
+
 use canadensis_core::session::SessionDynamicMap;
 use canadensis_core::time::{Clock, MicrosecondDuration64, Microseconds64};
 use canadensis_core::transport::Receiver;
 use canadensis_linux::SystemClock;
-use canadensis_udp::{NodeAddress, UdpNodeId, UdpReceiver, UdpSessionData, UdpTransferId};
+use canadensis_udp::{UdpNodeId, UdpReceiver, UdpSessionData, UdpTransferId, DEFAULT_PORT};
 
 fn main() {
     TermLogger::init(
@@ -25,20 +26,21 @@ fn main() {
     )
     .unwrap();
 
-    let address = NodeAddress::try_from(Ipv4Addr::new(127, 0, 0, 121)).unwrap();
-    println!(
-        "This node's IP address: {}",
-        Ipv4Addr::from(address.clone())
-    );
+    let local_node_id = UdpNodeId::try_from(121).unwrap();
     let mut clock = SystemClock::new();
 
     // Note: This MTU includes space for the header
-    const MTU: usize = 1300;
+    const MTU: usize = 1472;
     let mut receiver = UdpReceiver::<
         Microseconds64,
         SessionDynamicMap<Microseconds64, UdpNodeId, UdpTransferId, UdpSessionData>,
         MTU,
-    >::new(address);
+    >::new(
+        Some(local_node_id),
+        Ipv4Addr::new(192, 168, 19, 10),
+        DEFAULT_PORT,
+    )
+    .expect("Failed to create receiver");
     receiver
         .subscribe_message(
             73.try_into().unwrap(),

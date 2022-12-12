@@ -1,29 +1,26 @@
 extern crate canadensis_core;
 extern crate canadensis_udp;
 
-use canadensis_core::time::{Clock, MicrosecondDuration64};
-use canadensis_core::transfer::{Header, MessageHeader, Transfer};
-use canadensis_core::transport::{TransferId, Transmitter};
-use canadensis_core::{Priority, SubjectId};
-use canadensis_linux::SystemClock;
-use canadensis_udp::{NodeAddress, UdpTransferId, UdpTransmitter};
 use std::convert::{TryFrom, TryInto};
 use std::net::Ipv4Addr;
 use std::thread::sleep;
 use std::time::Duration;
 
+use canadensis_core::time::{Clock, MicrosecondDuration64};
+use canadensis_core::transfer::{Header, MessageHeader, Transfer};
+use canadensis_core::transport::{TransferId, Transmitter};
+use canadensis_core::{Priority, SubjectId};
+use canadensis_linux::SystemClock;
+use canadensis_udp::{UdpNodeId, UdpTransferId, UdpTransmitter, DEFAULT_PORT};
+
 fn main() {
-    let address = NodeAddress::try_from(Ipv4Addr::new(127, 0, 0, 120)).unwrap();
-    let node_id = address.node_id();
-    println!(
-        "This node's IP address: {}",
-        Ipv4Addr::from(address.clone())
-    );
-
+    let local_node_id = UdpNodeId::try_from(120).unwrap();
     let mut clock = SystemClock::new();
+    const MTU: usize = 1472;
+    let bind_address: Ipv4Addr = Ipv4Addr::new(192, 168, 19, 10);
 
-    const MTU: usize = 1200;
-    let mut transmitter = UdpTransmitter::<MTU>::new(address).unwrap();
+    let mut transmitter =
+        UdpTransmitter::<MTU>::new(Some(local_node_id), bind_address, DEFAULT_PORT).unwrap();
 
     // Make a payload compatible with the uavcan.metatransport.ethernet.Frame.0.1 format format.
     let mut payload = Vec::with_capacity(6 + 6 + 2 + 2 + MAJOR_GENERAL_SONG.len());
@@ -45,7 +42,7 @@ fn main() {
                 transfer_id: transfer_id.clone(),
                 priority: Priority::Nominal,
                 subject: SubjectId::try_from(73u16).unwrap(),
-                source: Some(node_id.clone()),
+                source: Some(local_node_id),
             }),
             payload: &payload,
         };
