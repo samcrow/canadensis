@@ -17,7 +17,7 @@ fn main() {
     let local_node_id = UdpNodeId::try_from(120).unwrap();
     let mut clock = SystemClock::new();
     const MTU: usize = 1472;
-    let bind_address: Ipv4Addr = Ipv4Addr::new(192, 168, 19, 10);
+    let bind_address: Ipv4Addr = Ipv4Addr::LOCALHOST;
 
     let mut transmitter =
         UdpTransmitter::<MTU>::new(Some(local_node_id), bind_address, DEFAULT_PORT).unwrap();

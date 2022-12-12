@@ -35,11 +35,7 @@ fn main() {
         Microseconds64,
         SessionDynamicMap<Microseconds64, UdpNodeId, UdpTransferId, UdpSessionData>,
         MTU,
-    >::new(
-        Some(local_node_id),
-        Ipv4Addr::new(192, 168, 19, 10),
-        DEFAULT_PORT,
-    )
+    >::new(Some(local_node_id), Ipv4Addr::LOCALHOST, DEFAULT_PORT)
     .expect("Failed to create receiver");
     receiver
         .subscribe_message(
