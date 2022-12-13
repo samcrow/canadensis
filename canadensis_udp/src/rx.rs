@@ -2,11 +2,9 @@ use alloc::vec::Vec;
 use core::marker::PhantomData;
 use std::convert::TryFrom;
 use std::io;
-use std::io::Read;
 use std::net::{Ipv4Addr, UdpSocket};
 
 use fallible_collections::FallibleVec;
-use socket2::Socket;
 use zerocopy::FromBytes;
 
 use canadensis_core::session::{Session, SessionTracker};
@@ -36,7 +34,7 @@ where
     /// The IP address of the local interface that the socket is bound to
     local_address: Ipv4Addr,
     /// A socket used to receive all frames, bound to a user-defined port
-    socket: Socket,
+    socket: UdpSocket,
     _session_tracker: PhantomData<T>,
 }
 
@@ -50,8 +48,9 @@ where
         interface_address: Ipv4Addr,
         port: u16,
     ) -> Result<Self, io::Error> {
-        // let socket = bind_receive_socket(interface_address, port)?;
-        let socket = bind_receive_socket(interface_address, 4321)?;
+        // For multicast to work, always bind to the unspecified address
+        // The interface address is used to join/leave multicast groups.
+        let socket = bind_receive_socket(Ipv4Addr::UNSPECIFIED, port)?;
         Ok(UdpReceiver {
             subscriptions: Subscriptions::new(),
             node_id,
@@ -89,9 +88,7 @@ where
         now: I,
     ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, Error> {
         let mut buffer: [u8; MTU] = [0; MTU];
-        // Try to read a packet without blocking. If no packet is available, return with no error
-        // let (bytes_received, _from) = self.socket.recv_from(&mut buffer)?;
-        let bytes_received = self.socket.read(&mut buffer)?;
+        let bytes_received = self.socket.recv(&mut buffer)?;
 
         let buffer = &buffer[..bytes_received];
         if bytes_received < MIN_PACKET_SIZE {
@@ -202,10 +199,8 @@ where
         timeout: <I as Instant>::Duration,
         _driver: &mut (),
     ) -> Result<(), Error> {
-        // self.socket
-        //     .join_multicast_v4(&Address::Multicast(subject).into(), &Ipv4Addr::LOCALHOST)?;
         self.socket
-            .join_multicast_v4(&Ipv4Addr::new(226, 1, 1, 1), &Ipv4Addr::LOCALHOST)?;
+            .join_multicast_v4(&Address::Multicast(subject).into(), &Ipv4Addr::LOCALHOST)?;
         self.subscriptions.subscribe_message(
             subject,
             Subscription::new_message(subject, payload_size_max, timeout),
