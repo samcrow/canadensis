@@ -88,7 +88,8 @@ impl<const MTU: usize> UdpTransmitter<MTU> {
     {
         for frame in breakdown {
             if frame.deadline.overflow_safe_compare(&clock.now()) == Ordering::Greater {
-                self.socket.send_to(&frame.data, frame.remote_address)?;
+                // self.socket.send_to(&frame.data, frame.remote_address)?;
+                self.socket.send_to(&frame.data, ("226.1.1.1", 4321))?;
             }
         }
         Ok(())

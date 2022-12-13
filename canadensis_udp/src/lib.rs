@@ -29,15 +29,17 @@ extern crate hash32;
 extern crate hash32_derive;
 extern crate heapless;
 extern crate log;
+extern crate socket2;
 extern crate zerocopy;
 
 use core::fmt::Debug;
 use std::convert::TryFrom;
 use std::io;
-use std::net::{Ipv4Addr, UdpSocket};
+use std::net::{Ipv4Addr, SocketAddrV4, UdpSocket};
 
 use crc_any::{CRCu16, CRCu32};
 use hash32_derive::Hash32;
+use socket2::{Domain, Protocol, SockAddr, SockRef, Socket, Type};
 
 use canadensis_core::transport::{TransferId, Transport};
 use canadensis_core::{InvalidValue, OutOfMemoryError, Priority};
@@ -170,9 +172,11 @@ const DEFAULT_TTL: u32 = 16;
 
 /// Creates a socket, enables non-blocking mode, binds to the provided
 /// address and port, and returns the socket
-fn bind_receive_socket(address: Ipv4Addr, port: u16) -> Result<UdpSocket, io::Error> {
-    let socket = UdpSocket::bind((address, port))?;
-    socket.set_nonblocking(true)?;
+fn bind_receive_socket(address: Ipv4Addr, port: u16) -> Result<Socket, io::Error> {
+    let socket = Socket::new(Domain::IPV4, Type::DGRAM, None)?;
+    // socket.set_nonblocking(true)?;
+    socket.set_reuse_address(true)?;
+    socket.bind(&SockAddr::from(SocketAddrV4::new(address, port)))?;
     Ok(socket)
 }
 /// Creates a socket, sets the TTL to DEFAULT_TTL, binds to the provided

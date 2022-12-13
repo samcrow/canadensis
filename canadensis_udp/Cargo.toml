@@ -17,6 +17,7 @@ zerocopy = "0.6.0"
 crc-any = "2.4.0"
 fallible_collections = "0.4.3"
 log = "0.4.14"
+socket2 = "0.4.7"
 
 [dependencies.canadensis_core]
 version = "0.2.0"
