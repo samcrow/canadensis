@@ -1,6 +1,9 @@
 extern crate canadensis_core;
 extern crate canadensis_udp;
+extern crate simplelog;
 
+use log::LevelFilter;
+use simplelog::{ColorChoice, TermLogger};
 use std::convert::{TryFrom, TryInto};
 use std::net::Ipv4Addr;
 use std::thread::sleep;
@@ -14,6 +17,14 @@ use canadensis_linux::SystemClock;
 use canadensis_udp::{UdpNodeId, UdpTransferId, UdpTransmitter, DEFAULT_PORT};
 
 fn main() {
+    TermLogger::init(
+        LevelFilter::Trace,
+        Default::default(),
+        Default::default(),
+        ColorChoice::Auto,
+    )
+    .unwrap();
+
     let local_node_id = UdpNodeId::try_from(120).unwrap();
     let mut clock = SystemClock::new();
     const MTU: usize = 1472;

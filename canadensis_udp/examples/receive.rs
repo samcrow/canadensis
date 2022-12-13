@@ -19,7 +19,7 @@ use canadensis_udp::{UdpNodeId, UdpReceiver, UdpSessionData, UdpTransferId, DEFA
 
 fn main() {
     TermLogger::init(
-        LevelFilter::Warn,
+        LevelFilter::Trace,
         Default::default(),
         Default::default(),
         ColorChoice::Auto,

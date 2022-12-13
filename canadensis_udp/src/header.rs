@@ -69,8 +69,8 @@ pub struct ValidatedUdpHeader {
     pub priority: Priority,
     /// ID of the source node, or None if anonymous
     pub source_node_id: Option<UdpNodeId>,
-    /// ID of the destination node
-    pub destination_node_id: UdpNodeId,
+    /// ID of the destination node, or None if broadcast
+    pub destination_node_id: Option<UdpNodeId>,
     /// Subject or service ID
     pub data_specifier: DataSpecifier,
     /// Transfer ID
@@ -94,11 +94,9 @@ impl TryFrom<UdpHeader> for ValidatedUdpHeader {
             return Err(InvalidValue);
         }
         let priority = Priority::try_from(header.priority)?;
-        let source_node_id = if header.source_node_id == NODE_ID_RESERVED_ANONYMOUS_OR_BROADCAST {
-            None
-        } else {
-            Some(UdpNodeId::try_from(header.source_node_id)?)
-        };
+        let source_node_id = check_node_id(header.source_node_id)?;
+        let destination_node_id = check_node_id(header.destination_node_id)?;
+
         let data_specifier = if (header.data_specifier & DATA_SPEC_SERVICE_NOT_MESSAGE)
             == DATA_SPEC_SERVICE_NOT_MESSAGE
         {
@@ -116,10 +114,11 @@ impl TryFrom<UdpHeader> for ValidatedUdpHeader {
                 header.data_specifier & DATA_SPEC_SUBJECT_ID_MASK,
             )?)
         };
+
         Ok(ValidatedUdpHeader {
             priority,
             source_node_id,
-            destination_node_id: UdpNodeId::try_from(header.destination_node_id)?,
+            destination_node_id,
             data_specifier,
             frame_index: header.frame_index(),
             last_frame: header.is_last_frame(),
@@ -134,4 +133,12 @@ pub enum DataSpecifier {
     Subject(SubjectId),
     ServiceRequest(ServiceId),
     ServiceResponse(ServiceId),
+}
+
+fn check_node_id(id: u16) -> Result<Option<UdpNodeId>, InvalidValue> {
+    if id == NODE_ID_RESERVED_ANONYMOUS_OR_BROADCAST {
+        Ok(None)
+    } else {
+        UdpNodeId::try_from(id).map(Some)
+    }
 }

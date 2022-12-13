@@ -172,13 +172,11 @@ where
                         let header = self.make_header(!more_payload_coming);
 
                         // This is not the last frame, so calculate the CRC over the data in this
-                        // frame only
+                        // frame only.
+                        // The CRC hasn't been added yet, so go all the way to the end.
                         let data_crc = {
                             let mut crc = data_crc();
-                            crc.digest(
-                                &self.current_frame
-                                    [header::SIZE..self.current_frame.len() - TRANSFER_CRC_SIZE],
-                            );
+                            crc.digest(&self.current_frame[header::SIZE..self.current_frame.len()]);
                             crc.get_crc()
                         };
 

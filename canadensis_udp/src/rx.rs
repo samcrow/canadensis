@@ -89,8 +89,8 @@ where
     ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, Error> {
         let mut buffer: [u8; MTU] = [0; MTU];
         let bytes_received = self.socket.recv(&mut buffer)?;
-
         let buffer = &buffer[..bytes_received];
+
         if bytes_received < MIN_PACKET_SIZE {
             // Ignore packet
             return Ok(None);
@@ -103,6 +103,7 @@ where
             None => return Ok(None),
         };
         let bytes_after_header = &buffer[header::SIZE..];
+
         // Look for a matching subscription
         match header.data_specifier {
             DataSpecifier::Subject(subject) => {
@@ -110,6 +111,8 @@ where
                     self.subscriptions.find_message_subscription_mut(subject)
                 {
                     return subscription.handle_frame(&header, bytes_after_header, now);
+                } else {
+                    log::trace!("No matching subject subscription");
                 }
             }
             DataSpecifier::ServiceRequest(service) => {
@@ -117,6 +120,8 @@ where
                     self.subscriptions.find_request_subscription_mut(service)
                 {
                     return subscription.handle_frame(&header, bytes_after_header, now);
+                } else {
+                    log::trace!("No matching subject subscription");
                 }
             }
             DataSpecifier::ServiceResponse(service) => {
@@ -124,11 +129,11 @@ where
                     self.subscriptions.find_response_subscription_mut(service)
                 {
                     return subscription.handle_frame(&header, bytes_after_header, now);
+                } else {
+                    log::trace!("No matching subject subscription");
                 }
             }
         }
-
-        // Packet received but did not match any subscription
         Ok(None)
     }
 
@@ -327,7 +332,6 @@ where
         bytes_after_header: &[u8],
         now: I,
     ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, Error> {
-        log::debug!("handle_frame header {:?}", header);
         let timeout = self.timeout;
         if let Some(source_node_id) = header.source_node_id {
             let session = self.sessions.get_mut_or_insert_with(source_node_id, || {
@@ -345,7 +349,6 @@ where
                 }
             }
             session.set_last_activity(now);
-
             let result = session.handle_frame(header, bytes_after_header, self.payload_size_max);
 
             if let Ok(Some(_)) = &result {
@@ -380,22 +383,44 @@ where
                         subject: *subject,
                         source: header.source_node_id,
                     }),
-                    SubscriptionKind::Request(service) => Header::Request(ServiceHeader {
-                        timestamp: now,
-                        transfer_id: header.transfer_id,
-                        priority: header.priority,
-                        service: *service,
-                        source: header.source_node_id.expect("Service can't be anonymous"),
-                        destination: header.destination_node_id,
-                    }),
-                    SubscriptionKind::Response(service) => Header::Response(ServiceHeader {
-                        timestamp: now,
-                        transfer_id: header.transfer_id,
-                        priority: header.priority,
-                        service: *service,
-                        source: header.source_node_id.expect("Service can't be anonymous"),
-                        destination: header.destination_node_id,
-                    }),
+                    SubscriptionKind::Request(service) => {
+                        // Source and destination nodes are required
+                        let source = match header.source_node_id {
+                            Some(source) => source,
+                            None => return Ok(None),
+                        };
+                        let destination = match header.destination_node_id {
+                            Some(destination) => destination,
+                            None => return Ok(None),
+                        };
+                        Header::Request(ServiceHeader {
+                            timestamp: now,
+                            transfer_id: header.transfer_id,
+                            priority: header.priority,
+                            service: *service,
+                            source,
+                            destination,
+                        })
+                    }
+                    SubscriptionKind::Response(service) => {
+                        // Source and destination nodes are required
+                        let source = match header.source_node_id {
+                            Some(source) => source,
+                            None => return Ok(None),
+                        };
+                        let destination = match header.destination_node_id {
+                            Some(destination) => destination,
+                            None => return Ok(None),
+                        };
+                        Header::Response(ServiceHeader {
+                            timestamp: now,
+                            transfer_id: header.transfer_id,
+                            priority: header.priority,
+                            service: *service,
+                            source,
+                            destination,
+                        })
+                    }
                 };
                 Ok(Some(Transfer {
                     header,
@@ -443,10 +468,6 @@ where
         bytes_after_header: &[u8],
         max_payload_length: usize,
     ) -> Result<Option<Vec<u8>>, Error> {
-        log::debug!(
-            "UdpSession::handle_frame, buildup = {:?}",
-            &self.data().buildup
-        );
         // The buildup will collect the payload and the transfer CRC in the last frame, so it
         // needs extra capacity
         let max_payload_and_crc_length = max_payload_length + TRANSFER_CRC_SIZE;
@@ -488,6 +509,8 @@ where
                             }
                         };
                     self.data_mut().buildup = Some(buildup);
+                } else {
+                    log::debug!("Incorrect first frame CRC");
                 }
                 Ok(None)
             }
@@ -520,6 +543,7 @@ where
                         Ok(None)
                     }
                 } else {
+                    log::debug!("No buildup");
                     Ok(None)
                 }
             }
@@ -536,6 +560,7 @@ fn check_frame_crc(bytes_after_header: &[u8]) -> bool {
     };
 
     let bytes_to_crc = &bytes_after_header[..crc_start];
+
     let mut crc = data_crc();
     crc.digest(bytes_to_crc);
     crc.get_crc() == expected_crc
