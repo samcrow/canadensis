@@ -9,7 +9,7 @@ use canadensis_core::transport::Transmitter;
 use crate::address::Address;
 use crate::header::DataSpecifier;
 use crate::tx::breakdown::{Breakdown, HeaderBase};
-use crate::{header, UdpNodeId, TRANSFER_CRC_SIZE};
+use crate::{header, TRANSFER_CRC_SIZE};
 use crate::{Error, UdpTransport};
 
 mod breakdown;
@@ -17,8 +17,6 @@ mod breakdown;
 pub struct UdpTransmitter<const MTU: usize> {
     /// The socket used to send frames
     socket: UdpSocket,
-    /// The address of this node
-    local_id: Option<UdpNodeId>,
     destination_port: u16,
 }
 impl<const MTU: usize> UdpTransmitter<MTU> {
@@ -28,11 +26,7 @@ impl<const MTU: usize> UdpTransmitter<MTU> {
     ///
     /// This function panics if `MTU` is less than 29. 29 bytes is the minimum MTU required to
     /// contain a header, transfer CRC, and one byte of payload in each frame.
-    pub fn new(
-        local_id: Option<UdpNodeId>,
-        bind_address: Ipv4Addr,
-        destination_port: u16,
-    ) -> Result<Self, Error> {
+    pub fn new(bind_address: Ipv4Addr, destination_port: u16) -> Result<Self, Error> {
         // MTU must be big enough for the header, transfer CRC, and at least 1 byte of data
         assert!(
             MTU > header::SIZE + TRANSFER_CRC_SIZE + 1,
@@ -44,7 +38,6 @@ impl<const MTU: usize> UdpTransmitter<MTU> {
 
         Ok(UdpTransmitter {
             socket,
-            local_id,
             destination_port,
         })
     }
@@ -109,10 +102,11 @@ where
             Header::Message(header) => {
                 let multicast_addr = Address::Multicast(header.subject);
                 let header_base = HeaderBase {
-                    source_node: self.local_id,
-                    destination_node: None,
-                    data_specifier: DataSpecifier::Subject(header.subject),
-                    transfer_id: header.transfer_id.into(),
+                    data_specifier: DataSpecifier::Subject {
+                        from: header.source,
+                        subject: header.subject,
+                    },
+                    transfer_id: header.transfer_id,
                     priority: header.priority,
                     data: 0,
                 };
@@ -121,10 +115,12 @@ where
             Header::Request(header) => {
                 let dest_addr = Address::Node(header.destination);
                 let header_base = HeaderBase {
-                    source_node: self.local_id,
-                    destination_node: Some(header.destination),
-                    data_specifier: DataSpecifier::ServiceRequest(header.service),
-                    transfer_id: header.transfer_id.into(),
+                    data_specifier: DataSpecifier::ServiceRequest {
+                        from: header.source,
+                        to: header.destination,
+                        service: header.service,
+                    },
+                    transfer_id: header.transfer_id,
                     priority: header.priority,
                     data: 0,
                 };
@@ -133,10 +129,12 @@ where
             Header::Response(header) => {
                 let dest_addr = Address::Node(header.destination);
                 let header_base = HeaderBase {
-                    source_node: self.local_id,
-                    destination_node: Some(header.destination),
-                    data_specifier: DataSpecifier::ServiceResponse(header.service),
-                    transfer_id: header.transfer_id.into(),
+                    data_specifier: DataSpecifier::ServiceResponse {
+                        from: header.source,
+                        to: header.destination,
+                        service: header.service,
+                    },
+                    transfer_id: header.transfer_id,
                     priority: header.priority,
                     data: 0,
                 };

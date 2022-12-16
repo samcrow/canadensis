@@ -68,11 +68,7 @@ const DATA_SPEC_SERVICE_ID_MASK: u16 =
 pub struct ValidatedUdpHeader {
     /// Priority level
     pub priority: Priority,
-    /// ID of the source node, or None if anonymous
-    pub source_node_id: Option<UdpNodeId>,
-    /// ID of the destination node, or None if broadcast
-    pub destination_node_id: Option<UdpNodeId>,
-    /// Subject or service ID
+    /// Subject or service ID and source/destination node IDs
     pub data_specifier: DataSpecifier,
     /// Transfer ID
     pub transfer_id: UdpTransferId,
@@ -87,6 +83,7 @@ pub struct ValidatedUdpHeader {
 impl TryFrom<UdpHeader> for ValidatedUdpHeader {
     type Error = InvalidValue;
 
+    /// Parses a validated header from a raw header
     fn try_from(header: UdpHeader) -> Result<Self, Self::Error> {
         if header.version != VERSION {
             return Err(InvalidValue);
@@ -101,25 +98,29 @@ impl TryFrom<UdpHeader> for ValidatedUdpHeader {
         let data_specifier = if (header.data_specifier.get() & DATA_SPEC_SERVICE_NOT_MESSAGE)
             == DATA_SPEC_SERVICE_NOT_MESSAGE
         {
-            let service_id =
+            let service =
                 ServiceId::try_from(header.data_specifier.get() & DATA_SPEC_SERVICE_ID_MASK)?;
+            // Service transfers must have source and destination node IDs
+            let from = source_node_id.ok_or(InvalidValue)?;
+            let to = destination_node_id.ok_or(InvalidValue)?;
             if (header.data_specifier.get() & DATA_SPEC_REQUEST_NOT_RESPONSE)
                 == DATA_SPEC_REQUEST_NOT_RESPONSE
             {
-                DataSpecifier::ServiceRequest(service_id)
+                DataSpecifier::ServiceRequest { from, to, service }
             } else {
-                DataSpecifier::ServiceResponse(service_id)
+                DataSpecifier::ServiceResponse { from, to, service }
             }
         } else {
-            DataSpecifier::Subject(SubjectId::try_from(
-                header.data_specifier.get() & DATA_SPEC_SUBJECT_ID_MASK,
-            )?)
+            let subject =
+                SubjectId::try_from(header.data_specifier.get() & DATA_SPEC_SUBJECT_ID_MASK)?;
+            DataSpecifier::Subject {
+                from: source_node_id,
+                subject,
+            }
         };
 
         Ok(ValidatedUdpHeader {
             priority,
-            source_node_id,
-            destination_node_id,
             data_specifier,
             frame_index: header.frame_index(),
             last_frame: header.is_last_frame(),
@@ -129,11 +130,87 @@ impl TryFrom<UdpHeader> for ValidatedUdpHeader {
     }
 }
 
+impl From<ValidatedUdpHeader> for UdpHeader {
+    /// Encodes a validated header into a raw header for transmissoin
+    fn from(header: ValidatedUdpHeader) -> Self {
+        let last_frame_flag = if header.last_frame { LAST_FRAME } else { 0 };
+
+        let mut header = UdpHeader {
+            version: VERSION,
+            priority: header.priority.into(),
+            source_node_id: header
+                .data_specifier
+                .source_node_id()
+                .map(u16::from)
+                .unwrap_or(NODE_ID_RESERVED_ANONYMOUS_OR_BROADCAST)
+                .into(),
+            destination_node_id: header
+                .data_specifier
+                .destination_node_id()
+                .map(u16::from)
+                .unwrap_or(NODE_ID_RESERVED_ANONYMOUS_OR_BROADCAST)
+                .into(),
+            data_specifier: match header.data_specifier {
+                DataSpecifier::Subject { subject, .. } => zerocopy::U16::from(u16::from(subject)),
+                DataSpecifier::ServiceRequest { service, .. } => zerocopy::U16::from(
+                    DATA_SPEC_SERVICE_NOT_MESSAGE
+                        | DATA_SPEC_REQUEST_NOT_RESPONSE
+                        | u16::from(service),
+                ),
+                DataSpecifier::ServiceResponse { service, .. } => {
+                    zerocopy::U16::from(DATA_SPEC_SERVICE_NOT_MESSAGE | u16::from(service))
+                }
+            },
+            transfer_id: u64::from(header.transfer_id).into(),
+            frame_index_eot: (header.frame_index | last_frame_flag).into(),
+            data: header.data.into(),
+            header_checksum: 0.into(),
+        };
+        // Calculate CRC for the header, excluding the CRC field
+        header.header_checksum = {
+            let bytes: &[u8] = header.as_bytes();
+            let mut crc = header_crc();
+            crc.digest(&bytes[..bytes.len() - 2]);
+            crc.get_crc().into()
+        };
+        debug_assert!(header.checksum_valid());
+        header
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum DataSpecifier {
-    Subject(SubjectId),
-    ServiceRequest(ServiceId),
-    ServiceResponse(ServiceId),
+    Subject {
+        from: Option<UdpNodeId>,
+        subject: SubjectId,
+    },
+    ServiceRequest {
+        from: UdpNodeId,
+        to: UdpNodeId,
+        service: ServiceId,
+    },
+    ServiceResponse {
+        from: UdpNodeId,
+        to: UdpNodeId,
+        service: ServiceId,
+    },
+}
+
+impl DataSpecifier {
+    pub fn source_node_id(&self) -> Option<UdpNodeId> {
+        match self {
+            DataSpecifier::Subject { from, .. } => *from,
+            DataSpecifier::ServiceRequest { from, .. } => Some(*from),
+            DataSpecifier::ServiceResponse { from, .. } => Some(*from),
+        }
+    }
+    pub fn destination_node_id(&self) -> Option<UdpNodeId> {
+        match self {
+            DataSpecifier::Subject { .. } => None,
+            DataSpecifier::ServiceRequest { to, .. } => Some(*to),
+            DataSpecifier::ServiceResponse { to, .. } => Some(*to),
+        }
+    }
 }
 
 fn check_node_id(id: u16) -> Result<Option<UdpNodeId>, InvalidValue> {

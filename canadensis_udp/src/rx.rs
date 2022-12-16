@@ -106,7 +106,7 @@ where
 
         // Look for a matching subscription
         match header.data_specifier {
-            DataSpecifier::Subject(subject) => {
+            DataSpecifier::Subject { subject, .. } => {
                 if let Some(subscription) =
                     self.subscriptions.find_message_subscription_mut(subject)
                 {
@@ -115,7 +115,7 @@ where
                     log::trace!("No matching subject subscription");
                 }
             }
-            DataSpecifier::ServiceRequest(service) => {
+            DataSpecifier::ServiceRequest { service, .. } => {
                 if let Some(subscription) =
                     self.subscriptions.find_request_subscription_mut(service)
                 {
@@ -124,7 +124,7 @@ where
                     log::trace!("No matching subject subscription");
                 }
             }
-            DataSpecifier::ServiceResponse(service) => {
+            DataSpecifier::ServiceResponse { service, .. } => {
                 if let Some(subscription) =
                     self.subscriptions.find_response_subscription_mut(service)
                 {
@@ -206,10 +206,8 @@ where
     ) -> Result<(), Error> {
         self.socket
             .join_multicast_v4(&Address::Multicast(subject).into(), &Ipv4Addr::LOCALHOST)?;
-        self.subscriptions.subscribe_message(
-            subject,
-            Subscription::new_message(subject, payload_size_max, timeout),
-        );
+        self.subscriptions
+            .subscribe_message(subject, Subscription::new(payload_size_max, timeout));
         Ok(())
     }
 
@@ -230,7 +228,7 @@ where
         self.service_subscribe_check_multicast()
             .map_err(|e| ServiceSubscribeError::Transport(Error::Socket(e)))?;
         if self.node_id.is_some() {
-            let subscription = Subscription::new_request(service, payload_size_max, timeout);
+            let subscription = Subscription::new(payload_size_max, timeout);
             self.subscriptions.subscribe_request(service, subscription);
             Ok(())
         } else {
@@ -253,7 +251,7 @@ where
         self.service_subscribe_check_multicast()
             .map_err(|e| ServiceSubscribeError::Transport(Error::Socket(e)))?;
         if self.node_id.is_some() {
-            let subscription = Subscription::new_response(service, payload_size_max, timeout);
+            let subscription = Subscription::new(payload_size_max, timeout);
             self.subscriptions.subscribe_response(service, subscription);
             Ok(())
         } else {
@@ -279,16 +277,9 @@ pub struct Subscription<I, T>
 where
     I: Instant,
 {
-    kind: SubscriptionKind,
     payload_size_max: usize,
     timeout: <I as Instant>::Duration,
     sessions: T,
-}
-
-enum SubscriptionKind {
-    Message(SubjectId),
-    Request(ServiceId),
-    Response(ServiceId),
 }
 
 impl<I, T> Subscription<I, T>
@@ -296,38 +287,9 @@ where
     I: Instant,
     T: SessionTracker<I, UdpNodeId, UdpTransferId, UdpSessionData> + Default,
 {
-    /// Creates a message subscription
-    fn new_message(
-        subject: SubjectId,
-        payload_size_max: usize,
-        timeout: <I as Instant>::Duration,
-    ) -> Self {
+    /// Creates a subscription
+    fn new(payload_size_max: usize, timeout: <I as Instant>::Duration) -> Self {
         Subscription {
-            kind: SubscriptionKind::Message(subject),
-            payload_size_max,
-            timeout,
-            sessions: T::default(),
-        }
-    }
-    fn new_request(
-        service: ServiceId,
-        payload_size_max: usize,
-        timeout: <I as Instant>::Duration,
-    ) -> Self {
-        Subscription {
-            kind: SubscriptionKind::Request(service),
-            payload_size_max,
-            timeout,
-            sessions: T::default(),
-        }
-    }
-    fn new_response(
-        service: ServiceId,
-        payload_size_max: usize,
-        timeout: <I as Instant>::Duration,
-    ) -> Self {
-        Subscription {
-            kind: SubscriptionKind::Response(service),
             payload_size_max,
             timeout,
             sessions: T::default(),
@@ -341,7 +303,7 @@ where
         now: I,
     ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, Error> {
         let timeout = self.timeout;
-        if let Some(source_node_id) = header.source_node_id {
+        if let Some(source_node_id) = header.data_specifier.source_node_id() {
             let session = self.sessions.get_mut_or_insert_with(source_node_id, || {
                 Session::new(now, timeout, None, UdpSessionData::default())
             })?;
@@ -362,7 +324,7 @@ where
             if let Ok(Some(_)) = &result {
                 // Successfully received
                 // Don't need the session anymore
-                // TODO remove
+                self.sessions.remove(source_node_id);
             }
 
             self.convert_reassembly_result(result, header, now)
@@ -383,50 +345,34 @@ where
         match result {
             Ok(Some(reassembled)) => {
                 // Add the transfer headers and record the completed transfer
-                let header = match &self.kind {
-                    SubscriptionKind::Message(subject) => Header::Message(MessageHeader {
-                        timestamp: now,
-                        transfer_id: header.transfer_id,
-                        priority: header.priority,
-                        subject: *subject,
-                        source: header.source_node_id,
-                    }),
-                    SubscriptionKind::Request(service) => {
-                        // Source and destination nodes are required
-                        let source = match header.source_node_id {
-                            Some(source) => source,
-                            None => return Ok(None),
-                        };
-                        let destination = match header.destination_node_id {
-                            Some(destination) => destination,
-                            None => return Ok(None),
-                        };
+                let header = match header.data_specifier {
+                    DataSpecifier::Subject { from, subject, .. } => {
+                        Header::Message(MessageHeader {
+                            timestamp: now,
+                            transfer_id: header.transfer_id,
+                            priority: header.priority,
+                            subject,
+                            source: from,
+                        })
+                    }
+                    DataSpecifier::ServiceRequest { service, from, to } => {
                         Header::Request(ServiceHeader {
                             timestamp: now,
                             transfer_id: header.transfer_id,
                             priority: header.priority,
-                            service: *service,
-                            source,
-                            destination,
+                            service,
+                            source: from,
+                            destination: to,
                         })
                     }
-                    SubscriptionKind::Response(service) => {
-                        // Source and destination nodes are required
-                        let source = match header.source_node_id {
-                            Some(source) => source,
-                            None => return Ok(None),
-                        };
-                        let destination = match header.destination_node_id {
-                            Some(destination) => destination,
-                            None => return Ok(None),
-                        };
+                    DataSpecifier::ServiceResponse { service, from, to } => {
                         Header::Response(ServiceHeader {
                             timestamp: now,
                             transfer_id: header.transfer_id,
                             priority: header.priority,
-                            service: *service,
-                            source,
-                            destination,
+                            service,
+                            source: from,
+                            destination: to,
                         })
                     }
                 };
