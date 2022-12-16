@@ -10,27 +10,14 @@ use canadensis_core::Priority;
 use core::mem;
 use crc_any::CRCu32;
 use std::iter::Peekable;
-use std::net::SocketAddrV4;
 use zerocopy::AsBytes;
 
 /// An iterator that breaks a transfer into UDP frames and adds a CRC to each frame
 pub(crate) struct Breakdown<P: Iterator<Item = u8>, I> {
-    /// The destination address for all frames
-    dest_address: SocketAddrV4,
-    /// Source node ID, or None if anonymous
-    source_node: Option<UdpNodeId>,
-    /// Destination node ID, or None if message
-    // TODO: Combine this with DataSpecifier
-    destination_node: Option<UdpNodeId>,
-    data_specifier: DataSpecifier,
-    /// Vendor-specific data to put in every header
-    data: u16,
+    /// Basic header information to apply to all frames
+    header_base: HeaderBase,
     /// The transmit deadline for this transfer
     deadline: I,
-    /// The ID of this transfer
-    transfer_id: u64,
-    /// The priority of this transfer
-    priority: Priority,
     /// The payload iterator
     payload: Peekable<P>,
     /// The index of the frame currently being assembled
@@ -44,31 +31,31 @@ pub(crate) struct Breakdown<P: Iterator<Item = u8>, I> {
     /// Before the frame is returned, the first header::SIZE bytes are empty. The header and CRC
     /// are filled in when the frame is full.
     current_frame: Vec<u8>,
+    /// Transport MTU (including the Cyphal header and transfer CRC)
     mtu: usize,
 }
 
+/// The parts of a header that are needed to create a Breakdown
+pub(crate) struct HeaderBase {
+    /// Source node ID, or None if anonymous
+    pub source_node: Option<UdpNodeId>,
+    /// Destination node ID, or None if message
+    // TODO: Combine this with DataSpecifier
+    pub destination_node: Option<UdpNodeId>,
+    pub data_specifier: DataSpecifier,
+    /// The ID of this transfer
+    pub transfer_id: u64,
+    /// The priority of this transfer
+    pub priority: Priority,
+    /// Vendor-specific data to put in every header
+    pub data: u16,
+}
+
 impl<P: Iterator<Item = u8>, I: Clone> Breakdown<P, I> {
-    pub fn new(
-        dest_address: SocketAddrV4,
-        source_node: Option<UdpNodeId>,
-        destination_node: Option<UdpNodeId>,
-        data_specifier: DataSpecifier,
-        data: u16,
-        deadline: I,
-        transfer_id: u64,
-        priority: Priority,
-        payload: P,
-        mtu: usize,
-    ) -> Self {
+    pub fn new(header_base: HeaderBase, deadline: I, payload: P, mtu: usize) -> Self {
         Breakdown {
-            dest_address,
-            source_node,
-            destination_node,
-            data_specifier,
-            data,
+            header_base,
             deadline,
-            transfer_id,
-            priority,
             payload: payload.peekable(),
             frame_index: 0,
             done: false,
@@ -95,7 +82,6 @@ impl<P: Iterator<Item = u8>, I: Clone> Breakdown<P, I> {
         self.current_frame.extend_from_slice(&crc.to_le_bytes());
         let frame = UdpFrame {
             deadline: self.deadline.clone(),
-            remote_address: self.dest_address,
             data: mem::take(&mut self.current_frame),
         };
         // Add space in the new current frame for the header
@@ -111,39 +97,41 @@ impl<P: Iterator<Item = u8>, I: Clone> Breakdown<P, I> {
 
         let mut header = UdpHeader {
             version: header::VERSION,
-            priority: self.priority.into(),
+            priority: self.header_base.priority.into(),
             source_node_id: self
+                .header_base
                 .source_node
-                .clone()
-                .map(|node| u16::from(node))
-                .unwrap_or(NODE_ID_RESERVED_ANONYMOUS_OR_BROADCAST),
+                .map(u16::from)
+                .unwrap_or(NODE_ID_RESERVED_ANONYMOUS_OR_BROADCAST)
+                .into(),
             destination_node_id: self
+                .header_base
                 .destination_node
-                .clone()
-                .map(|node| u16::from(node))
-                .unwrap_or(NODE_ID_RESERVED_ANONYMOUS_OR_BROADCAST),
-            data_specifier: match self.data_specifier.clone() {
-                DataSpecifier::Subject(subject) => subject.into(),
-                DataSpecifier::ServiceRequest(service) => {
+                .map(u16::from)
+                .unwrap_or(NODE_ID_RESERVED_ANONYMOUS_OR_BROADCAST)
+                .into(),
+            data_specifier: match self.header_base.data_specifier.clone() {
+                DataSpecifier::Subject(subject) => zerocopy::U16::from(u16::from(subject)),
+                DataSpecifier::ServiceRequest(service) => zerocopy::U16::from(
                     DATA_SPEC_SERVICE_NOT_MESSAGE
                         | DATA_SPEC_REQUEST_NOT_RESPONSE
-                        | u16::from(service)
-                }
+                        | u16::from(service),
+                ),
                 DataSpecifier::ServiceResponse(service) => {
-                    DATA_SPEC_SERVICE_NOT_MESSAGE | u16::from(service)
+                    zerocopy::U16::from(DATA_SPEC_SERVICE_NOT_MESSAGE | u16::from(service))
                 }
             },
-            transfer_id: self.transfer_id,
-            frame_index_eot: self.frame_index | last_frame_flag,
-            data: self.data,
-            header_checksum: 0,
+            transfer_id: self.header_base.transfer_id.into(),
+            frame_index_eot: (self.frame_index | last_frame_flag).into(),
+            data: self.header_base.data.into(),
+            header_checksum: 0.into(),
         };
         // Calculate CRC for the header, excluding the CRC field
         header.header_checksum = {
             let bytes: &[u8] = header.as_bytes();
             let mut crc = header_crc();
             crc.digest(&bytes[..bytes.len() - 2]);
-            crc.get_crc()
+            crc.get_crc().into()
         };
         debug_assert!(header.checksum_valid());
         header

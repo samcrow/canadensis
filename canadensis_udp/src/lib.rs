@@ -33,8 +33,6 @@ extern crate zerocopy;
 
 use core::fmt::Debug;
 use std::convert::TryFrom;
-use std::io;
-use std::net::{Ipv4Addr, UdpSocket};
 
 use crc_any::{CRCu16, CRCu32};
 use hash32_derive::Hash32;
@@ -46,6 +44,7 @@ pub use crate::rx::{UdpReceiver, UdpSessionData};
 pub use crate::tx::UdpTransmitter;
 
 mod address;
+mod driver;
 mod header;
 mod rx;
 mod tx;
@@ -167,21 +166,6 @@ impl From<std::io::Error> for Error {
 }
 
 const DEFAULT_TTL: u32 = 16;
-
-/// Creates a socket, enables non-blocking mode, binds to the provided
-/// address and port, and returns the socket
-fn bind_receive_socket(address: Ipv4Addr, port: u16) -> Result<UdpSocket, io::Error> {
-    let socket = UdpSocket::bind((address, port))?;
-    // socket.set_nonblocking(true)?;
-    Ok(socket)
-}
-/// Creates a socket, sets the TTL to DEFAULT_TTL, binds to the provided
-/// address and port, and returns the socket
-fn bind_transmit_socket(address: Ipv4Addr, port: u16) -> Result<UdpSocket, io::Error> {
-    let socket = UdpSocket::bind((address, port))?;
-    socket.set_multicast_ttl_v4(DEFAULT_TTL)?;
-    Ok(socket)
-}
 
 /// Returns a CRC calculator used for headers
 fn header_crc() -> CRCu16 {

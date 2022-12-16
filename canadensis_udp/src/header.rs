@@ -2,6 +2,7 @@ use crate::{header_crc, UdpNodeId, UdpTransferId, NODE_ID_RESERVED_ANONYMOUS_OR_
 use canadensis_core::{InvalidValue, Priority, ServiceId, SubjectId};
 use core::mem;
 use std::convert::TryFrom;
+use zerocopy::byteorder::{LE, U16, U32, U64};
 use zerocopy::{AsBytes, FromBytes};
 
 pub const SIZE: usize = mem::size_of::<UdpHeader>();
@@ -15,33 +16,33 @@ pub struct UdpHeader {
     /// 3 bits of priority, upper 5 bits reserved
     pub priority: u8,
     /// Node ID of source, or 0xffff if anonymous
-    pub source_node_id: u16,
+    pub source_node_id: U16<LE>,
     /// Node ID of destination, or 0xffff if broadcast
-    pub destination_node_id: u16,
+    pub destination_node_id: U16<LE>,
     /// Subject or service ID
-    pub data_specifier: u16,
+    pub data_specifier: U16<LE>,
     /// Transfer ID
-    pub transfer_id: u64,
+    pub transfer_id: U64<LE>,
     /// Index of this frame within the transfer, and the end of transfer flag
-    pub frame_index_eot: u32,
+    pub frame_index_eot: U32<LE>,
     /// Vendor-specific data
-    pub data: u16,
+    pub data: U16<LE>,
     /// Checksum of the header
-    pub header_checksum: u16,
+    pub header_checksum: U16<LE>,
 }
 
 impl UdpHeader {
     /// Returns true if this is the last frame in a transfer
     pub fn is_last_frame(&self) -> bool {
-        (self.frame_index_eot & LAST_FRAME) != 0
+        (self.frame_index_eot.get() & LAST_FRAME) != 0
     }
     /// Returns the index of this frame in a transfer
     pub fn frame_index(&self) -> u32 {
-        self.frame_index_eot & !LAST_FRAME
+        self.frame_index_eot.get() & !LAST_FRAME
     }
     /// Returns true if this header's checksum is correct
     pub fn checksum_valid(&self) -> bool {
-        let expected_crc = self.header_checksum;
+        let expected_crc = self.header_checksum.get();
         let header_bytes = self.as_bytes();
         let header_bytes_to_crc = &header_bytes[..header_bytes.len() - 2];
         let mut crc = header_crc();
@@ -94,15 +95,15 @@ impl TryFrom<UdpHeader> for ValidatedUdpHeader {
             return Err(InvalidValue);
         }
         let priority = Priority::try_from(header.priority)?;
-        let source_node_id = check_node_id(header.source_node_id)?;
-        let destination_node_id = check_node_id(header.destination_node_id)?;
+        let source_node_id = check_node_id(header.source_node_id.get())?;
+        let destination_node_id = check_node_id(header.destination_node_id.get())?;
 
-        let data_specifier = if (header.data_specifier & DATA_SPEC_SERVICE_NOT_MESSAGE)
+        let data_specifier = if (header.data_specifier.get() & DATA_SPEC_SERVICE_NOT_MESSAGE)
             == DATA_SPEC_SERVICE_NOT_MESSAGE
         {
             let service_id =
-                ServiceId::try_from(header.data_specifier & DATA_SPEC_SERVICE_ID_MASK)?;
-            if (header.data_specifier & DATA_SPEC_REQUEST_NOT_RESPONSE)
+                ServiceId::try_from(header.data_specifier.get() & DATA_SPEC_SERVICE_ID_MASK)?;
+            if (header.data_specifier.get() & DATA_SPEC_REQUEST_NOT_RESPONSE)
                 == DATA_SPEC_REQUEST_NOT_RESPONSE
             {
                 DataSpecifier::ServiceRequest(service_id)
@@ -111,7 +112,7 @@ impl TryFrom<UdpHeader> for ValidatedUdpHeader {
             }
         } else {
             DataSpecifier::Subject(SubjectId::try_from(
-                header.data_specifier & DATA_SPEC_SUBJECT_ID_MASK,
+                header.data_specifier.get() & DATA_SPEC_SUBJECT_ID_MASK,
             )?)
         };
 
@@ -122,8 +123,8 @@ impl TryFrom<UdpHeader> for ValidatedUdpHeader {
             data_specifier,
             frame_index: header.frame_index(),
             last_frame: header.is_last_frame(),
-            transfer_id: header.transfer_id.into(),
-            data: header.data,
+            transfer_id: header.transfer_id.get().into(),
+            data: header.data.get(),
         })
     }
 }

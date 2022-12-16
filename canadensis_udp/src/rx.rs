@@ -17,7 +17,7 @@ use crate::address::Address;
 use crate::header::{DataSpecifier, UdpHeader, ValidatedUdpHeader};
 use crate::rx::buildup::Buildup;
 use crate::rx::subscriptions::Subscriptions;
-use crate::{bind_receive_socket, data_crc, header, MIN_PACKET_SIZE, TRANSFER_CRC_SIZE};
+use crate::{data_crc, header, MIN_PACKET_SIZE, TRANSFER_CRC_SIZE};
 use crate::{Error, UdpNodeId, UdpTransferId, UdpTransport};
 
 mod buildup;
@@ -265,6 +265,14 @@ where
         self.subscriptions.unsubscribe_response(service);
         let _ = self.service_unsubscribe_check_multicast();
     }
+}
+
+/// Creates a socket, enables non-blocking mode, binds to the provided
+/// address and port, and returns the socket
+fn bind_receive_socket(address: Ipv4Addr, port: u16) -> Result<UdpSocket, io::Error> {
+    let socket = UdpSocket::bind((address, port))?;
+    socket.set_nonblocking(true)?;
+    Ok(socket)
 }
 
 pub struct Subscription<I, T>
