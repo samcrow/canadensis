@@ -3,33 +3,32 @@
 //!
 //! This node connects uses a UDP transport.
 //!
-//! Usage: `tcp_serial_basic_node [node IP address]`
-//!
-//! The node ID is automatically derived from the 16 least significant bits of the node IP address.
+//! Usage: `tcp_serial_basic_node <node ID>`
 //!
 //! # Testing
 //!
 //! ## Start the node
 //!
 //! ```
-//! udp_basic_node 127.0.0.[node ID]
+//! udp_basic_node <node ID>
 //! ```
 //!
 //! ## Interact with the node using Yakut
+//!
+//! Note: This will not work until pycyphal is updated, see <https://github.com/OpenCyphal/pycyphal/pull/253>
 //!
 //! ```
 //! yakut --transport "UDPTransport('127.0.0.127')" monitor
 //! ```
 //!
-//! In the above two commands, 8 is the MTU of standard CAN and 42 is the node ID of the Yakut node.
 
 extern crate canadensis;
 extern crate canadensis_udp;
 extern crate rand;
 extern crate socketcan;
 
-use std::convert::TryFrom;
-use std::net::Ipv4Addr;
+use canadensis_udp::embedded_nal::Ipv4Addr;
+use std::convert::TryInto;
 use std::time::Duration;
 use std::{env, thread};
 
@@ -44,21 +43,21 @@ use canadensis_core::time::Microseconds64;
 use canadensis_data_types::uavcan::node::get_info_1_0::GetInfoResponse;
 use canadensis_data_types::uavcan::node::version_1_0::Version;
 use canadensis_linux::SystemClock;
+use canadensis_udp::driver::StdUdpSocket;
 use canadensis_udp::{
-    NodeAddress, UdpNodeId, UdpReceiver, UdpSessionData, UdpTransferId, UdpTransmitter,
-    UdpTransport,
+    UdpNodeId, UdpReceiver, UdpSessionData, UdpTransferId, UdpTransmitter, UdpTransport,
+    DEFAULT_PORT,
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);
-    let local_address: Ipv4Addr = args
+    let node_id: UdpNodeId = args
         .next()
-        .expect("No local IP address")
-        .parse()
-        .expect("Invalid IP address");
-    let local_address =
-        NodeAddress::try_from(local_address).expect("IP address is not a valid node address");
-    let node_id = local_address.node_id();
+        .expect("No node ID")
+        .parse::<u16>()
+        .expect("Couldn't parse node ID")
+        .try_into()
+        .expect("Invalid node ID");
 
     // Set up information about this node
     let node_info = GetInfoResponse {
@@ -78,21 +77,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     const REQUESTERS: usize = 8;
     const MTU: usize = 1200;
 
-    let transmitter = UdpTransmitter::<MTU>::new(local_address.clone()).unwrap();
-    let receiver = UdpReceiver::new(local_address);
+    let socket = StdUdpSocket::bind(Ipv4Addr::localhost(), DEFAULT_PORT).unwrap();
+    let transmitter = UdpTransmitter::<StdUdpSocket, MTU>::new(DEFAULT_PORT);
+    let receiver = UdpReceiver::new(Some(node_id), Ipv4Addr::localhost());
     let core_node: CoreNode<
         SystemClock,
-        UdpTransmitter<MTU>,
+        UdpTransmitter<StdUdpSocket, MTU>,
         UdpReceiver<
             Microseconds64,
             SessionDynamicMap<Microseconds64, UdpNodeId, UdpTransferId, UdpSessionData>,
+            StdUdpSocket,
             MTU,
         >,
         TransferIdFixedMap<UdpTransport, TRANSFER_IDS>,
-        (),
+        StdUdpSocket,
         PUBLISHERS,
         REQUESTERS,
-    > = CoreNode::new(SystemClock::new(), node_id, transmitter, receiver, ());
+    > = CoreNode::new(SystemClock::new(), node_id, transmitter, receiver, socket);
     let mut node = BasicNode::new(core_node, node_info).unwrap();
 
     let start_time = std::time::Instant::now();

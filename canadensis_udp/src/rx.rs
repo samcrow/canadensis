@@ -1,47 +1,54 @@
-mod buildup;
-mod subscriptions;
-
 use alloc::vec::Vec;
 use core::convert::TryFrom;
 use core::marker::PhantomData;
-use crc_any::CRCu32;
+use embedded_nal::Ipv4Addr;
+
 use fallible_collections::FallibleVec;
-use std::io;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr, UdpSocket};
 use zerocopy::FromBytes;
 
 use canadensis_core::session::{Session, SessionTracker};
 use canadensis_core::time::Instant;
 use canadensis_core::transfer::{Header, MessageHeader, ServiceHeader, Transfer};
 use canadensis_core::transport::Receiver;
-use canadensis_core::{ServiceId, ServiceSubscribeError, SubjectId};
+use canadensis_core::{OutOfMemoryError, ServiceId, ServiceSubscribeError, SubjectId};
 
-use crate::address::{Address, UdpPort};
-use crate::header;
-use crate::header::{UdpHeader, ValidatedUdpHeader};
+use crate::address::Address;
+use crate::driver::UdpSocket;
+use crate::header::{DataSpecifier, UdpHeader, ValidatedUdpHeader};
 use crate::rx::buildup::Buildup;
 use crate::rx::subscriptions::Subscriptions;
-use crate::{Error, NodeAddress, UdpNodeId, UdpTransferId, UdpTransport};
+use crate::{data_crc, header, MIN_PACKET_SIZE, TRANSFER_CRC_SIZE};
+use crate::{Error, UdpNodeId, UdpTransferId, UdpTransport};
+
+mod buildup;
+mod subscriptions;
 
 /// UDP transport receiver
-pub struct UdpReceiver<I, T, const MTU: usize>
+pub struct UdpReceiver<I, T, S, const MTU: usize>
 where
     I: Instant,
 {
     subscriptions: Subscriptions<I, T>,
-    address: NodeAddress,
+    /// The ID of this node, or None if this node is anonymous
+    node_id: Option<UdpNodeId>,
+    /// The IP address of the local interface that the socket is bound to
+    local_address: Ipv4Addr,
+    _socket: PhantomData<S>,
     _session_tracker: PhantomData<T>,
 }
 
-impl<I, T, const MTU: usize> UdpReceiver<I, T, MTU>
+impl<I, T, S, const MTU: usize> UdpReceiver<I, T, S, MTU>
 where
     I: Instant,
     T: SessionTracker<I, UdpNodeId, UdpTransferId, UdpSessionData> + Default,
+    S: UdpSocket,
 {
-    pub fn new(address: NodeAddress) -> Self {
+    pub fn new(node_id: Option<UdpNodeId>, interface_address: Ipv4Addr) -> Self {
         UdpReceiver {
             subscriptions: Subscriptions::new(),
-            address,
+            node_id,
+            local_address: interface_address,
+            _socket: PhantomData,
             _session_tracker: PhantomData,
         }
     }
@@ -61,80 +68,127 @@ where
         }
     }
 
-    /// Checks all subscriptions for incoming frames
+    /// Reads one incoming frame and processes it through the matching subscription
     ///
     /// Return values:
     /// * `Ok(Some(transfer))` if a transfer was received
-    /// * `Ok(None)` if at least one packet was read from a socket, but it did not complete a transfer
-    /// * `Err(Error::Socket(e))` with `e.kind() == ErrorKind::WouldBlock` if no packet was available
-    ///    to read
+    /// * `Ok(None)` if a packet was read, but it did not complete a transfer
+    /// * `Err(nb::Error::WouldBlock)` if no packet was available to read
     /// * `Err(e)` if a socket or memory allocation error occurred
     fn accept_inner(
         &mut self,
         now: I,
-    ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, Error> {
-        for subscription in self.subscriptions.message_iter_mut() {
-            match subscription.check_for_frames::<MTU>(&self.address, now) {
-                Ok(Some(transfer)) => return Ok(Some(transfer)),
-                Ok(None) => { /* Continue to the next subscription */ }
-                Err(Error::Socket(e)) if e.kind() == io::ErrorKind::WouldBlock => {
-                    // Nothing available to read right now, keep going and check everything else
+        socket: &mut S,
+    ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, Error<nb::Error<S::Error>>> {
+        let mut buffer: [u8; MTU] = [0; MTU];
+        let bytes_received = socket.recv(&mut buffer).map_err(Error::Socket)?;
+        let buffer = &buffer[..bytes_received];
+
+        if bytes_received < MIN_PACKET_SIZE {
+            // Ignore packet
+            return Ok(None);
+        }
+        // Check header validity, ignore frames with invalid headers
+        let header = UdpHeader::read_from_prefix(buffer)
+            .and_then(|header| ValidatedUdpHeader::try_from(header).ok());
+        let header: ValidatedUdpHeader = match header {
+            Some(header) => header,
+            None => return Ok(None),
+        };
+        let bytes_after_header = &buffer[header::SIZE..];
+
+        // Look for a matching subscription
+        match header.data_specifier {
+            DataSpecifier::Subject { subject, .. } => {
+                if let Some(subscription) =
+                    self.subscriptions.find_message_subscription_mut(subject)
+                {
+                    return subscription
+                        .handle_frame(&header, bytes_after_header, now)
+                        .map_err(Error::Memory);
+                } else {
+                    log::trace!("No matching subject subscription");
                 }
-                Err(e) => return Err(e),
+            }
+            DataSpecifier::ServiceRequest { service, .. } => {
+                if let Some(subscription) =
+                    self.subscriptions.find_request_subscription_mut(service)
+                {
+                    return subscription
+                        .handle_frame(&header, bytes_after_header, now)
+                        .map_err(Error::Memory);
+                } else {
+                    log::trace!("No matching subject subscription");
+                }
+            }
+            DataSpecifier::ServiceResponse { service, .. } => {
+                if let Some(subscription) =
+                    self.subscriptions.find_response_subscription_mut(service)
+                {
+                    return subscription
+                        .handle_frame(&header, bytes_after_header, now)
+                        .map_err(Error::Memory);
+                } else {
+                    log::trace!("No matching subject subscription");
+                }
             }
         }
-        for subscription in self.subscriptions.request_iter_mut() {
-            match subscription.check_for_frames::<MTU>(&self.address, now) {
-                Ok(Some(transfer)) => return Ok(Some(transfer)),
-                Ok(None) => { /* Continue to the next subscription */ }
-                Err(Error::Socket(e)) if e.kind() == io::ErrorKind::WouldBlock => {
-                    // Nothing available to read right now, keep going and check everything else
-                }
-                Err(e) => return Err(e),
+        Ok(None)
+    }
+
+    /// Call this function before adding a service subscription
+    /// to join the multicast group if necessary
+    fn service_subscribe_check_multicast(&mut self, socket: &mut S) -> Result<(), S::Error> {
+        if let Some(node_id) = self.node_id {
+            // If this node hasn't already subscribed to a service request/response and joined
+            // its own multicast group, join the group now
+            if !self.subscriptions.any_service_subscriptions() {
+                socket.join_multicast_v4(&Address::Node(node_id).into(), &self.local_address)?;
             }
         }
-        for subscription in self.subscriptions.response_iter_mut() {
-            match subscription.check_for_frames::<MTU>(&self.address, now) {
-                Ok(Some(transfer)) => return Ok(Some(transfer)),
-                Ok(None) => { /* Continue to the next subscription */ }
-                Err(Error::Socket(e)) if e.kind() == io::ErrorKind::WouldBlock => {
-                    // Nothing available to read right now, keep going and check everything else
-                }
-                Err(e) => return Err(e),
+        Ok(())
+    }
+
+    /// Call this function after removing a service subscription
+    /// to leave the multicast group if necessary
+    fn service_unsubscribe_check_multicast(&mut self, socket: &mut S) -> Result<(), S::Error> {
+        if let Some(node_id) = self.node_id {
+            // If this node has no more service request/response subscriptions, leave its
+            // multicast group
+            if !self.subscriptions.any_service_subscriptions() {
+                socket.leave_multicast_v4(&Address::Node(node_id).into(), &self.local_address)?;
             }
         }
-        Err(Error::Socket(std::io::Error::new(
-            std::io::ErrorKind::WouldBlock,
-            "No packets available",
-        )))
+        Ok(())
     }
 }
 
-impl<I, T, const MTU: usize> Receiver<I> for UdpReceiver<I, T, MTU>
+impl<I, T, S, const MTU: usize> Receiver<I> for UdpReceiver<I, T, S, MTU>
 where
     I: Instant,
     T: SessionTracker<I, UdpNodeId, UdpTransferId, UdpSessionData> + Default,
+    S: UdpSocket,
 {
     type Transport = UdpTransport;
-    /// The UDP receiver uses multiple sockets internally instead of a separate driver.
-    type Driver = ();
-    type Error = Error;
+    type Driver = S;
+    type Error = Error<S::Error>;
 
     fn receive(
         &mut self,
         now: I,
-        _driver: &mut (),
+        socket: &mut S,
     ) -> Result<Option<Transfer<Vec<u8>, I, Self::Transport>>, Self::Error> {
         // Loop until all incoming packets have been read
         let result = loop {
-            match self.accept_inner(now) {
+            match self.accept_inner(now, socket) {
                 Ok(Some(transfer)) => break Ok(Some(transfer)),
                 Ok(None) => { /* Keep going and try to read another packet */ }
-                Err(Error::Socket(e)) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                Err(Error::Socket(nb::Error::WouldBlock)) => {
                     // Can't read any more
                     break Ok(None);
                 }
-                Err(e) => break Err(e),
+                Err(Error::Memory(e)) => break Err(Error::Memory(e)),
+                Err(Error::Socket(nb::Error::Other(e))) => break Err(Error::Socket(e)),
             }
         };
         self.clean_expired_sessions(now);
@@ -146,16 +200,18 @@ where
         subject: SubjectId,
         payload_size_max: usize,
         timeout: <I as Instant>::Duration,
-        _driver: &mut (),
-    ) -> Result<(), Error> {
-        self.subscriptions.subscribe_message(
-            subject,
-            Subscription::new_message(subject, payload_size_max, timeout, &self.address)?,
-        )?;
+        socket: &mut S,
+    ) -> Result<(), Self::Error> {
+        socket
+            .join_multicast_v4(&Address::Multicast(subject).into(), &self.local_address)
+            .map_err(Error::Socket)?;
+        self.subscriptions
+            .subscribe_message(subject, Subscription::new(payload_size_max, timeout));
         Ok(())
     }
 
-    fn unsubscribe_message(&mut self, subject: SubjectId, _driver: &mut ()) {
+    fn unsubscribe_message(&mut self, subject: SubjectId, socket: &mut S) {
+        let _ = socket.leave_multicast_v4(&Address::Multicast(subject).into(), &self.local_address);
         self.subscriptions.unsubscribe_message(subject);
     }
 
@@ -164,19 +220,22 @@ where
         service: ServiceId,
         payload_size_max: usize,
         timeout: <I as Instant>::Duration,
-        _driver: &mut (),
+        socket: &mut S,
     ) -> Result<(), ServiceSubscribeError<Self::Error>> {
-        let subscription =
-            Subscription::new_request(service, payload_size_max, timeout, &self.address)
-                .map_err(|io_error| ServiceSubscribeError::Transport(Error::Socket(io_error)))?;
-        self.subscriptions
-            .subscribe_request(service, subscription)
-            .map_err(|oom| ServiceSubscribeError::Transport(Error::Memory(oom)))?;
-        Ok(())
+        self.service_subscribe_check_multicast(socket)
+            .map_err(|e| ServiceSubscribeError::Transport(Error::Socket(e)))?;
+        if self.node_id.is_some() {
+            let subscription = Subscription::new(payload_size_max, timeout);
+            self.subscriptions.subscribe_request(service, subscription);
+            Ok(())
+        } else {
+            Err(ServiceSubscribeError::Anonymous)
+        }
     }
 
-    fn unsubscribe_request(&mut self, service: ServiceId, _driver: &mut ()) {
+    fn unsubscribe_request(&mut self, service: ServiceId, socket: &mut S) {
         self.subscriptions.unsubscribe_request(service);
+        let _ = self.service_unsubscribe_check_multicast(socket);
     }
 
     fn subscribe_response(
@@ -184,19 +243,22 @@ where
         service: ServiceId,
         payload_size_max: usize,
         timeout: <I as Instant>::Duration,
-        _driver: &mut (),
+        socket: &mut S,
     ) -> Result<(), ServiceSubscribeError<Self::Error>> {
-        let subscription =
-            Subscription::new_response(service, payload_size_max, timeout, &self.address)
-                .map_err(|io_error| ServiceSubscribeError::Transport(Error::Socket(io_error)))?;
-        self.subscriptions
-            .subscribe_response(service, subscription)
-            .map_err(|oom| ServiceSubscribeError::Transport(Error::Memory(oom)))?;
-        Ok(())
+        self.service_subscribe_check_multicast(socket)
+            .map_err(|e| ServiceSubscribeError::Transport(Error::Socket(e)))?;
+        if self.node_id.is_some() {
+            let subscription = Subscription::new(payload_size_max, timeout);
+            self.subscriptions.subscribe_response(service, subscription);
+            Ok(())
+        } else {
+            Err(ServiceSubscribeError::Anonymous)
+        }
     }
 
-    fn unsubscribe_response(&mut self, service: ServiceId, _driver: &mut ()) {
+    fn unsubscribe_response(&mut self, service: ServiceId, socket: &mut S) {
         self.subscriptions.unsubscribe_response(service);
+        let _ = self.service_unsubscribe_check_multicast(socket);
     }
 }
 
@@ -204,18 +266,9 @@ pub struct Subscription<I, T>
 where
     I: Instant,
 {
-    /// A socket bound to the appropriate address and port
-    socket: UdpSocket,
-    kind: SubscriptionKind,
     payload_size_max: usize,
     timeout: <I as Instant>::Duration,
     sessions: T,
-}
-
-enum SubscriptionKind {
-    Message(SubjectId),
-    Request(ServiceId),
-    Response(ServiceId),
 }
 
 impl<I, T> Subscription<I, T>
@@ -223,180 +276,94 @@ where
     I: Instant,
     T: SessionTracker<I, UdpNodeId, UdpTransferId, UdpSessionData> + Default,
 {
-    /// Creates a message subscription
-    fn new_message(
-        subject: SubjectId,
-        payload_size_max: usize,
-        timeout: <I as Instant>::Duration,
-        local_address: &NodeAddress,
-    ) -> Result<Self, io::Error> {
-        let multicast_address = local_address.multicast_address(subject);
-        let socket = crate::bind_socket(multicast_address, UdpPort::Message.into())?;
-        socket.join_multicast_v4(&multicast_address, &Ipv4Addr::from(local_address.clone()))?;
-
-        Ok(Subscription {
-            socket,
-            kind: SubscriptionKind::Message(subject),
+    /// Creates a subscription
+    fn new(payload_size_max: usize, timeout: <I as Instant>::Duration) -> Self {
+        Subscription {
             payload_size_max,
             timeout,
             sessions: T::default(),
-        })
-    }
-    fn new_request(
-        service: ServiceId,
-        payload_size_max: usize,
-        timeout: <I as Instant>::Duration,
-        local_address: &NodeAddress,
-    ) -> Result<Self, io::Error> {
-        let socket = crate::bind_socket(
-            local_address.clone().into(),
-            UdpPort::Request(service).into(),
-        )?;
-
-        Ok(Subscription {
-            socket,
-            kind: SubscriptionKind::Request(service),
-            payload_size_max,
-            timeout,
-            sessions: T::default(),
-        })
-    }
-    fn new_response(
-        service: ServiceId,
-        payload_size_max: usize,
-        timeout: <I as Instant>::Duration,
-        local_address: &NodeAddress,
-    ) -> Result<Self, io::Error> {
-        let socket = crate::bind_socket(
-            local_address.clone().into(),
-            UdpPort::Response(service).into(),
-        )?;
-
-        Ok(Subscription {
-            socket,
-            kind: SubscriptionKind::Response(service),
-            payload_size_max,
-            timeout,
-            sessions: T::default(),
-        })
-    }
-
-    /// Checks for an incoming packet and handles it, possibly returning a transfer
-    ///
-    /// This function returns a `WouldBlock` error if no packet is ready to read from the socket.
-    /// It returns `Ok(None)` if a packet was read but it did not finish a transfer.
-    fn check_for_frames<const MTU: usize>(
-        &mut self,
-        local_address: &NodeAddress,
-        now: I,
-    ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, Error>
-    where
-        I: Instant,
-    {
-        let mut buffer = [0u8; MTU];
-        let (bytes, from) = self.socket.recv_from(&mut buffer)?;
-        self.handle_frame(&buffer[..bytes], from, local_address, now)
+        }
     }
 
     fn handle_frame(
         &mut self,
-        bytes: &[u8],
-        from: SocketAddr,
-        local_address: &NodeAddress,
-        now: I,
-    ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, Error> {
-        // The from address should always be the address of an individual node
-        let from_ip = match from.ip() {
-            IpAddr::V4(v4) => v4,
-            IpAddr::V6(_) => return Ok(None),
-        };
-        let from = match Address::try_from(from_ip) {
-            Ok(Address::Node(node_address)) => node_address,
-            Ok(Address::Multicast(_)) | Err(_) => return Ok(None),
-        };
-        if from.subnet() != local_address.subnet() {
-            // Different subnet
-            return Ok(None);
-        }
-        // The from port doesn't matter here. The socket is bound to only one port, so any incoming
-        // frames must be on that port.
-
-        // Extract header from frame bytes
-        let header: ValidatedUdpHeader = match UdpHeader::read_from_prefix(bytes)
-            .and_then(|header| ValidatedUdpHeader::try_from(header).ok())
-        {
-            Some(header) => header,
-            None => {
-                // Frame not large enough for header, or invalid format
-                return Ok(None);
-            }
-        };
-        self.handle_sane_frame(
-            &header,
-            &bytes[header::SIZE..],
-            from.node_id(),
-            local_address,
-            now,
-        )
-    }
-
-    fn handle_sane_frame(
-        &mut self,
         header: &ValidatedUdpHeader,
         bytes_after_header: &[u8],
-        from: UdpNodeId,
-        local_address: &NodeAddress,
         now: I,
-    ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, Error> {
-        log::debug!("handle_sane_frame header {:?} from node {:?}", header, from);
+    ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, OutOfMemoryError> {
         let timeout = self.timeout;
-        let session = self.sessions.get_mut_or_insert_with(from, || {
-            Session::new(now, timeout, None, UdpSessionData::default())
-        })?;
-        // Check transfer ID
-        if let Some(last_transfer_id) = session.last_transfer_id() {
-            if header.transfer_id <= *last_transfer_id {
-                // Duplicate
-                log::debug!(
-                    "Discarding duplicate transfer with ID {:?}",
-                    header.transfer_id
-                );
-                return Ok(None);
+        if let Some(source_node_id) = header.data_specifier.source_node_id() {
+            let session = self.sessions.get_mut_or_insert_with(source_node_id, || {
+                Session::new(now, timeout, None, UdpSessionData::default())
+            })?;
+            // Check transfer ID
+            if let Some(last_transfer_id) = session.last_transfer_id() {
+                if header.transfer_id <= *last_transfer_id {
+                    // Duplicate
+                    log::debug!(
+                        "Discarding duplicate transfer with ID {:?}",
+                        header.transfer_id
+                    );
+                    return Ok(None);
+                }
             }
+            session.set_last_activity(now);
+            let result = session.handle_frame(header, bytes_after_header, self.payload_size_max);
+
+            if let Ok(Some(_)) = &result {
+                // Successfully received
+                // Don't need the session anymore
+                self.sessions.remove(source_node_id);
+            }
+
+            self.convert_reassembly_result(result, header, now)
+        } else {
+            // Special case for anonymous transfers, which must be single-frame
+            let mut session = Session::new(now, self.timeout, None, UdpSessionData::default());
+            let result = session.handle_frame(header, bytes_after_header, self.payload_size_max);
+            self.convert_reassembly_result(result, header, now)
         }
-        session.set_last_activity(now);
+    }
 
-        let result = session.handle_frame(header, bytes_after_header, self.payload_size_max);
-
+    fn convert_reassembly_result(
+        &self,
+        result: Result<Option<Vec<u8>>, OutOfMemoryError>,
+        header: &ValidatedUdpHeader,
+        now: I,
+    ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, OutOfMemoryError> {
         match result {
             Ok(Some(reassembled)) => {
                 // Add the transfer headers and record the completed transfer
-                session.set_last_transfer_id(header.transfer_id);
-
-                let header = match &self.kind {
-                    SubscriptionKind::Message(subject) => Header::Message(MessageHeader {
-                        timestamp: now,
-                        transfer_id: header.transfer_id,
-                        priority: header.priority,
-                        subject: *subject,
-                        source: Some(from),
-                    }),
-                    SubscriptionKind::Request(service) => Header::Request(ServiceHeader {
-                        timestamp: now,
-                        transfer_id: header.transfer_id,
-                        priority: header.priority,
-                        service: *service,
-                        source: from,
-                        destination: local_address.node_id(),
-                    }),
-                    SubscriptionKind::Response(service) => Header::Response(ServiceHeader {
-                        timestamp: now,
-                        transfer_id: header.transfer_id,
-                        priority: header.priority,
-                        service: *service,
-                        source: from,
-                        destination: local_address.node_id(),
-                    }),
+                let header = match header.data_specifier {
+                    DataSpecifier::Subject { from, subject, .. } => {
+                        Header::Message(MessageHeader {
+                            timestamp: now,
+                            transfer_id: header.transfer_id,
+                            priority: header.priority,
+                            subject,
+                            source: from,
+                        })
+                    }
+                    DataSpecifier::ServiceRequest { service, from, to } => {
+                        Header::Request(ServiceHeader {
+                            timestamp: now,
+                            transfer_id: header.transfer_id,
+                            priority: header.priority,
+                            service,
+                            source: from,
+                            destination: to,
+                        })
+                    }
+                    DataSpecifier::ServiceResponse { service, from, to } => {
+                        Header::Response(ServiceHeader {
+                            timestamp: now,
+                            transfer_id: header.transfer_id,
+                            priority: header.priority,
+                            service,
+                            source: from,
+                            destination: to,
+                        })
+                    }
                 };
                 Ok(Some(Transfer {
                     header,
@@ -427,124 +394,116 @@ where
         header: &ValidatedUdpHeader,
         bytes_after_header: &[u8],
         max_payload_length: usize,
-    ) -> Result<Option<Vec<u8>>, Error>;
+    ) -> Result<Option<Vec<u8>>, OutOfMemoryError>;
 }
 
 impl<I> UdpSession<I> for Session<I, UdpTransferId, UdpSessionData>
 where
     I: Instant,
 {
+    /// Handles a frame
+    ///
+    /// If the frame successfully completed a transfer, this function returns the assembled transfer
+    /// payload.
     fn handle_frame(
         &mut self,
         header: &ValidatedUdpHeader,
         bytes_after_header: &[u8],
         max_payload_length: usize,
-    ) -> Result<Option<Vec<u8>>, Error> {
-        log::debug!(
-            "UdpSession::handle_frame, buildup = {:?}",
-            &self.data().buildup
-        );
-        if header.frame_index == 0 {
-            if header.last_frame {
-                // Special case for a single-frame transfer
-                if bytes_after_header.len() <= max_payload_length {
-                    let mut payload: Vec<u8> =
-                        FallibleVec::try_with_capacity(bytes_after_header.len())?;
-                    payload.extend_from_slice(bytes_after_header);
+    ) -> Result<Option<Vec<u8>>, OutOfMemoryError> {
+        // The buildup will collect the payload and the transfer CRC in the last frame, so it
+        // needs extra capacity
+        let max_payload_and_crc_length = max_payload_length + TRANSFER_CRC_SIZE;
+        if bytes_after_header.len() < TRANSFER_CRC_SIZE + 1 {
+            // Frame not long enough
+            return Ok(None);
+        }
+        let payload_bytes = &bytes_after_header[..bytes_after_header.len() - TRANSFER_CRC_SIZE];
+        // Every frame has a transfer CRC at the end.
+        // If this is the last frame, the CRC covers the whole transfer (not including the CRCs of
+        // the previous frames).
+        // Otherwise, the CRC covers the data in this frame only.
+        // 4 cases:
+        let first_frame = header.frame_index == 0;
+        let last_frame = header.last_frame;
+        match (first_frame, last_frame) {
+            (true, true) => {
+                // Frame index 0 and last (single-frame transfer):
+                // Check frame CRC, no buildup, return payload only
+                if check_frame_crc(bytes_after_header) {
+                    let mut payload: Vec<u8> = FallibleVec::try_with_capacity(payload_bytes.len())?;
+                    payload.extend_from_slice(payload_bytes);
                     Ok(Some(payload))
                 } else {
-                    // Frame too large
                     Ok(None)
                 }
-            } else {
-                // Start a buildup
-                log::debug!("Creating buildup for first frame");
-                match Buildup::new(header, bytes_after_header, max_payload_length) {
-                    Ok(buildup) => self.data_mut().buildup = Some(buildup),
-                    Err(e) => {
-                        // Couldn't create buildup due to a problem with the frame
-                        log::warn!("Can't create buildup from first frame: {:?}", e);
-                        return Ok(None);
+            }
+            (true, false) => {
+                // Frame index 0 and not last (beginning):
+                // Check frame CRC, create buildup and add payload only
+                if check_frame_crc(bytes_after_header) {
+                    let buildup =
+                        match Buildup::new(header, payload_bytes, max_payload_and_crc_length) {
+                            Ok(buildup) => buildup,
+                            Err(_) => {
+                                // payload_bytes was greater than max_payload_and_crc_length
+                                return Ok(None);
+                            }
+                        };
+                    self.data_mut().buildup = Some(buildup);
+                } else {
+                    log::debug!("Incorrect first frame CRC");
+                }
+                Ok(None)
+            }
+            (false, false) => {
+                // Frame index >0 and not last (middle):
+                // Check frame CRC, add payload only to buildup
+                if check_frame_crc(bytes_after_header) {
+                    if let Some(buildup) = self.data_mut().buildup.as_mut() {
+                        let _ = buildup.push(header, payload_bytes);
                     }
                 }
                 Ok(None)
             }
-        } else if header.last_frame {
-            match self.data_mut().buildup.take() {
-                Some(mut buildup) => {
-                    match buildup.push(header, bytes_after_header) {
-                        Ok(()) => {
-                            // Completed reassembly
-                            let mut payload_and_crc = buildup.into_payload();
-
-                            let expected_crc =
-                                match payload_and_crc.get(payload_and_crc.len() - 4..) {
-                                    Some(crc_slice) => {
-                                        let mut crc_bytes = [0u8; 4];
-                                        crc_bytes.copy_from_slice(crc_slice);
-                                        u32::from_le_bytes(crc_bytes)
-                                    }
-                                    None => {
-                                        // Not enough payload to include a CRC
-                                        log::warn!("Payload too short to contain CRC");
-                                        return Ok(None);
-                                    }
-                                };
-                            payload_and_crc.truncate(payload_and_crc.len() - 4);
-                            let payload = payload_and_crc;
-
-                            let calculated_crc = {
-                                let mut crc = CRCu32::crc32c();
-                                crc.digest(&payload);
-                                crc.get_crc()
-                            };
-
-                            // Check crc
-                            if calculated_crc == expected_crc {
-                                Ok(Some(payload))
-                            } else {
-                                // Incorrect CRC
-                                log::warn!(
-                                    "Incorrect CRC: calculated {:#08x}, got {:#08x}",
-                                    calculated_crc,
-                                    expected_crc
-                                );
-                                Ok(None)
-                            }
-                        }
-                        Err(e) => {
-                            // Reassembly error. Give up on the reassembly.
-                            log::warn!("Reassembly error on last frame: {:?}", e);
+            (false, true) => {
+                // Frame index >0 and last (end):
+                // Add payload and transfer CRC to buildup, extract combined payload and transfer CRC,
+                // check full transfer CRC, return combined payload
+                if let Some(mut buildup) = self.data_mut().buildup.take() {
+                    if buildup.push(header, bytes_after_header).is_ok() {
+                        let payload_and_crc = buildup.into_payload();
+                        if check_frame_crc(&payload_and_crc) {
+                            // Remove CRC from the end
+                            let mut payload = payload_and_crc;
+                            payload.truncate(payload.len() - TRANSFER_CRC_SIZE);
+                            Ok(Some(payload))
+                        } else {
                             Ok(None)
                         }
+                    } else {
+                        Ok(None)
                     }
-                }
-                None => {
-                    // Should have a buildup from the first frame, but none exists
-                    log::warn!("Last frame, buildup does not exist");
-                    Ok(None)
-                }
-            }
-        } else {
-            // A frame in the middle
-            match self.data_mut().buildup.as_mut() {
-                Some(buildup) => {
-                    match buildup.push(header, bytes_after_header) {
-                        Ok(()) => Ok(None),
-                        Err(e) => {
-                            // Reassembly error. Give up on the reassembly.
-                            log::warn!("Reassembly error on middle frame: {:?}", e);
-                            self.data_mut().buildup = None;
-                            Ok(None)
-                        }
-                    }
-                }
-                None => {
-                    // Missed the first frame, can't use this transfer
-                    log::warn!("Middle frame, buildup does not exist");
+                } else {
+                    log::debug!("No buildup");
                     Ok(None)
                 }
             }
         }
     }
+}
+
+fn check_frame_crc(bytes_after_header: &[u8]) -> bool {
+    let crc_start = bytes_after_header.len() - TRANSFER_CRC_SIZE;
+    let expected_crc = {
+        let mut expected_crc_bytes: [u8; 4] = [0; 4];
+        expected_crc_bytes.copy_from_slice(&bytes_after_header[crc_start..]);
+        u32::from_le_bytes(expected_crc_bytes)
+    };
+
+    let bytes_to_crc = &bytes_after_header[..crc_start];
+
+    let mut crc = data_crc();
+    crc.digest(bytes_to_crc);
+    crc.get_crc() == expected_crc
 }

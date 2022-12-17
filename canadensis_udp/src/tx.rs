@@ -1,158 +1,168 @@
-mod breakdown;
+use alloc::vec::Vec;
+use core::cmp::Ordering;
+use core::marker::PhantomData;
 
-use crate::address::{NodeAddress, UdpPort};
-use crate::tx::breakdown::Breakdown;
-use crate::{bind_socket, header};
-use crate::{Error, UdpTransferId, UdpTransport};
+use embedded_nal::SocketAddrV4;
+
+use canadensis_core::nb;
 use canadensis_core::time::{Clock, Instant};
 use canadensis_core::transfer::{Header, Transfer};
 use canadensis_core::transport::Transmitter;
-use canadensis_core::{nb, Priority};
-use crc_any::CRCu32;
-use std::cmp::Ordering;
-use std::net::{SocketAddrV4, UdpSocket};
 
-pub struct UdpTransmitter<const MTU: usize> {
-    /// The socket used to send frames
-    socket: UdpSocket,
-    /// The address of this node
-    address: NodeAddress,
+use crate::address::Address;
+use crate::header::DataSpecifier;
+use crate::tx::breakdown::{Breakdown, HeaderBase};
+use crate::{header, TRANSFER_CRC_SIZE};
+use crate::{Error, UdpTransport};
+
+mod breakdown;
+
+pub struct UdpTransmitter<S, const MTU: usize> {
+    destination_port: u16,
+    _socket: PhantomData<S>,
 }
-impl<const MTU: usize> UdpTransmitter<MTU> {
+impl<S, const MTU: usize> UdpTransmitter<S, MTU>
+where
+    S: crate::driver::UdpSocket,
+{
     /// Creates a transmitter
     ///
     /// # Panics
     ///
-    /// This function panics if `MTU` is less than 25. 25 bytes is the minimum MTU required to
-    /// contain a header and one byte of payload in each frame.
-    pub fn new(address: NodeAddress) -> Result<Self, Error> {
-        assert!(MTU > header::SIZE, "MTU is too small");
+    /// This function panics if `MTU` is less than 29. 29 bytes is the minimum MTU required to
+    /// contain a header, transfer CRC, and one byte of payload in each frame.
+    pub fn new(destination_port: u16) -> Self {
+        // MTU must be big enough for the header, transfer CRC, and at least 1 byte of data
+        assert!(
+            MTU > header::SIZE + TRANSFER_CRC_SIZE + 1,
+            "MTU is too small"
+        );
 
-        // Bind to an ephemeral port
-        let socket = bind_socket(address.clone().into(), 0)?;
-
-        Ok(UdpTransmitter { socket, address })
+        UdpTransmitter {
+            destination_port,
+            _socket: PhantomData,
+        }
     }
 
     fn push_inner<I, C>(
         &mut self,
+        header_base: HeaderBase,
         dest: SocketAddrV4,
         deadline: I,
-        transfer_id: UdpTransferId,
-        priority: Priority,
         payload: &[u8],
         clock: &mut C,
-    ) -> Result<(), Error>
+        socket: &mut S,
+    ) -> Result<(), S::Error>
     where
         I: Instant,
         C: Clock<Instant = I>,
     {
-        if breakdown::fits_into_one_frame::<MTU>(payload.len()) {
-            // No CRC
-            let breakdown = Breakdown::<_, _, MTU>::new(
-                dest,
-                deadline,
-                transfer_id.into(),
-                priority,
-                payload.iter().copied(),
-            );
-            self.send_frames(breakdown, clock)
-        } else {
-            // Add CRC
-            let mut crc = CRCu32::crc32c();
-            crc.digest(payload);
-            let crc_bytes = crc.get_crc().to_le_bytes();
-            let payload_and_crc = payload.iter().copied().chain(crc_bytes.iter().copied());
-            let breakdown = Breakdown::<_, _, MTU>::new(
-                dest,
-                deadline,
-                transfer_id.into(),
-                priority,
-                payload_and_crc,
-            );
-            self.send_frames(breakdown, clock)
-        }
+        let breakdown = Breakdown::new(header_base, deadline, payload.iter().copied(), MTU);
+        self.send_frames(breakdown, dest, clock, socket)
     }
 
-    fn send_frames<I, B, C>(&mut self, breakdown: B, clock: &mut C) -> Result<(), Error>
+    fn send_frames<I, B, C>(
+        &mut self,
+        breakdown: B,
+        destination_address: SocketAddrV4,
+        clock: &mut C,
+        socket: &mut S,
+    ) -> Result<(), S::Error>
     where
         I: Instant,
-        B: IntoIterator<Item = UdpFrame<I, MTU>>,
+        B: IntoIterator<Item = UdpFrame<I>>,
         C: Clock<Instant = I>,
     {
         for frame in breakdown {
             if frame.deadline.overflow_safe_compare(&clock.now()) == Ordering::Greater {
-                self.socket.send_to(&frame.data, frame.remote_address)?;
+                socket.send_to(&frame.data, destination_address)?;
+            } else {
+                log::trace!("Discarding outgoing frame because its deadline has passed");
             }
         }
         Ok(())
     }
 }
 
-impl<I, const MTU: usize> Transmitter<I> for UdpTransmitter<MTU>
+impl<I, S, const MTU: usize> Transmitter<I> for UdpTransmitter<S, MTU>
 where
     I: Instant,
+    S: crate::driver::UdpSocket,
 {
     type Transport = UdpTransport;
-    /// The UDP transport uses an internal socket instead of a separate driver.
-    type Driver = ();
-    type Error = Error;
+    type Driver = S;
+    type Error = Error<S::Error>;
 
     fn push<A, C>(
         &mut self,
         transfer: Transfer<A, I, Self::Transport>,
         clock: &mut C,
-        _driver: &mut (),
-    ) -> nb::Result<(), Error>
+        socket: &mut S,
+    ) -> nb::Result<(), Self::Error>
     where
         A: AsRef<[u8]>,
         C: Clock<Instant = I>,
     {
-        match transfer.header {
+        let deadline = transfer.header.timestamp();
+        let (header_base, dest_address) = match transfer.header {
             Header::Message(header) => {
-                let multicast_addr = self.address.multicast_address(header.subject);
-                let dest_port: u16 = UdpPort::Message.into();
-                self.push_inner(
-                    SocketAddrV4::new(multicast_addr, dest_port),
-                    header.timestamp,
-                    header.transfer_id,
-                    header.priority,
-                    transfer.payload.as_ref(),
-                    clock,
-                )
+                let multicast_addr = Address::Multicast(header.subject);
+                let header_base = HeaderBase {
+                    data_specifier: DataSpecifier::Subject {
+                        from: header.source,
+                        subject: header.subject,
+                    },
+                    transfer_id: header.transfer_id,
+                    priority: header.priority,
+                    data: 0,
+                };
+                (header_base, multicast_addr)
             }
             Header::Request(header) => {
-                let dest_addr = self.address.remote_node_address(header.destination);
-                let dest_port: u16 = UdpPort::Request(header.service).into();
-                self.push_inner(
-                    SocketAddrV4::new(dest_addr, dest_port),
-                    header.timestamp,
-                    header.transfer_id,
-                    header.priority,
-                    transfer.payload.as_ref(),
-                    clock,
-                )
+                let dest_addr = Address::Node(header.destination);
+                let header_base = HeaderBase {
+                    data_specifier: DataSpecifier::ServiceRequest {
+                        from: header.source,
+                        to: header.destination,
+                        service: header.service,
+                    },
+                    transfer_id: header.transfer_id,
+                    priority: header.priority,
+                    data: 0,
+                };
+                (header_base, dest_addr)
             }
             Header::Response(header) => {
-                let dest_addr = self.address.remote_node_address(header.destination);
-                let dest_port: u16 = UdpPort::Response(header.service).into();
-                self.push_inner(
-                    SocketAddrV4::new(dest_addr, dest_port),
-                    header.timestamp,
-                    header.transfer_id,
-                    header.priority,
-                    transfer.payload.as_ref(),
-                    clock,
-                )
+                let dest_addr = Address::Node(header.destination);
+                let header_base = HeaderBase {
+                    data_specifier: DataSpecifier::ServiceResponse {
+                        from: header.source,
+                        to: header.destination,
+                        service: header.service,
+                    },
+                    transfer_id: header.transfer_id,
+                    priority: header.priority,
+                    data: 0,
+                };
+                (header_base, dest_addr)
             }
-        }
+        };
+        self.push_inner(
+            header_base,
+            SocketAddrV4::new(dest_address.into(), self.destination_port),
+            deadline,
+            transfer.payload.as_ref(),
+            clock,
+            socket,
+        )
+        .map_err(Error::Socket)
         .map_err(nb::Error::Other)
     }
 
     fn flush<C>(
         &mut self,
         _clock: &mut C,
-        _driver: &mut (),
+        _socket: &mut S,
     ) -> canadensis_core::nb::Result<(), Self::Error>
     where
         C: Clock<Instant = I>,
@@ -164,12 +174,11 @@ where
 
     fn mtu(&self) -> usize {
         // Subtract to get the maximum number of payload bytes per frame
-        MTU - header::SIZE
+        MTU - header::SIZE - TRANSFER_CRC_SIZE
     }
 }
 
-pub(crate) struct UdpFrame<I, const MTU: usize> {
-    remote_address: SocketAddrV4,
+pub(crate) struct UdpFrame<I> {
     deadline: I,
-    data: heapless::Vec<u8, MTU>,
+    data: Vec<u8>,
 }

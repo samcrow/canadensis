@@ -1,29 +1,39 @@
 extern crate canadensis_core;
 extern crate canadensis_udp;
+extern crate embedded_nal;
+extern crate simplelog;
+
+use embedded_nal::Ipv4Addr;
+use log::LevelFilter;
+use simplelog::{ColorChoice, TermLogger};
+use std::convert::{TryFrom, TryInto};
+use std::thread::sleep;
+use std::time::Duration;
 
 use canadensis_core::time::{Clock, MicrosecondDuration64};
 use canadensis_core::transfer::{Header, MessageHeader, Transfer};
 use canadensis_core::transport::{TransferId, Transmitter};
 use canadensis_core::{Priority, SubjectId};
 use canadensis_linux::SystemClock;
-use canadensis_udp::{NodeAddress, UdpTransferId, UdpTransmitter};
-use std::convert::{TryFrom, TryInto};
-use std::net::Ipv4Addr;
-use std::thread::sleep;
-use std::time::Duration;
+use canadensis_udp::driver::StdUdpSocket;
+use canadensis_udp::{UdpNodeId, UdpTransferId, UdpTransmitter, DEFAULT_PORT};
 
 fn main() {
-    let address = NodeAddress::try_from(Ipv4Addr::new(127, 0, 0, 120)).unwrap();
-    let node_id = address.node_id();
-    println!(
-        "This node's IP address: {}",
-        Ipv4Addr::from(address.clone())
-    );
+    TermLogger::init(
+        LevelFilter::Trace,
+        Default::default(),
+        Default::default(),
+        ColorChoice::Auto,
+    )
+    .unwrap();
 
+    let local_node_id = UdpNodeId::try_from(120).unwrap();
     let mut clock = SystemClock::new();
+    const MTU: usize = 1472;
 
-    const MTU: usize = 1200;
-    let mut transmitter = UdpTransmitter::<MTU>::new(address).unwrap();
+    // Bind a socket to an OS-assigned port number on loopback, and send to the default port
+    let mut socket = StdUdpSocket::bind(Ipv4Addr::localhost(), 0).unwrap();
+    let mut transmitter = UdpTransmitter::<StdUdpSocket, MTU>::new(DEFAULT_PORT);
 
     // Make a payload compatible with the uavcan.metatransport.ethernet.Frame.0.1 format format.
     let mut payload = Vec::with_capacity(6 + 6 + 2 + 2 + MAJOR_GENERAL_SONG.len());
@@ -45,13 +55,13 @@ fn main() {
                 transfer_id: transfer_id.clone(),
                 priority: Priority::Nominal,
                 subject: SubjectId::try_from(73u16).unwrap(),
-                source: Some(node_id.clone()),
+                source: Some(local_node_id),
             }),
             payload: &payload,
         };
 
-        transmitter.push(transfer, &mut clock, &mut ()).unwrap();
-        transmitter.flush(&mut clock, &mut ()).unwrap();
+        transmitter.push(transfer, &mut clock, &mut socket).unwrap();
+        transmitter.flush(&mut clock, &mut socket).unwrap();
 
         transfer_id = transfer_id.increment();
 

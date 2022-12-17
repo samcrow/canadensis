@@ -44,6 +44,11 @@ where
     /// If another session with the same node already exists, it is removed.
     fn insert(&mut self, node: N, session: Session<I, T, D>) -> Result<(), OutOfMemoryError>;
 
+    /// Removes a session for the provided node if one exists
+    ///
+    /// If no matching session exists, this function has no effect.
+    fn remove(&mut self, node: N);
+
     /// Removes all sessions that have expired
     fn remove_expired(&mut self, now: I);
 }
@@ -178,6 +183,10 @@ where
             .map_err(|_| OutOfMemoryError)
     }
 
+    fn remove(&mut self, node: N) {
+        self.sessions.remove(&node);
+    }
+
     fn remove_expired(&mut self, now: I) {
         loop {
             let mut expired_node_id: Option<N> = None;
@@ -243,6 +252,10 @@ where
     fn insert(&mut self, node: N, session: Session<I, T, D>) -> Result<(), OutOfMemoryError> {
         self.sessions[node.into()] = Some(session);
         Ok(())
+    }
+
+    fn remove(&mut self, node: N) {
+        self.sessions[node.into()] = None;
     }
 
     fn remove_expired(&mut self, now: I) {
@@ -313,6 +326,10 @@ where
     fn insert(&mut self, node: N, session: Session<I, T, D>) -> Result<(), OutOfMemoryError> {
         let _ = self.sessions.insert(node, session);
         Ok(())
+    }
+
+    fn remove(&mut self, node: N) {
+        self.sessions.remove(&node);
     }
 
     fn remove_expired(&mut self, now: I) {

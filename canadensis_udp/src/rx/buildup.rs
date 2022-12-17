@@ -1,14 +1,24 @@
 //! Reassembles UDP packets into transfers
 
+use alloc::vec::Vec;
+
+use fallible_collections::{FallibleVec, TryReserveError};
+
+use canadensis_core::{OutOfMemoryError, Priority};
+
 use crate::header::ValidatedUdpHeader;
 use crate::UdpTransferId;
-use canadensis_core::{OutOfMemoryError, Priority};
-use fallible_collections::{FallibleVec, TryReserveError};
 
 // TODO: Add support for reassembling out-of-order frames
 
-/// Collects UDP packets, reassembles them int a transfer, and calculates the CRC of the
-/// entire payload (not including the header in each packet)
+/// Collects UDP packets and reassembles them into a transfer
+///
+/// This checks the following properties:
+/// * Frames have consecutive frame indices (out-of-order reassembly is not currently supported)
+/// * Frames have the same transfer ID
+/// * Frames have the same priority
+/// * The total number of bytes does not exceed the maximum allowed length
+///
 #[derive(Debug)]
 pub struct Buildup {
     /// The transfer bytes (not including UDP frame headers) that have been collected so far

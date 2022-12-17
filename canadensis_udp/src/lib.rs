@@ -1,73 +1,75 @@
 //!
 //! # Cyphal/UDP transport
 //!
-//! The current version of the transport is documented at <https://pycyphal.readthedocs.io/en/latest/api/pycyphal.transport.udp.html>.
+//! The current version of the transport is documented in [a forum post from 2022-12-02](https://forum.opencyphal.org/t/cyphal-udp-architectural-issues-caused-by-the-dependency-between-the-nodes-ip-address-and-its-identity/1765/60).
 //!
-//! This implementation requires the `std` library for sockets.
+//! If the `std` feature is enabled, this implementation requires the `std` library for sockets.
 //!
 //! ## How sockets work
 //!
 //! ### Sending
 //!
 //! A transport can use one socket to send all outgoing message and service transfers.
-//! This socket gets bound to a normal address derived from the local node ID and an ephemeral
+//! This socket binds to and an ephemeral UDP port on one network interface.
+//!
+//! Outgoing transfers get sent to a multicast address based on the port ID and a fixed
 //! UDP port.
 //!
-//! Outgoing message transfers get sent to a multicast address based on the port ID and the fixed
-//! UDP port 16383.
+//! ### Receiving transfers
 //!
-//! Outgoing request transfers get sent to the address of the destination node with a UDP port
-//! number based on the service ID.
+//! All transfers are received through one socket, which joins any multicast groups required to
+//! receive the correct frames.
 //!
-//! ### Receiving message transfers
-//!
-//! Each subscription requires its own socket. The socket gets bound to the multicast address
-//! derived from the subject ID and the fixed UDP port 16383.
-//!
-//! When the transport receives a packet, it knows the subject ID (associated with the socket)
-//! and extracts the source node ID from the source IP address.
-//!
-//! ### Receiving service transfers
-//!
-//! Each subscription requires its own socket. The socket gets bound to a normal address derived
-//! from the local node ID and a UDP port based on the service ID.
-//!
-//! When the transport receives a packet, it knows the service ID (associated with the socket)
-//! and extracts the source node ID from the source IP address.
-//!
+
+#![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
 extern crate canadensis_core;
 extern crate crc_any;
+pub extern crate embedded_nal;
 extern crate fallible_collections;
 extern crate hash32;
 extern crate hash32_derive;
 extern crate heapless;
 extern crate log;
+extern crate nb;
 extern crate zerocopy;
 
+use core::convert::TryFrom;
 use core::fmt::Debug;
-use fallible_collections::TryReserveError;
-use std::io;
-use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, UdpSocket};
 
+use crc_any::{CRCu16, CRCu32};
 use hash32_derive::Hash32;
 
 use canadensis_core::transport::{TransferId, Transport};
-use canadensis_core::{OutOfMemoryError, Priority};
+use canadensis_core::{InvalidValue, OutOfMemoryError, Priority};
 
-pub use crate::address::NodeAddress;
 pub use crate::rx::{UdpReceiver, UdpSessionData};
 pub use crate::tx::UdpTransmitter;
 
 mod address;
+pub mod driver;
 mod header;
 mod rx;
 mod tx;
 
+/// Size of the transfer CRC in bytes
+///
+/// This is added to the end of every frame
+const TRANSFER_CRC_SIZE: usize = 4;
+
+/// The minimum size of a Cyphal/UDP packet
+///
+/// This is also the minimum MTU. It includes the Cyphal/UDP header, 1 byte of data, and the
+/// transfer CRC.
+pub const MIN_PACKET_SIZE: usize = header::SIZE + 1 + TRANSFER_CRC_SIZE;
+
+/// The default UDP port used for communication
+pub const DEFAULT_PORT: u16 = 9382;
+
 /// The Cyphal/UDP transport
 ///
-/// This matches [the pycyphal implementation](https://pycyphal.readthedocs.io/en/latest/api/pycyphal.transport.udp.html).
+/// This matches [the standard described on the forum on 2022-12-02](https://forum.opencyphal.org/t/cyphal-udp-architectural-issues-caused-by-the-dependency-between-the-nodes-ip-address-and-its-identity/1765/60).
 pub struct UdpTransport(());
 
 impl Transport for UdpTransport {
@@ -78,13 +80,21 @@ impl Transport for UdpTransport {
 
 /// A UDP node ID
 ///
-/// This allows all u16 values (0..=65535)
+/// This allows all u16 values except 65535, which is reserved for anonymous transfers
 #[derive(Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash32)]
 pub struct UdpNodeId(u16);
 
-impl From<u16> for UdpNodeId {
-    fn from(value: u16) -> Self {
-        UdpNodeId(value)
+const NODE_ID_RESERVED_ANONYMOUS_OR_BROADCAST: u16 = 0xffff;
+
+impl TryFrom<u16> for UdpNodeId {
+    type Error = InvalidValue;
+
+    fn try_from(value: u16) -> Result<Self, Self::Error> {
+        if value == NODE_ID_RESERVED_ANONYMOUS_OR_BROADCAST {
+            Err(InvalidValue)
+        } else {
+            Ok(UdpNodeId(value))
+        }
     }
 }
 impl From<UdpNodeId> for u16 {
@@ -143,35 +153,23 @@ impl From<u64> for UdpTransferId {
 }
 
 #[derive(Debug)]
-pub enum Error {
+pub enum Error<S> {
     Memory(OutOfMemoryError),
-    Socket(std::io::Error),
+    Socket(S),
 }
 
-impl From<OutOfMemoryError> for Error {
+impl<S> From<OutOfMemoryError> for Error<S> {
     fn from(oom: OutOfMemoryError) -> Self {
         Error::Memory(oom)
     }
 }
-impl From<TryReserveError> for Error {
-    fn from(inner: TryReserveError) -> Self {
-        Error::Memory(OutOfMemoryError::from(inner))
-    }
-}
-impl From<std::io::Error> for Error {
-    fn from(inner: std::io::Error) -> Self {
-        Error::Socket(inner)
-    }
+
+/// Returns a CRC calculator used for headers
+fn header_crc() -> CRCu16 {
+    CRCu16::crc16ccitt_false()
 }
 
-/// Creates a socket, enables port and address reuse, enables non-blocking mode, binds to the provided
-/// address and port, and returns the socket
-fn bind_socket(address: Ipv4Addr, port: u16) -> Result<UdpSocket, io::Error> {
-    let socket = socket2::Socket::new(socket2::Domain::IPV4, socket2::Type::DGRAM, None)?;
-    socket.set_reuse_address(true)?;
-    socket.set_reuse_port(true)?;
-    socket.set_nonblocking(true)?;
-    // Bind to the multicast address and fixed message port
-    socket.bind(&SocketAddr::V4(SocketAddrV4::new(address, port)).into())?;
-    Ok(socket.into())
+/// Returns a CRC calculator used for data
+fn data_crc() -> CRCu32 {
+    CRCu32::crc32c()
 }
