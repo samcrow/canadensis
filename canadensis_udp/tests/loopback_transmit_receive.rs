@@ -5,7 +5,7 @@ extern crate simplelog;
 
 use canadensis_core::session::SessionDynamicMap;
 use canadensis_core::time::{milliseconds, Clock, MicrosecondDuration64, Microseconds64};
-use canadensis_core::transfer::{Header, MessageHeader, Transfer};
+use canadensis_core::transfer::{Header, MessageHeader, ServiceHeader, Transfer};
 use canadensis_core::transport::{Receiver, TransferId, Transmitter};
 use canadensis_core::{Priority, SubjectId};
 use canadensis_linux::SystemClock;
@@ -90,6 +90,60 @@ fn transmit_receive_message_one_byte_one_frame() {
                 .unwrap()
         },
         |rx| rx.unsubscribe_message(subject, &mut ()),
+    )
+}
+
+#[test]
+fn transmit_receive_request_one_byte_one_frame() {
+    init_test_logging();
+    let mut clock = SystemClock::new();
+    let service = 82.try_into().unwrap();
+    let transfer = Transfer {
+        header: Header::Request(ServiceHeader {
+            timestamp: milliseconds::<MicrosecondDuration64>(5000) + clock.now(),
+            transfer_id: 1.try_into().unwrap(),
+            priority: Priority::Low,
+            service,
+            source: 8.try_into().unwrap(),
+            destination: 993.try_into().unwrap(),
+        }),
+        payload: vec![0x27],
+    };
+    check_loopback::<_, _, 1472>(
+        transfer,
+        &mut clock,
+        |rx| {
+            rx.subscribe_request(service, 1, milliseconds(1000), &mut ())
+                .unwrap()
+        },
+        |rx| rx.unsubscribe_request(service, &mut ()),
+    )
+}
+
+#[test]
+fn transmit_receive_response_one_byte_one_frame() {
+    init_test_logging();
+    let mut clock = SystemClock::new();
+    let service = 82.try_into().unwrap();
+    let transfer = Transfer {
+        header: Header::Response(ServiceHeader {
+            timestamp: milliseconds::<MicrosecondDuration64>(5000) + clock.now(),
+            transfer_id: 1.try_into().unwrap(),
+            priority: Priority::Low,
+            service,
+            source: 8.try_into().unwrap(),
+            destination: 993.try_into().unwrap(),
+        }),
+        payload: vec![0x27],
+    };
+    check_loopback::<_, _, 1472>(
+        transfer,
+        &mut clock,
+        |rx| {
+            rx.subscribe_response(service, 1, milliseconds(1000), &mut ())
+                .unwrap()
+        },
+        |rx| rx.unsubscribe_response(service, &mut ()),
     )
 }
 
