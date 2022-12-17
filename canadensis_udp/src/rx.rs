@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 use core::marker::PhantomData;
 use std::convert::TryFrom;
 use std::io;
-use std::net::{Ipv4Addr, UdpSocket};
+use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, UdpSocket};
 
 use fallible_collections::FallibleVec;
 use zerocopy::FromBytes;
@@ -58,6 +58,14 @@ where
             socket,
             _session_tracker: PhantomData,
         })
+    }
+
+    /// Returns the address and port that this receiver's socket is bound to
+    pub fn local_addr(&self) -> Result<SocketAddrV4, io::Error> {
+        match self.socket.local_addr()? {
+            SocketAddr::V4(addr) => Ok(addr),
+            SocketAddr::V6(_) => unreachable!(),
+        }
     }
 
     fn clean_expired_sessions(&mut self, now: I)

@@ -4,13 +4,13 @@ extern crate canadensis_udp;
 extern crate simplelog;
 
 use canadensis_core::session::SessionDynamicMap;
-use canadensis_core::time::{Clock, MicrosecondDuration64, Microseconds64};
+use canadensis_core::time::{milliseconds, Clock, MicrosecondDuration64, Microseconds64};
 use canadensis_core::transfer::{Header, MessageHeader, Transfer};
 use canadensis_core::transport::{Receiver, TransferId, Transmitter};
 use canadensis_core::{Priority, SubjectId};
 use canadensis_linux::SystemClock;
 use canadensis_udp::{
-    UdpNodeId, UdpReceiver, UdpSessionData, UdpTransferId, UdpTransmitter, DEFAULT_PORT,
+    UdpNodeId, UdpReceiver, UdpSessionData, UdpTransferId, UdpTransmitter, UdpTransport,
 };
 use log::LevelFilter;
 use simplelog::{ColorChoice, TermLogger, TerminalMode};
@@ -21,35 +21,11 @@ use std::time::{Duration, Instant};
 
 #[test]
 fn transmit_receive_message_two_frames() {
-    TermLogger::init(
-        LevelFilter::Trace,
-        Default::default(),
-        TerminalMode::Stderr,
-        ColorChoice::Auto,
-    )
-    .unwrap();
+    init_test_logging();
 
     let transmit_node_id = UdpNodeId::try_from(120).unwrap();
-    let receive_node_id = UdpNodeId::try_from(1009).unwrap();
     let mut clock = SystemClock::new();
     const MTU: usize = 1472;
-
-    let mut receiver = UdpReceiver::<
-        Microseconds64,
-        SessionDynamicMap<Microseconds64, UdpNodeId, UdpTransferId, UdpSessionData>,
-        MTU,
-    >::new(Some(receive_node_id), Ipv4Addr::LOCALHOST, DEFAULT_PORT)
-    .expect("Failed to create receiver");
-    receiver
-        .subscribe_message(
-            73.try_into().unwrap(),
-            4096,
-            MicrosecondDuration64::new(2_000_000),
-            &mut (),
-        )
-        .unwrap();
-
-    let mut transmitter = UdpTransmitter::<MTU>::new(Ipv4Addr::LOCALHOST, DEFAULT_PORT).unwrap();
 
     // Make a payload compatible with the uavcan.metatransport.ethernet.Frame.0.1 format format.
     let payload = {
@@ -61,32 +37,112 @@ fn transmit_receive_message_two_frames() {
         // Type IPv4
         payload.extend_from_slice(&[0x00, 0x08]);
         let length: u16 = MAJOR_GENERAL_SONG.len().try_into().unwrap();
-        payload.extend_from_slice(&[length as u8, (length >> 8) as u8]);
+        payload.extend_from_slice(&length.to_le_bytes());
         payload.extend_from_slice(MAJOR_GENERAL_SONG);
         payload
     };
+    let transfer = Transfer {
+        header: Header::Message(MessageHeader {
+            timestamp: milliseconds::<MicrosecondDuration64>(5000) + clock.now(),
+            transfer_id: UdpTransferId::default(),
+            priority: Priority::Nominal,
+            subject: SubjectId::try_from(73u16).unwrap(),
+            source: Some(transmit_node_id),
+        }),
+        payload,
+    };
+    check_loopback::<_, _, MTU>(
+        transfer,
+        &mut clock,
+        |rx| {
+            rx.subscribe_message(
+                73.try_into().unwrap(),
+                4096,
+                MicrosecondDuration64::new(2_000_000),
+                &mut (),
+            )
+            .unwrap()
+        },
+        |rx| rx.unsubscribe_message(73.try_into().unwrap(), &mut ()),
+    );
+}
 
-    let mut transfer_id = UdpTransferId::default();
+#[test]
+fn transmit_receive_message_one_byte_one_frame() {
+    init_test_logging();
+    let mut clock = SystemClock::new();
+    let subject = 1030.try_into().unwrap();
+    let transfer = Transfer {
+        header: Header::Message(MessageHeader {
+            timestamp: milliseconds::<MicrosecondDuration64>(5000) + clock.now(),
+            transfer_id: 1.try_into().unwrap(),
+            priority: Priority::Low,
+            subject,
+            source: Some(8.try_into().unwrap()),
+        }),
+        payload: vec![0x27],
+    };
+    check_loopback::<_, _, 1472>(
+        transfer,
+        &mut clock,
+        |rx| {
+            rx.subscribe_message(subject, 1, milliseconds(1000), &mut ())
+                .unwrap()
+        },
+        |rx| rx.unsubscribe_message(subject, &mut ()),
+    )
+}
+
+type TestUdpReceiver<const MTU: usize> = UdpReceiver<
+    Microseconds64,
+    SessionDynamicMap<Microseconds64, UdpNodeId, UdpTransferId, UdpSessionData>,
+    MTU,
+>;
+
+fn check_loopback<S, U, const MTU: usize>(
+    mut transfer: Transfer<Vec<u8>, Microseconds64, UdpTransport>,
+    clock: &mut SystemClock,
+    subscribe: S,
+    unsubscribe: U,
+) where
+    S: FnOnce(&mut TestUdpReceiver<MTU>),
+    U: FnOnce(&mut TestUdpReceiver<MTU>),
+{
+    // Receiver node ID must match the destination of a service transfer. For non-service transfers,
+    // it can be anything.
+    let receive_node_id = match &transfer.header {
+        Header::Message(_) => UdpNodeId::try_from(3).unwrap(),
+        Header::Request(header) | Header::Response(header) => header.destination,
+    };
+    // Use an OS-assigned ephemeral port
+    let mut receiver =
+        TestUdpReceiver::<MTU>::new(Some(receive_node_id), Ipv4Addr::LOCALHOST, 0).unwrap();
+    let receiver_port = receiver.local_addr().unwrap().port();
+
+    let mut transmitter = UdpTransmitter::<MTU>::new(Ipv4Addr::LOCALHOST, receiver_port).unwrap();
+
+    send_and_expect_not_received(&mut transmitter, &mut receiver, clock, &mut transfer);
+
+    subscribe(&mut receiver);
+
     for _ in 0..10 {
-        let transfer = Transfer {
-            header: Header::Message(MessageHeader {
-                timestamp: MicrosecondDuration64::new(1_000_000) + clock.now(),
-                transfer_id: transfer_id.clone(),
-                priority: Priority::Nominal,
-                subject: SubjectId::try_from(73u16).unwrap(),
-                source: Some(transmit_node_id),
-            }),
-            payload: &payload,
+        transmitter.push(transfer.clone(), clock, &mut ()).unwrap();
+        transmitter.flush(clock, &mut ()).unwrap();
+        // Increment transfer ID
+        match &mut transfer.header {
+            Header::Message(header) => {
+                header.transfer_id = header.transfer_id.increment();
+            }
+            Header::Request(header) | Header::Response(header) => {
+                header.transfer_id = header.transfer_id.increment()
+            }
         };
-
-        transmitter.push(transfer, &mut clock, &mut ()).unwrap();
-        transmitter.flush(&mut clock, &mut ()).unwrap();
 
         let timeout = Instant::now() + Duration::from_secs(1);
         loop {
             match receiver.receive(clock.now(), &mut ()) {
-                Ok(Some(transfer)) => {
-                    assert_eq!(transfer.payload, payload);
+                Ok(Some(received_transfer)) => {
+                    assert_eq!(&received_transfer.payload, &transfer.payload);
                     break;
                 }
                 Ok(None) => {
@@ -99,8 +155,52 @@ fn transmit_receive_message_two_frames() {
                 panic!("Timed out waiting for receive");
             }
         }
+    }
 
-        transfer_id = transfer_id.increment();
+    unsubscribe(&mut receiver);
+
+    // Send the transfer again. It should not be received.
+}
+
+fn send_and_expect_not_received<const MTU: usize>(
+    transmitter: &mut UdpTransmitter<MTU>,
+    receiver: &mut TestUdpReceiver<MTU>,
+    clock: &mut SystemClock,
+    transfer: &mut Transfer<Vec<u8>, Microseconds64, UdpTransport>,
+) {
+    for _ in 0..10 {
+        transmitter.push(transfer.clone(), clock, &mut ()).unwrap();
+        transmitter.flush(clock, &mut ()).unwrap();
+
+        // Increment transfer ID
+        match &mut transfer.header {
+            Header::Message(header) => {
+                header.transfer_id = header.transfer_id.increment();
+            }
+            Header::Request(header) | Header::Response(header) => {
+                header.transfer_id = header.transfer_id.increment()
+            }
+        };
+
+        let timeout = Instant::now() + Duration::from_millis(100);
+        loop {
+            match receiver.receive(clock.now(), &mut ()) {
+                Ok(Some(received_transfer)) => {
+                    panic!(
+                        "Received transfer when not subscribed: {:#?}",
+                        received_transfer
+                    );
+                }
+                Ok(None) => {
+                    sleep(Duration::from_millis(10));
+                }
+                Err(e) => panic!("Receive error {:?}", e),
+            }
+
+            if Instant::now() > timeout {
+                break;
+            }
+        }
     }
 }
 
@@ -140,3 +240,12 @@ For my military knowledge, though I'm plucky and adventury,
 Has only been brought down to the beginning of the century;
 But still, in matters vegetable, animal, and mineral,
 I am the very model of a modern Major-Gineral."#;
+
+fn init_test_logging() {
+    let _ = TermLogger::init(
+        LevelFilter::Trace,
+        Default::default(),
+        TerminalMode::Stderr,
+        ColorChoice::Auto,
+    );
+}

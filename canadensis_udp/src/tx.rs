@@ -72,6 +72,8 @@ impl<const MTU: usize> UdpTransmitter<MTU> {
         for frame in breakdown {
             if frame.deadline.overflow_safe_compare(&clock.now()) == Ordering::Greater {
                 self.socket.send_to(&frame.data, destination_address)?;
+            } else {
+                log::trace!("Discarding outgoing frame because its deadline has passed");
             }
         }
         Ok(())
