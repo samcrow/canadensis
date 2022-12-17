@@ -20,5 +20,7 @@ jobs:
         submodules: recursive
     - name: Build
       run: cargo build --verbose --workspace
+    - name: Build canadensis_udp no_std
+      run: cargo build --package canadensis_udp --no-default-features
     - name: Run tests
       run: cargo test --verbose --workspace
