@@ -1,6 +1,6 @@
 //! Subscription tracking
 
-use std::collections::BTreeMap;
+use alloc::collections::BTreeMap;
 
 use canadensis_core::time::Instant;
 use canadensis_core::{ServiceId, SubjectId};
@@ -96,7 +96,7 @@ where
 
 /// An iterator over mutable references to message subscriptions
 pub struct MessageIterMut<'m, I, T>(
-    std::collections::btree_map::ValuesMut<'m, SubjectId, Subscription<I, T>>,
+    alloc::collections::btree_map::ValuesMut<'m, SubjectId, Subscription<I, T>>,
 )
 where
     I: Instant;
@@ -113,7 +113,7 @@ where
 }
 /// An iterator over mutable references to service subscriptions
 pub struct ServiceIterMut<'m, I, T>(
-    std::collections::btree_map::ValuesMut<'m, ServiceId, Subscription<I, T>>,
+    alloc::collections::btree_map::ValuesMut<'m, ServiceId, Subscription<I, T>>,
 )
 where
     I: Instant;

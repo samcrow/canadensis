@@ -1,6 +1,8 @@
-use std::cmp::Ordering;
-use std::marker::PhantomData;
-use std::net::SocketAddrV4;
+use alloc::vec::Vec;
+use core::cmp::Ordering;
+use core::marker::PhantomData;
+
+use embedded_nal::SocketAddrV4;
 
 use canadensis_core::nb;
 use canadensis_core::time::{Clock, Instant};

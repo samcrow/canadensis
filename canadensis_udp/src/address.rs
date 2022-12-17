@@ -13,7 +13,7 @@
 use crate::UdpNodeId;
 use canadensis_core::{InvalidValue, SubjectId};
 use core::convert::TryFrom;
-use std::net::Ipv4Addr;
+use embedded_nal::Ipv4Addr;
 
 /// Fixed parts of a Cyphal multicast group address, without the subnet and subject
 const MULTICAST_BASE: u32 = 0b1110_1111_0000_0000_0000_0000_0000_0000;

@@ -1,6 +1,5 @@
 use core::fmt::Debug;
-use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
-use std::time::Duration;
+use embedded_nal::{Ipv4Addr, SocketAddrV4};
 
 /// A socket that supports the basic operations required for Cyphal/UDP
 ///
@@ -49,58 +48,92 @@ pub trait UdpSocket {
     fn recv(&mut self, buffer: &mut [u8]) -> Result<usize, nb::Error<Self::Error>>;
 }
 
-/// A socket that uses the standard library UdpSocket implementation
-pub struct StdUdpSocket(std::net::UdpSocket);
+#[cfg(feature = "std")]
+pub use self::std_socket::StdUdpSocket;
 
-impl StdUdpSocket {
-    /// Creates a socket and binds it to the provided IP address and port
-    pub fn bind(interface_address: Ipv4Addr, local_port: u16) -> std::io::Result<Self> {
-        let socket = std::net::UdpSocket::bind((interface_address, local_port))?;
-        socket.set_multicast_ttl_v4(16)?;
-        // Set a low read timeout to approximate non-blocking reads but keep writes blocking
-        socket.set_read_timeout(Some(Duration::from_millis(1)))?;
-        Ok(StdUdpSocket(socket))
-    }
-}
+#[cfg(feature = "std")]
+mod std_socket {
+    use super::UdpSocket;
+    use embedded_nal::{Ipv4Addr, SocketAddrV4};
+    use std::net::{Ipv4Addr as StdIpv4Addr, SocketAddr, SocketAddrV4 as StdSocketAddrV4};
+    use std::time::Duration;
 
-impl UdpSocket for StdUdpSocket {
-    type Error = std::io::Error;
+    /// A socket that uses the standard library UdpSocket implementation
+    pub struct StdUdpSocket(std::net::UdpSocket);
 
-    fn local_addr(&self) -> Result<SocketAddrV4, Self::Error> {
-        self.0.local_addr().map(|addr| match addr {
-            SocketAddr::V4(addr) => addr,
-            SocketAddr::V6(_) => unreachable!("IPv6 not supported"),
-        })
-    }
-
-    fn join_multicast_v4(
-        &mut self,
-        multiaddr: &Ipv4Addr,
-        interface: &Ipv4Addr,
-    ) -> Result<(), Self::Error> {
-        self.0.join_multicast_v4(multiaddr, interface)
+    impl StdUdpSocket {
+        /// Creates a socket and binds it to the provided IP address and port
+        pub fn bind(interface_address: Ipv4Addr, local_port: u16) -> std::io::Result<Self> {
+            let socket = std::net::UdpSocket::bind((
+                StdIpv4Addr::from(interface_address.octets()),
+                local_port,
+            ))?;
+            socket.set_multicast_ttl_v4(16)?;
+            // Set a low read timeout to approximate non-blocking reads but keep writes blocking
+            socket.set_read_timeout(Some(Duration::from_millis(1)))?;
+            Ok(StdUdpSocket(socket))
+        }
     }
 
-    fn leave_multicast_v4(
-        &mut self,
-        multiaddr: &Ipv4Addr,
-        interface: &Ipv4Addr,
-    ) -> Result<(), Self::Error> {
-        self.0.leave_multicast_v4(multiaddr, interface)
-    }
+    impl UdpSocket for StdUdpSocket {
+        type Error = std::io::Error;
 
-    fn send_to(&mut self, data: &[u8], destination: SocketAddrV4) -> Result<usize, Self::Error> {
-        self.0.send_to(data, destination)
-    }
+        fn local_addr(&self) -> Result<SocketAddrV4, Self::Error> {
+            self.0.local_addr().map(|addr| match addr {
+                SocketAddr::V4(addr) => socket_addr_std_to_nal(addr),
+                SocketAddr::V6(_) => unreachable!("IPv6 not supported"),
+            })
+        }
 
-    fn recv(&mut self, buffer: &mut [u8]) -> Result<usize, nb::Error<Self::Error>> {
-        self.0.recv(buffer).map_err(|e| {
-            // Convert would-block-type errors into nb::Error::WouldBlock
-            use std::io::ErrorKind::*;
-            match e.kind() {
-                WouldBlock | TimedOut => nb::Error::WouldBlock,
-                _ => nb::Error::Other(e),
-            }
-        })
+        fn join_multicast_v4(
+            &mut self,
+            multiaddr: &Ipv4Addr,
+            interface: &Ipv4Addr,
+        ) -> Result<(), Self::Error> {
+            self.0.join_multicast_v4(
+                &StdIpv4Addr::from(multiaddr.octets()),
+                &StdIpv4Addr::from(interface.octets()),
+            )
+        }
+
+        fn leave_multicast_v4(
+            &mut self,
+            multiaddr: &Ipv4Addr,
+            interface: &Ipv4Addr,
+        ) -> Result<(), Self::Error> {
+            self.0.leave_multicast_v4(
+                &StdIpv4Addr::from(multiaddr.octets()),
+                &StdIpv4Addr::from(interface.octets()),
+            )
+        }
+
+        fn send_to(
+            &mut self,
+            data: &[u8],
+            destination: SocketAddrV4,
+        ) -> Result<usize, Self::Error> {
+            self.0.send_to(data, socket_addr_nal_to_std(destination))
+        }
+
+        fn recv(&mut self, buffer: &mut [u8]) -> Result<usize, nb::Error<Self::Error>> {
+            self.0.recv(buffer).map_err(|e| {
+                // Convert would-block-type errors into nb::Error::WouldBlock
+                use std::io::ErrorKind::*;
+                match e.kind() {
+                    WouldBlock | TimedOut => nb::Error::WouldBlock,
+                    _ => nb::Error::Other(e),
+                }
+            })
+        }
+    }
+    fn socket_addr_nal_to_std(address: SocketAddrV4) -> StdSocketAddrV4 {
+        let ip_address = StdIpv4Addr::from(address.ip().octets());
+        let port = address.port();
+        StdSocketAddrV4::new(ip_address, port)
+    }
+    fn socket_addr_std_to_nal(address: StdSocketAddrV4) -> SocketAddrV4 {
+        let ip_address = Ipv4Addr::from(address.ip().octets());
+        let port = address.port();
+        SocketAddrV4::new(ip_address, port)
     }
 }

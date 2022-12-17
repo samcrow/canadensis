@@ -1,7 +1,7 @@
 use crate::{header_crc, UdpNodeId, UdpTransferId, NODE_ID_RESERVED_ANONYMOUS_OR_BROADCAST};
 use canadensis_core::{InvalidValue, Priority, ServiceId, SubjectId};
+use core::convert::TryFrom;
 use core::mem;
-use std::convert::TryFrom;
 use zerocopy::byteorder::{LE, U16, U32, U64};
 use zerocopy::{AsBytes, FromBytes};
 

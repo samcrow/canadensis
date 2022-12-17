@@ -1,6 +1,7 @@
 extern crate canadensis_core;
 extern crate canadensis_linux;
 extern crate canadensis_udp;
+extern crate embedded_nal;
 extern crate simplelog;
 
 use canadensis_core::session::SessionDynamicMap;
@@ -13,10 +14,10 @@ use canadensis_udp::driver::{StdUdpSocket, UdpSocket};
 use canadensis_udp::{
     UdpNodeId, UdpReceiver, UdpSessionData, UdpTransferId, UdpTransmitter, UdpTransport,
 };
+use embedded_nal::Ipv4Addr;
 use log::LevelFilter;
 use simplelog::{ColorChoice, TermLogger, TerminalMode};
 use std::convert::{TryFrom, TryInto};
-use std::net::Ipv4Addr;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
@@ -170,11 +171,11 @@ fn check_loopback<S, U, const MTU: usize>(
         Header::Message(_) => UdpNodeId::try_from(3).unwrap(),
         Header::Request(header) | Header::Response(header) => header.destination,
     };
-    // For loopback to work, we need to use two different sockets
-    // Use OS-assigned ephemeral ports
-    let mut transmit_socket = StdUdpSocket::bind(Ipv4Addr::LOCALHOST, 0).unwrap();
-    let mut receive_socket = StdUdpSocket::bind(Ipv4Addr::UNSPECIFIED, 0).unwrap();
-    let mut receiver = TestUdpReceiver::<MTU>::new(Some(receive_node_id), Ipv4Addr::LOCALHOST);
+    // For loopback to work, we need to use two different sockets.
+    // Use OS-assigned ephemeral ports.
+    let mut transmit_socket = StdUdpSocket::bind(Ipv4Addr::localhost(), 0).unwrap();
+    let mut receive_socket = StdUdpSocket::bind(Ipv4Addr::unspecified(), 0).unwrap();
+    let mut receiver = TestUdpReceiver::<MTU>::new(Some(receive_node_id), Ipv4Addr::localhost());
     let receiver_port = receive_socket.local_addr().unwrap().port();
 
     let mut transmitter = UdpTransmitter::<StdUdpSocket, MTU>::new(receiver_port);

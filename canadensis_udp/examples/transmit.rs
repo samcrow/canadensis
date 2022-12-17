@@ -1,11 +1,12 @@
 extern crate canadensis_core;
 extern crate canadensis_udp;
+extern crate embedded_nal;
 extern crate simplelog;
 
+use embedded_nal::Ipv4Addr;
 use log::LevelFilter;
 use simplelog::{ColorChoice, TermLogger};
 use std::convert::{TryFrom, TryInto};
-use std::net::Ipv4Addr;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -31,7 +32,7 @@ fn main() {
     const MTU: usize = 1472;
 
     // Bind a socket to an OS-assigned port number on loopback, and send to the default port
-    let mut socket = StdUdpSocket::bind(Ipv4Addr::LOCALHOST, 0).unwrap();
+    let mut socket = StdUdpSocket::bind(Ipv4Addr::localhost(), 0).unwrap();
     let mut transmitter = UdpTransmitter::<StdUdpSocket, MTU>::new(DEFAULT_PORT);
 
     // Make a payload compatible with the uavcan.metatransport.ethernet.Frame.0.1 format format.

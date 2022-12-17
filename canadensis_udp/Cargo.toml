@@ -18,6 +18,7 @@ crc-any = "2.4.0"
 fallible_collections = "0.4.3"
 log = "0.4.14"
 nb = "1.0.0"
+embedded-nal = "0.6.0"
 
 [dependencies.canadensis_core]
 version = "0.2.0"
@@ -29,3 +30,6 @@ simplelog = "0.10.2"
 [dev-dependencies.canadensis_linux]
 path = "../canadensis_linux"
 
+[features]
+default = ["std"]
+std = []

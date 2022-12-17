@@ -1,11 +1,15 @@
+use alloc::vec::Vec;
+use core::iter::Peekable;
+use core::mem;
+
+use crc_any::CRCu32;
+use zerocopy::AsBytes;
+
+use canadensis_core::Priority;
+
 use crate::header::{self, DataSpecifier, UdpHeader, ValidatedUdpHeader, LAST_FRAME};
 use crate::tx::UdpFrame;
 use crate::{data_crc, UdpTransferId, TRANSFER_CRC_SIZE};
-use canadensis_core::Priority;
-use core::mem;
-use crc_any::CRCu32;
-use std::iter::Peekable;
-use zerocopy::AsBytes;
 
 /// An iterator that breaks a transfer into UDP frames and adds a CRC to each frame
 pub(crate) struct Breakdown<P: Iterator<Item = u8>, I> {
@@ -152,13 +156,16 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{Breakdown, HeaderBase};
-    use crate::header::DataSpecifier;
-    use crate::{data_crc, header, header_crc, UdpNodeId, TRANSFER_CRC_SIZE};
-    use canadensis_core::time::Microseconds64;
-    use canadensis_core::{Priority, ServiceId, SubjectId};
     use std::convert::TryFrom;
     use std::iter;
+
+    use canadensis_core::time::Microseconds64;
+    use canadensis_core::{Priority, ServiceId, SubjectId};
+
+    use crate::header::DataSpecifier;
+    use crate::{data_crc, header, header_crc, UdpNodeId, TRANSFER_CRC_SIZE};
+
+    use super::{Breakdown, HeaderBase};
 
     #[test]
     fn test_empty() {

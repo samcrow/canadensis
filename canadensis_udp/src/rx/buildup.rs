@@ -1,9 +1,13 @@
 //! Reassembles UDP packets into transfers
 
+use alloc::vec::Vec;
+
+use fallible_collections::{FallibleVec, TryReserveError};
+
+use canadensis_core::{OutOfMemoryError, Priority};
+
 use crate::header::ValidatedUdpHeader;
 use crate::UdpTransferId;
-use canadensis_core::{OutOfMemoryError, Priority};
-use fallible_collections::{FallibleVec, TryReserveError};
 
 // TODO: Add support for reassembling out-of-order frames
 

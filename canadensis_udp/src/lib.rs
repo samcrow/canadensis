@@ -3,7 +3,7 @@
 //!
 //! The current version of the transport is documented in [a forum post from 2022-12-02](https://forum.opencyphal.org/t/cyphal-udp-architectural-issues-caused-by-the-dependency-between-the-nodes-ip-address-and-its-identity/1765/60).
 //!
-//! This implementation requires the `std` library for sockets.
+//! If the `std` feature is enabled, this implementation requires the `std` library for sockets.
 //!
 //! ## How sockets work
 //!
@@ -21,9 +21,12 @@
 //! receive the correct frames.
 //!
 
+#![cfg_attr(not(feature = "std"), no_std)]
+
 extern crate alloc;
 extern crate canadensis_core;
 extern crate crc_any;
+extern crate embedded_nal;
 extern crate fallible_collections;
 extern crate hash32;
 extern crate hash32_derive;
@@ -32,8 +35,8 @@ extern crate log;
 extern crate nb;
 extern crate zerocopy;
 
+use core::convert::TryFrom;
 use core::fmt::Debug;
-use std::convert::TryFrom;
 
 use crc_any::{CRCu16, CRCu32};
 use hash32_derive::Hash32;

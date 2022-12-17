@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
+use core::convert::TryFrom;
 use core::marker::PhantomData;
-use std::convert::TryFrom;
-use std::net::Ipv4Addr;
+use embedded_nal::Ipv4Addr;
 
 use fallible_collections::FallibleVec;
 use zerocopy::FromBytes;
@@ -203,7 +203,7 @@ where
         socket: &mut S,
     ) -> Result<(), Self::Error> {
         socket
-            .join_multicast_v4(&Address::Multicast(subject).into(), &Ipv4Addr::LOCALHOST)
+            .join_multicast_v4(&Address::Multicast(subject).into(), &self.local_address)
             .map_err(Error::Socket)?;
         self.subscriptions
             .subscribe_message(subject, Subscription::new(payload_size_max, timeout));
