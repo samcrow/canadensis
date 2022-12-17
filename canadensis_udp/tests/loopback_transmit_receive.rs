@@ -9,6 +9,7 @@ use canadensis_core::transfer::{Header, MessageHeader, ServiceHeader, Transfer};
 use canadensis_core::transport::{Receiver, TransferId, Transmitter};
 use canadensis_core::{Priority, SubjectId};
 use canadensis_linux::SystemClock;
+use canadensis_udp::driver::{StdUdpSocket, UdpSocket};
 use canadensis_udp::{
     UdpNodeId, UdpReceiver, UdpSessionData, UdpTransferId, UdpTransmitter, UdpTransport,
 };
@@ -54,16 +55,16 @@ fn transmit_receive_message_two_frames() {
     check_loopback::<_, _, MTU>(
         transfer,
         &mut clock,
-        |rx| {
+        |rx, socket| {
             rx.subscribe_message(
                 73.try_into().unwrap(),
                 4096,
                 MicrosecondDuration64::new(2_000_000),
-                &mut (),
+                socket,
             )
             .unwrap()
         },
-        |rx| rx.unsubscribe_message(73.try_into().unwrap(), &mut ()),
+        |rx, socket| rx.unsubscribe_message(73.try_into().unwrap(), socket),
     );
 }
 
@@ -85,11 +86,11 @@ fn transmit_receive_message_one_byte_one_frame() {
     check_loopback::<_, _, 1472>(
         transfer,
         &mut clock,
-        |rx| {
-            rx.subscribe_message(subject, 1, milliseconds(1000), &mut ())
+        |rx, socket| {
+            rx.subscribe_message(subject, 1, milliseconds(1000), socket)
                 .unwrap()
         },
-        |rx| rx.unsubscribe_message(subject, &mut ()),
+        |rx, socket| rx.unsubscribe_message(subject, socket),
     )
 }
 
@@ -112,11 +113,11 @@ fn transmit_receive_request_one_byte_one_frame() {
     check_loopback::<_, _, 1472>(
         transfer,
         &mut clock,
-        |rx| {
-            rx.subscribe_request(service, 1, milliseconds(1000), &mut ())
+        |rx, socket| {
+            rx.subscribe_request(service, 1, milliseconds(1000), socket)
                 .unwrap()
         },
-        |rx| rx.unsubscribe_request(service, &mut ()),
+        |rx, socket| rx.unsubscribe_request(service, socket),
     )
 }
 
@@ -139,17 +140,18 @@ fn transmit_receive_response_one_byte_one_frame() {
     check_loopback::<_, _, 1472>(
         transfer,
         &mut clock,
-        |rx| {
-            rx.subscribe_response(service, 1, milliseconds(1000), &mut ())
+        |rx, socket| {
+            rx.subscribe_response(service, 1, milliseconds(1000), socket)
                 .unwrap()
         },
-        |rx| rx.unsubscribe_response(service, &mut ()),
+        |rx, socket| rx.unsubscribe_response(service, socket),
     )
 }
 
 type TestUdpReceiver<const MTU: usize> = UdpReceiver<
     Microseconds64,
     SessionDynamicMap<Microseconds64, UdpNodeId, UdpTransferId, UdpSessionData>,
+    StdUdpSocket,
     MTU,
 >;
 
@@ -159,8 +161,8 @@ fn check_loopback<S, U, const MTU: usize>(
     subscribe: S,
     unsubscribe: U,
 ) where
-    S: FnOnce(&mut TestUdpReceiver<MTU>),
-    U: FnOnce(&mut TestUdpReceiver<MTU>),
+    S: FnOnce(&mut TestUdpReceiver<MTU>, &mut StdUdpSocket),
+    U: FnOnce(&mut TestUdpReceiver<MTU>, &mut StdUdpSocket),
 {
     // Receiver node ID must match the destination of a service transfer. For non-service transfers,
     // it can be anything.
@@ -168,20 +170,31 @@ fn check_loopback<S, U, const MTU: usize>(
         Header::Message(_) => UdpNodeId::try_from(3).unwrap(),
         Header::Request(header) | Header::Response(header) => header.destination,
     };
-    // Use an OS-assigned ephemeral port
-    let mut receiver =
-        TestUdpReceiver::<MTU>::new(Some(receive_node_id), Ipv4Addr::LOCALHOST, 0).unwrap();
-    let receiver_port = receiver.local_addr().unwrap().port();
+    // For loopback to work, we need to use two different sockets
+    // Use OS-assigned ephemeral ports
+    let mut transmit_socket = StdUdpSocket::bind(Ipv4Addr::LOCALHOST, 0).unwrap();
+    let mut receive_socket = StdUdpSocket::bind(Ipv4Addr::UNSPECIFIED, 0).unwrap();
+    let mut receiver = TestUdpReceiver::<MTU>::new(Some(receive_node_id), Ipv4Addr::LOCALHOST);
+    let receiver_port = receive_socket.local_addr().unwrap().port();
 
-    let mut transmitter = UdpTransmitter::<MTU>::new(Ipv4Addr::LOCALHOST, receiver_port).unwrap();
+    let mut transmitter = UdpTransmitter::<StdUdpSocket, MTU>::new(receiver_port);
 
-    send_and_expect_not_received(&mut transmitter, &mut receiver, clock, &mut transfer);
+    send_and_expect_not_received(
+        &mut transmitter,
+        &mut receiver,
+        &mut transmit_socket,
+        &mut receive_socket,
+        clock,
+        &mut transfer,
+    );
 
-    subscribe(&mut receiver);
+    subscribe(&mut receiver, &mut receive_socket);
 
     for _ in 0..10 {
-        transmitter.push(transfer.clone(), clock, &mut ()).unwrap();
-        transmitter.flush(clock, &mut ()).unwrap();
+        transmitter
+            .push(transfer.clone(), clock, &mut transmit_socket)
+            .unwrap();
+        transmitter.flush(clock, &mut transmit_socket).unwrap();
         // Increment transfer ID
         match &mut transfer.header {
             Header::Message(header) => {
@@ -194,7 +207,7 @@ fn check_loopback<S, U, const MTU: usize>(
 
         let timeout = Instant::now() + Duration::from_secs(1);
         loop {
-            match receiver.receive(clock.now(), &mut ()) {
+            match receiver.receive(clock.now(), &mut receive_socket) {
                 Ok(Some(received_transfer)) => {
                     assert_eq!(&received_transfer.payload, &transfer.payload);
                     break;
@@ -211,20 +224,32 @@ fn check_loopback<S, U, const MTU: usize>(
         }
     }
 
-    unsubscribe(&mut receiver);
+    unsubscribe(&mut receiver, &mut receive_socket);
 
     // Send the transfer again. It should not be received.
+    send_and_expect_not_received(
+        &mut transmitter,
+        &mut receiver,
+        &mut transmit_socket,
+        &mut receive_socket,
+        clock,
+        &mut transfer,
+    );
 }
 
 fn send_and_expect_not_received<const MTU: usize>(
-    transmitter: &mut UdpTransmitter<MTU>,
+    transmitter: &mut UdpTransmitter<StdUdpSocket, MTU>,
     receiver: &mut TestUdpReceiver<MTU>,
+    transmit_socket: &mut StdUdpSocket,
+    receive_socket: &mut StdUdpSocket,
     clock: &mut SystemClock,
     transfer: &mut Transfer<Vec<u8>, Microseconds64, UdpTransport>,
 ) {
     for _ in 0..10 {
-        transmitter.push(transfer.clone(), clock, &mut ()).unwrap();
-        transmitter.flush(clock, &mut ()).unwrap();
+        transmitter
+            .push(transfer.clone(), clock, transmit_socket)
+            .unwrap();
+        transmitter.flush(clock, transmit_socket).unwrap();
 
         // Increment transfer ID
         match &mut transfer.header {
@@ -238,7 +263,7 @@ fn send_and_expect_not_received<const MTU: usize>(
 
         let timeout = Instant::now() + Duration::from_millis(100);
         loop {
-            match receiver.receive(clock.now(), &mut ()) {
+            match receiver.receive(clock.now(), receive_socket) {
                 Ok(Some(received_transfer)) => {
                     panic!(
                         "Received transfer when not subscribed: {:#?}",

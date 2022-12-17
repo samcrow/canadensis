@@ -1,21 +1,21 @@
 use core::fmt::Debug;
-use std::net::{Ipv4Addr, SocketAddrV4};
+use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
+use std::time::Duration;
 
-/// A driver that contains a UDP socket and can send and receive frames
-pub trait UdpDriver {
-    /// The error type that this driver can report
-    type Error: Debug;
-
-    type Socket: UdpSocket<Error = Self::Error>;
-
-    fn bind(&mut self, address: Ipv4Addr, port: u16) -> Result<Self::Socket, Self::Error>;
-}
-
+/// A socket that supports the basic operations required for Cyphal/UDP
+///
+/// # Setup requirements
+///
+/// Before a socket can be used, it needs to be bound to a local port and IPv4 address.
+///
+/// The time to live of outgoing multicast packets may also need to be changed.
+///
 pub trait UdpSocket {
     type Error: Debug;
 
-    /// Sets the time to live for IPv4 multicast packets sent through this socket
-    fn set_multicast_ttl_v4(&mut self, multicast_ttl_v4: u32) -> Result<(), Self::Error>;
+    /// Returns the local address this socket is bound to
+    fn local_addr(&self) -> Result<SocketAddrV4, Self::Error>;
+
     /// Joins an IPv4 multicast group
     ///
     /// multiaddr: The address of the group
@@ -37,30 +37,40 @@ pub trait UdpSocket {
         interface: &Ipv4Addr,
     ) -> Result<(), Self::Error>;
 
+    /// Sends a packet to the provided destination, and returns the number of bytes sent
+    ///
+    /// This function must block until the packet can be sent.
     fn send_to(&mut self, data: &[u8], destination: SocketAddrV4) -> Result<usize, Self::Error>;
 
-    fn receive(&mut self, buffer: &mut [u8]) -> Result<usize, Self::Error>;
+    /// Tries to receive a packet and write it to the provided buffer, and returns the number
+    /// of bytes read
+    ///
+    /// This function must not block.
+    fn recv(&mut self, buffer: &mut [u8]) -> Result<usize, nb::Error<Self::Error>>;
 }
 
-struct StdUdpDriver;
+/// A socket that uses the standard library UdpSocket implementation
+pub struct StdUdpSocket(std::net::UdpSocket);
 
-impl UdpDriver for StdUdpDriver {
-    type Error = std::io::Error;
-    type Socket = StdUdpSocket;
-
-    fn bind(&mut self, address: Ipv4Addr, port: u16) -> Result<Self::Socket, Self::Error> {
-        let socket = std::net::UdpSocket::bind((address, port))?;
+impl StdUdpSocket {
+    /// Creates a socket and binds it to the provided IP address and port
+    pub fn bind(interface_address: Ipv4Addr, local_port: u16) -> std::io::Result<Self> {
+        let socket = std::net::UdpSocket::bind((interface_address, local_port))?;
+        socket.set_multicast_ttl_v4(16)?;
+        // Set a low read timeout to approximate non-blocking reads but keep writes blocking
+        socket.set_read_timeout(Some(Duration::from_millis(1)))?;
         Ok(StdUdpSocket(socket))
     }
 }
 
-struct StdUdpSocket(std::net::UdpSocket);
-
 impl UdpSocket for StdUdpSocket {
     type Error = std::io::Error;
 
-    fn set_multicast_ttl_v4(&mut self, multicast_ttl_v4: u32) -> Result<(), Self::Error> {
-        self.0.set_multicast_ttl_v4(multicast_ttl_v4)
+    fn local_addr(&self) -> Result<SocketAddrV4, Self::Error> {
+        self.0.local_addr().map(|addr| match addr {
+            SocketAddr::V4(addr) => addr,
+            SocketAddr::V6(_) => unreachable!("IPv6 not supported"),
+        })
     }
 
     fn join_multicast_v4(
@@ -83,7 +93,14 @@ impl UdpSocket for StdUdpSocket {
         self.0.send_to(data, destination)
     }
 
-    fn receive(&mut self, buffer: &mut [u8]) -> Result<usize, Self::Error> {
-        self.0.recv(buffer)
+    fn recv(&mut self, buffer: &mut [u8]) -> Result<usize, nb::Error<Self::Error>> {
+        self.0.recv(buffer).map_err(|e| {
+            // Convert would-block-type errors into nb::Error::WouldBlock
+            use std::io::ErrorKind::*;
+            match e.kind() {
+                WouldBlock | TimedOut => nb::Error::WouldBlock,
+                _ => nb::Error::Other(e),
+            }
+        })
     }
 }

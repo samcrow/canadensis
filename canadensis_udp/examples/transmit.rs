@@ -14,6 +14,7 @@ use canadensis_core::transfer::{Header, MessageHeader, Transfer};
 use canadensis_core::transport::{TransferId, Transmitter};
 use canadensis_core::{Priority, SubjectId};
 use canadensis_linux::SystemClock;
+use canadensis_udp::driver::StdUdpSocket;
 use canadensis_udp::{UdpNodeId, UdpTransferId, UdpTransmitter, DEFAULT_PORT};
 
 fn main() {
@@ -28,9 +29,10 @@ fn main() {
     let local_node_id = UdpNodeId::try_from(120).unwrap();
     let mut clock = SystemClock::new();
     const MTU: usize = 1472;
-    let bind_address: Ipv4Addr = Ipv4Addr::LOCALHOST;
 
-    let mut transmitter = UdpTransmitter::<MTU>::new(bind_address, DEFAULT_PORT).unwrap();
+    // Bind a socket to an OS-assigned port number on loopback, and send to the default port
+    let mut socket = StdUdpSocket::bind(Ipv4Addr::LOCALHOST, 0).unwrap();
+    let mut transmitter = UdpTransmitter::<StdUdpSocket, MTU>::new(DEFAULT_PORT);
 
     // Make a payload compatible with the uavcan.metatransport.ethernet.Frame.0.1 format format.
     let mut payload = Vec::with_capacity(6 + 6 + 2 + 2 + MAJOR_GENERAL_SONG.len());
@@ -57,8 +59,8 @@ fn main() {
             payload: &payload,
         };
 
-        transmitter.push(transfer, &mut clock, &mut ()).unwrap();
-        transmitter.flush(&mut clock, &mut ()).unwrap();
+        transmitter.push(transfer, &mut clock, &mut socket).unwrap();
+        transmitter.flush(&mut clock, &mut socket).unwrap();
 
         transfer_id = transfer_id.increment();
 

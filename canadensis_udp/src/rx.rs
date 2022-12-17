@@ -1,8 +1,7 @@
 use alloc::vec::Vec;
 use core::marker::PhantomData;
 use std::convert::TryFrom;
-use std::io;
-use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, UdpSocket};
+use std::net::Ipv4Addr;
 
 use fallible_collections::FallibleVec;
 use zerocopy::FromBytes;
@@ -14,6 +13,7 @@ use canadensis_core::transport::Receiver;
 use canadensis_core::{OutOfMemoryError, ServiceId, ServiceSubscribeError, SubjectId};
 
 use crate::address::Address;
+use crate::driver::UdpSocket;
 use crate::header::{DataSpecifier, UdpHeader, ValidatedUdpHeader};
 use crate::rx::buildup::Buildup;
 use crate::rx::subscriptions::Subscriptions;
@@ -24,7 +24,7 @@ mod buildup;
 mod subscriptions;
 
 /// UDP transport receiver
-pub struct UdpReceiver<I, T, const MTU: usize>
+pub struct UdpReceiver<I, T, S, const MTU: usize>
 where
     I: Instant,
 {
@@ -33,38 +33,23 @@ where
     node_id: Option<UdpNodeId>,
     /// The IP address of the local interface that the socket is bound to
     local_address: Ipv4Addr,
-    /// A socket used to receive all frames, bound to a user-defined port
-    socket: UdpSocket,
+    _socket: PhantomData<S>,
     _session_tracker: PhantomData<T>,
 }
 
-impl<I, T, const MTU: usize> UdpReceiver<I, T, MTU>
+impl<I, T, S, const MTU: usize> UdpReceiver<I, T, S, MTU>
 where
     I: Instant,
     T: SessionTracker<I, UdpNodeId, UdpTransferId, UdpSessionData> + Default,
+    S: UdpSocket,
 {
-    pub fn new(
-        node_id: Option<UdpNodeId>,
-        interface_address: Ipv4Addr,
-        port: u16,
-    ) -> Result<Self, io::Error> {
-        // For multicast to work, always bind to the unspecified address
-        // The interface address is used to join/leave multicast groups.
-        let socket = bind_receive_socket(Ipv4Addr::UNSPECIFIED, port)?;
-        Ok(UdpReceiver {
+    pub fn new(node_id: Option<UdpNodeId>, interface_address: Ipv4Addr) -> Self {
+        UdpReceiver {
             subscriptions: Subscriptions::new(),
             node_id,
             local_address: interface_address,
-            socket,
+            _socket: PhantomData,
             _session_tracker: PhantomData,
-        })
-    }
-
-    /// Returns the address and port that this receiver's socket is bound to
-    pub fn local_addr(&self) -> Result<SocketAddrV4, io::Error> {
-        match self.socket.local_addr()? {
-            SocketAddr::V4(addr) => Ok(addr),
-            SocketAddr::V6(_) => unreachable!(),
         }
     }
 
@@ -88,15 +73,15 @@ where
     /// Return values:
     /// * `Ok(Some(transfer))` if a transfer was received
     /// * `Ok(None)` if a packet was read, but it did not complete a transfer
-    /// * `Err(Error::Socket(e))` with `e.kind() == std::io::ErrorKind::WouldBlock` if no packet
-    ///   was available to read
+    /// * `Err(nb::Error::WouldBlock)` if no packet was available to read
     /// * `Err(e)` if a socket or memory allocation error occurred
     fn accept_inner(
         &mut self,
         now: I,
-    ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, Error> {
+        socket: &mut S,
+    ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, Error<nb::Error<S::Error>>> {
         let mut buffer: [u8; MTU] = [0; MTU];
-        let bytes_received = self.socket.recv(&mut buffer)?;
+        let bytes_received = socket.recv(&mut buffer).map_err(Error::Socket)?;
         let buffer = &buffer[..bytes_received];
 
         if bytes_received < MIN_PACKET_SIZE {
@@ -118,7 +103,9 @@ where
                 if let Some(subscription) =
                     self.subscriptions.find_message_subscription_mut(subject)
                 {
-                    return subscription.handle_frame(&header, bytes_after_header, now);
+                    return subscription
+                        .handle_frame(&header, bytes_after_header, now)
+                        .map_err(Error::Memory);
                 } else {
                     log::trace!("No matching subject subscription");
                 }
@@ -127,7 +114,9 @@ where
                 if let Some(subscription) =
                     self.subscriptions.find_request_subscription_mut(service)
                 {
-                    return subscription.handle_frame(&header, bytes_after_header, now);
+                    return subscription
+                        .handle_frame(&header, bytes_after_header, now)
+                        .map_err(Error::Memory);
                 } else {
                     log::trace!("No matching subject subscription");
                 }
@@ -136,7 +125,9 @@ where
                 if let Some(subscription) =
                     self.subscriptions.find_response_subscription_mut(service)
                 {
-                    return subscription.handle_frame(&header, bytes_after_header, now);
+                    return subscription
+                        .handle_frame(&header, bytes_after_header, now)
+                        .map_err(Error::Memory);
                 } else {
                     log::trace!("No matching subject subscription");
                 }
@@ -147,13 +138,12 @@ where
 
     /// Call this function before adding a service subscription
     /// to join the multicast group if necessary
-    fn service_subscribe_check_multicast(&mut self) -> Result<(), io::Error> {
+    fn service_subscribe_check_multicast(&mut self, socket: &mut S) -> Result<(), S::Error> {
         if let Some(node_id) = self.node_id {
             // If this node hasn't already subscribed to a service request/response and joined
             // its own multicast group, join the group now
             if !self.subscriptions.any_service_subscriptions() {
-                self.socket
-                    .join_multicast_v4(&Address::Node(node_id).into(), &self.local_address)?;
+                socket.join_multicast_v4(&Address::Node(node_id).into(), &self.local_address)?;
             }
         }
         Ok(())
@@ -161,44 +151,44 @@ where
 
     /// Call this function after removing a service subscription
     /// to leave the multicast group if necessary
-    fn service_unsubscribe_check_multicast(&mut self) -> Result<(), io::Error> {
+    fn service_unsubscribe_check_multicast(&mut self, socket: &mut S) -> Result<(), S::Error> {
         if let Some(node_id) = self.node_id {
             // If this node has no more service request/response subscriptions, leave its
             // multicast group
             if !self.subscriptions.any_service_subscriptions() {
-                self.socket
-                    .leave_multicast_v4(&Address::Node(node_id).into(), &self.local_address)?;
+                socket.leave_multicast_v4(&Address::Node(node_id).into(), &self.local_address)?;
             }
         }
         Ok(())
     }
 }
 
-impl<I, T, const MTU: usize> Receiver<I> for UdpReceiver<I, T, MTU>
+impl<I, T, S, const MTU: usize> Receiver<I> for UdpReceiver<I, T, S, MTU>
 where
     I: Instant,
     T: SessionTracker<I, UdpNodeId, UdpTransferId, UdpSessionData> + Default,
+    S: UdpSocket,
 {
     type Transport = UdpTransport;
-    /// The UDP receiver uses multiple sockets internally instead of a separate driver.
-    type Driver = ();
-    type Error = Error;
+    type Driver = S;
+    type Error = Error<S::Error>;
 
     fn receive(
         &mut self,
         now: I,
-        _driver: &mut (),
+        socket: &mut S,
     ) -> Result<Option<Transfer<Vec<u8>, I, Self::Transport>>, Self::Error> {
         // Loop until all incoming packets have been read
         let result = loop {
-            match self.accept_inner(now) {
+            match self.accept_inner(now, socket) {
                 Ok(Some(transfer)) => break Ok(Some(transfer)),
                 Ok(None) => { /* Keep going and try to read another packet */ }
-                Err(Error::Socket(e)) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                Err(Error::Socket(nb::Error::WouldBlock)) => {
                     // Can't read any more
                     break Ok(None);
                 }
-                Err(e) => break Err(e),
+                Err(Error::Memory(e)) => break Err(Error::Memory(e)),
+                Err(Error::Socket(nb::Error::Other(e))) => break Err(Error::Socket(e)),
             }
         };
         self.clean_expired_sessions(now);
@@ -210,19 +200,18 @@ where
         subject: SubjectId,
         payload_size_max: usize,
         timeout: <I as Instant>::Duration,
-        _driver: &mut (),
-    ) -> Result<(), Error> {
-        self.socket
-            .join_multicast_v4(&Address::Multicast(subject).into(), &Ipv4Addr::LOCALHOST)?;
+        socket: &mut S,
+    ) -> Result<(), Self::Error> {
+        socket
+            .join_multicast_v4(&Address::Multicast(subject).into(), &Ipv4Addr::LOCALHOST)
+            .map_err(Error::Socket)?;
         self.subscriptions
             .subscribe_message(subject, Subscription::new(payload_size_max, timeout));
         Ok(())
     }
 
-    fn unsubscribe_message(&mut self, subject: SubjectId, _driver: &mut ()) {
-        let _ = self
-            .socket
-            .leave_multicast_v4(&Address::Multicast(subject).into(), &self.local_address);
+    fn unsubscribe_message(&mut self, subject: SubjectId, socket: &mut S) {
+        let _ = socket.leave_multicast_v4(&Address::Multicast(subject).into(), &self.local_address);
         self.subscriptions.unsubscribe_message(subject);
     }
 
@@ -231,9 +220,9 @@ where
         service: ServiceId,
         payload_size_max: usize,
         timeout: <I as Instant>::Duration,
-        _driver: &mut (),
+        socket: &mut S,
     ) -> Result<(), ServiceSubscribeError<Self::Error>> {
-        self.service_subscribe_check_multicast()
+        self.service_subscribe_check_multicast(socket)
             .map_err(|e| ServiceSubscribeError::Transport(Error::Socket(e)))?;
         if self.node_id.is_some() {
             let subscription = Subscription::new(payload_size_max, timeout);
@@ -244,9 +233,9 @@ where
         }
     }
 
-    fn unsubscribe_request(&mut self, service: ServiceId, _driver: &mut ()) {
+    fn unsubscribe_request(&mut self, service: ServiceId, socket: &mut S) {
         self.subscriptions.unsubscribe_request(service);
-        let _ = self.service_unsubscribe_check_multicast();
+        let _ = self.service_unsubscribe_check_multicast(socket);
     }
 
     fn subscribe_response(
@@ -254,9 +243,9 @@ where
         service: ServiceId,
         payload_size_max: usize,
         timeout: <I as Instant>::Duration,
-        _driver: &mut (),
+        socket: &mut S,
     ) -> Result<(), ServiceSubscribeError<Self::Error>> {
-        self.service_subscribe_check_multicast()
+        self.service_subscribe_check_multicast(socket)
             .map_err(|e| ServiceSubscribeError::Transport(Error::Socket(e)))?;
         if self.node_id.is_some() {
             let subscription = Subscription::new(payload_size_max, timeout);
@@ -267,18 +256,10 @@ where
         }
     }
 
-    fn unsubscribe_response(&mut self, service: ServiceId, _driver: &mut ()) {
+    fn unsubscribe_response(&mut self, service: ServiceId, socket: &mut S) {
         self.subscriptions.unsubscribe_response(service);
-        let _ = self.service_unsubscribe_check_multicast();
+        let _ = self.service_unsubscribe_check_multicast(socket);
     }
-}
-
-/// Creates a socket, enables non-blocking mode, binds to the provided
-/// address and port, and returns the socket
-fn bind_receive_socket(address: Ipv4Addr, port: u16) -> Result<UdpSocket, io::Error> {
-    let socket = UdpSocket::bind((address, port))?;
-    socket.set_nonblocking(true)?;
-    Ok(socket)
 }
 
 pub struct Subscription<I, T>
@@ -309,7 +290,7 @@ where
         header: &ValidatedUdpHeader,
         bytes_after_header: &[u8],
         now: I,
-    ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, Error> {
+    ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, OutOfMemoryError> {
         let timeout = self.timeout;
         if let Some(source_node_id) = header.data_specifier.source_node_id() {
             let session = self.sessions.get_mut_or_insert_with(source_node_id, || {
@@ -346,10 +327,10 @@ where
 
     fn convert_reassembly_result(
         &self,
-        result: Result<Option<Vec<u8>>, Error>,
+        result: Result<Option<Vec<u8>>, OutOfMemoryError>,
         header: &ValidatedUdpHeader,
         now: I,
-    ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, Error> {
+    ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, OutOfMemoryError> {
         match result {
             Ok(Some(reassembled)) => {
                 // Add the transfer headers and record the completed transfer
@@ -413,7 +394,7 @@ where
         header: &ValidatedUdpHeader,
         bytes_after_header: &[u8],
         max_payload_length: usize,
-    ) -> Result<Option<Vec<u8>>, Error>;
+    ) -> Result<Option<Vec<u8>>, OutOfMemoryError>;
 }
 
 impl<I> UdpSession<I> for Session<I, UdpTransferId, UdpSessionData>
@@ -429,7 +410,7 @@ where
         header: &ValidatedUdpHeader,
         bytes_after_header: &[u8],
         max_payload_length: usize,
-    ) -> Result<Option<Vec<u8>>, Error> {
+    ) -> Result<Option<Vec<u8>>, OutOfMemoryError> {
         // The buildup will collect the payload and the transfer CRC in the last frame, so it
         // needs extra capacity
         let max_payload_and_crc_length = max_payload_length + TRANSFER_CRC_SIZE;
@@ -450,8 +431,7 @@ where
                 // Frame index 0 and last (single-frame transfer):
                 // Check frame CRC, no buildup, return payload only
                 if check_frame_crc(bytes_after_header) {
-                    let mut payload: Vec<u8> = FallibleVec::try_with_capacity(payload_bytes.len())
-                        .map_err(|_| Error::Memory(OutOfMemoryError))?;
+                    let mut payload: Vec<u8> = FallibleVec::try_with_capacity(payload_bytes.len())?;
                     payload.extend_from_slice(payload_bytes);
                     Ok(Some(payload))
                 } else {

@@ -29,6 +29,7 @@ extern crate hash32;
 extern crate hash32_derive;
 extern crate heapless;
 extern crate log;
+extern crate nb;
 extern crate zerocopy;
 
 use core::fmt::Debug;
@@ -44,7 +45,7 @@ pub use crate::rx::{UdpReceiver, UdpSessionData};
 pub use crate::tx::UdpTransmitter;
 
 mod address;
-mod driver;
+pub mod driver;
 mod header;
 mod rx;
 mod tx;
@@ -149,23 +150,16 @@ impl From<u64> for UdpTransferId {
 }
 
 #[derive(Debug)]
-pub enum Error {
+pub enum Error<S> {
     Memory(OutOfMemoryError),
-    Socket(std::io::Error),
+    Socket(S),
 }
 
-impl From<OutOfMemoryError> for Error {
+impl<S> From<OutOfMemoryError> for Error<S> {
     fn from(oom: OutOfMemoryError) -> Self {
         Error::Memory(oom)
     }
 }
-impl From<std::io::Error> for Error {
-    fn from(inner: std::io::Error) -> Self {
-        Error::Socket(inner)
-    }
-}
-
-const DEFAULT_TTL: u32 = 16;
 
 /// Returns a CRC calculator used for headers
 fn header_crc() -> CRCu16 {

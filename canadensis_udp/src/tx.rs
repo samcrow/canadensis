@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
-use std::net::{Ipv4Addr, SocketAddrV4, UdpSocket};
+use std::marker::PhantomData;
+use std::net::SocketAddrV4;
 
 use canadensis_core::nb;
 use canadensis_core::time::{Clock, Instant};
@@ -14,32 +15,31 @@ use crate::{Error, UdpTransport};
 
 mod breakdown;
 
-pub struct UdpTransmitter<const MTU: usize> {
-    /// The socket used to send frames
-    socket: UdpSocket,
+pub struct UdpTransmitter<S, const MTU: usize> {
     destination_port: u16,
+    _socket: PhantomData<S>,
 }
-impl<const MTU: usize> UdpTransmitter<MTU> {
+impl<S, const MTU: usize> UdpTransmitter<S, MTU>
+where
+    S: crate::driver::UdpSocket,
+{
     /// Creates a transmitter
     ///
     /// # Panics
     ///
     /// This function panics if `MTU` is less than 29. 29 bytes is the minimum MTU required to
     /// contain a header, transfer CRC, and one byte of payload in each frame.
-    pub fn new(bind_address: Ipv4Addr, destination_port: u16) -> Result<Self, Error> {
+    pub fn new(destination_port: u16) -> Self {
         // MTU must be big enough for the header, transfer CRC, and at least 1 byte of data
         assert!(
             MTU > header::SIZE + TRANSFER_CRC_SIZE + 1,
             "MTU is too small"
         );
 
-        // Bind to an ephemeral port
-        let socket = bind_transmit_socket(bind_address, 0)?;
-
-        Ok(UdpTransmitter {
-            socket,
+        UdpTransmitter {
             destination_port,
-        })
+            _socket: PhantomData,
+        }
     }
 
     fn push_inner<I, C>(
@@ -49,13 +49,14 @@ impl<const MTU: usize> UdpTransmitter<MTU> {
         deadline: I,
         payload: &[u8],
         clock: &mut C,
-    ) -> Result<(), Error>
+        socket: &mut S,
+    ) -> Result<(), S::Error>
     where
         I: Instant,
         C: Clock<Instant = I>,
     {
         let breakdown = Breakdown::new(header_base, deadline, payload.iter().copied(), MTU);
-        self.send_frames(breakdown, dest, clock)
+        self.send_frames(breakdown, dest, clock, socket)
     }
 
     fn send_frames<I, B, C>(
@@ -63,7 +64,8 @@ impl<const MTU: usize> UdpTransmitter<MTU> {
         breakdown: B,
         destination_address: SocketAddrV4,
         clock: &mut C,
-    ) -> Result<(), Error>
+        socket: &mut S,
+    ) -> Result<(), S::Error>
     where
         I: Instant,
         B: IntoIterator<Item = UdpFrame<I>>,
@@ -71,7 +73,7 @@ impl<const MTU: usize> UdpTransmitter<MTU> {
     {
         for frame in breakdown {
             if frame.deadline.overflow_safe_compare(&clock.now()) == Ordering::Greater {
-                self.socket.send_to(&frame.data, destination_address)?;
+                socket.send_to(&frame.data, destination_address)?;
             } else {
                 log::trace!("Discarding outgoing frame because its deadline has passed");
             }
@@ -80,21 +82,21 @@ impl<const MTU: usize> UdpTransmitter<MTU> {
     }
 }
 
-impl<I, const MTU: usize> Transmitter<I> for UdpTransmitter<MTU>
+impl<I, S, const MTU: usize> Transmitter<I> for UdpTransmitter<S, MTU>
 where
     I: Instant,
+    S: crate::driver::UdpSocket,
 {
     type Transport = UdpTransport;
-    /// The UDP transport uses an internal socket instead of a separate driver.
-    type Driver = ();
-    type Error = Error;
+    type Driver = S;
+    type Error = Error<S::Error>;
 
     fn push<A, C>(
         &mut self,
         transfer: Transfer<A, I, Self::Transport>,
         clock: &mut C,
-        _driver: &mut (),
-    ) -> nb::Result<(), Error>
+        socket: &mut S,
+    ) -> nb::Result<(), Self::Error>
     where
         A: AsRef<[u8]>,
         C: Clock<Instant = I>,
@@ -149,14 +151,16 @@ where
             deadline,
             transfer.payload.as_ref(),
             clock,
+            socket,
         )
+        .map_err(Error::Socket)
         .map_err(nb::Error::Other)
     }
 
     fn flush<C>(
         &mut self,
         _clock: &mut C,
-        _driver: &mut (),
+        _socket: &mut S,
     ) -> canadensis_core::nb::Result<(), Self::Error>
     where
         C: Clock<Instant = I>,
@@ -175,12 +179,4 @@ where
 pub(crate) struct UdpFrame<I> {
     deadline: I,
     data: Vec<u8>,
-}
-
-/// Creates a socket, sets the TTL to DEFAULT_TTL, binds to the provided
-/// address and port, and returns the socket
-fn bind_transmit_socket(address: Ipv4Addr, port: u16) -> Result<UdpSocket, std::io::Error> {
-    let socket = UdpSocket::bind((address, port))?;
-    socket.set_multicast_ttl_v4(crate::DEFAULT_TTL)?;
-    Ok(socket)
 }

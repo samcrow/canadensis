@@ -15,6 +15,7 @@ use canadensis_core::session::SessionDynamicMap;
 use canadensis_core::time::{Clock, MicrosecondDuration64, Microseconds64};
 use canadensis_core::transport::Receiver;
 use canadensis_linux::SystemClock;
+use canadensis_udp::driver::StdUdpSocket;
 use canadensis_udp::{UdpNodeId, UdpReceiver, UdpSessionData, UdpTransferId, DEFAULT_PORT};
 
 fn main() {
@@ -28,27 +29,29 @@ fn main() {
 
     let local_node_id = UdpNodeId::try_from(121).unwrap();
     let mut clock = SystemClock::new();
+    // For loopback multicast to work, the receive socket needs to bind to the unspecified address
+    let mut socket = StdUdpSocket::bind(Ipv4Addr::UNSPECIFIED, DEFAULT_PORT).unwrap();
 
     // Note: This MTU includes space for the header
     const MTU: usize = 1472;
     let mut receiver = UdpReceiver::<
         Microseconds64,
         SessionDynamicMap<Microseconds64, UdpNodeId, UdpTransferId, UdpSessionData>,
+        StdUdpSocket,
         MTU,
-    >::new(Some(local_node_id), Ipv4Addr::LOCALHOST, DEFAULT_PORT)
-    .expect("Failed to create receiver");
+    >::new(Some(local_node_id), Ipv4Addr::LOCALHOST);
     receiver
         .subscribe_message(
             73.try_into().unwrap(),
             4096,
             MicrosecondDuration64::new(2_000_000),
-            &mut (),
+            &mut socket,
         )
         .unwrap();
 
     // Instead of a real asynchronous IO system, just poll periodically
     loop {
-        match receiver.receive(clock.now(), &mut ()) {
+        match receiver.receive(clock.now(), &mut socket) {
             Ok(Some(transfer)) => {
                 println!("{:?}", transfer);
             }
