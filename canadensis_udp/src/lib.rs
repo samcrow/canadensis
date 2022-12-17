@@ -26,7 +26,7 @@
 extern crate alloc;
 extern crate canadensis_core;
 extern crate crc_any;
-extern crate embedded_nal;
+pub extern crate embedded_nal;
 extern crate fallible_collections;
 extern crate hash32;
 extern crate hash32_derive;
