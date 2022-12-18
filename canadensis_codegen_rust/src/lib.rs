@@ -107,6 +107,7 @@ fn generate_from_dsdl<'c>(
                         subject_id
                     ),
                     deprecated: message.deprecated(),
+                    comments: "The fixed subject ID for this message type",
                 });
             }
 
@@ -139,6 +140,7 @@ fn generate_from_dsdl<'c>(
                         service_id
                     ),
                     deprecated: request.deprecated(),
+                    comments: "The fixed ID of this service",
                 });
             }
 
@@ -217,6 +219,7 @@ enum GeneratedItem<'c> {
         ty: String,
         value: String,
         deprecated: bool,
+        comments: &'c str,
     },
 }
 
@@ -703,11 +706,6 @@ mod fmt_impl {
 
     impl Display for GeneratedType<'_> {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-            if !self.comments.is_empty() {
-                // Documentation from the DSDL file
-                writeln!(f, "#[doc = {:?}]", self.comments)?;
-                writeln!(f, "///")?;
-            }
             // Additional documentation: Cyphal type name
             writeln!(f, "/// `{}`\n///", self.cyphal_name)?;
             let min_size = self.size.min_value();
@@ -721,6 +719,11 @@ mod fmt_impl {
                     min_size / 8,
                     max_size / 8
                 )?;
+            }
+            if !self.comments.is_empty() {
+                // Documentation from the DSDL file
+                writeln!(f, "///")?;
+                writeln!(f, "#[doc = {:?}]", self.comments)?;
             }
 
             // Derive zerocopy traits if possible
@@ -899,7 +902,11 @@ mod fmt_impl {
                     ty,
                     value,
                     deprecated,
+                    comments,
                 } => {
+                    if !comments.is_empty() {
+                        writeln!(f, "#[doc = {:?}]", comments)?;
+                    }
                     let deprecated_attr = if *deprecated { "#[deprecated]" } else { "" };
                     writeln!(
                         f,
