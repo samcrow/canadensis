@@ -225,7 +225,7 @@ pub enum Statement<'i> {
     PaddingField { bits: u8, span: Span<'i> },
     /// The `---` marker that separates the request and response fields in a service type
     ServiceResponseMarker(Span<'i>),
-    /// A comment, not including the # character
+    /// A comment, not including the # character or line terminator but including whitespace
     Comment(Span<'i>),
 }
 
