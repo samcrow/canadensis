@@ -4,7 +4,7 @@ use canadensis_dsdl_frontend::constants::ConstantValue;
 use canadensis_dsdl_frontend::types::PrimitiveType;
 use std::fmt::{Display, Formatter, Result};
 
-use crate::{make_rust_identifier, round_up_integer_size, GeneratedType};
+use crate::{make_rust_identifier, round_up_integer_size, write_doc_comments, GeneratedType};
 
 pub(crate) struct ImplementConstants<'t, 'c>(pub &'t GeneratedType<'c>);
 
@@ -22,9 +22,7 @@ impl Display for ImplementConstants<'_, '_> {
                 PrimitiveType::Float64 { .. } => "f64".into(),
             };
 
-            if !constant.comments().is_empty() {
-                writeln!(f, "#[doc = {:?}]", constant.comments())?;
-            }
+            write_doc_comments(f, constant.comments())?;
             writeln!(
                 f,
                 "pub const {}: {} = {};",

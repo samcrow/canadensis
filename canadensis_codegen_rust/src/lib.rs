@@ -686,7 +686,9 @@ mod fmt_impl {
     use crate::impl_data_type::ImplementDataType;
     use crate::impl_deserialize::ImplementDeserialize;
     use crate::impl_serialize::ImplementSerialize;
-    use crate::{GeneratedItem, GeneratedModule, GeneratedTypeKind, GeneratedVariant};
+    use crate::{
+        write_doc_comments, GeneratedItem, GeneratedModule, GeneratedTypeKind, GeneratedVariant,
+    };
     use std::convert::TryFrom;
     use std::fmt::{Display, Formatter, Result};
 
@@ -720,11 +722,8 @@ mod fmt_impl {
                     max_size / 8
                 )?;
             }
-            if !self.comments.is_empty() {
-                // Documentation from the DSDL file
-                writeln!(f, "///")?;
-                writeln!(f, "#[doc = {:?}]", self.comments)?;
-            }
+            writeln!(f, "///")?;
+            write_doc_comments(f, self.comments)?;
 
             // Derive zerocopy traits if possible
             let supports_zero_copy = self.supports_zero_copy();
@@ -822,11 +821,8 @@ mod fmt_impl {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
             match self {
                 GeneratedField::Data(data) => {
-                    if !data.comments.is_empty() {
-                        // Documentation from DSDL
-                        writeln!(f, "#[doc = {:?}]", data.comments)?;
-                        writeln!(f, "///")?;
-                    }
+                    write_doc_comments(f, data.comments)?;
+                    writeln!(f, "///")?;
 
                     writeln!(f, "/// `{}`\n///", data.cyphal_ty)?;
                     if data.always_aligned {
@@ -854,11 +850,8 @@ mod fmt_impl {
 
     impl Display for GeneratedVariant<'_> {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-            if !self.comments.is_empty() {
-                // Documentation from DSDL
-                writeln!(f, "#[doc = {:?}]", self.comments)?;
-                writeln!(f, "///")?;
-            }
+            write_doc_comments(f, self.comments)?;
+            writeln!(f, "///")?;
             writeln!(f, "/// {}", self.cyphal_ty)?;
 
             writeln!(f, "{}({}),", self.name, self.ty)
@@ -904,9 +897,7 @@ mod fmt_impl {
                     deprecated,
                     comments,
                 } => {
-                    if !comments.is_empty() {
-                        writeln!(f, "#[doc = {:?}]", comments)?;
-                    }
+                    write_doc_comments(f, comments)?;
                     let deprecated_attr = if *deprecated { "#[deprecated]" } else { "" };
                     writeln!(
                         f,
@@ -917,6 +908,16 @@ mod fmt_impl {
             }
         }
     }
+}
+
+fn write_doc_comments(f: &mut std::fmt::Formatter<'_>, comments: &str) -> std::fmt::Result {
+    if !comments.is_empty() {
+        // Documentation sometimes contains indented code blocks that are just plain text or pseudo-
+        // code. To keep the test apparatus from trying to compile them as Rust, disable them
+        // while running documentation tests.
+        writeln!(f, "#[cfg_attr(not(doctest), doc = {:?})]", comments)?;
+    }
+    Ok(())
 }
 
 #[cfg(test)]
