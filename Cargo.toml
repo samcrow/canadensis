@@ -5,7 +5,6 @@ members = [
     "canadensis_bxcan",
     "canadensis_can",
     "canadensis_codegen_rust",
-    "canadensis_codegen_rust/prdt_compile_test",
     "canadensis_core",
     "canadensis_crc",
     "canadensis_data_types",
