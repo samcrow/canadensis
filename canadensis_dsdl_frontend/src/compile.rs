@@ -329,7 +329,7 @@ impl PersistentContext {
                 Statement::ServiceResponseMarker(span) => {
                     state.handle_service_response_marker(span)?
                 }
-                Statement::Comment(comment) => state.handle_comment(comment.as_str().trim())?,
+                Statement::Comment(comment) => state.handle_comment(comment.as_str())?,
             }
         }
         // End of file, check that everything is here
