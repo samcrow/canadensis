@@ -81,12 +81,12 @@ pub mod reg {
 /// Always aligned,
 /// size 96 bits
 pub kinematics: crate::reg::udral::physics::kinematics::rotation::planar_0_1::Planar,
+#[doc = "NaN if unknown"]
+///
 /// `uavcan.si.unit.torque.Scalar.1.0`
 ///
 /// Always aligned,
 /// size 32 bits
-///
-#[doc = "NaN if unknown"]
 pub torque: crate::uavcan::si::unit::torque::scalar_1_0::Scalar,
 }
                         impl ::canadensis_encoding::DataType for Planar {
@@ -187,12 +187,12 @@ pub value: crate::reg::udral::physics::dynamics::rotation::planar_0_1::Planar,
 /// Always aligned,
 /// size 96 bits
 pub kinematics: crate::reg::udral::physics::kinematics::translation::linear_0_1::Linear,
+#[doc = "NaN if unknown"]
+///
 /// `uavcan.si.unit.force.Scalar.1.0`
 ///
 /// Always aligned,
 /// size 32 bits
-///
-#[doc = "NaN if unknown"]
 pub force: crate::uavcan::si::unit::force::scalar_1_0::Scalar,
 }
                         impl ::canadensis_encoding::DataType for Linear {
@@ -386,26 +386,26 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                     #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                     #[repr(C, packed)]
                     pub struct Source {
+                        #[doc = "Total instant load power.\nPositive current flows into the source (power sinking).\nNegative current flows from the source to the power supply network (power sourcing)."]
+                        ///
                         /// `reg.udral.physics.electricity.Power.0.1`
                         ///
                         /// Always aligned,
                         /// size 64 bits
-                        ///
-                        #[doc = "Total instant load power.\nPositive current flows into the source (power sinking).\nNegative current flows from the source to the power supply network (power sourcing)."]
                         pub power: crate::reg::udral::physics::electricity::power_0_1::Power,
-                        /// `uavcan.si.unit.energy.Scalar.1.0`
-                        ///
-                        /// Always aligned,
-                        /// size 32 bits
-                        ///
                         #[doc = "A pessimistic estimate of the amount of energy that can be reclaimed from the source in its current state.\nThis may be dependent on the state of charge/health (for batteries), temperature, load profile, humidity, etc.\nNegative values may be reported to indicate overdischarge or depletion of the reserve energy.\n\nThis value approximates (full_energy + int(load_power dt)) plus the environmental influences on the source.\n\nHaving the instant power, the time to depletion is estimated as (energy/-power).\nWhen charging (for batteries), the remaining time to full charge can be found similarly as\n((full_energy-energy)/power).\n\nFor the sake of illustration, if this type was used to represent the state of a braking resistor,\nthen this value would be negative indicating the amount of dissipated energy."]
-                        pub energy: crate::uavcan::si::unit::energy::scalar_1_0::Scalar,
+                        ///
                         /// `uavcan.si.unit.energy.Scalar.1.0`
                         ///
                         /// Always aligned,
                         /// size 32 bits
-                        ///
+                        pub energy: crate::uavcan::si::unit::energy::scalar_1_0::Scalar,
                         #[doc = "A pessimistic estimate of the amount of energy that can be reclaimed from a fresh source (fully fueled generator\nor a fully charged battery) under the current conditions (SoH, temperature, load profile, etc)."]
+                        ///
+                        /// `uavcan.si.unit.energy.Scalar.1.0`
+                        ///
+                        /// Always aligned,
+                        /// size 32 bits
                         pub full_energy: crate::uavcan::si::unit::energy::scalar_1_0::Scalar,
                     }
                     impl ::canadensis_encoding::DataType for Source {
@@ -708,12 +708,12 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::point_state_var_0_
                             /// size 192 bits
                             pub value:
                                 crate::reg::udral::physics::kinematics::cartesian::point_0_1::Point,
+                            #[doc = "[meter^2]  Upper-right triangle of the covariance matrix."]
+                            ///
                             /// `saturated float16[6]`
                             ///
                             /// Always aligned,
                             /// size 96 bits
-                            ///
-                            #[doc = "[meter^2]  Upper-right triangle of the covariance matrix."]
                             pub covariance_urt: [::half::f16; 6],
                         }
                         impl ::canadensis_encoding::DataType for PointVar {
@@ -817,12 +817,12 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::point_state_var_0_
                             /// size 320 bits
                             pub value:
                                 crate::reg::udral::physics::kinematics::cartesian::pose_0_1::Pose,
+                            #[doc = "Upper-right triangle of the covariance matrix:\n\n[parent frame]        [child (body) frame]\ntranslation along axis    rotation about axis\nX       Y       Z       X       Y       Z\n+-----------------------------------------------\nX position    |\nY position    |          m^2                     m*rad\nZ position    |\nX rotation    |\nY rotation    |                                  rad^2\nZ rotation    |"]
+                            ///
                             /// `saturated float16[21]`
                             ///
                             /// Always aligned,
                             /// size 336 bits
-                            ///
-                            #[doc = "Upper-right triangle of the covariance matrix:\n\n[parent frame]        [child (body) frame]\ntranslation along axis    rotation about axis\nX       Y       Z       X       Y       Z\n+-----------------------------------------------\nX position    |\nY position    |          m^2                     m*rad\nZ position    |\nX rotation    |\nY rotation    |                                  rad^2\nZ rotation    |"]
                             pub covariance_urt: [::half::f16; 21],
                         }
                         impl ::canadensis_encoding::DataType for PoseVar {
@@ -1074,19 +1074,19 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::state_var_0_1::Sta
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                         #[repr(C, packed)]
                         pub struct Twist {
+                            #[doc = "Linear velocity in the body frame."]
+                            ///
                             /// `uavcan.si.unit.velocity.Vector3.1.0`
                             ///
                             /// Always aligned,
                             /// size 96 bits
-                            ///
-                            #[doc = "Linear velocity in the body frame."]
                             pub linear: crate::uavcan::si::unit::velocity::vector3_1_0::Vector3,
+                            #[doc = "Angular velocity about the fixed axes of the body frame (extrinsic)."]
+                            ///
                             /// `uavcan.si.unit.angular_velocity.Vector3.1.0`
                             ///
                             /// Always aligned,
                             /// size 96 bits
-                            ///
-                            #[doc = "Angular velocity about the fixed axes of the body frame (extrinsic)."]
                             pub angular:
                                 crate::uavcan::si::unit::angular_velocity::vector3_1_0::Vector3,
                         }
@@ -1137,12 +1137,12 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::state_var_0_1::Sta
                             /// size 192 bits
                             pub value:
                                 crate::reg::udral::physics::kinematics::cartesian::twist_0_1::Twist,
+                            #[doc = "Upper-right triangle of the covariance matrix:\n\ntranslation along axis    rotation about axis\nX       Y       Z       X       Y       Z\n+----------------------------------------------\nX velocity          |\nY velocity          |      (m/s)^2                (m*rad)/s^2\nZ velocity          |\nX angular velocity  |\nY angular velocity  |                              (rad/s)^2\nZ angular velocity  |"]
+                            ///
                             /// `saturated float16[21]`
                             ///
                             /// Always aligned,
                             /// size 336 bits
-                            ///
-                            #[doc = "Upper-right triangle of the covariance matrix:\n\ntranslation along axis    rotation about axis\nX       Y       Z       X       Y       Z\n+----------------------------------------------\nX velocity          |\nY velocity          |      (m/s)^2                (m*rad)/s^2\nZ velocity          |\nX angular velocity  |\nY angular velocity  |                              (rad/s)^2\nZ angular velocity  |"]
                             pub covariance_urt: [::half::f16; 21],
                         }
                         impl ::canadensis_encoding::DataType for TwistVar {
@@ -1238,26 +1238,26 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::Twi
                         #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                         #[repr(C, packed)]
                         pub struct Point {
+                            #[doc = "[radian]"]
+                            ///
                             /// `saturated float64`
                             ///
                             /// Always aligned,
                             /// size 64 bits
-                            ///
-                            #[doc = "[radian]"]
                             pub latitude: f64,
+                            #[doc = "[radian]"]
+                            ///
                             /// `saturated float64`
                             ///
                             /// Always aligned,
                             /// size 64 bits
-                            ///
-                            #[doc = "[radian]"]
                             pub longitude: f64,
+                            #[doc = "Distance between the local mean sea level (MSL) and the focal point of the antenna. Positive altitude above the MSL."]
+                            ///
                             /// `uavcan.si.unit.length.WideScalar.1.0`
                             ///
                             /// Always aligned,
                             /// size 64 bits
-                            ///
-                            #[doc = "Distance between the local mean sea level (MSL) and the focal point of the antenna. Positive altitude above the MSL."]
                             pub altitude:
                                 crate::uavcan::si::unit::length::wide_scalar_1_0::WideScalar,
                         }
@@ -1466,12 +1466,12 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1
                             /// size 192 bits
                             pub value:
                                 crate::reg::udral::physics::kinematics::geodetic::point_0_1::Point,
+                            #[doc = "[meter^2]\nUpper-right triangle of the covariance matrix.\nThe position covariance is defined relative to a tangential plane through the specified latitude/longitude.\nElement ordering: latitude, longitude, altitude. It is chosen to match the axis ordering of the NED frame."]
+                            ///
                             /// `saturated float16[6]`
                             ///
                             /// Always aligned,
                             /// size 96 bits
-                            ///
-                            #[doc = "[meter^2]\nUpper-right triangle of the covariance matrix.\nThe position covariance is defined relative to a tangential plane through the specified latitude/longitude.\nElement ordering: latitude, longitude, altitude. It is chosen to match the axis ordering of the NED frame."]
                             pub covariance_urt: [::half::f16; 6],
                         }
                         impl ::canadensis_encoding::DataType for PointVar {
@@ -1577,12 +1577,12 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1
                             /// size 320 bits
                             pub value:
                                 crate::reg::udral::physics::kinematics::geodetic::pose_0_1::Pose,
+                            #[doc = "Upper-right triangle of the covariance matrix:\n\n[parent frame]        [child (body) frame]\ntranslation along axis     rotation about axis\nX       Y       Z       X       Y       Z\n+-----------------------------------------------\nX position    |\nY position    |          m^2                     m*rad\nZ position    |\nX rotation    |\nY rotation    |                                  rad^2\nZ rotation    |"]
+                            ///
                             /// `saturated float16[21]`
                             ///
                             /// Always aligned,
                             /// size 336 bits
-                            ///
-                            #[doc = "Upper-right triangle of the covariance matrix:\n\n[parent frame]        [child (body) frame]\ntranslation along axis     rotation about axis\nX       Y       Z       X       Y       Z\n+-----------------------------------------------\nX position    |\nY position    |          m^2                     m*rad\nZ position    |\nX rotation    |\nY rotation    |                                  rad^2\nZ rotation    |"]
                             pub covariance_urt: [::half::f16; 21],
                         }
                         impl ::canadensis_encoding::DataType for PoseVar {
@@ -2016,26 +2016,26 @@ pub value: crate::reg::udral::physics::kinematics::translation::linear_0_1::Line
 /// Always aligned,
 /// size 152 bits
 pub value: crate::reg::udral::physics::kinematics::translation::linear_ts_0_1::LinearTs,
-/// `saturated float16`
-///
-/// Always aligned,
-/// size 16 bits
-///
 #[doc = "[meter^2]"]
+///
+/// `saturated float16`
+///
+/// Always aligned,
+/// size 16 bits
 pub position_error_variance: ::half::f16,
-/// `saturated float16`
-///
-/// Always aligned,
-/// size 16 bits
-///
 #[doc = "[(meter/second)^2]"]
-pub velocity_error_variance: ::half::f16,
+///
 /// `saturated float16`
 ///
 /// Always aligned,
 /// size 16 bits
-///
+pub velocity_error_variance: ::half::f16,
 #[doc = "[(meter/second^2)^2]"]
+///
+/// `saturated float16`
+///
+/// Always aligned,
+/// size 16 bits
 pub acceleration_error_variance: ::half::f16,
 }
                         impl ::canadensis_encoding::DataType for LinearVarTs {
@@ -2086,12 +2086,12 @@ pub acceleration_error_variance: ::half::f16,
                             /// Always aligned,
                             /// size 88 bits
                             pub value: crate::uavcan::si::sample::velocity::scalar_1_0::Scalar,
+                            #[doc = "[(meter/second)^2]"]
+                            ///
                             /// `saturated float16`
                             ///
                             /// Always aligned,
                             /// size 16 bits
-                            ///
-                            #[doc = "[(meter/second)^2]"]
                             pub error_variance: ::half::f16,
                         }
                         impl ::canadensis_encoding::DataType for Velocity1VarTs {
@@ -2141,12 +2141,12 @@ pub acceleration_error_variance: ::half::f16,
                             /// Always aligned,
                             /// size 152 bits
                             pub value: crate::uavcan::si::sample::velocity::vector3_1_0::Vector3,
+                            #[doc = "[(meter/second)^2] Upper-right triangle of the covariance matrix."]
+                            ///
                             /// `saturated float16[6]`
                             ///
                             /// Always aligned,
                             /// size 96 bits
-                            ///
-                            #[doc = "[(meter/second)^2] Upper-right triangle of the covariance matrix."]
                             pub covariance_urt: [::half::f16; 6],
                         }
                         impl ::canadensis_encoding::DataType for Velocity3Var {
@@ -2206,12 +2206,12 @@ pub acceleration_error_variance: ::half::f16,
                             /// Always aligned,
                             /// size 96 bits
                             pub value: crate::uavcan::si::unit::velocity::vector3_1_0::Vector3,
+                            #[doc = "[(meter/second)^2] Upper-right triangle of the covariance matrix."]
+                            ///
                             /// `saturated float16[6]`
                             ///
                             /// Always aligned,
                             /// size 96 bits
-                            ///
-                            #[doc = "[(meter/second)^2] Upper-right triangle of the covariance matrix."]
                             pub covariance_urt: [::half::f16; 6],
                         }
                         impl ::canadensis_encoding::DataType for Velocity3Var {
@@ -2337,12 +2337,12 @@ pub acceleration_error_variance: ::half::f16,
                         /// Always aligned,
                         /// size 32 bits
                         pub temperature: crate::uavcan::si::unit::temperature::scalar_1_0::Scalar,
+                        #[doc = "The upper-right triangle of the covariance matrix (following the matrix packing rules defined in Specification).\n0 -- pascal^2\n1 -- pascal*kelvin\n2 -- kelvin^2"]
+                        ///
                         /// `saturated float16[3]`
                         ///
                         /// Always aligned,
                         /// size 48 bits
-                        ///
-                        #[doc = "The upper-right triangle of the covariance matrix (following the matrix packing rules defined in Specification).\n0 -- pascal^2\n1 -- pascal*kelvin\n2 -- kelvin^2"]
                         pub covariance_urt: [::half::f16; 3],
                     }
                     impl ::canadensis_encoding::DataType for PressureTempVarTs {
@@ -2393,12 +2393,12 @@ pub acceleration_error_variance: ::half::f16,
                     #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                     #[repr(C, packed)]
                     pub struct TAI64 {
+                        #[doc = "[nanosecond] Nanoseconds elapsed since 1970-01-01T00:00:00Z TAI."]
+                        ///
                         /// `saturated int64`
                         ///
                         /// Always aligned,
                         /// size 64 bits
-                        ///
-                        #[doc = "[nanosecond] Nanoseconds elapsed since 1970-01-01T00:00:00Z TAI."]
                         pub tai64n: i64,
                     }
                     impl ::canadensis_encoding::DataType for TAI64 {
@@ -2443,12 +2443,12 @@ pub acceleration_error_variance: ::half::f16,
                         /// Always aligned,
                         /// size 64 bits
                         pub value: crate::reg::udral::physics::time::tai64_0_1::TAI64,
+                        #[doc = "[second^2]\nError variance, in second squared, of the time estimate.\nInfinity indicates that the time estimates are not yet available.\nA non-positive value indicates that the error variance is unknown."]
+                        ///
                         /// `saturated float32`
                         ///
                         /// Always aligned,
                         /// size 32 bits
-                        ///
-                        #[doc = "[second^2]\nError variance, in second squared, of the time estimate.\nInfinity indicates that the time estimates are not yet available.\nA non-positive value indicates that the error variance is unknown."]
                         pub error_variance: f32,
                     }
                     impl ::canadensis_encoding::DataType for TAI64Var {
@@ -2586,74 +2586,74 @@ pub acceleration_error_variance: ::half::f16,
                         ///
                         #[doc = "A collection of detailed fault flags indicating problems detected by the service provider.\nA fault flag is set when the corresponding parameter exceeds its safe operating area (SOA) as defined by the vendor;\nsee https://en.wikipedia.org/wiki/Safe_operating_area.\nAs long as at least one flag is set, the service health should not be NOMINAL."]
                         pub struct FaultFlags {
+                            #[doc = "The load is above SOA or regeneration below the SOA."]
+                            ///
                             /// `saturated bool`
                             ///
                             /// Always aligned,
                             /// size 1 bits
-                            ///
-                            #[doc = "The load is above SOA or regeneration below the SOA."]
                             pub overload: bool,
+                            #[doc = "Supply voltage is above or below the SOA."]
+                            ///
                             /// `saturated bool`
                             ///
                             /// Not always aligned,
                             /// size 1 bits
-                            ///
-                            #[doc = "Supply voltage is above or below the SOA."]
                             pub voltage: bool,
                             /// `saturated bool`
                             ///
                             /// Not always aligned,
                             /// size 1 bits
                             pub motor_temperature: bool,
-                            /// `saturated bool`
-                            ///
-                            /// Not always aligned,
-                            /// size 1 bits
-                            ///
                             #[doc = "Temperature is above or below the SOA."]
+                            ///
+                            /// `saturated bool`
+                            ///
+                            /// Not always aligned,
+                            /// size 1 bits
                             pub controller_temperature: bool,
-                            /// `saturated bool`
-                            ///
-                            /// Not always aligned,
-                            /// size 1 bits
-                            ///
                             #[doc = "The absolute velocity of the load is above the SOA."]
+                            ///
+                            /// `saturated bool`
+                            ///
+                            /// Not always aligned,
+                            /// size 1 bits
                             pub velocity: bool,
-                            /// `saturated bool`
-                            ///
-                            /// Not always aligned,
-                            /// size 1 bits
-                            ///
                             #[doc = "The load cannot be driven due to a mechanical failure."]
+                            ///
+                            /// `saturated bool`
+                            ///
+                            /// Not always aligned,
+                            /// size 1 bits
                             pub mechanical: bool,
-                            /// `saturated bool`
-                            ///
-                            /// Not always aligned,
-                            /// size 1 bits
-                            ///
                             #[doc = "The mechanical vibration level exceeds the SOA."]
-                            pub vibration: bool,
+                            ///
                             /// `saturated bool`
                             ///
                             /// Not always aligned,
                             /// size 1 bits
-                            ///
+                            pub vibration: bool,
                             #[doc = "Configuration is missing or invalid."]
+                            ///
+                            /// `saturated bool`
+                            ///
+                            /// Not always aligned,
+                            /// size 1 bits
                             pub configuration: bool,
+                            #[doc = "The requested control mode is not supported by the actuator."]
+                            ///
                             /// `saturated bool`
                             ///
                             /// Always aligned,
                             /// size 1 bits
-                            ///
-                            #[doc = "The requested control mode is not supported by the actuator."]
                             pub control_mode: bool,
                             // 6 bits of padding
+                            #[doc = "None of the above (vendor-specific)."]
+                            ///
                             /// `saturated bool`
                             ///
                             /// Not always aligned,
                             /// size 1 bits
-                            ///
-                            #[doc = "None of the above (vendor-specific)."]
                             pub other: bool,
                         }
                         impl ::canadensis_encoding::DataType for FaultFlags {
@@ -2715,20 +2715,20 @@ pub acceleration_error_variance: ::half::f16,
                         ///
                         #[doc = "This high-rate feedback should be published once immediately after a setpoint is applied.\nIt follows that the publication rate of these messages equals that of the setpoint messages.\nWhen setpoint messages are not being emitted, the publication rate is implementation-defined, but it should not\nbe lower than the defined limit.\nThe priority of this message should be the same as that of the corresponding setpoint message."]
                         pub struct Feedback {
+                            #[doc = "If ENGAGED, the actuator provides service according to its nominal performance characteristics.\nOtherwise, no availability guarantees are provided.\nNotice that the feedback type is a structural subtype of the heartbeat type, so one can subscribe to a\nfeedback subject using the heartbeat type. Similarly, the heartbeat type is a structural subtype of the\nReadiness type, meaning that one can use the Readiness type as well."]
+                            ///
                             /// `reg.udral.service.common.Heartbeat.0.1`
                             ///
                             /// Always aligned,
                             /// size 16 bits
-                            ///
-                            #[doc = "If ENGAGED, the actuator provides service according to its nominal performance characteristics.\nOtherwise, no availability guarantees are provided.\nNotice that the feedback type is a structural subtype of the heartbeat type, so one can subscribe to a\nfeedback subject using the heartbeat type. Similarly, the heartbeat type is a structural subtype of the\nReadiness type, meaning that one can use the Readiness type as well."]
                             pub heartbeat:
                                 crate::reg::udral::service::common::heartbeat_0_1::Heartbeat,
+                            #[doc = "[percent]\nPercentage of the maximum rated output intensity. May exceed +-100% in case of overload.\nPositive value indicates that power is applied to the load; negative indicates that power is being sunk from the\nload into the actuator power source.\nThe consumer of this message may leverage this information to manage the control loop saturation."]
+                            ///
                             /// `saturated int8`
                             ///
                             /// Always aligned,
                             /// size 8 bits
-                            ///
-                            #[doc = "[percent]\nPercentage of the maximum rated output intensity. May exceed +-100% in case of overload.\nPositive value indicates that power is applied to the load; negative indicates that power is being sunk from the\nload into the actuator power source.\nThe consumer of this message may leverage this information to manage the control loop saturation."]
                             pub demand_factor_pct: i8,
                         }
                         impl ::canadensis_encoding::DataType for Feedback {
@@ -3167,26 +3167,26 @@ pub acceleration_error_variance: ::half::f16,
 /// Always aligned,
 /// size 32 bits
 pub motor_temperature: crate::uavcan::si::unit::temperature::scalar_1_0::Scalar,
+#[doc = "Sampled temperatures. If multiple values are available, reduction is implementation-defined."]
+///
 /// `uavcan.si.unit.temperature.Scalar.1.0`
 ///
 /// Always aligned,
 /// size 32 bits
-///
-#[doc = "Sampled temperatures. If multiple values are available, reduction is implementation-defined."]
 pub controller_temperature: crate::uavcan::si::unit::temperature::scalar_1_0::Scalar,
+#[doc = "Incremented once per occurrence. Reset to zero when ENGAGED.\nThe exact definition of what constitutes an error is implementation-dependent."]
+///
 /// `saturated uint32`
 ///
 /// Always aligned,
 /// size 32 bits
-///
-#[doc = "Incremented once per occurrence. Reset to zero when ENGAGED.\nThe exact definition of what constitutes an error is implementation-dependent."]
 pub error_count: u32,
+#[doc = "TODO: add vibration"]
+///
 /// `reg.udral.service.actuator.common.FaultFlags.0.1`
 ///
 /// Always aligned,
 /// size 16 bits
-///
-#[doc = "TODO: add vibration"]
 pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::FaultFlags,
 }
                         impl ::canadensis_encoding::DataType for Status {
@@ -3427,134 +3427,134 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                     ///
                     #[doc = "Smart battery parameter message. It is mostly intended for automated battery charging and maintenance systems.\nThis message is modeled after the Smart Battery Data Specification (SBS) and the MAVLink battery status messages.\n\nThe values carried by this message are either constant or slow-changing, so, generally, the publishing frequency\nshould not be higher than 0.2 Hz, and the priority should be either OPTIONAL or SLOW.\n\nAll parameters are required unless specifically stated otherwise.\nFor non-rechargeable batteries all \"charge_*\" parameters should be NaN."]
                     pub struct Parameters {
+                        #[doc = "A statistically unique number that can be used to identify this exact battery for logging and diagnostic purposes.\nThis value should be invariant to the identity of the reporting node unless it is an integral part of the battery.\nIf the battery supports SBS, the recommended way to populate this field is from two CRC-32C (Castagnoli) values as:\n- 32 most significant bits identify the vendor as:   CRC32C(ManufacturerName)\n- 32 least significant bits identify the battery as: CRC32C(DeviceName + ManufactureDate + SerialNumber)\nIf the battery does not support SBS, the vendor may choose arbitrary random numbers.\nNote that these are mere recommendations. The only hard requirement for this field is to be statistically unique."]
+                        ///
                         /// `truncated uint64`
                         ///
                         /// Always aligned,
                         /// size 64 bits
-                        ///
-                        #[doc = "A statistically unique number that can be used to identify this exact battery for logging and diagnostic purposes.\nThis value should be invariant to the identity of the reporting node unless it is an integral part of the battery.\nIf the battery supports SBS, the recommended way to populate this field is from two CRC-32C (Castagnoli) values as:\n- 32 most significant bits identify the vendor as:   CRC32C(ManufacturerName)\n- 32 least significant bits identify the battery as: CRC32C(DeviceName + ManufactureDate + SerialNumber)\nIf the battery does not support SBS, the vendor may choose arbitrary random numbers.\nNote that these are mere recommendations. The only hard requirement for this field is to be statistically unique."]
                         pub unique_id: u64,
+                        #[doc = "The total mass of the battery, including the packaging, electronics, cabling, and all auxiliary items, if any.\nMay be used for predicting the kinematic parameters of the vehicle.\nNaN if unknown."]
+                        ///
                         /// `uavcan.si.unit.mass.Scalar.1.0`
                         ///
                         /// Always aligned,
                         /// size 32 bits
-                        ///
-                        #[doc = "The total mass of the battery, including the packaging, electronics, cabling, and all auxiliary items, if any.\nMay be used for predicting the kinematic parameters of the vehicle.\nNaN if unknown."]
                         pub mass: crate::uavcan::si::unit::mass::scalar_1_0::Scalar,
+                        #[doc = "The maximum total charge of the pack, at 100% SoH, specified by the manufacturer."]
+                        ///
                         /// `uavcan.si.unit.electric_charge.Scalar.1.0`
                         ///
                         /// Always aligned,
                         /// size 32 bits
-                        ///
-                        #[doc = "The maximum total charge of the pack, at 100% SoH, specified by the manufacturer."]
                         pub design_capacity:
                             crate::uavcan::si::unit::electric_charge::scalar_1_0::Scalar,
+                        #[doc = "The minimum (end of discharge) and the maximum (end of charge) resting cell voltage specified by the manufacturer\nat 100% SoH. Example: {2.8, 4.2} V. These voltages correspond to resting voltages; i.e., the stabilized voltages after\nthe discharge/charge has been terminated. Voltage below the min may be observed during discharge due to the cell's\ninternal resistance. Voltage above the max voltage may be observed during regenerative braking/charging etc due to\nthe cell's internal resistance."]
+                        ///
                         /// `uavcan.si.unit.voltage.Scalar.1.0[2]`
                         ///
                         /// Always aligned,
                         /// size 64 bits
-                        ///
-                        #[doc = "The minimum (end of discharge) and the maximum (end of charge) resting cell voltage specified by the manufacturer\nat 100% SoH. Example: {2.8, 4.2} V. These voltages correspond to resting voltages; i.e., the stabilized voltages after\nthe discharge/charge has been terminated. Voltage below the min may be observed during discharge due to the cell's\ninternal resistance. Voltage above the max voltage may be observed during regenerative braking/charging etc due to\nthe cell's internal resistance."]
                         pub design_cell_voltage_min_max:
                             [crate::uavcan::si::unit::voltage::scalar_1_0::Scalar; 2],
+                        #[doc = "Recommended continuous discharge current of the battery."]
+                        ///
                         /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
                         /// Always aligned,
                         /// size 32 bits
-                        ///
-                        #[doc = "Recommended continuous discharge current of the battery."]
                         pub discharge_current:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
+                        #[doc = "Maximum current that may be safely discharged at least for 5 seconds."]
+                        ///
                         /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
                         /// Always aligned,
                         /// size 32 bits
-                        ///
-                        #[doc = "Maximum current that may be safely discharged at least for 5 seconds."]
                         pub discharge_current_burst:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
+                        #[doc = "Recommended continuous charge current of the battery."]
+                        ///
                         /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
                         /// Always aligned,
                         /// size 32 bits
-                        ///
-                        #[doc = "Recommended continuous charge current of the battery."]
                         pub charge_current:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
+                        #[doc = "Recommended safest highest continuous charge current for the battery.\nThis may cause accelerated aging of the battery."]
+                        ///
                         /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
                         /// Always aligned,
                         /// size 32 bits
-                        ///
-                        #[doc = "Recommended safest highest continuous charge current for the battery.\nThis may cause accelerated aging of the battery."]
                         pub charge_current_fast:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
+                        #[doc = "End-of-charging current threshold. Charging may be terminated when the current falls below this threshold."]
+                        ///
                         /// `uavcan.si.unit.electric_current.Scalar.1.0`
                         ///
                         /// Always aligned,
                         /// size 32 bits
-                        ///
-                        #[doc = "End-of-charging current threshold. Charging may be terminated when the current falls below this threshold."]
                         pub charge_termination_threshold:
                             crate::uavcan::si::unit::electric_current::scalar_1_0::Scalar,
+                        #[doc = "The total voltage (not per-cell) that may be used by the charger to charge the battery pack."]
+                        ///
                         /// `uavcan.si.unit.voltage.Scalar.1.0`
                         ///
                         /// Always aligned,
                         /// size 32 bits
-                        ///
-                        #[doc = "The total voltage (not per-cell) that may be used by the charger to charge the battery pack."]
                         pub charge_voltage: crate::uavcan::si::unit::voltage::scalar_1_0::Scalar,
+                        #[doc = "The number of charge-discharge cycles. Zero if the battery is new. May increase at runtime.\nWhat constitutes a charge-discharge cycle is implementation-defined."]
+                        ///
                         /// `saturated uint16`
                         ///
                         /// Always aligned,
                         /// size 16 bits
-                        ///
-                        #[doc = "The number of charge-discharge cycles. Zero if the battery is new. May increase at runtime.\nWhat constitutes a charge-discharge cycle is implementation-defined."]
                         pub cycle_count: u16,
                         // 8 bits of padding
+                        #[doc = "The number of cells connected in series. This value should match the array of cell voltages reported via Status."]
+                        ///
                         /// `saturated uint8`
                         ///
                         /// Always aligned,
                         /// size 8 bits
-                        ///
-                        #[doc = "The number of cells connected in series. This value should match the array of cell voltages reported via Status."]
                         pub series_cell_count: u8,
+                        #[doc = "[percent]\nThe SoH of the battery, or best guess thereof; ranges from 0 (unusable) to 100 (new)."]
+                        ///
                         /// `saturated uint7`
                         ///
                         /// Always aligned,
                         /// size 7 bits
-                        ///
-                        #[doc = "[percent]\nThe SoH of the battery, or best guess thereof; ranges from 0 (unusable) to 100 (new)."]
                         pub state_of_health_pct: u8,
                         // 1 bits of padding
+                        #[doc = "The battery technology information may be leveraged by the charger to choose the appropriate charging strategy."]
+                        ///
                         /// `reg.udral.service.battery.Technology.0.1`
                         ///
                         /// Always aligned,
                         /// size 8 bits
-                        ///
-                        #[doc = "The battery technology information may be leveraged by the charger to choose the appropriate charging strategy."]
                         pub technology:
                             crate::reg::udral::service::battery::technology_0_1::Technology,
+                        #[doc = "The nominal voltage of the battery pack (not per-cell) as defined by the vendor.\nE.g., a typical 22S LiCoO2 pack would usually report 81.4 V here."]
+                        ///
                         /// `uavcan.si.unit.voltage.Scalar.1.0`
                         ///
                         /// Always aligned,
                         /// size 32 bits
-                        ///
-                        #[doc = "The nominal voltage of the battery pack (not per-cell) as defined by the vendor.\nE.g., a typical 22S LiCoO2 pack would usually report 81.4 V here."]
                         pub nominal_voltage: crate::uavcan::si::unit::voltage::scalar_1_0::Scalar,
+                        #[doc = "The approximate UNIX Epoch time when the battery was manufactured, zero if unknown."]
+                        ///
                         /// `truncated uint40`
                         ///
                         /// Always aligned,
                         /// size 40 bits
-                        ///
-                        #[doc = "The approximate UNIX Epoch time when the battery was manufactured, zero if unknown."]
                         pub unix_manufacture_time: u64,
+                        #[doc = "An arbitrary human-readable textual description of this battery. Empty if unknown/unused.\nBatteries that support SBS are recommended to report the manufacturer name and the device name here."]
+                        ///
                         /// `saturated uint8[<=64]`
                         ///
                         /// Always aligned,
                         /// size ranges from 0 to 512 bits
-                        ///
-                        #[doc = "An arbitrary human-readable textual description of this battery. Empty if unknown/unused.\nBatteries that support SBS are recommended to report the manufacturer name and the device name here."]
                         pub name: ::heapless::Vec<u8, 64>,
                     }
                     impl ::canadensis_encoding::DataType for Parameters {
@@ -3668,27 +3668,27 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                     ///
                     #[doc = "This low-rate battery status should be published at least once per second."]
                     pub struct Status {
+                        #[doc = "Note that the health code generally should not reflect the battery charge unless the service provider knows\nthat the availability of energy in the battery is critical for the safe operation of the vehicle, which is usually\nnot the case. For example, if the vehicle is equipped with several batteries that are discharged in series, one\nafter another, the depletion of energy in the first battery is not a fault condition and it should not be reported\nas such. This follows from the good service design principles reviewed in https://opencyphal.org/guide.\n\nThe readiness state depicts the ability of the battery (or its power electronics) to deliver full rated power\nand whether the overdischarge protections are active.\nWhen the battery is not ENGAGED, it may limit the output power below the nominal rated value and disconnect the load\nshould the charge level fall below the critical level.\nWhen the battery is ENGAGED, it is not permitted to limit the output power or energy regardless of the risk of damage.\nIf the adaptive protection is not supported, the battery should always report its status as ENGAGED."]
+                        ///
                         /// `reg.udral.service.common.Heartbeat.0.1`
                         ///
                         /// Always aligned,
                         /// size 16 bits
-                        ///
-                        #[doc = "Note that the health code generally should not reflect the battery charge unless the service provider knows\nthat the availability of energy in the battery is critical for the safe operation of the vehicle, which is usually\nnot the case. For example, if the vehicle is equipped with several batteries that are discharged in series, one\nafter another, the depletion of energy in the first battery is not a fault condition and it should not be reported\nas such. This follows from the good service design principles reviewed in https://opencyphal.org/guide.\n\nThe readiness state depicts the ability of the battery (or its power electronics) to deliver full rated power\nand whether the overdischarge protections are active.\nWhen the battery is not ENGAGED, it may limit the output power below the nominal rated value and disconnect the load\nshould the charge level fall below the critical level.\nWhen the battery is ENGAGED, it is not permitted to limit the output power or energy regardless of the risk of damage.\nIf the adaptive protection is not supported, the battery should always report its status as ENGAGED."]
                         pub heartbeat: crate::reg::udral::service::common::heartbeat_0_1::Heartbeat,
+                        #[doc = "The minimum and maximum readings of the pack temperature sensors.\nFor example, if the pack is equipped with three distributed temperature sensors that read {288, 258.15, 360.5} K,\nthe reported array value would be {258.15, 360.5} K.\nIf there is only one temperature sensor, both elements shall be of the same value."]
+                        ///
                         /// `uavcan.si.unit.temperature.Scalar.1.0[2]`
                         ///
                         /// Always aligned,
                         /// size 64 bits
-                        ///
-                        #[doc = "The minimum and maximum readings of the pack temperature sensors.\nFor example, if the pack is equipped with three distributed temperature sensors that read {288, 258.15, 360.5} K,\nthe reported array value would be {258.15, 360.5} K.\nIf there is only one temperature sensor, both elements shall be of the same value."]
                         pub temperature_min_max:
                             [crate::uavcan::si::unit::temperature::scalar_1_0::Scalar; 2],
+                        #[doc = "The estimated electric charge currently stored in the battery. This is intended for charging and maintenance only.\nDo not use this parameter for endurance prediction! Instead, use the correct energy type from the physics namespace.\nThe depth of discharge (DoD), or the state of charge (SoC), can be derived by dividing this value by the\nnominal battery capacity reported in the Parameters message."]
+                        ///
                         /// `uavcan.si.unit.electric_charge.Scalar.1.0`
                         ///
                         /// Always aligned,
                         /// size 32 bits
-                        ///
-                        #[doc = "The estimated electric charge currently stored in the battery. This is intended for charging and maintenance only.\nDo not use this parameter for endurance prediction! Instead, use the correct energy type from the physics namespace.\nThe depth of discharge (DoD), or the state of charge (SoC), can be derived by dividing this value by the\nnominal battery capacity reported in the Parameters message."]
                         pub available_charge:
                             crate::uavcan::si::unit::electric_charge::scalar_1_0::Scalar,
                         /// `reg.udral.service.battery.Error.0.1`
@@ -3696,12 +3696,12 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                         /// Always aligned,
                         /// size 8 bits
                         pub error: crate::reg::udral::service::battery::error_0_1::Error,
+                        #[doc = "[volt]\nThe voltages of individual cells in the battery pack."]
+                        ///
                         /// `saturated float16[<=255]`
                         ///
                         /// Always aligned,
                         /// size ranges from 0 to 4080 bits
-                        ///
-                        #[doc = "[volt]\nThe voltages of individual cells in the battery pack."]
                         pub cell_voltages: ::heapless::Vec<::half::f16, 255>,
                     }
                     impl ::canadensis_encoding::DataType for Status {
@@ -3970,27 +3970,27 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                     #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                     #[repr(C, packed)]
                     pub struct Status {
+                        #[doc = "Data samples obtained at time Ts are valid at time Tr if: (Tr - Ts) < data_validity_period\nExpired data should be discarded."]
+                        ///
                         /// `uavcan.si.unit.duration.Scalar.1.0`
                         ///
                         /// Always aligned,
                         /// size 32 bits
-                        ///
-                        #[doc = "Data samples obtained at time Ts are valid at time Tr if: (Tr - Ts) < data_validity_period\nExpired data should be discarded."]
                         pub data_validity_period:
                             crate::uavcan::si::unit::duration::scalar_1_0::Scalar,
+                        #[doc = "Incremented once per occurrence. Reset to zero when the sensor is ENGAGED.\nThe exact definition of what constitutes an error is implementation-dependent."]
+                        ///
                         /// `saturated uint32`
                         ///
                         /// Always aligned,
                         /// size 32 bits
-                        ///
-                        #[doc = "Incremented once per occurrence. Reset to zero when the sensor is ENGAGED.\nThe exact definition of what constitutes an error is implementation-dependent."]
                         pub error_count: u32,
+                        #[doc = "The temperature of the sensing element.\nIf there are multiple sensing elements or multiple temperature probes per sensor,\nthe reduction is implementation-defined.\nIn a later revision this field may be moved into a separate type."]
+                        ///
                         /// `uavcan.si.unit.temperature.Scalar.1.0`
                         ///
                         /// Always aligned,
                         /// size 32 bits
-                        ///
-                        #[doc = "The temperature of the sensing element.\nIf there are multiple sensing elements or multiple temperature probes per sensor,\nthe reduction is implementation-defined.\nIn a later revision this field may be moved into a separate type."]
                         pub sensor_temperature:
                             crate::uavcan::si::unit::temperature::scalar_1_0::Scalar,
                     }
@@ -4041,6 +4041,7 @@ pub mod uavcan {
         #[allow(deprecated)]
         #[deprecated]
         pub mod record_1_0 {
+            #[doc = "The fixed subject ID for this message type"]
             #[deprecated]
             pub const SUBJECT: ::canadensis_core::SubjectId =
                 ::canadensis_core::SubjectId::from_truncating(8184);
@@ -4052,12 +4053,12 @@ pub mod uavcan {
             #[doc = "Generic human-readable text message for logging and displaying purposes.\nGenerally, it should be published at the lowest priority level."]
             #[deprecated]
             pub struct Record {
+                #[doc = "Optional timestamp in the network-synchronized time system; zero if undefined.\nThe timestamp value conveys the exact moment when the reported event took place."]
+                ///
                 /// `uavcan.time.SynchronizedTimestamp.1.0`
                 ///
                 /// Always aligned,
                 /// size 56 bits
-                ///
-                #[doc = "Optional timestamp in the network-synchronized time system; zero if undefined.\nThe timestamp value conveys the exact moment when the reported event took place."]
                 pub timestamp:
                     crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                 /// `uavcan.diagnostic.Severity.1.0`
@@ -4065,12 +4066,12 @@ pub mod uavcan {
                 /// Always aligned,
                 /// size 8 bits
                 pub severity: crate::uavcan::diagnostic::severity_1_0::Severity,
+                #[doc = "Message text.\nNormally, messages should be kept as short as possible, especially those of high severity."]
+                ///
                 /// `saturated uint8[<=112]`
                 ///
                 /// Always aligned,
                 /// size ranges from 0 to 896 bits
-                ///
-                #[doc = "Message text.\nNormally, messages should be kept as short as possible, especially those of high severity."]
                 pub text: ::heapless::Vec<u8, 112>,
             }
             impl ::canadensis_encoding::DataType for Record {
@@ -4117,6 +4118,7 @@ pub mod uavcan {
             }
         }
         pub mod record_1_1 {
+            #[doc = "The fixed subject ID for this message type"]
             pub const SUBJECT: ::canadensis_core::SubjectId =
                 ::canadensis_core::SubjectId::from_truncating(8184);
 
@@ -4126,12 +4128,12 @@ pub mod uavcan {
             ///
             #[doc = "Generic human-readable text message for logging and displaying purposes.\nGenerally, it should be published at the lowest priority level."]
             pub struct Record {
+                #[doc = "Optional timestamp in the network-synchronized time system; zero if undefined.\nThe timestamp value conveys the exact moment when the reported event took place."]
+                ///
                 /// `uavcan.time.SynchronizedTimestamp.1.0`
                 ///
                 /// Always aligned,
                 /// size 56 bits
-                ///
-                #[doc = "Optional timestamp in the network-synchronized time system; zero if undefined.\nThe timestamp value conveys the exact moment when the reported event took place."]
                 pub timestamp:
                     crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
                 /// `uavcan.diagnostic.Severity.1.0`
@@ -4139,12 +4141,12 @@ pub mod uavcan {
                 /// Always aligned,
                 /// size 8 bits
                 pub severity: crate::uavcan::diagnostic::severity_1_0::Severity,
+                #[doc = "Message text.\nNormally, messages should be kept as short as possible, especially those of high severity."]
+                ///
                 /// `saturated uint8[<=255]`
                 ///
                 /// Always aligned,
                 /// size ranges from 0 to 2040 bits
-                ///
-                #[doc = "Message text.\nNormally, messages should be kept as short as possible, especially those of high severity."]
                 pub text: ::heapless::Vec<u8, 255>,
             }
             impl ::canadensis_encoding::DataType for Record {
@@ -4197,12 +4199,12 @@ pub mod uavcan {
             ///
             #[doc = "Generic message severity representation."]
             pub struct Severity {
+                #[doc = "The severity level ranging from 0 to 7, where low values represent low-severity (unimportant) messages, and\nhigh values represent high-severity (important) messages. Several mnemonics for the severity levels are\ndefined below. Nodes are advised to implement output filtering mechanisms, allowing users to select\nthe minimal severity for emitted messages; messages of the selected and higher severity levels will\nbe published, and messages of lower severity will be suppressed (discarded)."]
+                ///
                 /// `saturated uint3`
                 ///
                 /// Always aligned,
                 /// size 3 bits
-                ///
-                #[doc = "The severity level ranging from 0 to 7, where low values represent low-severity (unimportant) messages, and\nhigh values represent high-severity (important) messages. Several mnemonics for the severity levels are\ndefined below. Nodes are advised to implement output filtering mechanisms, allowing users to select\nthe minimal severity for emitted messages; messages of the selected and higher severity levels will\nbe published, and messages of lower severity will be suppressed (discarded)."]
                 pub value: u8,
             }
             impl ::canadensis_encoding::DataType for Severity {
@@ -4312,6 +4314,7 @@ pub mod uavcan {
         #[allow(deprecated)]
         #[deprecated]
         pub mod get_info_0_1 {
+            #[doc = "The fixed ID of this service"]
             #[deprecated]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(405);
@@ -4363,54 +4366,54 @@ pub mod uavcan {
             #[doc = "Information about a remote file system entry (file, directory, etc)."]
             #[deprecated]
             pub struct GetInfoResponse {
+                #[doc = "Result of the operation."]
+                ///
                 /// `uavcan.file.Error.1.0`
                 ///
                 /// Always aligned,
                 /// size 16 bits
-                ///
-                #[doc = "Result of the operation."]
                 pub error: crate::uavcan::file::error_1_0::Error,
-                /// `truncated uint40`
-                ///
-                /// Always aligned,
-                /// size 40 bits
-                ///
                 #[doc = "File size in bytes. Should be set to zero for directories."]
-                pub size: u64,
+                ///
                 /// `truncated uint40`
                 ///
                 /// Always aligned,
                 /// size 40 bits
-                ///
+                pub size: u64,
                 #[doc = "The UNIX Epoch time when the entry was last modified. Zero if unknown."]
+                ///
+                /// `truncated uint40`
+                ///
+                /// Always aligned,
+                /// size 40 bits
                 pub unix_timestamp_of_last_modification: u64,
+                #[doc = "True if file, false if directory."]
+                ///
                 /// `saturated bool`
                 ///
                 /// Always aligned,
                 /// size 1 bits
-                ///
-                #[doc = "True if file, false if directory."]
                 pub is_file_not_directory: bool,
-                /// `saturated bool`
-                ///
-                /// Not always aligned,
-                /// size 1 bits
-                ///
                 #[doc = "This is a link to another entry; the above flag indicates the type of the target."]
+                ///
+                /// `saturated bool`
+                ///
+                /// Not always aligned,
+                /// size 1 bits
                 pub is_link: bool,
-                /// `saturated bool`
-                ///
-                /// Not always aligned,
-                /// size 1 bits
-                ///
                 #[doc = "The item can be read by the caller (applies to files and directories)."]
-                pub is_readable: bool,
+                ///
                 /// `saturated bool`
                 ///
                 /// Not always aligned,
                 /// size 1 bits
-                ///
+                pub is_readable: bool,
                 #[doc = "The item can be written by the caller (applies to files and directories).\nIf such entry does not exist, all flags should be cleared/ignored."]
+                ///
+                /// `saturated bool`
+                ///
+                /// Not always aligned,
+                /// size 1 bits
                 pub is_writeable: bool,
                 // 4 bits of padding
             }
@@ -4455,6 +4458,7 @@ pub mod uavcan {
             }
         }
         pub mod get_info_0_2 {
+            #[doc = "The fixed ID of this service"]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(405);
 
@@ -4503,54 +4507,54 @@ pub mod uavcan {
             ///
             #[doc = "Information about a remote file system entry (file, directory, etc)."]
             pub struct GetInfoResponse {
+                #[doc = "Result of the operation."]
+                ///
                 /// `uavcan.file.Error.1.0`
                 ///
                 /// Always aligned,
                 /// size 16 bits
-                ///
-                #[doc = "Result of the operation."]
                 pub error: crate::uavcan::file::error_1_0::Error,
-                /// `truncated uint40`
-                ///
-                /// Always aligned,
-                /// size 40 bits
-                ///
                 #[doc = "File size in bytes. Should be set to zero for directories."]
-                pub size: u64,
+                ///
                 /// `truncated uint40`
                 ///
                 /// Always aligned,
                 /// size 40 bits
-                ///
+                pub size: u64,
                 #[doc = "The UNIX Epoch time when the entry was last modified. Zero if unknown."]
+                ///
+                /// `truncated uint40`
+                ///
+                /// Always aligned,
+                /// size 40 bits
                 pub unix_timestamp_of_last_modification: u64,
+                #[doc = "True if file, false if directory."]
+                ///
                 /// `saturated bool`
                 ///
                 /// Always aligned,
                 /// size 1 bits
-                ///
-                #[doc = "True if file, false if directory."]
                 pub is_file_not_directory: bool,
-                /// `saturated bool`
-                ///
-                /// Not always aligned,
-                /// size 1 bits
-                ///
                 #[doc = "This is a link to another entry; the above flag indicates the type of the target."]
+                ///
+                /// `saturated bool`
+                ///
+                /// Not always aligned,
+                /// size 1 bits
                 pub is_link: bool,
-                /// `saturated bool`
-                ///
-                /// Not always aligned,
-                /// size 1 bits
-                ///
                 #[doc = "The item can be read by the caller (applies to files and directories)."]
-                pub is_readable: bool,
+                ///
                 /// `saturated bool`
                 ///
                 /// Not always aligned,
                 /// size 1 bits
-                ///
+                pub is_readable: bool,
                 #[doc = "The item can be written by the caller (applies to files and directories).\nIf such entry does not exist, all flags should be cleared/ignored."]
+                ///
+                /// `saturated bool`
+                ///
+                /// Not always aligned,
+                /// size 1 bits
                 pub is_writeable: bool,
                 // 4 bits of padding
             }
@@ -4597,6 +4601,7 @@ pub mod uavcan {
         #[allow(deprecated)]
         #[deprecated]
         pub mod list_0_1 {
+            #[doc = "The fixed ID of this service"]
             #[deprecated]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(406);
@@ -4661,12 +4666,12 @@ pub mod uavcan {
             #[deprecated]
             pub struct ListResponse {
                 // 32 bits of padding
+                #[doc = "The base name of the referenced entry, i.e., relative to the outer directory.\nThe outer directory path is not included to conserve bandwidth.\nEmpty if such entry does not exist.\n\nFor example, suppose there is a file \"/foo/bar/baz.bin\". Listing the directory with the path \"/foo/bar/\" (the slash\nat the end is optional) at the index 0 will return \"baz.bin\". Listing the same directory at the index 1 (or any\nhigher) will return an empty name \"\", indicating that the caller has reached the end of the list."]
+                ///
                 /// `uavcan.file.Path.1.0`
                 ///
                 /// Always aligned,
                 /// size ranges from 8 to 904 bits
-                ///
-                #[doc = "The base name of the referenced entry, i.e., relative to the outer directory.\nThe outer directory path is not included to conserve bandwidth.\nEmpty if such entry does not exist.\n\nFor example, suppose there is a file \"/foo/bar/baz.bin\". Listing the directory with the path \"/foo/bar/\" (the slash\nat the end is optional) at the index 0 will return \"baz.bin\". Listing the same directory at the index 1 (or any\nhigher) will return an empty name \"\", indicating that the caller has reached the end of the list."]
                 pub entry_base_name: crate::uavcan::file::path_1_0::Path,
             }
             impl ::canadensis_encoding::DataType for ListResponse {
@@ -4701,6 +4706,7 @@ pub mod uavcan {
             }
         }
         pub mod list_0_2 {
+            #[doc = "The fixed ID of this service"]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(406);
 
@@ -4762,12 +4768,12 @@ pub mod uavcan {
             #[doc = "This service can be used to list a remote directory, one entry per request.\n\nThe client should query each entry independently, iterating 'entry_index' from 0 until the last entry.\nWhen the index reaches the number of elements in the directory, the server will report that there is\nno such entry by returning an empty name.\n\nThe field entry_index shall be applied to an ordered list of directory entries (e.g. alphabetically ordered).\nThe exact sorting criteria does not matter as long as it provides the same ordering for subsequent service calls.\n\nObserve that this listing operation is fundamentally non-atomic. The caller shall beware of possible race conditions\nand is responsible for handling them properly. Particularly, consider what happens if a new item is inserted into\nthe directory between two subsequent calls: if the item happened to be inserted at the index that is lower than the\nindex of the next request, the next returned item (or several, if more items were inserted) will repeat the ones\nthat were listed earlier. The caller should handle that properly, either by ignoring the repeated items or by\nrestarting the listing operation from the beginning (index 0)."]
             pub struct ListResponse {
                 // 32 bits of padding
+                #[doc = "The base name of the referenced entry, i.e., relative to the outer directory.\nThe outer directory path is not included to conserve bandwidth.\nEmpty if such entry does not exist.\n\nFor example, suppose there is a file \"/foo/bar/baz.bin\". Listing the directory with the path \"/foo/bar/\" (the slash\nat the end is optional) at the index 0 will return \"baz.bin\". Listing the same directory at the index 1 (or any\nhigher) will return an empty name \"\", indicating that the caller has reached the end of the list."]
+                ///
                 /// `uavcan.file.Path.2.0`
                 ///
                 /// Always aligned,
                 /// size ranges from 8 to 2048 bits
-                ///
-                #[doc = "The base name of the referenced entry, i.e., relative to the outer directory.\nThe outer directory path is not included to conserve bandwidth.\nEmpty if such entry does not exist.\n\nFor example, suppose there is a file \"/foo/bar/baz.bin\". Listing the directory with the path \"/foo/bar/\" (the slash\nat the end is optional) at the index 0 will return \"baz.bin\". Listing the same directory at the index 1 (or any\nhigher) will return an empty name \"\", indicating that the caller has reached the end of the list."]
                 pub entry_base_name: crate::uavcan::file::path_2_0::Path,
             }
             impl ::canadensis_encoding::DataType for ListResponse {
@@ -4804,6 +4810,7 @@ pub mod uavcan {
         #[allow(deprecated)]
         #[deprecated]
         pub mod modify_1_0 {
+            #[doc = "The fixed ID of this service"]
             #[deprecated]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(407);
@@ -4815,19 +4822,19 @@ pub mod uavcan {
             #[doc = "Manipulate a remote file system entry. Applies to files, directories, and links alike.\nIf the remote entry is a directory, all nested entries will be affected, too.\n\nThe server should perform all operations atomically, unless atomicity is not supported by\nthe underlying file system.\n\nAtomic copying can be effectively employed by remote nodes before reading or after writing\nthe file to minimize the possibility of race conditions.\nFor example, before reading a large file from the server, the cilent might opt to create\na temporary copy of it first, then read the copy, and delete it upon completion. Likewise,\na similar strategy can be employed for writing, where the file is first written at a\ntemporary location, and then moved to its final destination. These approaches, however,\nmay lead to creation of dangling temporary files if the client failed to dispose of them\nproperly, so that risk should be taken into account.\n\nMove/Copy\nSpecify the source path and the destination path.\nIf the source does not exist, the operation will fail.\nSet the preserve_source flag to copy rather than move.\nIf the destination exists and overwrite_destination is not set, the operation will fail.\nIf the target path includes non-existent directories, they will be created (like \"mkdir -p\").\n\nTouch\nSpecify the destination path and make the source path empty.\nIf the path exists (file/directory/link), its modification time will be updated.\nIf the path does not exist, an empty file will be created.\nIf the target path includes non-existent directories, they will be created (like \"mkdir -p\").\nFlags are ignored.\n\nRemove\nSpecify the source path (file/directory/link) and make the destination path empty.\nFails if the path does not exist.\nFlags are ignored."]
             #[deprecated]
             pub struct ModifyRequest {
+                #[doc = "Do not remove the source. Used to copy instead of moving."]
+                ///
                 /// `saturated bool`
                 ///
                 /// Always aligned,
                 /// size 1 bits
-                ///
-                #[doc = "Do not remove the source. Used to copy instead of moving."]
                 pub preserve_source: bool,
+                #[doc = "If the destination exists, remove it beforehand."]
+                ///
                 /// `saturated bool`
                 ///
                 /// Not always aligned,
                 /// size 1 bits
-                ///
-                #[doc = "If the destination exists, remove it beforehand."]
                 pub overwrite_destination: bool,
                 // 30 bits of padding
                 /// `uavcan.file.Path.1.0`
@@ -4924,6 +4931,7 @@ pub mod uavcan {
             }
         }
         pub mod modify_1_1 {
+            #[doc = "The fixed ID of this service"]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(407);
 
@@ -4933,19 +4941,19 @@ pub mod uavcan {
             ///
             #[doc = "Manipulate a remote file system entry. Applies to files, directories, and links alike.\nIf the remote entry is a directory, all nested entries will be affected, too.\n\nThe server should perform all operations atomically, unless atomicity is not supported by\nthe underlying file system.\n\nAtomic copying can be effectively employed by remote nodes before reading or after writing\nthe file to minimize the possibility of race conditions.\nFor example, before reading a large file from the server, the cilent might opt to create\na temporary copy of it first, then read the copy, and delete it upon completion. Likewise,\na similar strategy can be employed for writing, where the file is first written at a\ntemporary location, and then moved to its final destination. These approaches, however,\nmay lead to creation of dangling temporary files if the client failed to dispose of them\nproperly, so that risk should be taken into account.\n\nMove/Copy\nSpecify the source path and the destination path.\nIf the source does not exist, the operation will fail.\nSet the preserve_source flag to copy rather than move.\nIf the destination exists and overwrite_destination is not set, the operation will fail.\nIf the target path includes non-existent directories, they will be created (like \"mkdir -p\").\n\nTouch\nSpecify the destination path and make the source path empty.\nIf the path exists (file/directory/link), its modification time will be updated.\nIf the path does not exist, an empty file will be created.\nIf the target path includes non-existent directories, they will be created (like \"mkdir -p\").\nFlags are ignored.\n\nRemove\nSpecify the source path (file/directory/link) and make the destination path empty.\nFails if the path does not exist.\nFlags are ignored."]
             pub struct ModifyRequest {
+                #[doc = "Do not remove the source. Used to copy instead of moving."]
+                ///
                 /// `saturated bool`
                 ///
                 /// Always aligned,
                 /// size 1 bits
-                ///
-                #[doc = "Do not remove the source. Used to copy instead of moving."]
                 pub preserve_source: bool,
+                #[doc = "If the destination exists, remove it beforehand."]
+                ///
                 /// `saturated bool`
                 ///
                 /// Not always aligned,
                 /// size 1 bits
-                ///
-                #[doc = "If the destination exists, remove it beforehand."]
                 pub overwrite_destination: bool,
                 // 30 bits of padding
                 /// `uavcan.file.Path.2.0`
@@ -5156,6 +5164,7 @@ pub mod uavcan {
         #[allow(deprecated)]
         #[deprecated]
         pub mod read_1_0 {
+            #[doc = "The fixed ID of this service"]
             #[deprecated]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(408);
@@ -5267,6 +5276,7 @@ pub mod uavcan {
             }
         }
         pub mod read_1_1 {
+            #[doc = "The fixed ID of this service"]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(408);
 
@@ -5365,6 +5375,7 @@ pub mod uavcan {
         #[allow(deprecated)]
         #[deprecated]
         pub mod write_1_0 {
+            #[doc = "The fixed ID of this service"]
             #[deprecated]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(409);
@@ -5386,12 +5397,12 @@ pub mod uavcan {
                 /// Always aligned,
                 /// size ranges from 8 to 904 bits
                 pub path: crate::uavcan::file::path_1_0::Path,
+                #[doc = "192 = 128 + 64; the write protocol permits usage of smaller chunks."]
+                ///
                 /// `saturated uint8[<=192]`
                 ///
                 /// Always aligned,
                 /// size ranges from 0 to 1536 bits
-                ///
-                #[doc = "192 = 128 + 64; the write protocol permits usage of smaller chunks."]
                 pub data: ::heapless::Vec<u8, 192>,
             }
             impl ::canadensis_encoding::DataType for WriteRequest {
@@ -5483,6 +5494,7 @@ pub mod uavcan {
             }
         }
         pub mod write_1_1 {
+            #[doc = "The fixed ID of this service"]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(409);
 
@@ -5589,6 +5601,7 @@ pub mod uavcan {
             #[allow(deprecated)]
             #[deprecated]
             pub mod handle_incoming_packet_0_1 {
+                #[doc = "The fixed ID of this service"]
                 #[deprecated]
                 pub const SERVICE: ::canadensis_core::ServiceId =
                     ::canadensis_core::ServiceId::from_truncating(500);
@@ -5600,19 +5613,19 @@ pub mod uavcan {
                 #[doc = "This message carries UDP packets sent from a remote host on the Internet or a LAN to a node on the local Cyphal bus.\nPlease refer to the definition of the message type OutgoingPacket for a general overview of the packet forwarding\nlogic.\n\nThis data type has been made a service type rather than a message type in order to make its transfers addressable,\nallowing nodes to employ hardware acceptance filters for filtering out forwarded datagrams that are not addressed\nto them. Additionally, requiring the destination nodes to always respond upon reception of the forwarded datagram\nopens interesting opportunities for future extensions of the forwarding protocol. If the service invocation times\nout, the modem node is permitted to remove the corresponding entry from the NAT table immediately, not waiting\nfor its TTL to expire.\n\nIt should be noted that this data type definition intentionally leaves out the source address. This is done in\norder to simplify the implementation, reduce the bus traffic overhead, and because the nature of the\ncommunication patterns proposed by this set of messages does not provide a valid way to implement server hosts\non the local Cyphal bus. It is assumed that local nodes can be only clients, and therefore, they will be able to\ndetermine the address of the sender simply by mapping the field session_id to their internally maintained states.\nFurthermore, it is uncertain what is the optimal way of representing the source address for\nclient nodes: it is assumed that the local nodes will mostly use DNS names rather than IP addresses, so if there\nwas a source address field, modem nodes would have to perform reverse mapping from the IP address they received\nthe datagram from to the corresponding DNS name that was used by the local node with the outgoing message. This\napproach creates a number of troubling corner cases and adds a fair amount of hidden complexities to the\nimplementation of modem nodes.\n\nIt is recommended to perform service invocations at the same transfer priority level as was used for broadcasting\nthe latest matching message of type OutgoingPacket. However, meeting this recommendation would require the modem\nnode to implement additional logic, which may be undesirable. Therefore, implementers are free to deviate from\nthis recommendation and resort to a fixed priority level instead. In the case of a fixed priority level, it is\nadvised to use the lowest transfer priority level."]
                 #[deprecated]
                 pub struct HandleIncomingPacketRequest {
+                    #[doc = "This field shall contain the same value that was used by the local node when sending the corresponding outgoing\npacket using the message type OutgoingPacket. This value will be used by the local node to match the response\nwith its local context."]
+                    ///
                     /// `saturated uint16`
                     ///
                     /// Always aligned,
                     /// size 16 bits
-                    ///
-                    #[doc = "This field shall contain the same value that was used by the local node when sending the corresponding outgoing\npacket using the message type OutgoingPacket. This value will be used by the local node to match the response\nwith its local context."]
                     pub session_id: u16,
+                    #[doc = "Effective payload. This data will be forwarded from the remote host verbatim.\nUDP packets that contain more than 508 bytes of payload may be dropped by some types of\ncommunication equipment. Refer to RFC 791 and 2460 for an in-depth review.\nCyphal further limits the maximum packet size to reduce the memory and traffic burden on the nodes.\nDatagrams that exceed the capacity of this field should be discarded by the modem node."]
+                    ///
                     /// `saturated uint8[<=309]`
                     ///
                     /// Always aligned,
                     /// size ranges from 0 to 2472 bits
-                    ///
-                    #[doc = "Effective payload. This data will be forwarded from the remote host verbatim.\nUDP packets that contain more than 508 bytes of payload may be dropped by some types of\ncommunication equipment. Refer to RFC 791 and 2460 for an in-depth review.\nCyphal further limits the maximum packet size to reduce the memory and traffic burden on the nodes.\nDatagrams that exceed the capacity of this field should be discarded by the modem node."]
                     pub payload: ::heapless::Vec<u8, 309>,
                 }
                 impl ::canadensis_encoding::DataType for HandleIncomingPacketRequest {
@@ -5700,6 +5713,7 @@ pub mod uavcan {
                 }
             }
             pub mod handle_incoming_packet_0_2 {
+                #[doc = "The fixed ID of this service"]
                 pub const SERVICE: ::canadensis_core::ServiceId =
                     ::canadensis_core::ServiceId::from_truncating(500);
 
@@ -5709,19 +5723,19 @@ pub mod uavcan {
                 ///
                 #[doc = "This message carries UDP packets sent from a remote host on the Internet or a LAN to a node on the local Cyphal bus.\nPlease refer to the definition of the message type OutgoingPacket for a general overview of the packet forwarding\nlogic.\n\nThis data type has been made a service type rather than a message type in order to make its transfers addressable,\nallowing nodes to employ hardware acceptance filters for filtering out forwarded datagrams that are not addressed\nto them. Additionally, requiring the destination nodes to always respond upon reception of the forwarded datagram\nopens interesting opportunities for future extensions of the forwarding protocol. If the service invocation times\nout, the modem node is permitted to remove the corresponding entry from the NAT table immediately, not waiting\nfor its TTL to expire.\n\nIt should be noted that this data type definition intentionally leaves out the source address. This is done in\norder to simplify the implementation, reduce the bus traffic overhead, and because the nature of the\ncommunication patterns proposed by this set of messages does not provide a valid way to implement server hosts\non the local Cyphal bus. It is assumed that local nodes can be only clients, and therefore, they will be able to\ndetermine the address of the sender simply by mapping the field session_id to their internally maintained states.\nFurthermore, it is uncertain what is the optimal way of representing the source address for\nclient nodes: it is assumed that the local nodes will mostly use DNS names rather than IP addresses, so if there\nwas a source address field, modem nodes would have to perform reverse mapping from the IP address they received\nthe datagram from to the corresponding DNS name that was used by the local node with the outgoing message. This\napproach creates a number of troubling corner cases and adds a fair amount of hidden complexities to the\nimplementation of modem nodes.\n\nIt is recommended to perform service invocations at the same transfer priority level as was used for broadcasting\nthe latest matching message of type OutgoingPacket. However, meeting this recommendation would require the modem\nnode to implement additional logic, which may be undesirable. Therefore, implementers are free to deviate from\nthis recommendation and resort to a fixed priority level instead. In the case of a fixed priority level, it is\nadvised to use the lowest transfer priority level."]
                 pub struct HandleIncomingPacketRequest {
+                    #[doc = "This field shall contain the same value that was used by the local node when sending the corresponding outgoing\npacket using the message type OutgoingPacket. This value will be used by the local node to match the response\nwith its local context."]
+                    ///
                     /// `saturated uint16`
                     ///
                     /// Always aligned,
                     /// size 16 bits
-                    ///
-                    #[doc = "This field shall contain the same value that was used by the local node when sending the corresponding outgoing\npacket using the message type OutgoingPacket. This value will be used by the local node to match the response\nwith its local context."]
                     pub session_id: u16,
+                    #[doc = "Effective payload. This data will be forwarded from the remote host verbatim.\nUDP packets that contain more than 508 bytes of payload may be dropped by some types of\ncommunication equipment. Refer to RFC 791 and 2460 for an in-depth review.\nDatagrams that exceed the capacity of this field should be discarded by the modem node."]
+                    ///
                     /// `saturated uint8[<=508]`
                     ///
                     /// Always aligned,
                     /// size ranges from 0 to 4064 bits
-                    ///
-                    #[doc = "Effective payload. This data will be forwarded from the remote host verbatim.\nUDP packets that contain more than 508 bytes of payload may be dropped by some types of\ncommunication equipment. Refer to RFC 791 and 2460 for an in-depth review.\nDatagrams that exceed the capacity of this field should be discarded by the modem node."]
                     pub payload: ::heapless::Vec<u8, 508>,
                 }
                 impl ::canadensis_encoding::DataType for HandleIncomingPacketRequest {
@@ -5810,6 +5824,7 @@ pub mod uavcan {
             #[allow(deprecated)]
             #[deprecated]
             pub mod outgoing_packet_0_1 {
+                #[doc = "The fixed subject ID for this message type"]
                 #[deprecated]
                 pub const SUBJECT: ::canadensis_core::SubjectId =
                     ::canadensis_core::SubjectId::from_truncating(8174);
@@ -5821,48 +5836,48 @@ pub mod uavcan {
                 #[doc = "This message carries UDP packets from a node on the local bus to a remote host on the Internet or a LAN.\n\nAny node can broadcast a message of this type.\n\nAll nodes that are capable of communication with the Internet or a LAN should subscribe to messages\nof this type and forward the payload to the indicated host and port using exactly one UDP datagram\nper message (i.e. additional fragmentation is to be avoided). Such nodes will be referred to as\n\"modem nodes\".\n\nIt is expected that some systems will have more than one modem node available.\nEach modem node is supposed to forward every message it sees, which will naturally create\nsome degree of modular redundancy and fault tolerance. The remote host should therefore be able to\nproperly handle possibly duplicated messages from different source addresses, in addition to\npossible duplications introduced by the UDP/IP protocol itself. There are at least two obvious\nstrategies that can be employed by the remote host:\n\n- Accept only the first message, ignore duplicates. This approach requires that the UDP stream\nshould contain some metadata necessary for the remote host to determine the source and ordering\nof each received datum. This approach works best for periodic data, such as telemetry, where\nthe sender does not expect any responses.\n\n- Process all messages, including duplicates. This approach assumes that the remote host acts\nas a server, processing all received requests and providing responses to each. This arrangement\nimplies that the client may receive duplicated responses. It is therefore the client's\nresponsibility to resolve the possible ambiguity. An obvious solution is to accept the first\narrived response and ignore the later ones.\n\nApplications are free to choose whatever redundancy management strategy works best for them.\n\nIf the source node expects that the remote host will send some data back, it shall explicitly notify\nthe modem nodes about this, so that they could prepare to perform reverse forwarding when the\nexpected data arrives from the remote host. The technique of reverse forwarding is known in\nnetworking as IP Masquerading, or (in general) Network Address Translation (NAT). The notification\nis performed by means of setting one of the corresponding flags defined below.\n\nIn order to be able to match datagrams received from remote hosts and the local nodes they should\nbe forwarded to, modem nodes are required to keep certain metadata about outgoing datagrams. Such\nmetadata is stored in a data structure referred to as \"NAT table\", where every entry would normally\ncontain at least the following fields:\n- The local UDP port number that was used to send the outgoing datagram from.\nPer RFC 4787, the port number is chosen by the modem node automatically.\n- The node-ID of the local node that has sent the outgoing datagram.\n- Value of the field session_id defined below.\n- Possibly some other data, depending on the implementation.\n\nThe modem nodes are required to keep each NAT table entry for at least NAT_ENTRY_MIN_TTL seconds\nsince the last reverse forwarding action was performed. Should the memory resources of the modem node\nbe exhausted, it is allowed to remove old NAT entries earlier, following the policy of least recent use.\n\nHaving received a UDP packet from a remote host, the modem node would check the NAT table in order\nto determine where on the Cyphal bus the received data should be forwarded to. If the NAT table\ncontains no matches, the received data should be silently dropped. If a match is found, the\nmodem node will forward the data to the recipient node using the service HandleIncomingPacket.\nIf the service invocation times out, the modem node is permitted to remove the corresponding entry from\nthe NAT table immediately (but it is not required). This will ensure that the modem nodes will not be\ntasked with translations for client nodes that are no longer online or are unreachable.\nAdditionally, client nodes will be able to hint the modem nodes to remove translation entries they no\nlonger need by simply refusing to respond to the corresponding service invocation. Please refer to\nthe definition of that service data type for a more in-depth review of the reverse forwarding process.\n\nModem nodes can also perform traffic shaping, if needed, by means of delaying or dropping UDP\ndatagrams that exceed the quota.\n\nTo summarize, a typical data exchange occurrence should amount to the following actions:\n\n- A local Cyphal node broadcasts a message of type OutgoingPacket with the payload it needs\nto forward. If the node expects the remote host to send any data back, it sets the masquerading flag.\n\n- Every modem node on the bus receives the message and performs the following actions:\n\n- The domain name is resolved, unless the destination address provided in the message\nis already an IP address, in which case this step should be skipped.\n\n- The domain name to IP address mapping is added to the local DNS cache, although this\npart is entirely implementation defined and is not required.\n\n- The masquerading flag is checked. If it is set, a new entry is added to the NAT table.\nIf such entry already existed, its expiration timeout is reset. If no such entry existed\nand a new one cannot be added because of memory limitations, the least recently used\n(i.e. oldest) entry of the NAT table is replaced with the new one.\n\n- The payload is forwarded to the determined IP address.\n\n- At this point, direct forwarding is complete. Should any of the modem nodes receive an incoming\npacket, they would attempt to perform a reverse forwarding according to the above provided algorithm.\n\nIt is recommended to use the lowest transport priority level when broadcasting messages of this type,\nin order to avoid interference with a real-time traffic on the bus. Usage of higher priority levels is\nunlikely to be practical because the latency and throughput limitations introduced by the on-board radio\ncommunication equipment are likely to vastly exceed those of the local CAN bus."]
                 #[deprecated]
                 pub struct OutgoingPacket {
-                    /// `saturated uint16`
-                    ///
-                    /// Always aligned,
-                    /// size 16 bits
-                    ///
                     #[doc = "This field is set to an arbitrary value by the transmitting node in order to be able to match the response\nwith the locally kept context. The function of this field is virtually identical to that of UDP/IP port\nnumbers. This value can be set to zero safely if the sending node does not have multiple contexts to\ndistinguish between."]
-                    pub session_id: u16,
+                    ///
                     /// `saturated uint16`
                     ///
                     /// Always aligned,
                     /// size 16 bits
-                    ///
+                    pub session_id: u16,
                     #[doc = "UDP destination port number."]
+                    ///
+                    /// `saturated uint16`
+                    ///
+                    /// Always aligned,
+                    /// size 16 bits
                     pub destination_port: u16,
+                    #[doc = "Domain name or IP address where the payload should be forwarded to.\nNote that broadcast addresses are allowed here, for example, 255.255.255.255.\nBroadcasting with masquerading enabled works the same way as unicasting with masquerading enabled: the modem\nnode should take care to channel all traffic arriving at the opened port from any source to the node that\nrequested masquerading.\nThe full domain name length may not exceed 253 octets, according to the DNS specification.\nCyphal imposes a stricter length limit in order to reduce the memory and traffic burden on the bus: 45 characters.\n45 characters is the amount of space that is required to represent the longest possible form of an IPv6 address\n(an IPv4-mapped IPv6 address). Examples:\n\"forum.opencyphal.org\"                          - domain name\n\"192.168.1.1\"                                   - IPv4 address\n\"2001:0db8:85a3:0000:0000:8a2e:0370:7334\"       - IPv6 address, full form\n\"2001:db8:85a3::8a2e:370:7334\"                  - IPv6 address, same as above, short form (preferred)\n\"ABCD:ABCD:ABCD:ABCD:ABCD:ABCD:192.168.158.190\" - IPv4-mapped IPv6, full form (length limit, 45 characters)"]
+                    ///
                     /// `saturated uint8[<=45]`
                     ///
                     /// Always aligned,
                     /// size ranges from 0 to 360 bits
-                    ///
-                    #[doc = "Domain name or IP address where the payload should be forwarded to.\nNote that broadcast addresses are allowed here, for example, 255.255.255.255.\nBroadcasting with masquerading enabled works the same way as unicasting with masquerading enabled: the modem\nnode should take care to channel all traffic arriving at the opened port from any source to the node that\nrequested masquerading.\nThe full domain name length may not exceed 253 octets, according to the DNS specification.\nCyphal imposes a stricter length limit in order to reduce the memory and traffic burden on the bus: 45 characters.\n45 characters is the amount of space that is required to represent the longest possible form of an IPv6 address\n(an IPv4-mapped IPv6 address). Examples:\n\"forum.opencyphal.org\"                          - domain name\n\"192.168.1.1\"                                   - IPv4 address\n\"2001:0db8:85a3:0000:0000:8a2e:0370:7334\"       - IPv6 address, full form\n\"2001:db8:85a3::8a2e:370:7334\"                  - IPv6 address, same as above, short form (preferred)\n\"ABCD:ABCD:ABCD:ABCD:ABCD:ABCD:192.168.158.190\" - IPv4-mapped IPv6, full form (length limit, 45 characters)"]
                     pub destination_address: ::heapless::Vec<u8, 45>,
+                    #[doc = "Expect data back (i.e., instruct the modem to use the NAT table)."]
+                    ///
                     /// `saturated bool`
                     ///
                     /// Always aligned,
                     /// size 1 bits
-                    ///
-                    #[doc = "Expect data back (i.e., instruct the modem to use the NAT table)."]
                     pub use_masquerading: bool,
+                    #[doc = "Use Datagram Transport Layer Security. Drop the packet if DTLS is not supported.\nOption flags."]
+                    ///
                     /// `saturated bool`
                     ///
                     /// Not always aligned,
                     /// size 1 bits
-                    ///
-                    #[doc = "Use Datagram Transport Layer Security. Drop the packet if DTLS is not supported.\nOption flags."]
                     pub use_dtls: bool,
                     // 6 bits of padding
+                    #[doc = "Effective payload. This data will be forwarded to the remote host verbatim.\nUDP packets that contain more than 508 bytes of payload may be dropped by some types of\ncommunication equipment. Refer to RFC 791 and 2460 for an in-depth review.\nCyphal further limits the maximum packet size to reduce the memory and traffic burden on the nodes."]
+                    ///
                     /// `saturated uint8[<=260]`
                     ///
                     /// Always aligned,
                     /// size ranges from 0 to 2080 bits
-                    ///
-                    #[doc = "Effective payload. This data will be forwarded to the remote host verbatim.\nUDP packets that contain more than 508 bytes of payload may be dropped by some types of\ncommunication equipment. Refer to RFC 791 and 2460 for an in-depth review.\nCyphal further limits the maximum packet size to reduce the memory and traffic burden on the nodes."]
                     pub payload: ::heapless::Vec<u8, 260>,
                 }
                 impl ::canadensis_encoding::DataType for OutgoingPacket {
@@ -5944,6 +5959,7 @@ pub mod uavcan {
                 }
             }
             pub mod outgoing_packet_0_2 {
+                #[doc = "The fixed subject ID for this message type"]
                 pub const SUBJECT: ::canadensis_core::SubjectId =
                     ::canadensis_core::SubjectId::from_truncating(8174);
 
@@ -5953,48 +5969,48 @@ pub mod uavcan {
                 ///
                 #[doc = "This message carries UDP packets from a node on the local bus to a remote host on the Internet or a LAN.\n\nAny node can broadcast a message of this type.\n\nAll nodes that are capable of communication with the Internet or a LAN should subscribe to messages\nof this type and forward the payload to the indicated host and port using exactly one UDP datagram\nper message (i.e. additional fragmentation is to be avoided). Such nodes will be referred to as\n\"modem nodes\".\n\nIt is expected that some systems will have more than one modem node available.\nEach modem node is supposed to forward every message it sees, which will naturally create\nsome degree of modular redundancy and fault tolerance. The remote host should therefore be able to\nproperly handle possibly duplicated messages from different source addresses, in addition to\npossible duplications introduced by the UDP/IP protocol itself. There are at least two obvious\nstrategies that can be employed by the remote host:\n\n- Accept only the first message, ignore duplicates. This approach requires that the UDP stream\nshould contain some metadata necessary for the remote host to determine the source and ordering\nof each received datum. This approach works best for periodic data, such as telemetry, where\nthe sender does not expect any responses.\n\n- Process all messages, including duplicates. This approach assumes that the remote host acts\nas a server, processing all received requests and providing responses to each. This arrangement\nimplies that the client may receive duplicated responses. It is therefore the client's\nresponsibility to resolve the possible ambiguity. An obvious solution is to accept the first\narrived response and ignore the later ones.\n\nApplications are free to choose whatever redundancy management strategy works best for them.\n\nIf the source node expects that the remote host will send some data back, it shall explicitly notify\nthe modem nodes about this, so that they could prepare to perform reverse forwarding when the\nexpected data arrives from the remote host. The technique of reverse forwarding is known in\nnetworking as IP Masquerading, or (in general) Network Address Translation (NAT). The notification\nis performed by means of setting one of the corresponding flags defined below.\n\nIn order to be able to match datagrams received from remote hosts and the local nodes they should\nbe forwarded to, modem nodes are required to keep certain metadata about outgoing datagrams. Such\nmetadata is stored in a data structure referred to as \"NAT table\", where every entry would normally\ncontain at least the following fields:\n- The local UDP port number that was used to send the outgoing datagram from.\nPer RFC 4787, the port number is chosen by the modem node automatically.\n- The node-ID of the local node that has sent the outgoing datagram.\n- Value of the field session_id defined below.\n- Possibly some other data, depending on the implementation.\n\nThe modem nodes are required to keep each NAT table entry for at least NAT_ENTRY_MIN_TTL seconds\nsince the last reverse forwarding action was performed. Should the memory resources of the modem node\nbe exhausted, it is allowed to remove old NAT entries earlier, following the policy of least recent use.\n\nHaving received a UDP packet from a remote host, the modem node would check the NAT table in order\nto determine where on the Cyphal bus the received data should be forwarded to. If the NAT table\ncontains no matches, the received data should be silently dropped. If a match is found, the\nmodem node will forward the data to the recipient node using the service HandleIncomingPacket.\nIf the service invocation times out, the modem node is permitted to remove the corresponding entry from\nthe NAT table immediately (but it is not required). This will ensure that the modem nodes will not be\ntasked with translations for client nodes that are no longer online or are unreachable.\nAdditionally, client nodes will be able to hint the modem nodes to remove translation entries they no\nlonger need by simply refusing to respond to the corresponding service invocation. Please refer to\nthe definition of that service data type for a more in-depth review of the reverse forwarding process.\n\nModem nodes can also perform traffic shaping, if needed, by means of delaying or dropping UDP\ndatagrams that exceed the quota.\n\nTo summarize, a typical data exchange occurrence should amount to the following actions:\n\n- A local Cyphal node broadcasts a message of type OutgoingPacket with the payload it needs\nto forward. If the node expects the remote host to send any data back, it sets the masquerading flag.\n\n- Every modem node on the bus receives the message and performs the following actions:\n\n- The domain name is resolved, unless the destination address provided in the message\nis already an IP address, in which case this step should be skipped.\n\n- The domain name to IP address mapping is added to the local DNS cache, although this\npart is entirely implementation defined and is not required.\n\n- The masquerading flag is checked. If it is set, a new entry is added to the NAT table.\nIf such entry already existed, its expiration timeout is reset. If no such entry existed\nand a new one cannot be added because of memory limitations, the least recently used\n(i.e. oldest) entry of the NAT table is replaced with the new one.\n\n- The payload is forwarded to the determined IP address.\n\n- At this point, direct forwarding is complete. Should any of the modem nodes receive an incoming\npacket, they would attempt to perform a reverse forwarding according to the above provided algorithm.\n\nIt is recommended to use the lowest transport priority level when broadcasting messages of this type,\nin order to avoid interference with a real-time traffic on the bus. Usage of higher priority levels is\nunlikely to be practical because the latency and throughput limitations introduced by the on-board radio\ncommunication equipment are likely to vastly exceed those of the local CAN bus."]
                 pub struct OutgoingPacket {
-                    /// `saturated uint16`
-                    ///
-                    /// Always aligned,
-                    /// size 16 bits
-                    ///
                     #[doc = "This field is set to an arbitrary value by the transmitting node in order to be able to match the response\nwith the locally kept context. The function of this field is virtually identical to that of UDP/IP port\nnumbers. This value can be set to zero safely if the sending node does not have multiple contexts to\ndistinguish between."]
-                    pub session_id: u16,
+                    ///
                     /// `saturated uint16`
                     ///
                     /// Always aligned,
                     /// size 16 bits
-                    ///
+                    pub session_id: u16,
                     #[doc = "UDP destination port number."]
+                    ///
+                    /// `saturated uint16`
+                    ///
+                    /// Always aligned,
+                    /// size 16 bits
                     pub destination_port: u16,
+                    #[doc = "Domain name or IP address where the payload should be forwarded to.\nNote that broadcast addresses are allowed here, for example, 255.255.255.255.\nBroadcasting with masquerading enabled works the same way as unicasting with masquerading enabled: the modem\nnode should take care to channel all traffic arriving at the opened port from any source to the node that\nrequested masquerading.\nThe full domain name length may not exceed 253 octets, according to the DNS specification.\nCyphal imposes a stricter length limit in order to reduce the memory and traffic burden on the bus: 45 characters.\n45 characters is the amount of space that is required to represent the longest possible form of an IPv6 address\n(an IPv4-mapped IPv6 address). Examples:\n\"forum.opencyphal.org\"                          - domain name\n\"192.168.1.1\"                                   - IPv4 address\n\"2001:0db8:85a3:0000:0000:8a2e:0370:7334\"       - IPv6 address, full form\n\"2001:db8:85a3::8a2e:370:7334\"                  - IPv6 address, same as above, short form (preferred)\n\"ABCD:ABCD:ABCD:ABCD:ABCD:ABCD:192.168.158.190\" - IPv4-mapped IPv6, full form (length limit, 45 characters)"]
+                    ///
                     /// `saturated uint8[<=45]`
                     ///
                     /// Always aligned,
                     /// size ranges from 0 to 360 bits
-                    ///
-                    #[doc = "Domain name or IP address where the payload should be forwarded to.\nNote that broadcast addresses are allowed here, for example, 255.255.255.255.\nBroadcasting with masquerading enabled works the same way as unicasting with masquerading enabled: the modem\nnode should take care to channel all traffic arriving at the opened port from any source to the node that\nrequested masquerading.\nThe full domain name length may not exceed 253 octets, according to the DNS specification.\nCyphal imposes a stricter length limit in order to reduce the memory and traffic burden on the bus: 45 characters.\n45 characters is the amount of space that is required to represent the longest possible form of an IPv6 address\n(an IPv4-mapped IPv6 address). Examples:\n\"forum.opencyphal.org\"                          - domain name\n\"192.168.1.1\"                                   - IPv4 address\n\"2001:0db8:85a3:0000:0000:8a2e:0370:7334\"       - IPv6 address, full form\n\"2001:db8:85a3::8a2e:370:7334\"                  - IPv6 address, same as above, short form (preferred)\n\"ABCD:ABCD:ABCD:ABCD:ABCD:ABCD:192.168.158.190\" - IPv4-mapped IPv6, full form (length limit, 45 characters)"]
                     pub destination_address: ::heapless::Vec<u8, 45>,
+                    #[doc = "Expect data back (i.e., instruct the modem to use the NAT table)."]
+                    ///
                     /// `saturated bool`
                     ///
                     /// Always aligned,
                     /// size 1 bits
-                    ///
-                    #[doc = "Expect data back (i.e., instruct the modem to use the NAT table)."]
                     pub use_masquerading: bool,
+                    #[doc = "Use Datagram Transport Layer Security. Drop the packet if DTLS is not supported.\nOption flags."]
+                    ///
                     /// `saturated bool`
                     ///
                     /// Not always aligned,
                     /// size 1 bits
-                    ///
-                    #[doc = "Use Datagram Transport Layer Security. Drop the packet if DTLS is not supported.\nOption flags."]
                     pub use_dtls: bool,
                     // 6 bits of padding
+                    #[doc = "Effective payload. This data will be forwarded to the remote host verbatim.\nUDP packets that contain more than 508 bytes of payload may be dropped by some types of\ncommunication equipment. Refer to RFC 791 and 2460 for an in-depth review."]
+                    ///
                     /// `saturated uint8[<=508]`
                     ///
                     /// Always aligned,
                     /// size ranges from 0 to 4064 bits
-                    ///
-                    #[doc = "Effective payload. This data will be forwarded to the remote host verbatim.\nUDP packets that contain more than 508 bytes of payload may be dropped by some types of\ncommunication equipment. Refer to RFC 791 and 2460 for an in-depth review."]
                     pub payload: ::heapless::Vec<u8, 508>,
                 }
                 impl ::canadensis_encoding::DataType for OutgoingPacket {
@@ -6430,21 +6446,21 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 #[doc = "Classic CAN or CAN FD frame representation. This is the top-level data type in its namespace."]
                 pub enum Frame {
-                    /// uavcan.metatransport.can.Error.0.1
-                    ///
                     #[doc = "CAN error (intentional or disturbance)"]
+                    ///
+                    /// uavcan.metatransport.can.Error.0.1
                     Error(crate::uavcan::metatransport::can::error_0_1::Error),
-                    /// uavcan.metatransport.can.DataFD.0.1
-                    ///
                     #[doc = "Bit rate switch flag active"]
+                    ///
+                    /// uavcan.metatransport.can.DataFD.0.1
                     DataFd(crate::uavcan::metatransport::can::data_fd_0_1::DataFD),
-                    /// uavcan.metatransport.can.DataClassic.0.1
-                    ///
                     #[doc = "Bit rate switch flag not active"]
-                    DataClassic(crate::uavcan::metatransport::can::data_classic_0_1::DataClassic),
-                    /// uavcan.metatransport.can.RTR.0.1
                     ///
+                    /// uavcan.metatransport.can.DataClassic.0.1
+                    DataClassic(crate::uavcan::metatransport::can::data_classic_0_1::DataClassic),
                     #[doc = "Bit rate switch flag not active\nSealed because the structure is rigidly dictated by an external standard."]
+                    ///
+                    /// uavcan.metatransport.can.RTR.0.1
                     RemoteTransmissionRequest(crate::uavcan::metatransport::can::rtr_0_1::RTR),
                 }
                 impl ::canadensis_encoding::DataType for Frame {
@@ -6512,21 +6528,21 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 #[doc = "CAN frame properties that can be manifested on the bus.\nSee Frame.0.2 as a replacement"]
                 #[deprecated]
                 pub enum Manifestation {
-                    /// uavcan.metatransport.can.Error.0.1
-                    ///
                     #[doc = "CAN error (intentional or disturbance)"]
+                    ///
+                    /// uavcan.metatransport.can.Error.0.1
                     Error(crate::uavcan::metatransport::can::error_0_1::Error),
-                    /// uavcan.metatransport.can.DataFD.0.1
-                    ///
                     #[doc = "Bit rate switch flag active"]
+                    ///
+                    /// uavcan.metatransport.can.DataFD.0.1
                     DataFd(crate::uavcan::metatransport::can::data_fd_0_1::DataFD),
+                    #[doc = "Bit rate switch flag not active"]
+                    ///
                     /// uavcan.metatransport.can.DataClassic.0.1
-                    ///
-                    #[doc = "Bit rate switch flag not active"]
                     DataClassic(crate::uavcan::metatransport::can::data_classic_0_1::DataClassic),
-                    /// uavcan.metatransport.can.RTR.0.1
-                    ///
                     #[doc = "Bit rate switch flag not active"]
+                    ///
+                    /// uavcan.metatransport.can.RTR.0.1
                     RemoteTransmissionRequest(crate::uavcan::metatransport::can::rtr_0_1::RTR),
                 }
                 impl ::canadensis_encoding::DataType for Manifestation {
@@ -6699,12 +6715,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// size 16 bits
                     pub ethertype:
                         crate::uavcan::metatransport::ethernet::ether_type_0_1::EtherType,
+                    #[doc = "Supports conventional jumbo frames (up to 9 KiB)."]
+                    ///
                     /// `saturated uint8[<=9216]`
                     ///
                     /// Always aligned,
                     /// size ranges from 0 to 73728 bits
-                    ///
-                    #[doc = "Supports conventional jumbo frames (up to 9 KiB)."]
                     pub payload: ::heapless::Vec<u8, 9216>,
                 }
                 impl ::canadensis_encoding::DataType for Frame {
@@ -6914,26 +6930,26 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 #[doc = "A UDP/IP endpoint address specification.\nReplaced by uavcan.metatransport.ethernet"]
                 #[deprecated]
                 pub struct Endpoint {
+                    #[doc = "The IP address of the host in the network byte order (big endian).\nIPv6 addresses are represented as-is.\nIPv4 addresses are represented using IPv4-mapped IPv6 addresses."]
+                    ///
                     /// `saturated uint8[16]`
                     ///
                     /// Always aligned,
                     /// size 128 bits
-                    ///
-                    #[doc = "The IP address of the host in the network byte order (big endian).\nIPv6 addresses are represented as-is.\nIPv4 addresses are represented using IPv4-mapped IPv6 addresses."]
                     pub ip_address: [u8; 16],
+                    #[doc = "MAC address of the host in the network byte order (big endian)."]
+                    ///
                     /// `saturated uint8[6]`
                     ///
                     /// Always aligned,
                     /// size 48 bits
-                    ///
-                    #[doc = "MAC address of the host in the network byte order (big endian)."]
                     pub mac_address: [u8; 6],
+                    #[doc = "The UDP port number."]
+                    ///
                     /// `saturated uint16`
                     ///
                     /// Always aligned,
                     /// size 16 bits
-                    ///
-                    #[doc = "The UDP port number."]
                     pub port: u16,
                     // 64 bits of padding
                 }
@@ -7090,6 +7106,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
         #[allow(deprecated)]
         #[deprecated]
         pub mod execute_command_1_0 {
+            #[doc = "The fixed ID of this service"]
             #[deprecated]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(435);
@@ -7101,19 +7118,19 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             #[doc = "Instructs the server node to execute or commence execution of a simple predefined command.\nAll standard commands are optional; i.e., not guaranteed to be supported by all nodes."]
             #[deprecated]
             pub struct ExecuteCommandRequest {
+                #[doc = "Standard pre-defined commands are at the top of the range (defined below).\nVendors can define arbitrary, vendor-specific commands in the bottom part of the range (starting from zero).\nVendor-specific commands shall not use identifiers above 32767."]
+                ///
                 /// `saturated uint16`
                 ///
                 /// Always aligned,
                 /// size 16 bits
-                ///
-                #[doc = "Standard pre-defined commands are at the top of the range (defined below).\nVendors can define arbitrary, vendor-specific commands in the bottom part of the range (starting from zero).\nVendor-specific commands shall not use identifiers above 32767."]
                 pub command: u16,
+                #[doc = "A string parameter supplied to the command. The format and interpretation is command-specific.\nThe standard commands do not use this field (ignore it), excepting the following:\n- COMMAND_BEGIN_SOFTWARE_UPDATE\nTwo CAN FD frames max"]
+                ///
                 /// `saturated uint8[<=112]`
                 ///
                 /// Always aligned,
                 /// size ranges from 0 to 896 bits
-                ///
-                #[doc = "A string parameter supplied to the command. The format and interpretation is command-specific.\nThe standard commands do not use this field (ignore it), excepting the following:\n- COMMAND_BEGIN_SOFTWARE_UPDATE\nTwo CAN FD frames max"]
                 pub parameter: ::heapless::Vec<u8, 112>,
             }
             impl ::canadensis_encoding::DataType for ExecuteCommandRequest {
@@ -7179,12 +7196,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             #[repr(C, packed)]
             #[deprecated]
             pub struct ExecuteCommandResponse {
+                #[doc = "The result of the request."]
+                ///
                 /// `saturated uint8`
                 ///
                 /// Always aligned,
                 /// size 8 bits
-                ///
-                #[doc = "The result of the request."]
                 pub status: u8,
             }
             impl ::canadensis_encoding::DataType for ExecuteCommandResponse {
@@ -7229,6 +7246,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
         }
         pub mod execute_command_1_1 {
+            #[doc = "The fixed ID of this service"]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(435);
 
@@ -7238,19 +7256,19 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             #[doc = "Instructs the server node to execute or commence execution of a simple predefined command.\nAll standard commands are optional; i.e., not guaranteed to be supported by all nodes."]
             pub struct ExecuteCommandRequest {
+                #[doc = "Standard pre-defined commands are at the top of the range (defined below).\nVendors can define arbitrary, vendor-specific commands in the bottom part of the range (starting from zero).\nVendor-specific commands shall not use identifiers above 32767."]
+                ///
                 /// `saturated uint16`
                 ///
                 /// Always aligned,
                 /// size 16 bits
-                ///
-                #[doc = "Standard pre-defined commands are at the top of the range (defined below).\nVendors can define arbitrary, vendor-specific commands in the bottom part of the range (starting from zero).\nVendor-specific commands shall not use identifiers above 32767."]
                 pub command: u16,
+                #[doc = "A string parameter supplied to the command. The format and interpretation is command-specific.\nThe standard commands do not use this field (ignore it), excepting the following:\n- COMMAND_BEGIN_SOFTWARE_UPDATE"]
+                ///
                 /// `saturated uint8[<=255]`
                 ///
                 /// Always aligned,
                 /// size ranges from 0 to 2040 bits
-                ///
-                #[doc = "A string parameter supplied to the command. The format and interpretation is command-specific.\nThe standard commands do not use this field (ignore it), excepting the following:\n- COMMAND_BEGIN_SOFTWARE_UPDATE"]
                 pub parameter: ::heapless::Vec<u8, 255>,
             }
             impl ::canadensis_encoding::DataType for ExecuteCommandRequest {
@@ -7315,12 +7333,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
             #[repr(C, packed)]
             pub struct ExecuteCommandResponse {
+                #[doc = "The result of the request."]
+                ///
                 /// `saturated uint8`
                 ///
                 /// Always aligned,
                 /// size 8 bits
-                ///
-                #[doc = "The result of the request."]
                 pub status: u8,
             }
             impl ::canadensis_encoding::DataType for ExecuteCommandResponse {
@@ -7365,6 +7383,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
         }
         pub mod get_info_1_0 {
+            #[doc = "The fixed ID of this service"]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(430);
 
@@ -7411,59 +7430,59 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             #[doc = "Full node info request.\nAll of the returned information shall be static (unchanged) while the node is running.\nIt is highly recommended to support this service on all nodes."]
             pub struct GetInfoResponse {
+                #[doc = "The Cyphal protocol version implemented on this node, both major and minor.\nNot to be changed while the node is running."]
+                ///
                 /// `uavcan.node.Version.1.0`
                 ///
                 /// Always aligned,
                 /// size 16 bits
-                ///
-                #[doc = "The Cyphal protocol version implemented on this node, both major and minor.\nNot to be changed while the node is running."]
                 pub protocol_version: crate::uavcan::node::version_1_0::Version,
                 /// `uavcan.node.Version.1.0`
                 ///
                 /// Always aligned,
                 /// size 16 bits
                 pub hardware_version: crate::uavcan::node::version_1_0::Version,
+                #[doc = "The version information shall not be changed while the node is running.\nThe correct hardware version shall be reported at all times, excepting software-only nodes, in which\ncase it should be set to zeros.\nIf the node is equipped with a Cyphal-capable bootloader, the bootloader should report the software\nversion of the installed application, if there is any; if no application is found, zeros should be reported."]
+                ///
                 /// `uavcan.node.Version.1.0`
                 ///
                 /// Always aligned,
                 /// size 16 bits
-                ///
-                #[doc = "The version information shall not be changed while the node is running.\nThe correct hardware version shall be reported at all times, excepting software-only nodes, in which\ncase it should be set to zeros.\nIf the node is equipped with a Cyphal-capable bootloader, the bootloader should report the software\nversion of the installed application, if there is any; if no application is found, zeros should be reported."]
                 pub software_version: crate::uavcan::node::version_1_0::Version,
+                #[doc = "A version control system (VCS) revision number or hash. Not to be changed while the node is running.\nFor example, this field can be used for reporting the short git commit hash of the current\nsoftware revision.\nSet to zero if not used."]
+                ///
                 /// `saturated uint64`
                 ///
                 /// Always aligned,
                 /// size 64 bits
-                ///
-                #[doc = "A version control system (VCS) revision number or hash. Not to be changed while the node is running.\nFor example, this field can be used for reporting the short git commit hash of the current\nsoftware revision.\nSet to zero if not used."]
                 pub software_vcs_revision_id: u64,
+                #[doc = "The unique-ID (UID) is a 128-bit long sequence that is likely to be globally unique per node.\nThe vendor shall ensure that the probability of a collision with any other node UID globally is negligibly low.\nUID is defined once per hardware unit and should never be changed.\nAll zeros is not a valid UID.\nIf the node is equipped with a Cyphal-capable bootloader, the bootloader shall use the same UID.\nManual serialization note: only fixed-size fields up to this point. The following fields are dynamically sized."]
+                ///
                 /// `saturated uint8[16]`
                 ///
                 /// Always aligned,
                 /// size 128 bits
-                ///
-                #[doc = "The unique-ID (UID) is a 128-bit long sequence that is likely to be globally unique per node.\nThe vendor shall ensure that the probability of a collision with any other node UID globally is negligibly low.\nUID is defined once per hardware unit and should never be changed.\nAll zeros is not a valid UID.\nIf the node is equipped with a Cyphal-capable bootloader, the bootloader shall use the same UID.\nManual serialization note: only fixed-size fields up to this point. The following fields are dynamically sized."]
                 pub unique_id: [u8; 16],
+                #[doc = "Human-readable non-empty ASCII node name. An empty name is not permitted.\nThe name shall not be changed while the node is running.\nAllowed characters are: a-z (lowercase ASCII letters) 0-9 (decimal digits) . (dot) - (dash) _ (underscore).\nNode name is a reversed Internet domain name (like Java packages), e.g. \"com.manufacturer.project.product\"."]
+                ///
                 /// `saturated uint8[<=50]`
                 ///
                 /// Always aligned,
                 /// size ranges from 0 to 400 bits
-                ///
-                #[doc = "Human-readable non-empty ASCII node name. An empty name is not permitted.\nThe name shall not be changed while the node is running.\nAllowed characters are: a-z (lowercase ASCII letters) 0-9 (decimal digits) . (dot) - (dash) _ (underscore).\nNode name is a reversed Internet domain name (like Java packages), e.g. \"com.manufacturer.project.product\"."]
                 pub name: ::heapless::Vec<u8, 50>,
+                #[doc = "The value of an arbitrary hash function applied to the software image. Not to be changed while the node is running.\nThis field can be used to detect whether the software or firmware running on the node is an exact\nsame version as a certain specific revision. This field provides a very strong identity guarantee,\nunlike the version fields above, which can be the same for different builds of the software.\nAs can be seen from its definition, this field is optional.\n\nThe exact hash function and the methods of its application are implementation-defined.\nHowever, implementations are recommended to adhere to the following guidelines, fully or partially:\n- The hash function should be CRC-64-WE.\n- The hash function should be applied to the entire application image padded to 8 bytes.\n- If the computed image CRC is stored within the software image itself, the value of\nthe hash function becomes ill-defined, because it becomes recursively dependent on itself.\nIn order to circumvent this issue, while computing or checking the CRC, its value stored\nwithin the image should be zeroed out."]
+                ///
                 /// `saturated uint64[<=1]`
                 ///
                 /// Always aligned,
                 /// size ranges from 0 to 64 bits
-                ///
-                #[doc = "The value of an arbitrary hash function applied to the software image. Not to be changed while the node is running.\nThis field can be used to detect whether the software or firmware running on the node is an exact\nsame version as a certain specific revision. This field provides a very strong identity guarantee,\nunlike the version fields above, which can be the same for different builds of the software.\nAs can be seen from its definition, this field is optional.\n\nThe exact hash function and the methods of its application are implementation-defined.\nHowever, implementations are recommended to adhere to the following guidelines, fully or partially:\n- The hash function should be CRC-64-WE.\n- The hash function should be applied to the entire application image padded to 8 bytes.\n- If the computed image CRC is stored within the software image itself, the value of\nthe hash function becomes ill-defined, because it becomes recursively dependent on itself.\nIn order to circumvent this issue, while computing or checking the CRC, its value stored\nwithin the image should be zeroed out."]
                 pub software_image_crc: ::heapless::Vec<u64, 1>,
+                #[doc = "The certificate of authenticity (COA) of the node, 222 bytes max, optional. This field can be used for\nreporting digital signatures (e.g., RSA-1776, or ECDSA if a higher degree of cryptographic strength is desired).\nLeave empty if not used. Not to be changed while the node is running.\nAt most five CAN FD frames"]
+                ///
                 /// `saturated uint8[<=222]`
                 ///
                 /// Always aligned,
                 /// size ranges from 0 to 1776 bits
-                ///
-                #[doc = "The certificate of authenticity (COA) of the node, 222 bytes max, optional. This field can be used for\nreporting digital signatures (e.g., RSA-1776, or ECDSA if a higher degree of cryptographic strength is desired).\nLeave empty if not used. Not to be changed while the node is running.\nAt most five CAN FD frames"]
                 pub certificate_of_authenticity: ::heapless::Vec<u8, 222>,
             }
             impl ::canadensis_encoding::DataType for GetInfoResponse {
@@ -7575,6 +7594,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
         }
         pub mod get_transport_statistics_0_1 {
+            #[doc = "The fixed ID of this service"]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(434);
 
@@ -7624,19 +7644,19 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             #[doc = "Returns a set of general low-level transport statistical counters.\nServers are encouraged but not required to sample the data atomically."]
             pub struct GetTransportStatisticsResponse {
+                #[doc = "Cyphal transfer performance statistics:\nthe number of Cyphal transfers successfully sent, successfully received, and failed.\nThe methods of error counting are implementation-defined."]
+                ///
                 /// `uavcan.node.IOStatistics.0.1`
                 ///
                 /// Always aligned,
                 /// size 120 bits
-                ///
-                #[doc = "Cyphal transfer performance statistics:\nthe number of Cyphal transfers successfully sent, successfully received, and failed.\nThe methods of error counting are implementation-defined."]
                 pub transfer_statistics: crate::uavcan::node::io_statistics_0_1::IOStatistics,
+                #[doc = "Network interface statistics, separate per interface.\nE.g., for a doubly redundant transport, this array would contain two elements,\nthe one at the index zero would apply to the first interface, the other to the second interface.\nThe methods of counting are implementation-defined.\nOne CAN FD frame"]
+                ///
                 /// `uavcan.node.IOStatistics.0.1[<=3]`
                 ///
                 /// Always aligned,
                 /// size ranges from 0 to 360 bits
-                ///
-                #[doc = "Network interface statistics, separate per interface.\nE.g., for a doubly redundant transport, this array would contain two elements,\nthe one at the index zero would apply to the first interface, the other to the second interface.\nThe methods of counting are implementation-defined.\nOne CAN FD frame"]
                 pub network_interface_statistics:
                     ::heapless::Vec<crate::uavcan::node::io_statistics_0_1::IOStatistics, 3>,
             }
@@ -7735,6 +7755,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
         }
         pub mod heartbeat_1_0 {
+            #[doc = "The fixed subject ID for this message type"]
             pub const SUBJECT: ::canadensis_core::SubjectId =
                 ::canadensis_core::SubjectId::from_truncating(7509);
 
@@ -7744,33 +7765,33 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             #[doc = "Abstract node status information.\nThis is the only high-level function that shall be implemented by all nodes.\n\nAll Cyphal nodes that have a node-ID are required to publish this message to its fixed subject periodically.\nNodes that do not have a node-ID (also known as \"anonymous nodes\") shall not publish to this subject.\n\nThe default subject-ID 7509 is 1110101010101 in binary. The alternating bit pattern at the end helps transceiver\nsynchronization (e.g., on CAN-based networks) and on some transports permits automatic bit rate detection.\n\nNetwork-wide health monitoring can be implemented by subscribing to the fixed subject."]
             pub struct Heartbeat {
+                #[doc = "[second]\nThe uptime seconds counter should never overflow. The counter will reach the upper limit in ~136 years,\nupon which time it should stay at 0xFFFFFFFF until the node is restarted.\nOther nodes may detect that a remote node has restarted when this value leaps backwards."]
+                ///
                 /// `saturated uint32`
                 ///
                 /// Always aligned,
                 /// size 32 bits
-                ///
-                #[doc = "[second]\nThe uptime seconds counter should never overflow. The counter will reach the upper limit in ~136 years,\nupon which time it should stay at 0xFFFFFFFF until the node is restarted.\nOther nodes may detect that a remote node has restarted when this value leaps backwards."]
                 pub uptime: u32,
+                #[doc = "The abstract health status of this node."]
+                ///
                 /// `uavcan.node.Health.1.0`
                 ///
                 /// Always aligned,
                 /// size 8 bits
-                ///
-                #[doc = "The abstract health status of this node."]
                 pub health: crate::uavcan::node::health_1_0::Health,
+                #[doc = "The abstract operating mode of the publishing node.\nThis field indicates the general level of readiness that can be further elaborated on a per-activity basis\nusing various specialized interfaces."]
+                ///
                 /// `uavcan.node.Mode.1.0`
                 ///
                 /// Always aligned,
                 /// size 8 bits
-                ///
-                #[doc = "The abstract operating mode of the publishing node.\nThis field indicates the general level of readiness that can be further elaborated on a per-activity basis\nusing various specialized interfaces."]
                 pub mode: crate::uavcan::node::mode_1_0::Mode,
+                #[doc = "Optional, vendor-specific node status code, e.g. a fault code or a status bitmask.\nFits into a single-frame Classic CAN transfer (least capable transport, smallest MTU)."]
+                ///
                 /// `saturated uint8`
                 ///
                 /// Always aligned,
                 /// size 8 bits
-                ///
-                #[doc = "Optional, vendor-specific node status code, e.g. a fault code or a status bitmask.\nFits into a single-frame Classic CAN transfer (least capable transport, smallest MTU)."]
                 pub vendor_specific_status_code: u8,
             }
             impl ::canadensis_encoding::DataType for Heartbeat {
@@ -7863,26 +7884,26 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             #[doc = "A standard set of generic input/output statistical counters that generally should not overflow.\nIf a 40-bit counter is incremented every millisecond, it will overflow in ~35 years.\nIf an overflow occurs, the value will wrap over to zero.\n\nThe values should not be reset while the node is running."]
             pub struct IOStatistics {
-                /// `truncated uint40`
-                ///
-                /// Always aligned,
-                /// size 40 bits
-                ///
                 #[doc = "The number of successfully emitted entities."]
+                ///
+                /// `truncated uint40`
+                ///
+                /// Always aligned,
+                /// size 40 bits
                 pub num_emitted: u64,
-                /// `truncated uint40`
-                ///
-                /// Always aligned,
-                /// size 40 bits
-                ///
                 #[doc = "The number of successfully received entities."]
-                pub num_received: u64,
+                ///
                 /// `truncated uint40`
                 ///
                 /// Always aligned,
                 /// size 40 bits
-                ///
+                pub num_received: u64,
                 #[doc = "How many errors have occurred.\nThe exact definition of \"error\" and how they are counted are implementation-defined,\nunless specifically defined otherwise."]
+                ///
+                /// `truncated uint40`
+                ///
+                /// Always aligned,
+                /// size 40 bits
                 pub num_errored: u64,
             }
             impl ::canadensis_encoding::DataType for IOStatistics {
@@ -8017,6 +8038,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 }
             }
             pub mod list_0_1 {
+                #[doc = "The fixed subject ID for this message type"]
                 pub const SUBJECT: ::canadensis_core::SubjectId =
                     ::canadensis_core::SubjectId::from_truncating(7510);
 
@@ -8139,12 +8161,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 #[doc = "A list of service identifiers.\nThis is a trivial constant-size bitmask with some reserved space in case the range of service-ID is increased\nin a future revision of the protocol."]
                 pub struct ServiceIDList {
+                    #[doc = "The index represents the identifier value. True -- present/used. False -- absent/unused."]
+                    ///
                     /// `saturated bool[512]`
                     ///
                     /// Always aligned,
                     /// size 512 bits
-                    ///
-                    #[doc = "The index represents the identifier value. True -- present/used. False -- absent/unused."]
                     pub mask: ::canadensis_encoding::bits::BitArray<64>,
                 }
                 impl ::canadensis_encoding::DataType for ServiceIDList {
@@ -8229,19 +8251,19 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 #[doc = "A list of subject identifiers.\nThe range of subject-ID is large, so using a fixed-size bitmask would make this type difficult to handle on\nresource-constrained systems. To address that, we provide two extra options: a simple variable-length list,\nand a special case that indicates that every subject-ID is in use."]
                 pub enum SubjectIDList {
-                    /// saturated bool[8192]
-                    ///
                     #[doc = "The index represents the identifier value. True -- present/used. False -- absent/unused."]
-                    Mask(::canadensis_encoding::bits::BitArray<1024>),
-                    /// uavcan.node.port.SubjectID.1.0[<=255]
                     ///
+                    /// saturated bool[8192]
+                    Mask(::canadensis_encoding::bits::BitArray<1024>),
                     #[doc = "A list of identifiers that can be used instead of the mask if most of the identifiers are unused."]
+                    ///
+                    /// uavcan.node.port.SubjectID.1.0[<=255]
                     SparseList(
                         ::heapless::Vec<crate::uavcan::node::port::subject_id_1_0::SubjectID, 255>,
                     ),
-                    /// uavcan.primitive.Empty.1.0
-                    ///
                     #[doc = "A special case indicating that all identifiers are in use.\nReserve space in case the range is extended in the future."]
+                    ///
+                    /// uavcan.primitive.Empty.1.0
                     Total(crate::uavcan::primitive::empty_1_0::Empty),
                 }
                 impl ::canadensis_encoding::DataType for SubjectIDList {
@@ -8369,6 +8391,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
     pub mod pnp {
         pub mod cluster {
             pub mod append_entries_1_0 {
+                #[doc = "The fixed ID of this service"]
                 pub const SERVICE: ::canadensis_core::ServiceId =
                     ::canadensis_core::ServiceId::from_truncating(390);
 
@@ -8393,19 +8416,19 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// Always aligned,
                     /// size 16 bits
                     pub prev_log_index: u16,
+                    #[doc = "Refer to the Raft paper for explanation."]
+                    ///
                     /// `saturated uint16`
                     ///
                     /// Always aligned,
                     /// size 16 bits
-                    ///
-                    #[doc = "Refer to the Raft paper for explanation."]
                     pub leader_commit: u16,
+                    #[doc = "Worst case replication time per Follower can be computed as:\n\nworst replication time = (node-ID capacity) * (2 trips of next_index) * (request interval per Follower)\n\nE.g., given the request interval of 0.5 seconds, the worst case replication time for CAN bus is:\n\n128 nodes * 2 trips * 0.5 seconds = 128 seconds.\n\nThis is the amount of time it will take for a new Follower to reconstruct a full replica of the distributed log."]
+                    ///
                     /// `uavcan.pnp.cluster.Entry.1.0[<=1]`
                     ///
                     /// Always aligned,
                     /// size ranges from 0 to 176 bits
-                    ///
-                    #[doc = "Worst case replication time per Follower can be computed as:\n\nworst replication time = (node-ID capacity) * (2 trips of next_index) * (request interval per Follower)\n\nE.g., given the request interval of 0.5 seconds, the worst case replication time for CAN bus is:\n\n128 nodes * 2 trips * 0.5 seconds = 128 seconds.\n\nThis is the amount of time it will take for a new Follower to reconstruct a full replica of the distributed log."]
                     pub entries: ::heapless::Vec<crate::uavcan::pnp::cluster::entry_1_0::Entry, 1>,
                 }
                 impl ::canadensis_encoding::DataType for AppendEntriesRequest {
@@ -8475,12 +8498,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// Always aligned,
                     /// size 32 bits
                     pub term: u32,
+                    #[doc = "Refer to the Raft paper for explanation."]
+                    ///
                     /// `saturated bool`
                     ///
                     /// Always aligned,
                     /// size 1 bits
-                    ///
-                    #[doc = "Refer to the Raft paper for explanation."]
                     pub success: bool,
                 }
                 impl ::canadensis_encoding::DataType for AppendEntriesResponse {
@@ -8513,6 +8536,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 }
             }
             pub mod discovery_1_0 {
+                #[doc = "The fixed subject ID for this message type"]
                 pub const SUBJECT: ::canadensis_core::SubjectId =
                     ::canadensis_core::SubjectId::from_truncating(8164);
 
@@ -8522,20 +8546,20 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 #[doc = "This message is used by redundant allocators to find each other's node-ID.\nPlease refer to the type AppendEntries for details.\n\nAn allocator should stop publishing this message as soon as it has discovered all other allocators in the cluster.\n\nAn exception applies: when an allocator receives a Discovery message where the list of known nodes is incomplete\n(i.e. len(known_nodes) < configured_cluster_size), it shall publish a Discovery message once. This condition\nallows other allocators to quickly re-discover the cluster after a restart."]
                 pub struct Discovery {
+                    #[doc = "The number of allocators in the cluster as configured on the sender.\nThis value shall be the same across all allocators."]
+                    ///
                     /// `saturated uint3`
                     ///
                     /// Always aligned,
                     /// size 3 bits
-                    ///
-                    #[doc = "The number of allocators in the cluster as configured on the sender.\nThis value shall be the same across all allocators."]
                     pub configured_cluster_size: u8,
                     // 5 bits of padding
+                    #[doc = "Node-IDs of the allocators that are known to the publishing allocator, including the publishing allocator itself."]
+                    ///
                     /// `uavcan.node.ID.1.0[<=5]`
                     ///
                     /// Always aligned,
                     /// size ranges from 0 to 80 bits
-                    ///
-                    #[doc = "Node-IDs of the allocators that are known to the publishing allocator, including the publishing allocator itself."]
                     pub known_nodes: ::heapless::Vec<crate::uavcan::node::id_1_0::ID, 5>,
                 }
                 impl ::canadensis_encoding::DataType for Discovery {
@@ -8599,26 +8623,26 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                 #[repr(C, packed)]
                 pub struct Entry {
+                    #[doc = "Refer to the Raft paper for explanation."]
+                    ///
                     /// `saturated uint32`
                     ///
                     /// Always aligned,
                     /// size 32 bits
-                    ///
-                    #[doc = "Refer to the Raft paper for explanation."]
                     pub term: u32,
+                    #[doc = "Unique-ID of this allocation; zero if unknown."]
+                    ///
                     /// `saturated uint8[16]`
                     ///
                     /// Always aligned,
                     /// size 128 bits
-                    ///
-                    #[doc = "Unique-ID of this allocation; zero if unknown."]
                     pub unique_id: [u8; 16],
+                    #[doc = "Node-ID of this allocation."]
+                    ///
                     /// `uavcan.node.ID.1.0`
                     ///
                     /// Always aligned,
                     /// size 16 bits
-                    ///
-                    #[doc = "Node-ID of this allocation."]
                     pub node_id: crate::uavcan::node::id_1_0::ID,
                 }
                 impl ::canadensis_encoding::DataType for Entry {
@@ -8654,6 +8678,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 }
             }
             pub mod request_vote_1_0 {
+                #[doc = "The fixed ID of this service"]
                 pub const SERVICE: ::canadensis_core::ServiceId =
                     ::canadensis_core::ServiceId::from_truncating(391);
 
@@ -8675,12 +8700,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// Always aligned,
                     /// size 32 bits
                     pub last_log_term: u32,
+                    #[doc = "Refer to the Raft paper for explanation."]
+                    ///
                     /// `saturated uint16`
                     ///
                     /// Always aligned,
                     /// size 16 bits
-                    ///
-                    #[doc = "Refer to the Raft paper for explanation."]
                     pub last_log_index: u16,
                 }
                 impl ::canadensis_encoding::DataType for RequestVoteRequest {
@@ -8732,12 +8757,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     /// Always aligned,
                     /// size 32 bits
                     pub term: u32,
+                    #[doc = "Refer to the Raft paper for explanation."]
+                    ///
                     /// `saturated bool`
                     ///
                     /// Always aligned,
                     /// size 1 bits
-                    ///
-                    #[doc = "Refer to the Raft paper for explanation."]
                     pub vote_granted: bool,
                 }
                 impl ::canadensis_encoding::DataType for RequestVoteResponse {
@@ -8771,6 +8796,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
         }
         pub mod node_id_allocation_data_1_0 {
+            #[doc = "The fixed subject ID for this message type"]
             pub const SUBJECT: ::canadensis_core::SubjectId =
                 ::canadensis_core::SubjectId::from_truncating(8166);
 
@@ -8780,19 +8806,19 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             #[doc = "This definition of the allocation message is intended for use with transports where anonymous transfers are limited\nto 7 bytes of payload, such as Classic CAN. The definition is carried over from the original UAVCAN v0 specification\nwith some modifications. For transports other than Classic CAN (e.g., CAN FD, serial, etc.) there is a more\ngeneral, more capable definition NodeIDAllocationData v2.0. The PnP protocol itself is described in the documentation\nfor the v2 definition. The documentation provided here builds upon the general case, so read that first please.\n\nThe full 128-bit unique-ID can't be accommodated in a single-frame anonymous message transfer over Classic CAN, so\nthis definition substitutes the full 128-bit ID with a smaller 48-bit hash of it. The 48-bit hash is obtained by\napplying an arbitrary hash function to the unique-ID that outputs at least 48 bit of data. The recommended hash\nfunction is the standard CRC-64WE where only the lowest 48 bit of the result are used.\n\nAllocators that support allocation messages of different versions should maintain a shared allocation table for all.\nRequests received via the v1 message obviously do not contain the full unique-ID; the allocators are recommended\nto left-zero-pad the small 48-bit hash in order to obtain a \"pseudo unique-ID\", and use this value in the\nallocation table as a substitute for the real unique-ID. It is recognized that this behavior will have certain\nside effects, such as the same allocatee obtaining different allocated node-ID values depending on which version\nof the message is used, but they are considered tolerable.\n\nAllocatees that may need to operate over Classic CAN along with high-MTU transports may choose to use\nonly this constrained method of allocation for consistency and simplification.\n\nIn order to save space for the hash, the preferred node-ID is removed from the request. The allocated node-ID\nis provided in the response, however; this is achieved by means of an optional field that is not populated in\nthe request but is populated in the response. This implies that the response may be a multi-frame transfer,\nwhich is acceptable since responses are sent by allocators, which are regular nodes, and therefore they are\nallowed to use regular message transfers rather than being limited to anonymous message transfers as allocatees are.\n\nOn the allocatee's side the protocol is defined through the following set of rules:\n\nRule A. On initialization:\n1. The allocatee subscribes to this message.\n2. The allocatee starts the Request Timer with a random interval of Trequest.\n\nRule B. On expiration of the Request Timer (started as per rules A, B, or C):\n1. Request Timer restarts with a random interval of Trequest (chosen anew).\n2. The allocatee broadcasts an allocation request message, where the fields are populated as follows:\nunique_id_hash    - a 48-bit hash of the unique-ID of the allocatee.\nallocated_node_id - empty (not populated).\n\nRule C. On any allocation message, even if other rules also match:\n1. Request Timer restarts with a random interval of Trequest (chosen anew).\n\nRule D. On an allocation message WHERE (source node-ID is non-anonymous, i.e., regular allocation response)\nAND   (the field unique_id_hash matches the allocatee's 48-bit unique-ID hash)\nAND   (the field allocated_node_id is populated):\n1. Request Timer stops.\n2. The allocatee initializes its node-ID with the received value.\n3. The allocatee terminates its subscription to allocation messages.\n4. Exit."]
             pub struct NodeIDAllocationData {
+                #[doc = "An arbitrary 48-bit hash of the unique-ID of the local node."]
+                ///
                 /// `truncated uint48`
                 ///
                 /// Always aligned,
                 /// size 48 bits
-                ///
-                #[doc = "An arbitrary 48-bit hash of the unique-ID of the local node."]
                 pub unique_id_hash: u64,
+                #[doc = "Shall be empty in request messages.\nShall be populated in response messages."]
+                ///
                 /// `uavcan.node.ID.1.0[<=1]`
                 ///
                 /// Always aligned,
                 /// size ranges from 0 to 16 bits
-                ///
-                #[doc = "Shall be empty in request messages.\nShall be populated in response messages."]
                 pub allocated_node_id: ::heapless::Vec<crate::uavcan::node::id_1_0::ID, 1>,
             }
             impl ::canadensis_encoding::DataType for NodeIDAllocationData {
@@ -8839,6 +8865,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
         }
         pub mod node_id_allocation_data_2_0 {
+            #[doc = "The fixed subject ID for this message type"]
             pub const SUBJECT: ::canadensis_core::SubjectId =
                 ::canadensis_core::SubjectId::from_truncating(8165);
 
@@ -8850,19 +8877,19 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
             #[repr(C, packed)]
             pub struct NodeIDAllocationData {
+                #[doc = "If the message transfer is anonymous (i.e., allocation request), this is the preferred ID.\nIf the message transfer is non-anonymous (i.e., allocation response), this is the allocated ID.\n\nIf the allocatee does not have any preference, it should request the highest possible node-ID. Keep in mind that\nthe two highest node-ID values are reserved for network maintenance tools; requesting those is not prohibited,\nbut the allocator is recommended to avoid granting these node-ID, using nearest available lower value instead.\nThe allocator will traverse the allocation table starting from the preferred node-ID upward,\nuntil a free node-ID is found (or the first ID reserved for network maintenance tools is reached).\nIf a free node-ID could not be found, the allocator will restart the search from the preferred node-ID\ndownward, until a free node-ID is found."]
+                ///
                 /// `uavcan.node.ID.1.0`
                 ///
                 /// Always aligned,
                 /// size 16 bits
-                ///
-                #[doc = "If the message transfer is anonymous (i.e., allocation request), this is the preferred ID.\nIf the message transfer is non-anonymous (i.e., allocation response), this is the allocated ID.\n\nIf the allocatee does not have any preference, it should request the highest possible node-ID. Keep in mind that\nthe two highest node-ID values are reserved for network maintenance tools; requesting those is not prohibited,\nbut the allocator is recommended to avoid granting these node-ID, using nearest available lower value instead.\nThe allocator will traverse the allocation table starting from the preferred node-ID upward,\nuntil a free node-ID is found (or the first ID reserved for network maintenance tools is reached).\nIf a free node-ID could not be found, the allocator will restart the search from the preferred node-ID\ndownward, until a free node-ID is found."]
                 pub node_id: crate::uavcan::node::id_1_0::ID,
+                #[doc = "The unique-ID of the allocatee. This is the SAME value that is reported via uavcan.node.GetInfo.\nThe value is subjected to the same set of constraints; e.g., it can't be changed while the node is running,\nand the same value should be unlikely to be used by any two different nodes anywhere in the world.\n\nIf this is a non-anonymous transfer (i.e., allocation response), allocatees will match this value against their\nown unique-ID, and ignore the message if there is no match. If the IDs match, then the field node_id contains\nthe allocated node-ID value for this node."]
+                ///
                 /// `saturated uint8[16]`
                 ///
                 /// Always aligned,
                 /// size 128 bits
-                ///
-                #[doc = "The unique-ID of the allocatee. This is the SAME value that is reported via uavcan.node.GetInfo.\nThe value is subjected to the same set of constraints; e.g., it can't be changed while the node is running,\nand the same value should be unlikely to be used by any two different nodes anywhere in the world.\n\nIf this is a non-anonymous transfer (i.e., allocation response), allocatees will match this value against their\nown unique-ID, and ignore the message if there is no match. If the IDs match, then the field node_id contains\nthe allocated node-ID value for this node."]
                 pub unique_id: [u8; 16],
             }
             impl ::canadensis_encoding::DataType for NodeIDAllocationData {
@@ -9978,12 +10005,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                 #[repr(C, packed)]
                 pub struct Real16 {
+                    #[doc = "Exactly representable integers: [-2048, +2048]"]
+                    ///
                     /// `saturated float16`
                     ///
                     /// Always aligned,
                     /// size 16 bits
-                    ///
-                    #[doc = "Exactly representable integers: [-2048, +2048]"]
                     pub value: ::half::f16,
                 }
                 impl ::canadensis_encoding::DataType for Real16 {
@@ -10023,12 +10050,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                 #[repr(C, packed)]
                 pub struct Real32 {
+                    #[doc = "Exactly representable integers: [-16777216, +16777216]"]
+                    ///
                     /// `saturated float32`
                     ///
                     /// Always aligned,
                     /// size 32 bits
-                    ///
-                    #[doc = "Exactly representable integers: [-16777216, +16777216]"]
                     pub value: f32,
                 }
                 impl ::canadensis_encoding::DataType for Real32 {
@@ -10068,12 +10095,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                 #[repr(C, packed)]
                 pub struct Real64 {
+                    #[doc = "Exactly representable integers: [-2**53, +2**53]"]
+                    ///
                     /// `saturated float64`
                     ///
                     /// Always aligned,
                     /// size 64 bits
-                    ///
-                    #[doc = "Exactly representable integers: [-2**53, +2**53]"]
                     pub value: f64,
                 }
                 impl ::canadensis_encoding::DataType for Real64 {
@@ -10214,6 +10241,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
     }
     pub mod register {
         pub mod access_1_0 {
+            #[doc = "The fixed ID of this service"]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(384);
 
@@ -10223,19 +10251,19 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             #[doc = "Registers are strongly-typed named values used to store the configuration parameters of a node.\nThis service is used to write and read a register.\n\n\nREAD/WRITE BEHAVIORS\n\nThe write operation is performed first, unless skipped by sending an empty value in the request.\nThe server may attempt to convert the type of the supplied value to the correct type if there is a type mismatch\n(e.g. uint8 may be converted to uint16); however, servers are not required to perform implicit type conversion,\nand the rules of such conversion are not explicitly specified, so this behavior should not be relied upon.\n\nOn the next step the register will be read regardless of the outcome of the write operation. As such, if the write\noperation could not be performed (e.g. due to a type mismatch or any other issue), the register will retain its old\nvalue. By evaluating the response the caller can determine whether the register was written successfully.\n\nThe write-read sequence is not guaranteed to be atomic, meaning that external influences may cause the register to\nchange its value between the write and the subsequent read operation. The caller is responsible for handling that\ncase properly.\n\nThe timestamp provided in the response corresponds to the time when the register was read. The timestamp may\nbe empty if the server does not support timestamping or its clock is not (yet) synchronized with the network.\n\nIf only read is desired, but not write, the caller shall provide a value of type 'empty'. That will signal the server\nthat the write operation shall be skipped, and it will proceed to read the register immediately.\n\nIf the requested register does not exist, the write operation will have no effect and the returned value will be\nempty. Existing registers should not return 'empty' when read since that would make them indistinguishable from\nnonexistent registers.\n\n\nREGISTER DEFINITION REQUIREMENTS\n\nRegisters shall never change their type or flags as long as the server is running. Meaning that:\n- Mutability and persistence flags cannot change their states.\n- Read operations shall always return values of the same type and same dimensionality.\nThe dimensionality requirement does not apply to inherently variable-length values such as strings and\nunstructured chunks.\n\nRegister name should contain only:\n- Lowercase ASCII alphanumeric characters (a-z, 0-9)\n- Full stop (.)\n- Low line (underscore) (_)\nWith the following limitations/recommendations:\n- The name shall not begin with a decimal digit (0-9).\n- The name shall neither begin nor end with a full stop.\n- A low line shall not be followed by a non-alphanumeric character.\n- The name should contain at least one full stop character.\nOther patterns and ASCII characters are reserved for special function registers (introduced below).\n\n\nENVIRONMENT VARIABLES\n\nThis section applies only to software nodes executed in a high-level operating system that supports environment\nvariables or an equivalent mechanism.\n\nWhen a software node is launched, it is usually necessary to provide some of its configuration information early,\nparticularly that which is related to Cyphal networking, before the node is started. Environment variables offer\na convenient way of addressing this. Software nodes that support the register interface should evaluate the\navailable environment variables during initialization and update their registers (whether they are stored in\na persistent storage or in memory) accoringly. This should be completed before the first register read access.\n\nA register name is mapped to an environment variable name as follows:\n- the name is upper-cased;\n- full stop characters are replaced with double low line characters.\nFor example: 'motor.inductance_dq' is mapped to 'MOTOR__INDUCTANCE_DQ'.\n\nRegister values are represented in environment variables as follows:\n- string:                         utf-8 or platform-specific\n- unstructured:                   as-is\n- bit, integer*, natural*, real*: space-separated decimals\n\nIf an environment variable matches the name of an existing register but its value cannot be converted to the\nregister's type, an error should be raised.\n\nIf an environment variable does not match the name of any register, it may be ignored. However, if the implementation\ncan reliably deduce the type and purpose of the register, it may create one automatically. This provision is to\nsupport applications where the register schema may be altered by configuration.\n\n\nSPECIAL FUNCTION REGISTERS\n\nThe following optional special function register names are defined:\n- suffix '<' is used to define an immutable persistent value that contains the maximum value\nof the respective register.\n- suffix '>' is like above, used to define the minimum value of the respective register.\n- suffix '=' is like above, used to define the default value of the respective register.\n- prefix '*' is reserved for raw memory access (to be defined later).\nExamples:\n- register name \"system.parameter\"\n- maximum value is contained in the register named \"system.parameter<\" (optional)\n- minimum value is contained in the register named \"system.parameter>\" (optional)\n- default value is contained in the register named \"system.parameter=\" (optional)\n\nThe type and dimensionality of the special function registers containing the minimum, maximum, and the default\nvalue of a register shall be the same as those of the register they relate to.\n\nIf a written value exceeds the minimum/maximum specified by the respective special function registers,\nthe server may either adjust the value automatically, or to retain the old value, depending on which behavior\nsuits the objectives of the application better.\nThe values of registers containing non-scalar numerical entities should be compared elementwise.\n\n\nSTANDARD REGISTERS\n\nThe following table specifies the register name patterns that are reserved by the specification for\ncommon functions. These conventions are not mandatory to follow, but implementers are recommended to adhere because\nthey enable enhanced introspection capabilities and simplify device configuration and diagnostics.\n\nREGISTER NAME PATTERN                               TYPE            FLAGS                   RECOMMENDED DEFAULT\n=====================================================================================================================\n\nuavcan.node.id                                      natural16[1]    mutable, persistent     65535 (unset/PnP)\n\nContains the node-ID of the local node. Values above the maximum valid node-ID for the current transport\nindicate that the node-ID is not set; if plug-and-play is supported, it will be used by the node to obtain an\nautomatic node-ID. Invalid values other than 65535 should be avoided for consistency.\n\n---------------------------------------------------------------------------------------------------------------------\n\nuavcan.node.description                             string          mutable, persistent     (empty)\n\nUser/integrator-defined, human-readable description of this specific node.\nThis is intended for use by a system integrator and should not be set by the manufacturer of a component.\nFor example: on a quad-rotor drone this might read \"motor 2\" for one of the ESC nodes.\n\n---------------------------------------------------------------------------------------------------------------------\n\nuavcan.pub.PORT_NAME.id                             natural16[1]    mutable, persistent     65535 (unset, invalid)\nuavcan.sub.PORT_NAME.id                             ditto           ditto                   ditto\nuavcan.cln.PORT_NAME.id                             ditto           ditto                   ditto\nuavcan.srv.PORT_NAME.id                             ditto           ditto                   ditto\n\nPublication/subscription/client/server port-ID, respectively. These registers are configured by the system integrator\nor an autoconfiguration authority when the node is first connected to a network.\n\nThe \"PORT_NAME\" defines the human-friendly name of the port, which is related to the corresponding function\nor a network service supported by the node. The name shall match the following POSIX ERE expression:\n\n[a-zA-Z_][a-zA-Z0-9_]*\n\nThe names are defined by the vendor of the node. The user/integrator is expected to understand their meaning and\nrelation to the functional capabilities of the node by reading the technical documentation provided by the vendor.\n\nA port whose port-ID register is unset (invalid value) remains inactive (unused); the corresponding function may\nbe disabled. For example, a register named \"uavcan.pub.measurement.id\" defines the subject-ID of a measurement\npublished by this node; if the register contains an invalid value (above the maximum valid subject-ID),\nsaid measurement is not published.\n\nThe same name is used in other similar registers defined below. Network introspection and autoconfiguration tools\nwill expect to find a register of this form for every configurable port supported by the node.\n\n---------------------------------------------------------------------------------------------------------------------\n\nuavcan.pub.PORT_NAME.type                           string          immutable, persistent   N/A\nuavcan.sub.PORT_NAME.type                           ditto           ditto                   ditto\nuavcan.cln.PORT_NAME.type                           ditto           ditto                   ditto\nuavcan.srv.PORT_NAME.type                           ditto           ditto                   ditto\n\nPublication/subscription/client/server full data type name and dot-separated version numbers, respectively.\nThese registers are set by the vendor once and typically they are to remain unchanged (hence \"immutable\").\nThe \"PORT_NAME\" defines the human-friendly name of the port as specified above.\nFor example, a register named \"uavcan.pub.measurement.type\" may contain \"uavcan.si.sample.angle.Quaternion.1.0\".\n\n---------------------------------------------------------------------------------------------------------------------\n\nuavcan.diagnostic.*\n\nPrefix reserved for future use.\n\n---------------------------------------------------------------------------------------------------------------------\n\nuavcan.can.bitrate                                  natural32[2]    implementation-defined  implementation-defined\nuavcan.can.iface                                    string          mutable, persistent     implementation-defined\n\nThese registers are only relevant for nodes that support Cyphal/CAN.\n\nuavcan.can.bitrate defines the CAN bus bit rate: the first value is the arbitration bit rate, the second is the\ndata phase bit rate. Nodes that support only Classic CAN should ignore the second value. Nodes that support CAN FD\nshould initialize in the Classic CAN mode (MTU 8 bytes, BRS flag not set) if the values are equal. If CAN bitrate\nis not configurable or is always auto-detected, this register may be omitted or made immutable; otherwise it should\nbe mutable and persistent.\n\nuavcan.can.iface is only relevant for software nodes or nodes that are capable of using different CAN interfaces.\nThe value is a space-separated list of CAN interface names to use. The name format is implementation-defined\n(for example, \"can0\").\n\n---------------------------------------------------------------------------------------------------------------------\n\nuavcan.udp.*\n\nPrefix reserved for future use.\n\n---------------------------------------------------------------------------------------------------------------------#\n\nuavcan.serial.*\n\nPrefix reserved for future use.\n\n---------------------------------------------------------------------------------------------------------------------"]
             pub struct AccessRequest {
+                #[doc = "The name of the accessed register. Shall not be empty.\nUse the List service to obtain the list of registers on the node."]
+                ///
                 /// `uavcan.register.Name.1.0`
                 ///
                 /// Always aligned,
                 /// size ranges from 8 to 2048 bits
-                ///
-                #[doc = "The name of the accessed register. Shall not be empty.\nUse the List service to obtain the list of registers on the node."]
                 pub name: crate::uavcan::register::name_1_0::Name,
+                #[doc = "Value to be written. Empty if no write is required."]
+                ///
                 /// `uavcan.register.Value.1.0`
                 ///
                 /// Always aligned,
                 /// size ranges from 8 to 2072 bits
-                ///
-                #[doc = "Value to be written. Empty if no write is required."]
                 pub value: crate::uavcan::register::value_1_0::Value,
             }
             impl ::canadensis_encoding::DataType for AccessRequest {
@@ -10273,35 +10301,35 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             #[doc = "Registers are strongly-typed named values used to store the configuration parameters of a node.\nThis service is used to write and read a register.\n\n\nREAD/WRITE BEHAVIORS\n\nThe write operation is performed first, unless skipped by sending an empty value in the request.\nThe server may attempt to convert the type of the supplied value to the correct type if there is a type mismatch\n(e.g. uint8 may be converted to uint16); however, servers are not required to perform implicit type conversion,\nand the rules of such conversion are not explicitly specified, so this behavior should not be relied upon.\n\nOn the next step the register will be read regardless of the outcome of the write operation. As such, if the write\noperation could not be performed (e.g. due to a type mismatch or any other issue), the register will retain its old\nvalue. By evaluating the response the caller can determine whether the register was written successfully.\n\nThe write-read sequence is not guaranteed to be atomic, meaning that external influences may cause the register to\nchange its value between the write and the subsequent read operation. The caller is responsible for handling that\ncase properly.\n\nThe timestamp provided in the response corresponds to the time when the register was read. The timestamp may\nbe empty if the server does not support timestamping or its clock is not (yet) synchronized with the network.\n\nIf only read is desired, but not write, the caller shall provide a value of type 'empty'. That will signal the server\nthat the write operation shall be skipped, and it will proceed to read the register immediately.\n\nIf the requested register does not exist, the write operation will have no effect and the returned value will be\nempty. Existing registers should not return 'empty' when read since that would make them indistinguishable from\nnonexistent registers.\n\n\nREGISTER DEFINITION REQUIREMENTS\n\nRegisters shall never change their type or flags as long as the server is running. Meaning that:\n- Mutability and persistence flags cannot change their states.\n- Read operations shall always return values of the same type and same dimensionality.\nThe dimensionality requirement does not apply to inherently variable-length values such as strings and\nunstructured chunks.\n\nRegister name should contain only:\n- Lowercase ASCII alphanumeric characters (a-z, 0-9)\n- Full stop (.)\n- Low line (underscore) (_)\nWith the following limitations/recommendations:\n- The name shall not begin with a decimal digit (0-9).\n- The name shall neither begin nor end with a full stop.\n- A low line shall not be followed by a non-alphanumeric character.\n- The name should contain at least one full stop character.\nOther patterns and ASCII characters are reserved for special function registers (introduced below).\n\n\nENVIRONMENT VARIABLES\n\nThis section applies only to software nodes executed in a high-level operating system that supports environment\nvariables or an equivalent mechanism.\n\nWhen a software node is launched, it is usually necessary to provide some of its configuration information early,\nparticularly that which is related to Cyphal networking, before the node is started. Environment variables offer\na convenient way of addressing this. Software nodes that support the register interface should evaluate the\navailable environment variables during initialization and update their registers (whether they are stored in\na persistent storage or in memory) accoringly. This should be completed before the first register read access.\n\nA register name is mapped to an environment variable name as follows:\n- the name is upper-cased;\n- full stop characters are replaced with double low line characters.\nFor example: 'motor.inductance_dq' is mapped to 'MOTOR__INDUCTANCE_DQ'.\n\nRegister values are represented in environment variables as follows:\n- string:                         utf-8 or platform-specific\n- unstructured:                   as-is\n- bit, integer*, natural*, real*: space-separated decimals\n\nIf an environment variable matches the name of an existing register but its value cannot be converted to the\nregister's type, an error should be raised.\n\nIf an environment variable does not match the name of any register, it may be ignored. However, if the implementation\ncan reliably deduce the type and purpose of the register, it may create one automatically. This provision is to\nsupport applications where the register schema may be altered by configuration.\n\n\nSPECIAL FUNCTION REGISTERS\n\nThe following optional special function register names are defined:\n- suffix '<' is used to define an immutable persistent value that contains the maximum value\nof the respective register.\n- suffix '>' is like above, used to define the minimum value of the respective register.\n- suffix '=' is like above, used to define the default value of the respective register.\n- prefix '*' is reserved for raw memory access (to be defined later).\nExamples:\n- register name \"system.parameter\"\n- maximum value is contained in the register named \"system.parameter<\" (optional)\n- minimum value is contained in the register named \"system.parameter>\" (optional)\n- default value is contained in the register named \"system.parameter=\" (optional)\n\nThe type and dimensionality of the special function registers containing the minimum, maximum, and the default\nvalue of a register shall be the same as those of the register they relate to.\n\nIf a written value exceeds the minimum/maximum specified by the respective special function registers,\nthe server may either adjust the value automatically, or to retain the old value, depending on which behavior\nsuits the objectives of the application better.\nThe values of registers containing non-scalar numerical entities should be compared elementwise.\n\n\nSTANDARD REGISTERS\n\nThe following table specifies the register name patterns that are reserved by the specification for\ncommon functions. These conventions are not mandatory to follow, but implementers are recommended to adhere because\nthey enable enhanced introspection capabilities and simplify device configuration and diagnostics.\n\nREGISTER NAME PATTERN                               TYPE            FLAGS                   RECOMMENDED DEFAULT\n=====================================================================================================================\n\nuavcan.node.id                                      natural16[1]    mutable, persistent     65535 (unset/PnP)\n\nContains the node-ID of the local node. Values above the maximum valid node-ID for the current transport\nindicate that the node-ID is not set; if plug-and-play is supported, it will be used by the node to obtain an\nautomatic node-ID. Invalid values other than 65535 should be avoided for consistency.\n\n---------------------------------------------------------------------------------------------------------------------\n\nuavcan.node.description                             string          mutable, persistent     (empty)\n\nUser/integrator-defined, human-readable description of this specific node.\nThis is intended for use by a system integrator and should not be set by the manufacturer of a component.\nFor example: on a quad-rotor drone this might read \"motor 2\" for one of the ESC nodes.\n\n---------------------------------------------------------------------------------------------------------------------\n\nuavcan.pub.PORT_NAME.id                             natural16[1]    mutable, persistent     65535 (unset, invalid)\nuavcan.sub.PORT_NAME.id                             ditto           ditto                   ditto\nuavcan.cln.PORT_NAME.id                             ditto           ditto                   ditto\nuavcan.srv.PORT_NAME.id                             ditto           ditto                   ditto\n\nPublication/subscription/client/server port-ID, respectively. These registers are configured by the system integrator\nor an autoconfiguration authority when the node is first connected to a network.\n\nThe \"PORT_NAME\" defines the human-friendly name of the port, which is related to the corresponding function\nor a network service supported by the node. The name shall match the following POSIX ERE expression:\n\n[a-zA-Z_][a-zA-Z0-9_]*\n\nThe names are defined by the vendor of the node. The user/integrator is expected to understand their meaning and\nrelation to the functional capabilities of the node by reading the technical documentation provided by the vendor.\n\nA port whose port-ID register is unset (invalid value) remains inactive (unused); the corresponding function may\nbe disabled. For example, a register named \"uavcan.pub.measurement.id\" defines the subject-ID of a measurement\npublished by this node; if the register contains an invalid value (above the maximum valid subject-ID),\nsaid measurement is not published.\n\nThe same name is used in other similar registers defined below. Network introspection and autoconfiguration tools\nwill expect to find a register of this form for every configurable port supported by the node.\n\n---------------------------------------------------------------------------------------------------------------------\n\nuavcan.pub.PORT_NAME.type                           string          immutable, persistent   N/A\nuavcan.sub.PORT_NAME.type                           ditto           ditto                   ditto\nuavcan.cln.PORT_NAME.type                           ditto           ditto                   ditto\nuavcan.srv.PORT_NAME.type                           ditto           ditto                   ditto\n\nPublication/subscription/client/server full data type name and dot-separated version numbers, respectively.\nThese registers are set by the vendor once and typically they are to remain unchanged (hence \"immutable\").\nThe \"PORT_NAME\" defines the human-friendly name of the port as specified above.\nFor example, a register named \"uavcan.pub.measurement.type\" may contain \"uavcan.si.sample.angle.Quaternion.1.0\".\n\n---------------------------------------------------------------------------------------------------------------------\n\nuavcan.diagnostic.*\n\nPrefix reserved for future use.\n\n---------------------------------------------------------------------------------------------------------------------\n\nuavcan.can.bitrate                                  natural32[2]    implementation-defined  implementation-defined\nuavcan.can.iface                                    string          mutable, persistent     implementation-defined\n\nThese registers are only relevant for nodes that support Cyphal/CAN.\n\nuavcan.can.bitrate defines the CAN bus bit rate: the first value is the arbitration bit rate, the second is the\ndata phase bit rate. Nodes that support only Classic CAN should ignore the second value. Nodes that support CAN FD\nshould initialize in the Classic CAN mode (MTU 8 bytes, BRS flag not set) if the values are equal. If CAN bitrate\nis not configurable or is always auto-detected, this register may be omitted or made immutable; otherwise it should\nbe mutable and persistent.\n\nuavcan.can.iface is only relevant for software nodes or nodes that are capable of using different CAN interfaces.\nThe value is a space-separated list of CAN interface names to use. The name format is implementation-defined\n(for example, \"can0\").\n\n---------------------------------------------------------------------------------------------------------------------\n\nuavcan.udp.*\n\nPrefix reserved for future use.\n\n---------------------------------------------------------------------------------------------------------------------#\n\nuavcan.serial.*\n\nPrefix reserved for future use.\n\n---------------------------------------------------------------------------------------------------------------------"]
             pub struct AccessResponse {
+                #[doc = "The moment of time when the register was read (not written).\nZero if the server does not support timestamping."]
+                ///
                 /// `uavcan.time.SynchronizedTimestamp.1.0`
                 ///
                 /// Always aligned,
                 /// size 56 bits
-                ///
-                #[doc = "The moment of time when the register was read (not written).\nZero if the server does not support timestamping."]
                 pub timestamp:
                     crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
+                #[doc = "Mutable means that the register can be written using this service.\nImmutable registers cannot be written, but that doesn't imply that their values are constant (unchanging)."]
+                ///
                 /// `saturated bool`
                 ///
                 /// Always aligned,
                 /// size 1 bits
-                ///
-                #[doc = "Mutable means that the register can be written using this service.\nImmutable registers cannot be written, but that doesn't imply that their values are constant (unchanging)."]
                 pub mutable: bool,
+                #[doc = "Persistence means that the register retains its value permanently across power cycles or any other changes\nin the state of the server, until it is explicitly overwritten (either via Cyphal, any other interface,\nor by the device itself).\n\nThe server is recommended to manage persistence automatically by committing changed register values to a\nnon-volatile storage automatically as necessary. If automatic persistence management is not implemented, it\ncan be controlled manually via the standard service uavcan.node.ExecuteCommand. The same service can be used\nto return the configuration to a factory-default state. Please refer to its definition for more information.\n\nConsider the following examples:\n- Configuration parameters are usually both mutable and persistent.\n- Diagnostic values are usually immutable and non-persisient.\n- Registers that trigger an activity when written are typically mutable but non-persisient.\n- Registers that contain factory-programmed values such as calibration coefficients that can't\nbe changed are typically immutable but persistent."]
+                ///
                 /// `saturated bool`
                 ///
                 /// Not always aligned,
                 /// size 1 bits
-                ///
-                #[doc = "Persistence means that the register retains its value permanently across power cycles or any other changes\nin the state of the server, until it is explicitly overwritten (either via Cyphal, any other interface,\nor by the device itself).\n\nThe server is recommended to manage persistence automatically by committing changed register values to a\nnon-volatile storage automatically as necessary. If automatic persistence management is not implemented, it\ncan be controlled manually via the standard service uavcan.node.ExecuteCommand. The same service can be used\nto return the configuration to a factory-default state. Please refer to its definition for more information.\n\nConsider the following examples:\n- Configuration parameters are usually both mutable and persistent.\n- Diagnostic values are usually immutable and non-persisient.\n- Registers that trigger an activity when written are typically mutable but non-persisient.\n- Registers that contain factory-programmed values such as calibration coefficients that can't\nbe changed are typically immutable but persistent."]
                 pub persistent: bool,
                 // 6 bits of padding
+                #[doc = "The value of the register when it was read (beware of race conditions).\nRegisters never change their type and dimensionality while the node is running.\nEmpty value means that the register does not exist (in this case the flags should be cleared/ignored).\nBy comparing the returned value against the write request the caller can determine whether the register\nwas written successfully, unless write was not requested.\nAn empty value shall never be returned for an existing register."]
+                ///
                 /// `uavcan.register.Value.1.0`
                 ///
                 /// Always aligned,
                 /// size ranges from 8 to 2072 bits
-                ///
-                #[doc = "The value of the register when it was read (beware of race conditions).\nRegisters never change their type and dimensionality while the node is running.\nEmpty value means that the register does not exist (in this case the flags should be cleared/ignored).\nBy comparing the returned value against the write request the caller can determine whether the register\nwas written successfully, unless write was not requested.\nAn empty value shall never be returned for an existing register."]
                 pub value: crate::uavcan::register::value_1_0::Value,
             }
             impl ::canadensis_encoding::DataType for AccessResponse {
@@ -10342,6 +10370,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
         }
         pub mod list_1_0 {
+            #[doc = "The fixed ID of this service"]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(385);
 
@@ -10395,12 +10424,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             #[doc = "This service allows the caller to discover the names of all registers available on the server\nby iterating the index field from zero until an empty name is returned.\n\nThe ordering of the registers shall remain constant while the server is running.\nThe ordering is not guaranteed to remain unchanged when the server node is restarted."]
             pub struct ListResponse {
+                #[doc = "Empty name in response means that the index is out of bounds, i.e., discovery is finished."]
+                ///
                 /// `uavcan.register.Name.1.0`
                 ///
                 /// Always aligned,
                 /// size ranges from 8 to 2048 bits
-                ///
-                #[doc = "Empty name in response means that the index is out of bounds, i.e., discovery is finished."]
                 pub name: crate::uavcan::register::name_1_0::Name,
             }
             impl ::canadensis_encoding::DataType for ListResponse {
@@ -10489,65 +10518,65 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             #[doc = "This union contains all possible value types supported by the register protocol.\nNumeric types can be either scalars or arrays; the former is a special case of the latter."]
             pub enum Value {
-                /// uavcan.primitive.Empty.1.0
-                ///
                 #[doc = "Tag 0     Used to represent an undefined value"]
+                ///
+                /// uavcan.primitive.Empty.1.0
                 Empty(crate::uavcan::primitive::empty_1_0::Empty),
-                /// uavcan.primitive.String.1.0
-                ///
                 #[doc = "Tag 1     UTF-8 encoded text"]
+                ///
+                /// uavcan.primitive.String.1.0
                 String(crate::uavcan::primitive::string_1_0::String),
-                /// uavcan.primitive.Unstructured.1.0
-                ///
                 #[doc = "Tag 2     Raw unstructured binary image"]
+                ///
+                /// uavcan.primitive.Unstructured.1.0
                 Unstructured(crate::uavcan::primitive::unstructured_1_0::Unstructured),
-                /// uavcan.primitive.array.Bit.1.0
-                ///
                 #[doc = "Tag 3     Bit array"]
+                ///
+                /// uavcan.primitive.array.Bit.1.0
                 Bit(crate::uavcan::primitive::array::bit_1_0::Bit),
-                /// uavcan.primitive.array.Integer64.1.0
-                ///
                 #[doc = "Tag 4"]
+                ///
+                /// uavcan.primitive.array.Integer64.1.0
                 Integer64(crate::uavcan::primitive::array::integer64_1_0::Integer64),
-                /// uavcan.primitive.array.Integer32.1.0
-                ///
                 #[doc = "Tag 5"]
+                ///
+                /// uavcan.primitive.array.Integer32.1.0
                 Integer32(crate::uavcan::primitive::array::integer32_1_0::Integer32),
-                /// uavcan.primitive.array.Integer16.1.0
-                ///
                 #[doc = "Tag 6"]
+                ///
+                /// uavcan.primitive.array.Integer16.1.0
                 Integer16(crate::uavcan::primitive::array::integer16_1_0::Integer16),
-                /// uavcan.primitive.array.Integer8.1.0
-                ///
                 #[doc = "Tag 7"]
+                ///
+                /// uavcan.primitive.array.Integer8.1.0
                 Integer8(crate::uavcan::primitive::array::integer8_1_0::Integer8),
-                /// uavcan.primitive.array.Natural64.1.0
-                ///
                 #[doc = "Tag 8"]
+                ///
+                /// uavcan.primitive.array.Natural64.1.0
                 Natural64(crate::uavcan::primitive::array::natural64_1_0::Natural64),
-                /// uavcan.primitive.array.Natural32.1.0
-                ///
                 #[doc = "Tag 9"]
+                ///
+                /// uavcan.primitive.array.Natural32.1.0
                 Natural32(crate::uavcan::primitive::array::natural32_1_0::Natural32),
-                /// uavcan.primitive.array.Natural16.1.0
-                ///
                 #[doc = "Tag 10"]
+                ///
+                /// uavcan.primitive.array.Natural16.1.0
                 Natural16(crate::uavcan::primitive::array::natural16_1_0::Natural16),
-                /// uavcan.primitive.array.Natural8.1.0
-                ///
                 #[doc = "Tag 11"]
+                ///
+                /// uavcan.primitive.array.Natural8.1.0
                 Natural8(crate::uavcan::primitive::array::natural8_1_0::Natural8),
-                /// uavcan.primitive.array.Real64.1.0
-                ///
                 #[doc = "Tag 12    Exactly representable integers: [-2**53,    +2**53]"]
+                ///
+                /// uavcan.primitive.array.Real64.1.0
                 Real64(crate::uavcan::primitive::array::real64_1_0::Real64),
-                /// uavcan.primitive.array.Real32.1.0
-                ///
                 #[doc = "Tag 13    Exactly representable integers: [-16777216, +16777216]"]
-                Real32(crate::uavcan::primitive::array::real32_1_0::Real32),
-                /// uavcan.primitive.array.Real16.1.0
                 ///
+                /// uavcan.primitive.array.Real32.1.0
+                Real32(crate::uavcan::primitive::array::real32_1_0::Real32),
                 #[doc = "Tag 14    Exactly representable integers: [-2048,     +2048]\nEmpty and the tag\n258 bytes per field max and the tag"]
+                ///
+                /// uavcan.primitive.array.Real16.1.0
                 Real16(crate::uavcan::primitive::array::real16_1_0::Real16),
             }
             impl ::canadensis_encoding::DataType for Value {
@@ -13759,6 +13788,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
     }
     pub mod time {
         pub mod get_synchronization_master_info_0_1 {
+            #[doc = "The fixed ID of this service"]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(510);
 
@@ -13808,26 +13838,26 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             #[doc = "Every node that acts as a time synchronization master, or is capable of acting as such,\nshould support this service.\nIts objective is to provide information about which time system is currently used in the network.\n\nOnce a time system is chosen, it cannot be changed as long as at least one node on the network is running.\nIn other words, the time system cannot be changed while the network is operating.\nAn implication of this is that if there are redundant time synchronization masters, they all shall\nuse the same time system always."]
             pub struct GetSynchronizationMasterInfoResponse {
+                #[doc = "[second^2]\nError variance, in second^2, of the time value reported by this master.\nThis value is allowed to change freely while the master is running.\nFor example, if the master's own clock is synchronized with a GNSS, the error variance is expected to increase\nas signal reception deteriorates. If the signal is lost, this value is expected to grow steadily, the rate of\ngrowth would be dependent on the quality of the time keeping hardware available locally (bad hardware yields\nfaster growth). Once the signal is regained, this value would drop back to nominal."]
+                ///
                 /// `saturated float32`
                 ///
                 /// Always aligned,
                 /// size 32 bits
-                ///
-                #[doc = "[second^2]\nError variance, in second^2, of the time value reported by this master.\nThis value is allowed to change freely while the master is running.\nFor example, if the master's own clock is synchronized with a GNSS, the error variance is expected to increase\nas signal reception deteriorates. If the signal is lost, this value is expected to grow steadily, the rate of\ngrowth would be dependent on the quality of the time keeping hardware available locally (bad hardware yields\nfaster growth). Once the signal is regained, this value would drop back to nominal."]
                 pub error_variance: f32,
+                #[doc = "Time system currently in use by the master.\nCannot be changed while the network is operating."]
+                ///
                 /// `uavcan.time.TimeSystem.0.1`
                 ///
                 /// Always aligned,
                 /// size 8 bits
-                ///
-                #[doc = "Time system currently in use by the master.\nCannot be changed while the network is operating."]
                 pub time_system: crate::uavcan::time::time_system_0_1::TimeSystem,
+                #[doc = "Actual information about TAI provided by this master, if supported.\nThe fields in this data type are optional."]
+                ///
                 /// `uavcan.time.TAIInfo.0.1`
                 ///
                 /// Always aligned,
                 /// size 16 bits
-                ///
-                #[doc = "Actual information about TAI provided by this master, if supported.\nThe fields in this data type are optional."]
                 pub tai_info: crate::uavcan::time::tai_info_0_1::TAIInfo,
             }
             impl ::canadensis_encoding::DataType for GetSynchronizationMasterInfoResponse {
@@ -13862,6 +13892,7 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
         }
         pub mod synchronization_1_0 {
+            #[doc = "The fixed subject ID for this message type"]
             pub const SUBJECT: ::canadensis_core::SubjectId =
                 ::canadensis_core::SubjectId::from_truncating(7168);
 
@@ -13871,12 +13902,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             #[doc = "Network-wide time synchronization message.\nAny node that publishes timestamped data should use this time reference.\n\nThe time synchronization algorithm is based on the work\n\"Implementing a Distributed High-Resolution Real-Time Clock using the CAN-Bus\" by M. Gergeleit and H. Streich.\nThe general idea of the algorithm is to have one or more nodes that periodically publish a message of this type\ncontaining the exact timestamp of the PREVIOUS transmission of this message.\nA node that publishes this message periodically is referred to as a \"time synchronization master\",\nwhereas nodes that synchronize their clocks with the master are referred to as \"time synchronization slaves\".\n\nOnce a time base is chosen, it cannot be changed as long as at least one node on the network is running.\nIn other words, the time base cannot be changed while the network is operating.\nAn implication of this is that if there are redundant time synchronization masters, they all shall\nuse the same time base.\n\nThe resolution is dependent on the transport and its physical layer, but generally it can be assumed\nto be close to one bit time but not better than one microsecond (e.g., for a 500 kbps CAN bus,\nthe resolution is two microseconds). The maximum accuracy is achievable only if the transport layer\nsupports precise timestamping in hardware; otherwise, the accuracy may be degraded.\n\nThis algorithm allows the slaves to precisely estimate the difference (i.e., phase error) between their\nlocal time and the master clock they are synchronized with. The algorithm for clock rate adjustment\nis entirely implementation-defined (for example, a simple phase-locked loop or a PID rate controller can be used).\n\nThe network can accommodate more than one time synchronization master for purposes of increased reliability:\nif one master fails, the others will continue to provide the network with accurate and consistent time information.\nThe risk of undesirable transients while the masters are swapped is mitigated by the requirement that all masters\nuse the same time base at all times, as described above.\n\nThe master with the lowest node-ID is called the \"dominant master\". The current dominant master ceases to be one\nif its last synchronization message was published more than 3X seconds ago, where X is the time interval\nbetween the last and the previous messages published by it. In this case, the master with the next-higher node-ID\nwill take over as the new dominant master. The current dominant master will be displaced immediately as soon as\nthe first message from a new master with a lower node-ID is seen on the bus.\n\nIn the presence of multiple masters, they all publish their time synchronization messages concurrently at all times.\nThe slaves shall listen to the master with the lowest node-ID and ignore the messages published by masters with\nhigher node-ID values.\n\nCurrently, there is a work underway to develop and validate a highly robust fault-operational time synchronization\nalgorithm where the slaves select the median time base among all available masters rather than using only the\none with the lowest node-ID value. Follow the work at https://forum.opencyphal.org. When complete, this algorithm\nwill be added in a backward-compatible way as an option for high-reliability systems.\n\nFor networks with redundant transports, the timestamp value published on different interfaces is likely to be\ndifferent, since different transports are generally not expected to be synchronized. Synchronization slaves\nare allowed to use any of the available redundant interfaces for synchronization at their discretion.\n\nThe following pseudocode shows the logic of a time synchronization master. This example assumes that the master\ndoes not need to synchronize its own clock with other masters on the bus, which is the case if the current master\nis the only master, or if all masters synchronize their clocks with a robust external source, e.g., a GNSS system.\nIf several masters need to synchronize their clock through the bus, their logic will be extended with the\nslave-side behavior explained later.\n\n// State variables\ntransfer_id := 0;\nprevious_tx_timestamp_per_iface[NUM_IFACES] := {0};\n\n// This function publishes a message with a specified transfer-ID using only one transport interface.\nfunction publishMessage(transfer_id, iface_index, msg);\n\n// This callback is invoked when the transport layer completes the transmission of a time sync message.\n// Observe that the time sync message is always a single-frame message by virtue of its small size.\n// The tx_timestamp argument contains the exact timestamp when the transport frame was delivered to the bus.\nfunction messageTxTimestampCallback(iface_index, tx_timestamp)\n{\nprevious_tx_timestamp_per_iface[iface_index] := tx_timestamp;\n}\n\n// Publishes messages of type uavcan.time.Synchronization to each available transport interface.\n// It is assumed that this function is invoked with a fixed frequency not lower than 1 hertz.\nfunction publishTimeSync()\n{\nfor (i := 0; i < NUM_IFACES; i++)\n{\nmessage := uavcan.time.Synchronization();\nmessage.previous_transmission_timestamp_usec := previous_tx_timestamp_per_iface[i];\nprevious_tx_timestamp_per_iface[i] := 0;\npublishMessage(transfer_id, i, message);\n}\ntransfer_id++; // Overflow shall be handled correctly\n}\n\n(end of the master-side logic pseudocode)\nThe following pseudocode describes the logic of a time synchronization slave.\n\n// State variables:\nprevious_rx_real_timestamp := 0;            // This clock is being synchronized\nprevious_rx_monotonic_timestamp := 0;       // Monotonic time -- doesn't leap or change rate\nprevious_transfer_id := 0;\nstate := STATE_UPDATE;                      // Variants: STATE_UPDATE, STATE_ADJUST\nmaster_node_id := -1;                       // Invalid value\niface_index := -1;                          // Invalid value\n\n// This function adjusts the local clock by the specified amount\nfunction adjustLocalTime(phase_error);\n\nfunction adjust(message)\n{\n// Clock adjustment will be performed every second message\nlocal_time_phase_error := previous_rx_real_timestamp - msg.previous_transmission_timestamp_microsecond;\nadjustLocalTime(local_time_phase_error);\nstate := STATE_UPDATE;\n}\n\nfunction update(message)\n{\n// A message is assumed to have two timestamps:\n//   Real      - sampled from the clock that is being synchronized\n//   Monotonic - clock that never leaps and never changes rate\nprevious_rx_real_timestamp := message.rx_real_timestamp;\nprevious_rx_monotonic_timestamp := message.rx_monotonic_timestamp;\nmaster_node_id := message.source_node_id;\niface_index := message.iface_index;\nprevious_transfer_id := message.transfer_id;\nstate := STATE_ADJUST;\n}\n\n// Accepts the message of type uavcan.time.Synchronization\nfunction handleReceivedTimeSyncMessage(message)\n{\ntime_since_previous_msg := message.monotonic_timestamp - previous_rx_monotonic_timestamp;\n\nneeds_init := (master_node_id < 0) or (iface_index < 0);\nswitch_master := message.source_node_id < master_node_id;\n\n// The value publisher_timeout is computed as described in the specification (3x interval)\npublisher_timed_out := time_since_previous_msg > publisher_timeout;\n\nif (needs_init or switch_master or publisher_timed_out)\n{\nupdate(message);\n}\nelse if ((message.iface_index == iface_index) and (message.source_node_id == master_node_id))\n{\n// Revert the state to STATE_UPDATE if needed\nif (state == STATE_ADJUST)\n{\nmsg_invalid := message.previous_transmission_timestamp_microsecond == 0;\n// Overflow shall be handled correctly\nwrong_tid := message.transfer_id != (previous_transfer_id + 1);\nwrong_timing := time_since_previous_msg > MAX_PUBLICATION_PERIOD;\nif (msg_invalid or wrong_tid or wrong_timing)\n{\nstate := STATE_UPDATE;\n}\n}\n// Handle the current state\nif (state == STATE_ADJUST)\n{\nadjust(message);\n}\nelse\n{\nupdate(message);\n}\n}   // else ignore\n}\n\n(end of the slave-side logic pseudocode)"]
             pub struct Synchronization {
+                #[doc = "The time when the PREVIOUS message was transmitted from the current publisher, in microseconds.\nIf this message is published for the first time, or if the previous transmission was more than\none second ago, this field shall be zero."]
+                ///
                 /// `truncated uint56`
                 ///
                 /// Always aligned,
                 /// size 56 bits
-                ///
-                #[doc = "The time when the PREVIOUS message was transmitted from the current publisher, in microseconds.\nIf this message is published for the first time, or if the previous transmission was more than\none second ago, this field shall be zero."]
                 pub previous_transmission_timestamp_microsecond: u64,
             }
             impl ::canadensis_encoding::DataType for Synchronization {
@@ -13918,12 +13949,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             #[doc = "Nested data type used for representing a network-wide synchronized timestamp with microsecond resolution.\nThis data type is highly recommended for use both in standard and vendor-specific messages alike."]
             pub struct SynchronizedTimestamp {
+                #[doc = "The number of microseconds that have passed since some arbitrary moment in the past.\nThe moment of origin (i.e., the time base) is defined per-application. The current time base in use\ncan be requested from the time synchronization master, see the corresponding service definition.\n\nThis value is to never overflow. The value is 56-bit wide because:\n\n- 2^56 microseconds is about 2285 years, which is plenty. A 64-bit microsecond counter would be\nunnecessarily wide and its overflow interval of 585 thousand years induces a mild existential crisis.\n\n- Classic-CAN (not FD) transports carry up to 7 bytes of payload per frame.\nTime sync messages shall use single-frame transfers, which means that the value can't be wider than 56 bits."]
+                ///
                 /// `truncated uint56`
                 ///
                 /// Always aligned,
                 /// size 56 bits
-                ///
-                #[doc = "The number of microseconds that have passed since some arbitrary moment in the past.\nThe moment of origin (i.e., the time base) is defined per-application. The current time base in use\ncan be requested from the time synchronization master, see the corresponding service definition.\n\nThis value is to never overflow. The value is 56-bit wide because:\n\n- 2^56 microseconds is about 2285 years, which is plenty. A 64-bit microsecond counter would be\nunnecessarily wide and its overflow interval of 585 thousand years induces a mild existential crisis.\n\n- Classic-CAN (not FD) transports carry up to 7 bytes of payload per frame.\nTime sync messages shall use single-frame transfers, which means that the value can't be wider than 56 bits."]
                 pub microsecond: u64,
             }
             impl ::canadensis_encoding::DataType for SynchronizedTimestamp {
@@ -13963,12 +13994,12 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             #[doc = "This data types defines constants and runtime values pertaining to the International Atomic Time, also known as TAI.\nSee https://en.wikipedia.org/wiki/International_Atomic_Time.\n\nThe relationship between the three major time systems -- TAI, GPS, and UTC -- is as follows:\n\nTAI = GPS + 19 seconds\nTAI = UTC + LS + 10 seconds\n\nWhere \"LS\" is the current number of leap seconds: https://en.wikipedia.org/wiki/Leap_second.\n\nCyphal applications should only rely on TAI whenever a global time system is needed.\nGPS time is strongly discouraged for reasons of consistency across different positioning systems and applications."]
             pub struct TAIInfo {
+                #[doc = "The current difference between TAI and UTC, if known. If unknown, set to zero.\n\nThis value may change states between known and unknown while the master is running,\ndepending on its ability to obtain robust values from external sources.\n\nThis value may change twice a year, possibly while the system is running; https://en.wikipedia.org/wiki/Leap_second.\nSince the rotation of Earth is decelerating, this value may only be positive. Do not use outside Earth.\n\nFor reference, here is the full list of recorded TAI-UTC difference values, valid at the time of writing:\n\nDate     | TAI-UTC difference [second]\n----------|-----------------------------\nJan 1972 | 10\nJul 1972 | 11\nJan 1973 | 12\nJan 1974 | 13\nJan 1975 | 14\nJan 1976 | 15\nJan 1977 | 16\nJan 1978 | 17\nJan 1979 | 18\nJan 1980 | 19\nJul 1981 | 20\nJul 1982 | 21\nJul 1983 | 22\nJul 1985 | 23\nJan 1988 | 24\nJan 1990 | 25\nJan 1991 | 26\nJul 1992 | 27\nJul 1993 | 28\nJul 1994 | 29\nJan 1996 | 30\nJul 1997 | 31\nJan 1999 | 32\nJan 2006 | 33\nJan 2009 | 34\nJul 2012 | 35\nJul 2015 | 36\nJan 2017 | 37\n\nAs of 2020, the future of the leap second and the relation between UTC and TAI remains uncertain."]
+                ///
                 /// `saturated uint10`
                 ///
                 /// Always aligned,
                 /// size 10 bits
-                ///
-                #[doc = "The current difference between TAI and UTC, if known. If unknown, set to zero.\n\nThis value may change states between known and unknown while the master is running,\ndepending on its ability to obtain robust values from external sources.\n\nThis value may change twice a year, possibly while the system is running; https://en.wikipedia.org/wiki/Leap_second.\nSince the rotation of Earth is decelerating, this value may only be positive. Do not use outside Earth.\n\nFor reference, here is the full list of recorded TAI-UTC difference values, valid at the time of writing:\n\nDate     | TAI-UTC difference [second]\n----------|-----------------------------\nJan 1972 | 10\nJul 1972 | 11\nJan 1973 | 12\nJan 1974 | 13\nJan 1975 | 14\nJan 1976 | 15\nJan 1977 | 16\nJan 1978 | 17\nJan 1979 | 18\nJan 1980 | 19\nJul 1981 | 20\nJul 1982 | 21\nJul 1983 | 22\nJul 1985 | 23\nJan 1988 | 24\nJan 1990 | 25\nJan 1991 | 26\nJul 1992 | 27\nJul 1993 | 28\nJul 1994 | 29\nJan 1996 | 30\nJul 1997 | 31\nJan 1999 | 32\nJan 2006 | 33\nJan 2009 | 34\nJul 2012 | 35\nJul 2015 | 36\nJan 2017 | 37\n\nAs of 2020, the future of the leap second and the relation between UTC and TAI remains uncertain."]
                 pub difference_tai_minus_utc: u16,
             }
             impl ::canadensis_encoding::DataType for TAIInfo {
