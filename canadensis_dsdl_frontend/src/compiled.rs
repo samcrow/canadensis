@@ -12,8 +12,6 @@ use canadensis_dsdl_parser::Span;
 pub struct CompiledDsdl {
     pub fixed_port_id: Option<u32>,
     pub kind: DsdlKind,
-    /// Top-level documentation comments from the beginning of the DSDL file
-    pub comments: String,
 }
 
 /// The two types of compiled DSDL files
@@ -36,28 +34,42 @@ pub struct Message {
     pub(crate) bit_length: BitLengthSet,
     /// The constants that this message type makes available
     pub(crate) constants: Constants,
+    /// Top-level documentation comments from the beginning of the DSDL file (if the file represents
+    /// a message type or if this is the request of a service type) or between the request-response
+    /// marker and the first field or constant if this is the response of a service type
+    pub(crate) comments: String,
 }
 
 impl Message {
     /// Returns true if this type is deprecated
+    #[inline]
     pub fn deprecated(&self) -> bool {
         self.deprecated
     }
     /// Returns the extent of this type
+    #[inline]
     pub fn extent(&self) -> &Extent {
         &self.extent
     }
     /// Returns the kind of this message (struct or union)
+    #[inline]
     pub fn kind(&self) -> &MessageKind {
         &self.kind
     }
     /// Returns the set of possible lengths of this message
+    #[inline]
     pub fn bit_length(&self) -> &BitLengthSet {
         &self.bit_length
     }
     /// Returns the constants that this message type makes available
+    #[inline]
     pub fn constants(&self) -> &Constants {
         &self.constants
+    }
+    /// Returns the documentation comments for this message
+    #[inline]
+    pub fn comments(&self) -> &str {
+        &self.comments
     }
 }
 

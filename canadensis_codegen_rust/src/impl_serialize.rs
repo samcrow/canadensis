@@ -50,18 +50,23 @@ impl Display for ImplementSerialize<'_, '_> {
             GeneratedTypeKind::Enum(genum) => {
                 writeln!(f, "match self {{")?;
 
-                for (i, variant) in genum.variants.iter().enumerate() {
-                    // Match arm (inner value is called `inner`)
-                    writeln!(
-                        f,
-                        "{}::{}(inner) => {{",
-                        self.ty.name.type_name, variant.name
-                    )?;
+                for variant in genum.variants.iter() {
+                    if variant.ty.is_some() {
+                        // Match arm (inner value is called `inner`)
+                        writeln!(
+                            f,
+                            "{}::{}(inner) => {{",
+                            self.ty.name.type_name, variant.name
+                        )?;
+                    } else {
+                        // Match arm with no inner value
+                        writeln!(f, "{}::{} => {{", self.ty.name.type_name, variant.name)?;
+                    }
                     // Write discriminant
                     writeln!(
                         f,
                         "cursor.write_aligned_u{}({});",
-                        genum.discriminant_bits, i
+                        genum.discriminant_bits, variant.discriminant
                     )?;
                     // Write the content of this variant
                     Display::fmt(&SerializeVariant(variant), f)?;
@@ -116,13 +121,18 @@ struct SerializeVariant<'v, 'c>(&'v GeneratedVariant<'c>);
 
 impl Display for SerializeVariant<'_, '_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        Display::fmt(
-            &WriteVariant {
-                field_expr: "inner",
-                ty: &self.0.cyphal_ty,
-            },
-            f,
-        )
+        if let Some(ty) = &self.0.ty {
+            Display::fmt(
+                &WriteVariant {
+                    field_expr: "inner",
+                    ty: &ty.cyphal_ty,
+                },
+                f,
+            )
+        } else {
+            // This has no effect if the variant has no data
+            Ok(())
+        }
     }
 }
 

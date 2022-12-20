@@ -1,0 +1,7 @@
+#[canadensis(enum)]
+uint1 value
+
+uint1 BUTTERCREAM = 0
+uint1 PASTRY_CREAM = 1
+
+@sealed

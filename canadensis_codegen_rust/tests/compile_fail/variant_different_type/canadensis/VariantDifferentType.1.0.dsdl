@@ -1,0 +1,7 @@
+
+#[canadensis(enum)]
+uint4 value
+
+uint8 VARIANT_1 = 1
+
+@sealed

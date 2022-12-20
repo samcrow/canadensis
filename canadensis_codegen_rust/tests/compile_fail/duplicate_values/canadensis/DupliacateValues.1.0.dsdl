@@ -1,0 +1,10 @@
+
+#[canadensis(enum)]
+
+uint3 value
+
+uint3 VARIANT_0 = 0
+uint3 VARIANT_1 = 1
+uint3 VARIANT_1_AGAIN = 1
+
+@sealed

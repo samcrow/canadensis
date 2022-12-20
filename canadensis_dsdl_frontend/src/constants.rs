@@ -1,22 +1,49 @@
 //! Constants declared in DSDL files
 
-use std::collections::btree_map::{self, BTreeMap};
-
 pub use crate::types::constant::{Constant, ConstantValue};
 
 /// A mapping from constant names to values
-// This wrapper obscures the type of map that is being used.
-#[derive(Debug, Clone)]
-pub struct Constants(BTreeMap<String, Constant>);
+///
+/// This preserves the order of constants in the source DSDL file.
+// This wrapper obscures the inner type.
+#[derive(Debug, Clone, Default)]
+pub struct Constants(Vec<(String, Constant)>);
 
 impl Constants {
-    pub(crate) fn from_map(constants: BTreeMap<String, Constant>) -> Self {
-        Constants(constants)
+    /// Returns true if a constant with the provided name is already stored
+    pub(crate) fn contains_key(&self, name: &str) -> bool {
+        self.0
+            .iter()
+            .find(|(entry_name, _)| entry_name == name)
+            .is_some()
+    }
+
+    /// Inserts a constant
+    ///
+    /// If a constant with the provided name already exists, the new constant replaces it.
+    pub(crate) fn insert(&mut self, name: String, constant: Constant) {
+        if let Some(entry) = self
+            .0
+            .iter_mut()
+            .find(|(entry_name, _)| entry_name == &name)
+        {
+            entry.1 = constant;
+        } else {
+            self.0.push((name, constant));
+        }
     }
 
     /// Returns a reference to the constant with the provided name, if one exists
     pub fn get(&self, name: &str) -> Option<&Constant> {
-        self.0.get(name)
+        self.0
+            .iter()
+            .find(|(entry_name, _)| entry_name == name)
+            .map(|(_, constant)| constant)
+    }
+
+    /// Returns a mutable reference to the constant added most recently
+    pub(crate) fn last_mut(&mut self) -> Option<&mut Constant> {
+        self.0.last_mut().map(|(_, constant)| constant)
     }
 
     /// Returns an iterator over the constant names and values
@@ -35,18 +62,18 @@ impl<'c> IntoIterator for &'c Constants {
 }
 
 /// An iterator over constant names and values
-pub struct Iter<'c>(btree_map::Iter<'c, String, Constant>);
+pub struct Iter<'c>(std::slice::Iter<'c, (String, Constant)>);
 
 impl<'c> Iterator for Iter<'c> {
     type Item = (&'c String, &'c Constant);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next()
+        self.0.next().map(map_refs)
     }
 }
 
 /// An iterator over constant names and values
-pub struct IntoIter(btree_map::IntoIter<String, Constant>);
+pub struct IntoIter(std::vec::IntoIter<(String, Constant)>);
 
 impl Iterator for IntoIter {
     type Item = (String, Constant);
@@ -63,4 +90,9 @@ impl IntoIterator for Constants {
     fn into_iter(self) -> Self::IntoIter {
         IntoIter(self.0.into_iter())
     }
+}
+
+/// Converts a reference to a tuple into a tuple of references
+fn map_refs((name, constant): &(String, Constant)) -> (&String, &Constant) {
+    (name, constant)
 }

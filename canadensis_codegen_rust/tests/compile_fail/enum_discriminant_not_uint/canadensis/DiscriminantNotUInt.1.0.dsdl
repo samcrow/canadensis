@@ -1,0 +1,7 @@
+#[canadensis(enum)]
+
+int3 value
+
+int3 VALUE_1 = 1
+
+@sealed

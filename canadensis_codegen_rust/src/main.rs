@@ -50,7 +50,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             }
 
             // Generate code
-            let generated = canadensis_codegen_rust::generate_code(&package, &external_packages);
+            let generated = canadensis_codegen_rust::generate_code(&package, &external_packages)?;
 
             let mut output_file = BufWriter::new(File::create(&output_path)?);
             writeln!(output_file, "{}", generated)?;

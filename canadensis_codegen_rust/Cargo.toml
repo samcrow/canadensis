@@ -12,6 +12,9 @@ repository = "https://github.com/samcrow/canadensis"
 [dependencies]
 heck = "0.4.0"
 clap = "2.33"
+regex = "1.5.4"
+num-bigint = "0.4"
+thiserror = "1.0.29"
 
 [dependencies.canadensis_dsdl_frontend]
 version = "0.3.2"

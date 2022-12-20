@@ -1,0 +1,18 @@
+# Request can't be an enum
+
+@union
+uint8 applause
+uint1 disregard
+@sealed
+---
+# Response is an enum
+#[canadensis(enum)]
+
+uint2 topping
+
+uint2 WHIPPED_CREAM = 0
+uint2 DIPLOMAT_CREAM = 1
+uint2 PASTRY_CREAM = 2
+uint2 CREAM_CHEESE_FROSTING = 3
+
+@sealed

@@ -90,18 +90,22 @@ fn deserialize_enum(f: &mut Formatter<'_>, name: &RustTypeName, genum: &Generate
         }
     )?;
 
-    for (i, variant) in genum.variants.iter().enumerate() {
-        writeln!(f, "{} => {{", i)?;
+    for variant in genum.variants.iter() {
+        writeln!(f, "{} => {{", variant.discriminant)?;
 
-        writeln!(
-            f,
-            "Ok({}::{}({{ {} }}))",
-            name.type_name,
-            variant.name,
-            ReadUnalignedField {
-                ty: &variant.cyphal_ty
-            }
-        )?;
+        if let Some(ty) = &variant.ty {
+            // Variant with data
+            writeln!(
+                f,
+                "Ok({}::{}({{ {} }}))",
+                name.type_name,
+                variant.name,
+                ReadUnalignedField { ty: &ty.cyphal_ty }
+            )?;
+        } else {
+            // Variant with no data
+            writeln!(f, "Ok({}::{})", name.type_name, variant.name)?;
+        }
 
         // End match arm
         writeln!(f, "}}")?;
