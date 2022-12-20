@@ -1,20 +1,17 @@
 extern crate canadensis_bit_length_set;
 extern crate canadensis_dsdl_frontend;
 extern crate heck;
+extern crate num_bigint;
+extern crate regex;
+extern crate thiserror;
 
-mod impl_constants;
-mod impl_data_type;
-mod impl_deserialize;
-mod impl_serialize;
-mod module_tree;
-mod size_bits;
-
-use canadensis_bit_length_set::BitLengthSet;
-use heck::{ToSnakeCase, ToUpperCamelCase};
 use std::collections::BTreeMap;
+use std::convert::TryInto;
 use std::iter;
 
-use crate::module_tree::ModuleTree;
+use heck::{ToSnakeCase, ToUpperCamelCase};
+
+use canadensis_bit_length_set::BitLengthSet;
 use canadensis_dsdl_frontend::compiled::package::CompiledPackage;
 use canadensis_dsdl_frontend::compiled::{
     CompiledDsdl, DsdlKind, Extent, FieldKind, Message, MessageKind, Struct, Union,
@@ -22,6 +19,20 @@ use canadensis_dsdl_frontend::compiled::{
 use canadensis_dsdl_frontend::constants::Constants;
 use canadensis_dsdl_frontend::types::{PrimitiveType, ResolvedScalarType, ResolvedType};
 use canadensis_dsdl_frontend::TypeKey;
+
+use crate::error::EnumError;
+pub use crate::error::{Error, Result};
+use crate::module_tree::ModuleTree;
+use crate::struct_as_enum::{generate_enum_from_struct, has_enum_directive};
+
+mod error;
+mod impl_constants;
+mod impl_data_type;
+mod impl_deserialize;
+mod impl_serialize;
+mod module_tree;
+mod size_bits;
+mod struct_as_enum;
 
 /// Returns a Cargo.toml fragment with the packages that the generated code depends on
 pub fn generated_code_dependencies() -> String {
@@ -46,17 +57,22 @@ memoffset = "0.6.4"
 pub fn generate_code<'c>(
     package: &'c CompiledPackage,
     external_packages: &BTreeMap<Vec<String>, Vec<String>>,
-) -> GeneratedModule<'c> {
+) -> Result<GeneratedModule<'c>> {
     let mut generated_types = Vec::new();
 
     for (key, dsdl) in package {
         if external_module(key.name().path(), external_packages).is_none() {
             // Generate a non-external type
-            generate_from_dsdl(key, dsdl, external_packages, &mut generated_types);
+            generate_from_dsdl(key, dsdl, external_packages, &mut generated_types).map_err(
+                |e| Error::Dsdl {
+                    key: key.to_owned(),
+                    inner: Box::new(e),
+                },
+            )?;
         }
     }
     let tree: ModuleTree = generated_types.into_iter().collect();
-    GeneratedModule { tree }
+    Ok(GeneratedModule { tree })
 }
 
 /// If the provided key matches an external package, this function returns the Rust module path
@@ -87,7 +103,7 @@ fn generate_from_dsdl<'c>(
     dsdl: &'c CompiledDsdl,
     external_packages: &BTreeMap<Vec<String>, Vec<String>>,
     items: &mut Vec<GeneratedItem<'c>>,
-) {
+) -> std::result::Result<(), EnumError> {
     match &dsdl.kind {
         DsdlKind::Message(message) => {
             let rust_type = RustTypeName::for_message_type(key, external_packages);
@@ -118,9 +134,9 @@ fn generate_from_dsdl<'c>(
                 message.extent().clone(),
                 MessageRole::Message,
                 message.deprecated(),
-                &dsdl.comments,
+                message.comments(),
                 external_packages,
-            )));
+            )?));
         }
         DsdlKind::Service { request, response } => {
             let rust_type = ServiceTypeNames::for_service_type(key, external_packages);
@@ -151,9 +167,9 @@ fn generate_from_dsdl<'c>(
                 request.extent().clone(),
                 MessageRole::Request,
                 request.deprecated(),
-                &dsdl.comments,
+                request.comments(),
                 external_packages,
-            )));
+            )?));
             items.push(GeneratedItem::Type(generate_rust_type(
                 key,
                 response,
@@ -161,11 +177,12 @@ fn generate_from_dsdl<'c>(
                 response.extent().clone(),
                 MessageRole::Response,
                 response.deprecated(),
-                &dsdl.comments,
+                response.comments(),
                 external_packages,
-            )));
+            )?));
         }
     }
+    Ok(())
 }
 
 /// A module of generated Rust code
@@ -182,33 +199,55 @@ fn generate_rust_type<'c>(
     deprecated: bool,
     comments: &'c str,
     external_packages: &BTreeMap<Vec<String>, Vec<String>>,
-) -> GeneratedType<'c> {
+) -> std::result::Result<GeneratedType<'c>, EnumError> {
     let length = message.bit_length();
     match message.kind() {
-        MessageKind::Struct(cyphal_struct) => GeneratedType::new_struct(
-            key,
-            rust_type.clone(),
-            length,
-            extent,
-            role,
-            cyphal_struct,
-            message.constants(),
-            deprecated,
-            comments,
-            external_packages,
-        ),
-        MessageKind::Union(cyphal_union) => GeneratedType::new_enum(
-            key,
-            rust_type.clone(),
-            length,
-            extent,
-            role,
-            cyphal_union,
-            message.constants(),
-            deprecated,
-            comments,
-            external_packages,
-        ),
+        MessageKind::Struct(cyphal_struct) => {
+            if has_enum_directive(comments) {
+                generate_enum_from_struct(
+                    key,
+                    rust_type,
+                    extent,
+                    role,
+                    message,
+                    cyphal_struct,
+                    message.constants(),
+                    deprecated,
+                    comments,
+                    external_packages,
+                )
+            } else {
+                Ok(GeneratedType::new_struct(
+                    key,
+                    rust_type.clone(),
+                    length,
+                    extent,
+                    role,
+                    cyphal_struct,
+                    message.constants(),
+                    deprecated,
+                    comments,
+                    external_packages,
+                ))
+            }
+        }
+        MessageKind::Union(cyphal_union) => {
+            if has_enum_directive(comments) {
+                return Err(EnumError::NotStruct);
+            }
+            Ok(GeneratedType::new_enum(
+                key,
+                rust_type.clone(),
+                length,
+                extent,
+                role,
+                cyphal_union,
+                message.constants(),
+                deprecated,
+                comments,
+                external_packages,
+            ))
+        },
     }
 }
 
@@ -311,9 +350,11 @@ impl<'c> GeneratedType<'c> {
         let variants = cyphal_union
             .variants
             .iter()
-            .map(|variant| {
+            .enumerate()
+            .map(|(i, variant)| {
                 GeneratedVariant::new(
-                    variant.ty().clone(),
+                    i.try_into().expect("Too many invariants for u32"),
+                    Some(variant.ty().clone()),
                     variant.name().to_owned(),
                     external_packages,
                     variant.comments(),
@@ -491,24 +532,31 @@ struct GeneratedEnum<'c> {
     variants: Vec<GeneratedVariant<'c>>,
 }
 
+/// An enum variant, with optional data
 struct GeneratedVariant<'c> {
+    /// The value of the discriminant (also called union tag) for this variant
+    discriminant: u32,
     name: String,
-    ty: String,
-    cyphal_ty: ResolvedType,
+    /// The type of the data associated with this variant, if any
+    ty: Option<ReferencedType>,
     comments: &'c str,
 }
 
 impl<'c> GeneratedVariant<'c> {
     pub fn new(
-        ty: ResolvedType,
+        discriminant: u32,
+        ty: Option<ResolvedType>,
         name: String,
         external_packages: &BTreeMap<Vec<String>, Vec<String>>,
         comments: &'c str,
     ) -> Self {
         GeneratedVariant {
+            discriminant,
             name: make_rust_identifier(name).to_upper_camel_case(),
-            ty: to_rust_type(&ty, external_packages),
-            cyphal_ty: ty,
+            ty: ty.map(|ty| ReferencedType {
+                rust_name: to_rust_type(&ty, external_packages),
+                cyphal_ty: ty,
+            }),
             comments,
         }
     }
@@ -522,6 +570,12 @@ enum MessageRole {
     Request,
     /// A service response
     Response,
+}
+
+/// The type of a field or variant
+struct ReferencedType {
+    rust_name: String,
+    cyphal_ty: ResolvedType,
 }
 
 fn to_rust_type(
@@ -681,7 +735,9 @@ fn make_rust_identifier(mut identifier: String) -> String {
 }
 
 mod fmt_impl {
-    use super::{GeneratedField, GeneratedType, RustTypeName};
+    use std::convert::TryFrom;
+    use std::fmt::{Display, Formatter, Result, Write};
+
     use crate::impl_constants::ImplementConstants;
     use crate::impl_data_type::ImplementDataType;
     use crate::impl_deserialize::ImplementDeserialize;
@@ -689,8 +745,8 @@ mod fmt_impl {
     use crate::{
         write_doc_comments, GeneratedItem, GeneratedModule, GeneratedTypeKind, GeneratedVariant,
     };
-    use std::convert::TryFrom;
-    use std::fmt::{Display, Formatter, Result};
+
+    use super::{GeneratedField, GeneratedType, RustTypeName};
 
     impl Display for RustTypeName {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
@@ -851,10 +907,20 @@ mod fmt_impl {
     impl Display for GeneratedVariant<'_> {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
             write_doc_comments(f, self.comments)?;
-            writeln!(f, "///")?;
-            writeln!(f, "/// {}", self.cyphal_ty)?;
+            if let Some(ty) = &self.ty {
+                writeln!(f, "///")?;
+                writeln!(f, "/// {}", ty.cyphal_ty)?;
+            }
 
-            writeln!(f, "{}({}),", self.name, self.ty)
+            // Variant name
+            writeln!(f, "{}", self.name)?;
+            // Data type
+            if let Some(ty) = &self.ty {
+                writeln!(f, "({})", ty.rust_name)?;
+            }
+            // Trailing comma
+            f.write_char(',')?;
+            Ok(())
         }
     }
 
@@ -922,8 +988,9 @@ fn write_doc_comments(f: &mut std::fmt::Formatter<'_>, comments: &str) -> std::f
 
 #[cfg(test)]
 mod test {
-    use super::external_module;
     use std::collections::BTreeMap;
+
+    use super::external_module;
 
     fn string_vec(strings: &[&str]) -> Vec<String> {
         strings.iter().map(|s| (*s).to_owned()).collect()

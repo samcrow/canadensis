@@ -1,0 +1,8 @@
+# This is a union, but only structs can produce generated enums
+#[canadensis(enum)]
+@union
+
+uint8 a
+uint16 b
+
+@sealed

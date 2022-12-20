@@ -1,0 +1,6 @@
+
+#[canadensis(enum)]
+
+uint2 value
+
+@sealed

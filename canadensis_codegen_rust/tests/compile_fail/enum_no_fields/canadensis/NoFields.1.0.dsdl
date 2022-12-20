@@ -1,0 +1,8 @@
+
+# No field -> no enum discriminant
+#[canadensis(enum)]
+
+uint3 VALUE0 = 0
+uint3 VALUE1 = 1
+
+@sealed

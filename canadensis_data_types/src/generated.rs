@@ -2467,9 +2467,9 @@ pub acceleration_error_variance: ::half::f16,
                     }
                     impl ::canadensis_encoding::Message for HighColor {}
                     impl HighColor {
-                        pub const MAX_BLUE: u8 = 31;
-                        pub const MAX_GREEN: u8 = 63;
                         pub const MAX_RED: u8 = 31;
+                        pub const MAX_GREEN: u8 = 63;
+                        pub const MAX_BLUE: u8 = 31;
                     }
                     impl ::canadensis_encoding::Serialize for HighColor {
                         fn size_bits(&self) -> usize {
@@ -3666,6 +3666,8 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                     }
                     impl ::canadensis_encoding::Message for Error {}
                     impl Error {
+                        #[cfg_attr(not(doctest), doc = " Normal operation.")]
+                        pub const NONE: u8 = 0;
                         #[cfg_attr(
                             not(doctest),
                             doc = " The battery should not be used anymore. Detection criteria are implementation-defined."
@@ -3673,32 +3675,19 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                         pub const BAD_BATTERY: u8 = 10;
                         #[cfg_attr(
                             not(doctest),
+                            doc = " The battery requires offline maintenance."
+                        )]
+                        pub const NEEDS_SERVICE: u8 = 11;
+                        #[cfg_attr(
+                            not(doctest),
                             doc = " An internal error in the battery management system, not related to the battery itself."
                         )]
                         pub const BMS_ERROR: u8 = 20;
                         #[cfg_attr(
                             not(doctest),
-                            doc = " The sum of cell voltages is far from the total pack voltage.\n The threshold is implementation-defined."
-                        )]
-                        pub const CELL_COUNT: u8 = 62;
-                        pub const CELL_OVERVOLTAGE: u8 = 60;
-                        #[cfg_attr(
-                            not(doctest),
-                            doc = " Voltage of one of the battery cells exceeds its SOA."
-                        )]
-                        pub const CELL_UNDERVOLTAGE: u8 = 61;
-                        #[cfg_attr(
-                            not(doctest),
                             doc = " The battery/BMS/node/service configuration is missing or invalid."
                         )]
                         pub const CONFIGURATION: u8 = 30;
-                        #[cfg_attr(
-                            not(doctest),
-                            doc = " The battery requires offline maintenance."
-                        )]
-                        pub const NEEDS_SERVICE: u8 = 11;
-                        #[cfg_attr(not(doctest), doc = " Normal operation.")]
-                        pub const NONE: u8 = 0;
                         #[cfg_attr(
                             not(doctest),
                             doc = " The battery is discharged beyond the design limits and may have incurred damage."
@@ -3709,12 +3698,23 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                             doc = " The charge or discharge rate exceeds the safe operating limits."
                         )]
                         pub const OVERLOAD: u8 = 51;
+                        pub const CELL_OVERVOLTAGE: u8 = 60;
+                        #[cfg_attr(
+                            not(doctest),
+                            doc = " Voltage of one of the battery cells exceeds its SOA."
+                        )]
+                        pub const CELL_UNDERVOLTAGE: u8 = 61;
+                        #[cfg_attr(
+                            not(doctest),
+                            doc = " The sum of cell voltages is far from the total pack voltage.\n The threshold is implementation-defined."
+                        )]
+                        pub const CELL_COUNT: u8 = 62;
+                        pub const TEMPERATURE_HOT: u8 = 100;
                         #[cfg_attr(
                             not(doctest),
                             doc = " At least one cell is above/below the temperature SOA."
                         )]
                         pub const TEMPERATURE_COLD: u8 = 101;
-                        pub const TEMPERATURE_HOT: u8 = 100;
                     }
                     impl ::canadensis_encoding::Serialize for Error {
                         fn size_bits(&self) -> usize {
@@ -4181,10 +4181,13 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                     }
                     impl ::canadensis_encoding::Message for Technology {}
                     impl Technology {
-                        #[cfg_attr(not(doctest), doc = " Aluminum-Air")]
-                        pub const AL_O2: u8 = 21;
-                        #[cfg_attr(not(doctest), doc = " Electrostatic double-layer capacitor")]
-                        pub const EDLC: u8 = 200;
+                        #[cfg_attr(
+                            not(doctest),
+                            doc = " The technology is not specified in this enumeration. Please submit a pull request.\n NON-RECHARGEABLE"
+                        )]
+                        pub const OTHER: u8 = 0;
+                        #[cfg_attr(not(doctest), doc = " Lithium-thionyl chloride (Li-SOCl2)")]
+                        pub const LI_SOCL2: u8 = 10;
                         #[cfg_attr(
                             not(doctest),
                             doc = " Lithium-thionyl chloride + bromine chloride (Li-BCX)"
@@ -4192,58 +4195,13 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                         pub const LI_BCX: u8 = 11;
                         #[cfg_attr(
                             not(doctest),
-                            doc = " Lithium cobalt oxide (commonly known as just \"lithium-ion\")"
-                        )]
-                        pub const LI_LCO: u8 = 100;
-                        #[cfg_attr(
-                            not(doctest),
-                            doc = " LiCoO2 in pouch form factor, commonly known as \"lithium-ion polymer\" or \"LiPo\"."
-                        )]
-                        pub const LI_LCO_POUCH: u8 = 110;
-                        #[cfg_attr(not(doctest), doc = " Lithium iron phosphate (LiFePO4)")]
-                        pub const LI_LFP: u8 = 101;
-                        #[cfg_attr(
-                            not(doctest),
-                            doc = " LiFePO4 in pouch form factor, commonly known as \"LiFePO4 polymer\"."
-                        )]
-                        pub const LI_LFP_POUCH: u8 = 111;
-                        #[cfg_attr(not(doctest), doc = " Lithium manganese oxide")]
-                        pub const LI_LMO: u8 = 104;
-                        #[cfg_attr(
-                            not(doctest),
                             doc = " Lithium-manganese dioxide (Li-MnO2) (e.g., lithium coin cell, lithium 9V)"
                         )]
                         pub const LI_MNO2: u8 = 12;
-                        #[cfg_attr(not(doctest), doc = " Lithium nickel cobalt aluminium oxide")]
-                        pub const LI_NCA: u8 = 103;
-                        #[cfg_attr(not(doctest), doc = " Lithium nickel manganese cobalt oxide")]
-                        pub const LI_NMC: u8 = 102;
-                        #[cfg_attr(not(doctest), doc = " Lithium-sulfur (LiS)")]
-                        pub const LI_S: u8 = 105;
-                        #[cfg_attr(not(doctest), doc = " Lithium-thionyl chloride (Li-SOCl2)")]
-                        pub const LI_SOCL2: u8 = 10;
-                        #[cfg_attr(not(doctest), doc = " Nickel-cadmium")]
-                        pub const NI_CD: u8 = 121;
-                        #[cfg_attr(not(doctest), doc = " Nickel-iron")]
-                        pub const NI_FE: u8 = 123;
-                        #[cfg_attr(not(doctest), doc = " Nickel-metal hydride")]
-                        pub const NI_MH: u8 = 120;
-                        #[cfg_attr(not(doctest), doc = " Nickel-zinc")]
-                        pub const NI_ZN: u8 = 122;
-                        #[cfg_attr(
-                            not(doctest),
-                            doc = " The technology is not specified in this enumeration. Please submit a pull request.\n NON-RECHARGEABLE"
-                        )]
-                        pub const OTHER: u8 = 0;
-                        #[cfg_attr(not(doctest), doc = " Lead acid")]
-                        pub const PB_AC: u8 = 130;
-                        #[cfg_attr(not(doctest), doc = " Also known as SLA")]
-                        pub const PB_AC_SEALED: u8 = 131;
-                        #[cfg_attr(
-                            not(doctest),
-                            doc = " Zinc-manganese dioxide - potassium hydroxide electrolyte (aka alkaline)\n RECHARGEABLE"
-                        )]
-                        pub const ZN_MNO2_KOH: u8 = 32;
+                        #[cfg_attr(not(doctest), doc = " Zinc-Air")]
+                        pub const ZN_O2: u8 = 20;
+                        #[cfg_attr(not(doctest), doc = " Aluminum-Air")]
+                        pub const AL_O2: u8 = 21;
                         #[cfg_attr(
                             not(doctest),
                             doc = " Zinc-manganese dioxide - ammonium chloride electrolyte (aka zinc-carbon)"
@@ -4254,8 +4212,50 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                             doc = " Zinc-manganese dioxide - zinc chloride electrolyte (aka heavy duty zinc-carbon)"
                         )]
                         pub const ZN_MNO2_ZNCL2: u8 = 31;
-                        #[cfg_attr(not(doctest), doc = " Zinc-Air")]
-                        pub const ZN_O2: u8 = 20;
+                        #[cfg_attr(
+                            not(doctest),
+                            doc = " Zinc-manganese dioxide - potassium hydroxide electrolyte (aka alkaline)\n RECHARGEABLE"
+                        )]
+                        pub const ZN_MNO2_KOH: u8 = 32;
+                        #[cfg_attr(
+                            not(doctest),
+                            doc = " Lithium cobalt oxide (commonly known as just \"lithium-ion\")"
+                        )]
+                        pub const LI_LCO: u8 = 100;
+                        #[cfg_attr(not(doctest), doc = " Lithium iron phosphate (LiFePO4)")]
+                        pub const LI_LFP: u8 = 101;
+                        #[cfg_attr(not(doctest), doc = " Lithium nickel manganese cobalt oxide")]
+                        pub const LI_NMC: u8 = 102;
+                        #[cfg_attr(not(doctest), doc = " Lithium nickel cobalt aluminium oxide")]
+                        pub const LI_NCA: u8 = 103;
+                        #[cfg_attr(not(doctest), doc = " Lithium manganese oxide")]
+                        pub const LI_LMO: u8 = 104;
+                        #[cfg_attr(not(doctest), doc = " Lithium-sulfur (LiS)")]
+                        pub const LI_S: u8 = 105;
+                        #[cfg_attr(
+                            not(doctest),
+                            doc = " LiCoO2 in pouch form factor, commonly known as \"lithium-ion polymer\" or \"LiPo\"."
+                        )]
+                        pub const LI_LCO_POUCH: u8 = 110;
+                        #[cfg_attr(
+                            not(doctest),
+                            doc = " LiFePO4 in pouch form factor, commonly known as \"LiFePO4 polymer\"."
+                        )]
+                        pub const LI_LFP_POUCH: u8 = 111;
+                        #[cfg_attr(not(doctest), doc = " Nickel-metal hydride")]
+                        pub const NI_MH: u8 = 120;
+                        #[cfg_attr(not(doctest), doc = " Nickel-cadmium")]
+                        pub const NI_CD: u8 = 121;
+                        #[cfg_attr(not(doctest), doc = " Nickel-zinc")]
+                        pub const NI_ZN: u8 = 122;
+                        #[cfg_attr(not(doctest), doc = " Nickel-iron")]
+                        pub const NI_FE: u8 = 123;
+                        #[cfg_attr(not(doctest), doc = " Lead acid")]
+                        pub const PB_AC: u8 = 130;
+                        #[cfg_attr(not(doctest), doc = " Also known as SLA")]
+                        pub const PB_AC_SEALED: u8 = 131;
+                        #[cfg_attr(not(doctest), doc = " Electrostatic double-layer capacitor")]
+                        pub const EDLC: u8 = 200;
                     }
                     impl ::canadensis_encoding::Serialize for Technology {
                         fn size_bits(&self) -> usize {
@@ -4366,11 +4366,6 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                     impl Readiness {
                         #[cfg_attr(
                             not(doctest),
-                            doc = " When ENGAGED, the subsystem is performing its main intended function at the nominal performance characteristics.\n A subsystem may require a short amount of time, possibly under a few seconds, to switch between the ENGAGED and\n STANDBY states (in any direction).\n Some subsystems may not differentiate between STANDBY and ENGAGED (e.g., offboard communication hardware).\n The subsystem may disengage itself autonomously in the event of a fatal malfunction, in which case\n the reported service health status should be WARNING."
-                        )]
-                        pub const ENGAGED: u8 = 3;
-                        #[cfg_attr(
-                            not(doctest),
                             doc = " The long-term state of minimal power consumption.\n Typically, most subsystems are switched into the SLEEP mode when the vehicle is parked and powered off.\n Subsystems that do not support the SLEEP state should treat it as an equivalent of STANDBY.\n\n A subsystem may require a substantial amount of time to exit the sleep mode (for example, time may be needed to\n boot the operating system and run the self test procedures).\n\n While in the SLEEP mode, the subsystem is allowed to cease service provision and stop all network activity\n regardless of other requirements, except that it shall be able to reactivate itself if a Readiness message is\n received commanding any state other than SLEEP.\n Value 1 is invalid and shall never be commanded.\n Implementations receiving this value should interpret it either as SLEEP or STANDBY."
                         )]
                         pub const SLEEP: u8 = 0;
@@ -4379,6 +4374,11 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                             doc = " The state of being ready to enter the normal operating mode in a short order.\n A subsystem that is in STANDBY state should be able to participate in the normal network activity.\n This is the default state that the subsystem should reside in after power-on until explicitly commanded otherwise."
                         )]
                         pub const STANDBY: u8 = 2;
+                        #[cfg_attr(
+                            not(doctest),
+                            doc = " When ENGAGED, the subsystem is performing its main intended function at the nominal performance characteristics.\n A subsystem may require a short amount of time, possibly under a few seconds, to switch between the ENGAGED and\n STANDBY states (in any direction).\n Some subsystems may not differentiate between STANDBY and ENGAGED (e.g., offboard communication hardware).\n The subsystem may disengage itself autonomously in the event of a fatal malfunction, in which case\n the reported service health status should be WARNING."
+                        )]
+                        pub const ENGAGED: u8 = 3;
                     }
                     impl ::canadensis_encoding::Serialize for Readiness {
                         fn size_bits(&self) -> usize {
@@ -4692,24 +4692,14 @@ pub mod uavcan {
             impl Severity {
                 #[cfg_attr(
                     not(doctest),
-                    doc = " Notifications of dangerous circumstances that demand immediate attention.\n Messages of this severity should be always enabled."
+                    doc = " Messages of this severity can be used only during development.\n They shall not be used in a fielded operational system."
                 )]
-                pub const ALERT: u8 = 7;
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " Messages reporting serious problems and critical conditions.\n Messages of this severity and higher should be always enabled."
-                )]
-                pub const CRITICAL: u8 = 6;
+                pub const TRACE: u8 = 0;
                 #[cfg_attr(
                     not(doctest),
                     doc = " Messages that can aid in troubleshooting.\n Messages of this severity and lower should be disabled by default."
                 )]
                 pub const DEBUG: u8 = 1;
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " Messages reporting problems and error conditions.\n Messages of this severity and higher should be enabled by default."
-                )]
-                pub const ERROR: u8 = 5;
                 #[cfg_attr(
                     not(doctest),
                     doc = " General informational messages of low importance.\n Messages of this severity and lower should be disabled by default."
@@ -4722,14 +4712,24 @@ pub mod uavcan {
                 pub const NOTICE: u8 = 3;
                 #[cfg_attr(
                     not(doctest),
-                    doc = " Messages of this severity can be used only during development.\n They shall not be used in a fielded operational system."
-                )]
-                pub const TRACE: u8 = 0;
-                #[cfg_attr(
-                    not(doctest),
                     doc = " Messages reporting abnormalities and warning conditions.\n Messages of this severity and higher should be enabled by default."
                 )]
                 pub const WARNING: u8 = 4;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Messages reporting problems and error conditions.\n Messages of this severity and higher should be enabled by default."
+                )]
+                pub const ERROR: u8 = 5;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Messages reporting serious problems and critical conditions.\n Messages of this severity and higher should be always enabled."
+                )]
+                pub const CRITICAL: u8 = 6;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Notifications of dangerous circumstances that demand immediate attention.\n Messages of this severity should be always enabled."
+                )]
+                pub const ALERT: u8 = 7;
             }
             impl ::canadensis_encoding::Serialize for Severity {
                 fn size_bits(&self) -> usize {
@@ -4779,24 +4779,24 @@ pub mod uavcan {
             }
             impl ::canadensis_encoding::Message for Error {}
             impl Error {
-                pub const ACCESS_DENIED: u16 = 13;
-                pub const FILE_TOO_LARGE: u16 = 27;
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " E.g., file name is not valid for the target file system"
-                )]
-                pub const INVALID_VALUE: u16 = 22;
+                pub const OK: u16 = 0;
+                pub const UNKNOWN_ERROR: u16 = 65535;
+                pub const NOT_FOUND: u16 = 2;
                 pub const IO_ERROR: u16 = 5;
+                pub const ACCESS_DENIED: u16 = 13;
                 #[cfg_attr(
                     not(doctest),
                     doc = " I.e., attempted read/write on a path that points to a directory"
                 )]
                 pub const IS_DIRECTORY: u16 = 21;
-                pub const NOT_FOUND: u16 = 2;
-                pub const NOT_SUPPORTED: u16 = 38;
-                pub const OK: u16 = 0;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " E.g., file name is not valid for the target file system"
+                )]
+                pub const INVALID_VALUE: u16 = 22;
+                pub const FILE_TOO_LARGE: u16 = 27;
                 pub const OUT_OF_SPACE: u16 = 28;
-                pub const UNKNOWN_ERROR: u16 = 65535;
+                pub const NOT_SUPPORTED: u16 = 38;
             }
             impl ::canadensis_encoding::Serialize for Error {
                 fn size_bits(&self) -> usize {
@@ -4878,10 +4878,6 @@ pub mod uavcan {
             ///
             /// Fixed size 13 bytes
             ///
-            #[cfg_attr(
-                not(doctest),
-                doc = " Information about a remote file system entry (file, directory, etc)."
-            )]
             #[deprecated]
             pub struct GetInfoResponse {
                 #[cfg_attr(not(doctest), doc = " Result of the operation.")]
@@ -5042,10 +5038,6 @@ pub mod uavcan {
             ///
             /// Fixed size 13 bytes
             ///
-            #[cfg_attr(
-                not(doctest),
-                doc = " Information about a remote file system entry (file, directory, etc)."
-            )]
             pub struct GetInfoResponse {
                 #[cfg_attr(not(doctest), doc = " Result of the operation.")]
                 ///
@@ -5222,10 +5214,6 @@ pub mod uavcan {
             ///
             /// Size ranges from 5 to 117 bytes
             ///
-            #[cfg_attr(
-                not(doctest),
-                doc = " This service can be used to list a remote directory, one entry per request.\n\n The client should query each entry independently, iterating 'entry_index' from 0 until the last entry.\n When the index reaches the number of elements in the directory, the server will report that there is\n no such entry by returning an empty name.\n\n The field entry_index shall be applied to an ordered list of directory entries (e.g. alphabetically ordered).\n The exact sorting criteria does not matter as long as it provides the same ordering for subsequent service calls.\n\n Observe that this listing operation is fundamentally non-atomic. The caller shall beware of possible race conditions\n and is responsible for handling them properly. Particularly, consider what happens if a new item is inserted into\n the directory between two subsequent calls: if the item happened to be inserted at the index that is lower than the\n index of the next request, the next returned item (or several, if more items were inserted) will repeat the ones\n that were listed earlier. The caller should handle that properly, either by ignoring the repeated items or by\n restarting the listing operation from the beginning (index 0)."
-            )]
             #[deprecated]
             pub struct ListResponse {
                 // 32 bits of padding
@@ -5336,10 +5324,6 @@ pub mod uavcan {
             ///
             /// Size ranges from 5 to 260 bytes
             ///
-            #[cfg_attr(
-                not(doctest),
-                doc = " This service can be used to list a remote directory, one entry per request.\n\n The client should query each entry independently, iterating 'entry_index' from 0 until the last entry.\n When the index reaches the number of elements in the directory, the server will report that there is\n no such entry by returning an empty name.\n\n The field entry_index shall be applied to an ordered list of directory entries (e.g. alphabetically ordered).\n The exact sorting criteria does not matter as long as it provides the same ordering for subsequent service calls.\n\n Observe that this listing operation is fundamentally non-atomic. The caller shall beware of possible race conditions\n and is responsible for handling them properly. Particularly, consider what happens if a new item is inserted into\n the directory between two subsequent calls: if the item happened to be inserted at the index that is lower than the\n index of the next request, the next returned item (or several, if more items were inserted) will repeat the ones\n that were listed earlier. The caller should handle that properly, either by ignoring the repeated items or by\n restarting the listing operation from the beginning (index 0)."
-            )]
             pub struct ListResponse {
                 // 32 bits of padding
                 #[cfg_attr(
@@ -5477,10 +5461,6 @@ pub mod uavcan {
             ///
             /// Fixed size 2 bytes
             ///
-            #[cfg_attr(
-                not(doctest),
-                doc = " Manipulate a remote file system entry. Applies to files, directories, and links alike.\n If the remote entry is a directory, all nested entries will be affected, too.\n\n The server should perform all operations atomically, unless atomicity is not supported by\n the underlying file system.\n\n Atomic copying can be effectively employed by remote nodes before reading or after writing\n the file to minimize the possibility of race conditions.\n For example, before reading a large file from the server, the cilent might opt to create\n a temporary copy of it first, then read the copy, and delete it upon completion. Likewise,\n a similar strategy can be employed for writing, where the file is first written at a\n temporary location, and then moved to its final destination. These approaches, however,\n may lead to creation of dangling temporary files if the client failed to dispose of them\n properly, so that risk should be taken into account.\n\n Move/Copy\n   Specify the source path and the destination path.\n   If the source does not exist, the operation will fail.\n   Set the preserve_source flag to copy rather than move.\n   If the destination exists and overwrite_destination is not set, the operation will fail.\n   If the target path includes non-existent directories, they will be created (like \"mkdir -p\").\n\n Touch\n   Specify the destination path and make the source path empty.\n   If the path exists (file/directory/link), its modification time will be updated.\n   If the path does not exist, an empty file will be created.\n   If the target path includes non-existent directories, they will be created (like \"mkdir -p\").\n   Flags are ignored.\n\n Remove\n   Specify the source path (file/directory/link) and make the destination path empty.\n   Fails if the path does not exist.\n   Flags are ignored."
-            )]
             #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
             #[repr(C, packed)]
             #[deprecated]
@@ -5611,10 +5591,6 @@ pub mod uavcan {
             ///
             /// Fixed size 2 bytes
             ///
-            #[cfg_attr(
-                not(doctest),
-                doc = " Manipulate a remote file system entry. Applies to files, directories, and links alike.\n If the remote entry is a directory, all nested entries will be affected, too.\n\n The server should perform all operations atomically, unless atomicity is not supported by\n the underlying file system.\n\n Atomic copying can be effectively employed by remote nodes before reading or after writing\n the file to minimize the possibility of race conditions.\n For example, before reading a large file from the server, the cilent might opt to create\n a temporary copy of it first, then read the copy, and delete it upon completion. Likewise,\n a similar strategy can be employed for writing, where the file is first written at a\n temporary location, and then moved to its final destination. These approaches, however,\n may lead to creation of dangling temporary files if the client failed to dispose of them\n properly, so that risk should be taken into account.\n\n Move/Copy\n   Specify the source path and the destination path.\n   If the source does not exist, the operation will fail.\n   Set the preserve_source flag to copy rather than move.\n   If the destination exists and overwrite_destination is not set, the operation will fail.\n   If the target path includes non-existent directories, they will be created (like \"mkdir -p\").\n\n Touch\n   Specify the destination path and make the source path empty.\n   If the path exists (file/directory/link), its modification time will be updated.\n   If the path does not exist, an empty file will be created.\n   If the target path includes non-existent directories, they will be created (like \"mkdir -p\").\n   Flags are ignored.\n\n Remove\n   Specify the source path (file/directory/link) and make the destination path empty.\n   Fails if the path does not exist.\n   Flags are ignored."
-            )]
             #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
             #[repr(C, packed)]
             pub struct ModifyResponse {
@@ -5681,8 +5657,8 @@ pub mod uavcan {
             }
             impl ::canadensis_encoding::Message for Path {}
             impl Path {
-                pub const MAX_LENGTH: u8 = 112;
                 pub const SEPARATOR: u8 = 47;
+                pub const MAX_LENGTH: u8 = 112;
             }
             impl ::canadensis_encoding::Serialize for Path {
                 fn size_bits(&self) -> usize {
@@ -5740,8 +5716,8 @@ pub mod uavcan {
             }
             impl ::canadensis_encoding::Message for Path {}
             impl Path {
-                pub const MAX_LENGTH: u8 = 255;
                 pub const SEPARATOR: u8 = 47;
+                pub const MAX_LENGTH: u8 = 255;
             }
             impl ::canadensis_encoding::Serialize for Path {
                 fn size_bits(&self) -> usize {
@@ -5840,10 +5816,6 @@ pub mod uavcan {
             ///
             /// Size ranges from 4 to 260 bytes
             ///
-            #[cfg_attr(
-                not(doctest),
-                doc = " Read file from a remote node.\n\n There are two possible outcomes of a successful call:\n  1. Data array size equals its capacity. This means that the end of the file is not reached yet.\n  2. Data array size is less than its capacity, possibly zero. This means that the end of the file is reached.\n\n Thus, if the client needs to fetch the entire file, it should repeatedly call this service while increasing the\n offset, until a non-full data array is returned.\n\n If the object pointed by 'path' cannot be read (e.g. it is a directory or it does not exist), an appropriate error\n code will be returned, and the data array will be empty.\n\n It is easy to see that this protocol is prone to race conditions because the remote file can be modified\n between read operations which might result in the client obtaining a damaged file. To combat this,\n application designers are recommended to adhere to the following convention. Let every file whose integrity\n is of interest have a hash or a digital signature, which is stored in an adjacent file under the same name\n suffixed with the appropriate extension according to the type of hash or digital signature used.\n For example, let there be file \"image.bin\", integrity of which shall be ensured by the client upon downloading.\n Suppose that the file is hashed using SHA-256, so the appropriate file extension for the hash would be\n \".sha256\". Following this convention, the hash of \"image.bin\" would be stored in \"image.bin.sha256\".\n After downloading the file, the client would read the hash (being small, the hash can be read in a single\n request) and check it against a locally computed value. Some servers may opt to generate such hash files\n automatically as necessary; for example, if such file is requested but it does not exist, the server would\n compute the necessary signature or hash (the type of hash/signature can be deduced from the requested file\n extension) and return it as if the file existed. Obviously, this would be impractical for very large files;\n in that case, hash/signature should be pre-computed and stored in a real file. If this approach is followed,\n implementers are advised to use only SHA-256 for hashing, in order to reduce the number of fielded\n incompatible implementations."
-            )]
             #[deprecated]
             pub struct ReadResponse {
                 ///
@@ -5960,10 +5932,6 @@ pub mod uavcan {
             ///
             /// Size ranges from 4 to 260 bytes
             ///
-            #[cfg_attr(
-                not(doctest),
-                doc = " Read file from a remote node.\n\n There are two possible outcomes of a successful call:\n  1. Data array size equals its capacity. This means that the end of the file is not reached yet.\n  2. Data array size is less than its capacity, possibly zero. This means that the end of the file is reached.\n\n Thus, if the client needs to fetch the entire file, it should repeatedly call this service while increasing the\n offset, until a non-full data array is returned.\n\n If the object pointed by 'path' cannot be read (e.g. it is a directory or it does not exist), an appropriate error\n code will be returned, and the data array will be empty.\n\n It is easy to see that this protocol is prone to race conditions because the remote file can be modified\n between read operations which might result in the client obtaining a damaged file. To combat this,\n application designers are recommended to adhere to the following convention. Let every file whose integrity\n is of interest have a hash or a digital signature, which is stored in an adjacent file under the same name\n suffixed with the appropriate extension according to the type of hash or digital signature used.\n For example, let there be file \"image.bin\", integrity of which shall be ensured by the client upon downloading.\n Suppose that the file is hashed using SHA-256, so the appropriate file extension for the hash would be\n \".sha256\". Following this convention, the hash of \"image.bin\" would be stored in \"image.bin.sha256\".\n After downloading the file, the client would read the hash (being small, the hash can be read in a single\n request) and check it against a locally computed value. Some servers may opt to generate such hash files\n automatically as necessary; for example, if such file is requested but it does not exist, the server would\n compute the necessary signature or hash (the type of hash/signature can be deduced from the requested file\n extension) and return it as if the file existed. Obviously, this would be impractical for very large files;\n in that case, hash/signature should be pre-computed and stored in a real file. If this approach is followed,\n implementers are advised to use only SHA-256 for hashing, in order to reduce the number of fielded\n incompatible implementations."
-            )]
             pub struct ReadResponse {
                 ///
                 /// `uavcan.file.Error.1.0`
@@ -6095,10 +6063,6 @@ pub mod uavcan {
             ///
             /// Fixed size 2 bytes
             ///
-            #[cfg_attr(
-                not(doctest),
-                doc = " Write into a remote file.\n The server shall place the contents of the field 'data' into the file pointed by 'path' at the offset specified by\n the field 'offset'.\n\n When writing a file, the client should repeatedly call this service with data while advancing the offset until the\n file is written completely. When the write sequence is completed, the client shall call the service one last time,\n with the offset set to the size of the file and with the data field empty, which will signal the server that the\n transfer is finished.\n\n When the write operation is complete, the server shall truncate the resulting file past the specified offset."
-            )]
             #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
             #[repr(C, packed)]
             #[deprecated]
@@ -6208,10 +6172,6 @@ pub mod uavcan {
             ///
             /// Fixed size 2 bytes
             ///
-            #[cfg_attr(
-                not(doctest),
-                doc = " Write into a remote file.\n The server shall place the contents of the field 'data' into the file pointed by 'path' at the offset specified by\n the field 'offset'.\n\n When writing a file, the client should repeatedly call this service with data while advancing the offset until the\n file is written completely. When the write sequence is completed, the client shall call the service one last time,\n with the offset set to the size of the file and with the data field empty, which will signal the server that the\n transfer is finished.\n\n When the write operation is complete, the server shall truncate the resulting file past the specified offset."
-            )]
             #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
             #[repr(C, packed)]
             pub struct WriteResponse {
@@ -6341,10 +6301,6 @@ pub mod uavcan {
                 ///
                 /// Fixed size 0 bytes
                 ///
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " This message carries UDP packets sent from a remote host on the Internet or a LAN to a node on the local Cyphal bus.\n Please refer to the definition of the message type OutgoingPacket for a general overview of the packet forwarding\n logic.\n\n This data type has been made a service type rather than a message type in order to make its transfers addressable,\n allowing nodes to employ hardware acceptance filters for filtering out forwarded datagrams that are not addressed\n to them. Additionally, requiring the destination nodes to always respond upon reception of the forwarded datagram\n opens interesting opportunities for future extensions of the forwarding protocol. If the service invocation times\n out, the modem node is permitted to remove the corresponding entry from the NAT table immediately, not waiting\n for its TTL to expire.\n\n It should be noted that this data type definition intentionally leaves out the source address. This is done in\n order to simplify the implementation, reduce the bus traffic overhead, and because the nature of the\n communication patterns proposed by this set of messages does not provide a valid way to implement server hosts\n on the local Cyphal bus. It is assumed that local nodes can be only clients, and therefore, they will be able to\n determine the address of the sender simply by mapping the field session_id to their internally maintained states.\n Furthermore, it is uncertain what is the optimal way of representing the source address for\n client nodes: it is assumed that the local nodes will mostly use DNS names rather than IP addresses, so if there\n was a source address field, modem nodes would have to perform reverse mapping from the IP address they received\n the datagram from to the corresponding DNS name that was used by the local node with the outgoing message. This\n approach creates a number of troubling corner cases and adds a fair amount of hidden complexities to the\n implementation of modem nodes.\n\n It is recommended to perform service invocations at the same transfer priority level as was used for broadcasting\n the latest matching message of type OutgoingPacket. However, meeting this recommendation would require the modem\n node to implement additional logic, which may be undesirable. Therefore, implementers are free to deviate from\n this recommendation and resort to a fixed priority level instead. In the case of a fixed priority level, it is\n advised to use the lowest transfer priority level."
-                )]
                 #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                 #[repr(C, packed)]
                 #[deprecated]
@@ -6463,10 +6419,6 @@ pub mod uavcan {
                 ///
                 /// Fixed size 0 bytes
                 ///
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " This message carries UDP packets sent from a remote host on the Internet or a LAN to a node on the local Cyphal bus.\n Please refer to the definition of the message type OutgoingPacket for a general overview of the packet forwarding\n logic.\n\n This data type has been made a service type rather than a message type in order to make its transfers addressable,\n allowing nodes to employ hardware acceptance filters for filtering out forwarded datagrams that are not addressed\n to them. Additionally, requiring the destination nodes to always respond upon reception of the forwarded datagram\n opens interesting opportunities for future extensions of the forwarding protocol. If the service invocation times\n out, the modem node is permitted to remove the corresponding entry from the NAT table immediately, not waiting\n for its TTL to expire.\n\n It should be noted that this data type definition intentionally leaves out the source address. This is done in\n order to simplify the implementation, reduce the bus traffic overhead, and because the nature of the\n communication patterns proposed by this set of messages does not provide a valid way to implement server hosts\n on the local Cyphal bus. It is assumed that local nodes can be only clients, and therefore, they will be able to\n determine the address of the sender simply by mapping the field session_id to their internally maintained states.\n Furthermore, it is uncertain what is the optimal way of representing the source address for\n client nodes: it is assumed that the local nodes will mostly use DNS names rather than IP addresses, so if there\n was a source address field, modem nodes would have to perform reverse mapping from the IP address they received\n the datagram from to the corresponding DNS name that was used by the local node with the outgoing message. This\n approach creates a number of troubling corner cases and adds a fair amount of hidden complexities to the\n implementation of modem nodes.\n\n It is recommended to perform service invocations at the same transfer priority level as was used for broadcasting\n the latest matching message of type OutgoingPacket. However, meeting this recommendation would require the modem\n node to implement additional logic, which may be undesirable. Therefore, implementers are free to deviate from\n this recommendation and resort to a fixed priority level instead. In the case of a fixed priority level, it is\n advised to use the lowest transfer priority level."
-                )]
                 #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
                 #[repr(C, packed)]
                 pub struct HandleIncomingPacketResponse {}
@@ -6827,11 +6779,13 @@ pub mod uavcan {
                 pub enum ArbitrationID {
                     ///
 /// uavcan.metatransport.can.BaseArbitrationID.0.1
-Base(crate::uavcan::metatransport::can::base_arbitration_id_0_1::BaseArbitrationID),
-///
+Base
+(crate::uavcan::metatransport::can::base_arbitration_id_0_1::BaseArbitrationID)
+,///
 /// uavcan.metatransport.can.ExtendedArbitrationID.0.1
-Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::ExtendedArbitrationID),
-}
+Extended
+(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::ExtendedArbitrationID)
+,}
                 impl ::canadensis_encoding::DataType for ArbitrationID {
                     /// This type is sealed.
                     const EXTENT_BYTES: Option<u32> = None;
@@ -7420,8 +7374,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 }
                 impl ::canadensis_encoding::Message for EtherType {}
                 impl EtherType {
-                    pub const ARP: u16 = 2054;
                     pub const IP_V4: u16 = 2048;
+                    pub const ARP: u16 = 2054;
                     pub const IP_V6: u16 = 34525;
                 }
                 impl ::canadensis_encoding::Serialize for EtherType {
@@ -7943,19 +7897,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             impl ExecuteCommandRequest {
                 #[cfg_attr(
                     not(doctest),
-                    doc = " Begin the software update process using uavcan.file.Read. This command makes use of the \"parameter\" field below.\n The parameter contains the path to the new software image file to be downloaded by the server from the client\n using the standard service uavcan.file.Read. Observe that this operation swaps the roles of the client and\n the server.\n\n Upon reception of this command, the server (updatee) will evaluate whether it is possible to begin the\n software update process. If that is deemed impossible, the command will be rejected with one of the\n error codes defined in the response section of this definition (e.g., BAD_STATE if the node is currently\n on-duty and a sudden interruption of its activities is considered unsafe, and so on).\n If an update process is already underway, the updatee should abort the process and restart with the new file,\n unless the updatee can determine that the specified file is the same file that is already being downloaded,\n in which case it is allowed to respond SUCCESS and continue the old update process.\n If there are no other conditions precluding the requested update, the updatee will return a SUCCESS and\n initiate the file transfer process by invoking the standard service uavcan.file.Read repeatedly until the file\n is transferred fully (please refer to the documentation for that data type for more information about its usage).\n\n While the software is being updated, the updatee should set its mode (the field \"mode\" in uavcan.node.Heartbeat)\n to MODE_SOFTWARE_UPDATE. Please refer to the documentation for uavcan.node.Heartbeat for more information.\n\n It is recognized that most systems will have to interrupt their normal services to perform the software update\n (unless some form of software hot swapping is implemented, as is the case in some high-availability systems).\n\n Microcontrollers that are requested to update their firmware may need to stop execution of their current firmware\n and start the embedded bootloader (although other approaches are possible as well). In that case,\n while the embedded bootloader is running, the mode reported via the message uavcan.node.Heartbeat should be\n MODE_SOFTWARE_UPDATE as long as the bootloader is runing, even if no update-related activities\n are currently underway. For example, if the update process failed and the bootloader cannot load the software,\n the same mode MODE_SOFTWARE_UPDATE will be reported.\n It is also recognized that in a microcontroller setting, the application that served the update request will have\n to pass the update-related metadata (such as the node-ID of the server and the firmware image file path) to\n the embedded bootloader. The tactics of that transaction lie outside of the scope of this specification."
+                    doc = " Reboot the node.\n Note that some standard commands may or may not require a restart in order to take effect; e.g., factory reset."
                 )]
-                pub const COMMAND_BEGIN_SOFTWARE_UPDATE: u16 = 65533;
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " Cease activities immediately, enter a safe state until restarted.\n Further operation may no longer be possible until a restart command is executed."
-                )]
-                pub const COMMAND_EMERGENCY_STOP: u16 = 65531;
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " Return the node's configuration back to the factory default settings (may require restart).\n Due to the uncertainty whether a restart is required, generic interfaces should always force a restart."
-                )]
-                pub const COMMAND_FACTORY_RESET: u16 = 65532;
+                pub const COMMAND_RESTART: u16 = 65535;
                 #[cfg_attr(
                     not(doctest),
                     doc = " Shut down the node; further access will not be possible until the power is turned back on."
@@ -7963,9 +7907,19 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub const COMMAND_POWER_OFF: u16 = 65534;
                 #[cfg_attr(
                     not(doctest),
-                    doc = " Reboot the node.\n Note that some standard commands may or may not require a restart in order to take effect; e.g., factory reset."
+                    doc = " Begin the software update process using uavcan.file.Read. This command makes use of the \"parameter\" field below.\n The parameter contains the path to the new software image file to be downloaded by the server from the client\n using the standard service uavcan.file.Read. Observe that this operation swaps the roles of the client and\n the server.\n\n Upon reception of this command, the server (updatee) will evaluate whether it is possible to begin the\n software update process. If that is deemed impossible, the command will be rejected with one of the\n error codes defined in the response section of this definition (e.g., BAD_STATE if the node is currently\n on-duty and a sudden interruption of its activities is considered unsafe, and so on).\n If an update process is already underway, the updatee should abort the process and restart with the new file,\n unless the updatee can determine that the specified file is the same file that is already being downloaded,\n in which case it is allowed to respond SUCCESS and continue the old update process.\n If there are no other conditions precluding the requested update, the updatee will return a SUCCESS and\n initiate the file transfer process by invoking the standard service uavcan.file.Read repeatedly until the file\n is transferred fully (please refer to the documentation for that data type for more information about its usage).\n\n While the software is being updated, the updatee should set its mode (the field \"mode\" in uavcan.node.Heartbeat)\n to MODE_SOFTWARE_UPDATE. Please refer to the documentation for uavcan.node.Heartbeat for more information.\n\n It is recognized that most systems will have to interrupt their normal services to perform the software update\n (unless some form of software hot swapping is implemented, as is the case in some high-availability systems).\n\n Microcontrollers that are requested to update their firmware may need to stop execution of their current firmware\n and start the embedded bootloader (although other approaches are possible as well). In that case,\n while the embedded bootloader is running, the mode reported via the message uavcan.node.Heartbeat should be\n MODE_SOFTWARE_UPDATE as long as the bootloader is runing, even if no update-related activities\n are currently underway. For example, if the update process failed and the bootloader cannot load the software,\n the same mode MODE_SOFTWARE_UPDATE will be reported.\n It is also recognized that in a microcontroller setting, the application that served the update request will have\n to pass the update-related metadata (such as the node-ID of the server and the firmware image file path) to\n the embedded bootloader. The tactics of that transaction lie outside of the scope of this specification."
                 )]
-                pub const COMMAND_RESTART: u16 = 65535;
+                pub const COMMAND_BEGIN_SOFTWARE_UPDATE: u16 = 65533;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Return the node's configuration back to the factory default settings (may require restart).\n Due to the uncertainty whether a restart is required, generic interfaces should always force a restart."
+                )]
+                pub const COMMAND_FACTORY_RESET: u16 = 65532;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Cease activities immediately, enter a safe state until restarted.\n Further operation may no longer be possible until a restart command is executed."
+                )]
+                pub const COMMAND_EMERGENCY_STOP: u16 = 65531;
                 #[cfg_attr(
                     not(doctest),
                     doc = " This command instructs the node to store the current configuration parameter values and other persistent states\n to the non-volatile storage. Nodes are allowed to manage persistent states automatically, obviating the need for\n this command by committing all such data to the non-volatile memory automatically as necessary. However, some\n nodes may lack this functionality, in which case this parameter should be used. Generic interfaces should always\n invoke this command in order to ensure that the data is stored even if the node doesn't implement automatic\n persistence management."
@@ -8011,10 +7965,6 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             /// Fixed size 1 bytes
             ///
-            #[cfg_attr(
-                not(doctest),
-                doc = " Instructs the server node to execute or commence execution of a simple predefined command.\n All standard commands are optional; i.e., not guaranteed to be supported by all nodes."
-            )]
             #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
             #[repr(C, packed)]
             #[deprecated]
@@ -8033,13 +7983,35 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
             impl ::canadensis_encoding::Response for ExecuteCommandResponse {}
             impl ExecuteCommandResponse {
-                pub const STATUS_BAD_COMMAND: u8 = 3;
-                pub const STATUS_BAD_PARAMETER: u8 = 4;
-                pub const STATUS_BAD_STATE: u8 = 5;
-                pub const STATUS_FAILURE: u8 = 1;
-                pub const STATUS_INTERNAL_ERROR: u8 = 6;
-                pub const STATUS_NOT_AUTHORIZED: u8 = 2;
+                #[cfg_attr(not(doctest), doc = " Started or executed successfully")]
                 pub const STATUS_SUCCESS: u8 = 0;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Could not start or the desired outcome could not be reached"
+                )]
+                pub const STATUS_FAILURE: u8 = 1;
+                #[cfg_attr(not(doctest), doc = " Denied due to lack of authorization")]
+                pub const STATUS_NOT_AUTHORIZED: u8 = 2;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " The requested command is not known or not supported"
+                )]
+                pub const STATUS_BAD_COMMAND: u8 = 3;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " The supplied parameter cannot be used with the selected command"
+                )]
+                pub const STATUS_BAD_PARAMETER: u8 = 4;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " The current state of the node does not permit execution of this command"
+                )]
+                pub const STATUS_BAD_STATE: u8 = 5;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " The operation should have succeeded but an unexpected failure occurred"
+                )]
+                pub const STATUS_INTERNAL_ERROR: u8 = 6;
             }
             impl ::canadensis_encoding::Serialize for ExecuteCommandResponse {
                 fn size_bits(&self) -> usize {
@@ -8111,19 +8083,9 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             impl ExecuteCommandRequest {
                 #[cfg_attr(
                     not(doctest),
-                    doc = " Begin the software update process using uavcan.file.Read. This command makes use of the \"parameter\" field below.\n The parameter contains the path to the new software image file to be downloaded by the server from the client\n using the standard service uavcan.file.Read. Observe that this operation swaps the roles of the client and\n the server.\n\n Upon reception of this command, the server (updatee) will evaluate whether it is possible to begin the\n software update process. If that is deemed impossible, the command will be rejected with one of the\n error codes defined in the response section of this definition (e.g., BAD_STATE if the node is currently\n on-duty and a sudden interruption of its activities is considered unsafe, and so on).\n If an update process is already underway, the updatee should abort the process and restart with the new file,\n unless the updatee can determine that the specified file is the same file that is already being downloaded,\n in which case it is allowed to respond SUCCESS and continue the old update process.\n If there are no other conditions precluding the requested update, the updatee will return a SUCCESS and\n initiate the file transfer process by invoking the standard service uavcan.file.Read repeatedly until the file\n is transferred fully (please refer to the documentation for that data type for more information about its usage).\n\n While the software is being updated, the updatee should set its mode (the field \"mode\" in uavcan.node.Heartbeat)\n to MODE_SOFTWARE_UPDATE. Please refer to the documentation for uavcan.node.Heartbeat for more information.\n\n It is recognized that most systems will have to interrupt their normal services to perform the software update\n (unless some form of software hot swapping is implemented, as is the case in some high-availability systems).\n\n Microcontrollers that are requested to update their firmware may need to stop execution of their current firmware\n and start the embedded bootloader (although other approaches are possible as well). In that case,\n while the embedded bootloader is running, the mode reported via the message uavcan.node.Heartbeat should be\n MODE_SOFTWARE_UPDATE as long as the bootloader is runing, even if no update-related activities\n are currently underway. For example, if the update process failed and the bootloader cannot load the software,\n the same mode MODE_SOFTWARE_UPDATE will be reported.\n It is also recognized that in a microcontroller setting, the application that served the update request will have\n to pass the update-related metadata (such as the node-ID of the server and the firmware image file path) to\n the embedded bootloader. The tactics of that transaction lie outside of the scope of this specification."
+                    doc = " Reboot the node.\n Note that some standard commands may or may not require a restart in order to take effect; e.g., factory reset."
                 )]
-                pub const COMMAND_BEGIN_SOFTWARE_UPDATE: u16 = 65533;
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " Cease activities immediately, enter a safe state until restarted.\n Further operation may no longer be possible until a restart command is executed."
-                )]
-                pub const COMMAND_EMERGENCY_STOP: u16 = 65531;
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " Return the node's configuration back to the factory default settings (may require restart).\n Due to the uncertainty whether a restart is required, generic interfaces should always force a restart."
-                )]
-                pub const COMMAND_FACTORY_RESET: u16 = 65532;
+                pub const COMMAND_RESTART: u16 = 65535;
                 #[cfg_attr(
                     not(doctest),
                     doc = " Shut down the node; further access will not be possible until the power is turned back on."
@@ -8131,9 +8093,19 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub const COMMAND_POWER_OFF: u16 = 65534;
                 #[cfg_attr(
                     not(doctest),
-                    doc = " Reboot the node.\n Note that some standard commands may or may not require a restart in order to take effect; e.g., factory reset."
+                    doc = " Begin the software update process using uavcan.file.Read. This command makes use of the \"parameter\" field below.\n The parameter contains the path to the new software image file to be downloaded by the server from the client\n using the standard service uavcan.file.Read. Observe that this operation swaps the roles of the client and\n the server.\n\n Upon reception of this command, the server (updatee) will evaluate whether it is possible to begin the\n software update process. If that is deemed impossible, the command will be rejected with one of the\n error codes defined in the response section of this definition (e.g., BAD_STATE if the node is currently\n on-duty and a sudden interruption of its activities is considered unsafe, and so on).\n If an update process is already underway, the updatee should abort the process and restart with the new file,\n unless the updatee can determine that the specified file is the same file that is already being downloaded,\n in which case it is allowed to respond SUCCESS and continue the old update process.\n If there are no other conditions precluding the requested update, the updatee will return a SUCCESS and\n initiate the file transfer process by invoking the standard service uavcan.file.Read repeatedly until the file\n is transferred fully (please refer to the documentation for that data type for more information about its usage).\n\n While the software is being updated, the updatee should set its mode (the field \"mode\" in uavcan.node.Heartbeat)\n to MODE_SOFTWARE_UPDATE. Please refer to the documentation for uavcan.node.Heartbeat for more information.\n\n It is recognized that most systems will have to interrupt their normal services to perform the software update\n (unless some form of software hot swapping is implemented, as is the case in some high-availability systems).\n\n Microcontrollers that are requested to update their firmware may need to stop execution of their current firmware\n and start the embedded bootloader (although other approaches are possible as well). In that case,\n while the embedded bootloader is running, the mode reported via the message uavcan.node.Heartbeat should be\n MODE_SOFTWARE_UPDATE as long as the bootloader is runing, even if no update-related activities\n are currently underway. For example, if the update process failed and the bootloader cannot load the software,\n the same mode MODE_SOFTWARE_UPDATE will be reported.\n It is also recognized that in a microcontroller setting, the application that served the update request will have\n to pass the update-related metadata (such as the node-ID of the server and the firmware image file path) to\n the embedded bootloader. The tactics of that transaction lie outside of the scope of this specification."
                 )]
-                pub const COMMAND_RESTART: u16 = 65535;
+                pub const COMMAND_BEGIN_SOFTWARE_UPDATE: u16 = 65533;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Return the node's configuration back to the factory default settings (may require restart).\n Due to the uncertainty whether a restart is required, generic interfaces should always force a restart."
+                )]
+                pub const COMMAND_FACTORY_RESET: u16 = 65532;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Cease activities immediately, enter a safe state until restarted.\n Further operation may no longer be possible until a restart command is executed."
+                )]
+                pub const COMMAND_EMERGENCY_STOP: u16 = 65531;
                 #[cfg_attr(
                     not(doctest),
                     doc = " This command instructs the node to store the current configuration parameter values and other persistent states\n to the non-volatile storage. Nodes are allowed to manage persistent states automatically, obviating the need for\n this command by committing all such data to the non-volatile memory automatically as necessary. However, some\n nodes may lack this functionality, in which case this parameter should be used. Generic interfaces should always\n invoke this command in order to ensure that the data is stored even if the node doesn't implement automatic\n persistence management."
@@ -8179,10 +8151,6 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             /// Fixed size 1 bytes
             ///
-            #[cfg_attr(
-                not(doctest),
-                doc = " Instructs the server node to execute or commence execution of a simple predefined command.\n All standard commands are optional; i.e., not guaranteed to be supported by all nodes."
-            )]
             #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
             #[repr(C, packed)]
             pub struct ExecuteCommandResponse {
@@ -8200,13 +8168,35 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
             impl ::canadensis_encoding::Response for ExecuteCommandResponse {}
             impl ExecuteCommandResponse {
-                pub const STATUS_BAD_COMMAND: u8 = 3;
-                pub const STATUS_BAD_PARAMETER: u8 = 4;
-                pub const STATUS_BAD_STATE: u8 = 5;
-                pub const STATUS_FAILURE: u8 = 1;
-                pub const STATUS_INTERNAL_ERROR: u8 = 6;
-                pub const STATUS_NOT_AUTHORIZED: u8 = 2;
+                #[cfg_attr(not(doctest), doc = " Started or executed successfully")]
                 pub const STATUS_SUCCESS: u8 = 0;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Could not start or the desired outcome could not be reached"
+                )]
+                pub const STATUS_FAILURE: u8 = 1;
+                #[cfg_attr(not(doctest), doc = " Denied due to lack of authorization")]
+                pub const STATUS_NOT_AUTHORIZED: u8 = 2;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " The requested command is not known or not supported"
+                )]
+                pub const STATUS_BAD_COMMAND: u8 = 3;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " The supplied parameter cannot be used with the selected command"
+                )]
+                pub const STATUS_BAD_PARAMETER: u8 = 4;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " The current state of the node does not permit execution of this command"
+                )]
+                pub const STATUS_BAD_STATE: u8 = 5;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " The operation should have succeeded but an unexpected failure occurred"
+                )]
+                pub const STATUS_INTERNAL_ERROR: u8 = 6;
             }
             impl ::canadensis_encoding::Serialize for ExecuteCommandResponse {
                 fn size_bits(&self) -> usize {
@@ -8284,10 +8274,6 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             /// Size ranges from 33 to 313 bytes
             ///
-            #[cfg_attr(
-                not(doctest),
-                doc = " Full node info request.\n All of the returned information shall be static (unchanged) while the node is running.\n It is highly recommended to support this service on all nodes."
-            )]
             pub struct GetInfoResponse {
                 #[cfg_attr(
                     not(doctest),
@@ -8526,10 +8512,6 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             /// Size ranges from 16 to 61 bytes
             ///
-            #[cfg_attr(
-                not(doctest),
-                doc = " Returns a set of general low-level transport statistical counters.\n Servers are encouraged but not required to sample the data atomically."
-            )]
             pub struct GetTransportStatisticsResponse {
                 #[cfg_attr(
                     not(doctest),
@@ -8559,6 +8541,10 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
             impl ::canadensis_encoding::Response for GetTransportStatisticsResponse {}
             impl GetTransportStatisticsResponse {
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Cyphal supports up to triply modular redundant interfaces."
+                )]
                 pub const MAX_NETWORK_INTERFACES: u8 = 3;
             }
             impl ::canadensis_encoding::Serialize for GetTransportStatisticsResponse {
@@ -8623,6 +8609,11 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             impl Health {
                 #[cfg_attr(
                     not(doctest),
+                    doc = " The component is functioning properly (nominal)."
+                )]
+                pub const NOMINAL: u8 = 0;
+                #[cfg_attr(
+                    not(doctest),
                     doc = " A critical parameter went out of range or the component encountered a minor failure that does not prevent\n the subsystem from performing any of its real-time functions."
                 )]
                 pub const ADVISORY: u8 = 1;
@@ -8631,11 +8622,6 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     doc = " The component encountered a major failure and is performing in a degraded mode or outside of its designed limitations."
                 )]
                 pub const CAUTION: u8 = 2;
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " The component is functioning properly (nominal)."
-                )]
-                pub const NOMINAL: u8 = 0;
                 #[cfg_attr(
                     not(doctest),
                     doc = " The component suffered a fatal malfunction and is unable to perform its intended function."
@@ -8897,6 +8883,8 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             }
             impl ::canadensis_encoding::Message for Mode {}
             impl Mode {
+                #[cfg_attr(not(doctest), doc = " Normal operating mode.")]
+                pub const OPERATIONAL: u8 = 0;
                 #[cfg_attr(
                     not(doctest),
                     doc = " Initialization is in progress; this mode is entered immediately after startup."
@@ -8904,8 +8892,6 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 pub const INITIALIZATION: u8 = 1;
                 #[cfg_attr(not(doctest), doc = " E.g., calibration, self-test, etc.")]
                 pub const MAINTENANCE: u8 = 2;
-                #[cfg_attr(not(doctest), doc = " Normal operating mode.")]
-                pub const OPERATIONAL: u8 = 0;
                 #[cfg_attr(
                     not(doctest),
                     doc = " New software/firmware is being loaded or the bootloader is running."
@@ -9439,13 +9425,13 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 }
                 impl ::canadensis_encoding::Request for AppendEntriesRequest {}
                 impl AppendEntriesRequest {
+                    #[cfg_attr(not(doctest), doc = " [second]")]
+                    pub const DEFAULT_MIN_ELECTION_TIMEOUT: u8 = 2;
                     #[cfg_attr(
                         not(doctest),
                         doc = " [second]\n Given the minimum election timeout and the cluster size,\n the maximum recommended request interval can be derived as follows:\n\n   max recommended request interval = (min election timeout) / 2 requests / (cluster size - 1)\n\n The equation assumes that the Leader requests one Follower at a time, so that there's at most one pending call\n at any moment. Such behavior is optimal as it creates a uniform bus load, although it is implementation-specific.\n Obviously, the request interval can be lower than that if needed, but higher values are not recommended as they may\n cause Followers to initiate premature elections in case of frame losses or delays.\n\n The timeout value is randomized in the range (MIN, MAX], according to the Raft paper. The randomization granularity\n should be at least one millisecond or higher."
                     )]
                     pub const DEFAULT_MAX_ELECTION_TIMEOUT: u8 = 4;
-                    #[cfg_attr(not(doctest), doc = " [second]")]
-                    pub const DEFAULT_MIN_ELECTION_TIMEOUT: u8 = 2;
                 }
                 impl ::canadensis_encoding::Serialize for AppendEntriesRequest {
                     fn size_bits(&self) -> usize {
@@ -9496,10 +9482,6 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Fixed size 5 bytes
                 ///
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " This type is a part of the Raft consensus algorithm. The Raft consensus is used for the maintenance of the\n distributed allocation table between redundant allocators. The following description is focused on the exchanges\n between redundant PnP node-ID allocators. It does not apply to the case of non-redundant allocators, because\n in that case the allocation table is stored locally and the process of node-ID allocation is trivial and fully local.\n Exchanges between allocatees and allocators are documented in the appropriate message type definition.\n\n The algorithm used for replication of the allocation table across redundant allocators is a fairly direct\n implementation of the Raft consensus algorithm, as published in the paper\n \"In Search of an Understandable Consensus Algorithm (Extended Version)\" by Diego Ongaro and John Ousterhout.\n The following text assumes that the reader is familiar with the paper.\n\n The Raft log contains entries of type Entry (in the same namespace), where every entry contains the Raft term\n number, the unique-ID, and the corresponding node-ID value (or zeros if it could not be requested from a static\n node). Therefore, the Raft log is the allocation table itself.\n\n Since the maximum number of entries in the allocation table is limited by the range of node-ID values, the log\n capacity is bounded. Therefore, the snapshot transfer and log compaction functions are not required,\n so they are not used in this implementation of the Raft algorithm.\n\n When an allocator becomes the leader of the Raft cluster, it checks if the Raft log contains an entry for its own\n node-ID, and if it doesn't, the leader adds its own allocation entry to the log (the unique-ID can be replaced with\n zeros at the discretion of the implementer). This behavior guarantees that the Raft log always contains at least\n one entry, therefore it is not necessary to support negative log indices, as proposed by the Raft paper.\n\n Since the log is write-only and limited in growth, all allocations are permanent. This restriction is acceptable,\n since Cyphal is a vehicle bus, and configuration of vehicle's components is not expected to change frequently.\n Old allocations can be removed in order to free node-IDs for new allocations by clearing the Raft log on all\n allocators; such clearing shall be performed simultaneously while the network is down, otherwise the Raft cluster\n will automatically attempt to restore the lost state on the allocators where the table was cleared.\n\n The allocators need to be aware of each other's node-ID in order to form a cluster. In order to learn each other's\n node-ID values, the allocators broadcast messages of type Discovery (in the same namespace) until the cluster is\n fully discovered and all allocators know of each other's node-ID. This extension to the Raft algorithm makes the\n cluster almost configuration-free - the only parameter that shall be configured on all allocators of the cluster\n is the number of nodes in the cluster (everything else will be auto-detected).\n\n Runtime cluster membership changes are not supported, since they are not needed for a vehicle bus.\n\n As has been explained in the general description of the PnP node-ID allocation feature, allocators shall watch for\n unknown static nodes appearing on the bus. In the case of a non-redundant allocator, the task is trivial, since the\n allocation table can be updated locally. In the case of a Raft cluster, however, the network monitoring task shall\n be performed by the leader only, since other cluster members cannot commit to the shared allocation table (i.e.,\n the Raft log) anyway. Redundant allocators should not attempt to obtain the true unique-ID of the newly detected\n static nodes (use zeros instead), because the allocation table is write-only: if the unique-ID of a static node\n ever changes (e.g., a replacement unit is installed, or network configuration is changed manually), the change\n will be impossible to reflect in the allocation table.\n\n Only the current Raft leader can process allocation requests and engage in communication with allocatees.\n An allocator is allowed to send allocation responses only if both conditions are met:\n\n   - The allocator is currently the Raft leader.\n   - Its replica of the Raft log does not contain uncommitted entries (i.e. the last allocation request has been\n     completed successfully).\n\n All cluster maintenance traffic should normally use either the lowest or the next-to-lowest transfer priority level."
-                )]
                 pub struct AppendEntriesResponse {
                     ///
                     /// `saturated uint32`
@@ -9785,10 +9767,6 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                 ///
                 /// Fixed size 5 bytes
                 ///
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " This type is a part of the Raft consensus algorithm. Please refer to the type AppendEntries for details."
-                )]
                 pub struct RequestVoteResponse {
                     ///
                     /// `saturated uint32`
@@ -11433,10 +11411,6 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             /// Size ranges from 9 to 267 bytes
             ///
-            #[cfg_attr(
-                not(doctest),
-                doc = " Registers are strongly-typed named values used to store the configuration parameters of a node.\n This service is used to write and read a register.\n\n\n   READ/WRITE BEHAVIORS\n\n The write operation is performed first, unless skipped by sending an empty value in the request.\n The server may attempt to convert the type of the supplied value to the correct type if there is a type mismatch\n (e.g. uint8 may be converted to uint16); however, servers are not required to perform implicit type conversion,\n and the rules of such conversion are not explicitly specified, so this behavior should not be relied upon.\n\n On the next step the register will be read regardless of the outcome of the write operation. As such, if the write\n operation could not be performed (e.g. due to a type mismatch or any other issue), the register will retain its old\n value. By evaluating the response the caller can determine whether the register was written successfully.\n\n The write-read sequence is not guaranteed to be atomic, meaning that external influences may cause the register to\n change its value between the write and the subsequent read operation. The caller is responsible for handling that\n case properly.\n\n The timestamp provided in the response corresponds to the time when the register was read. The timestamp may\n be empty if the server does not support timestamping or its clock is not (yet) synchronized with the network.\n\n If only read is desired, but not write, the caller shall provide a value of type 'empty'. That will signal the server\n that the write operation shall be skipped, and it will proceed to read the register immediately.\n\n If the requested register does not exist, the write operation will have no effect and the returned value will be\n empty. Existing registers should not return 'empty' when read since that would make them indistinguishable from\n nonexistent registers.\n\n\n   REGISTER DEFINITION REQUIREMENTS\n\n Registers shall never change their type or flags as long as the server is running. Meaning that:\n   - Mutability and persistence flags cannot change their states.\n   - Read operations shall always return values of the same type and same dimensionality.\n     The dimensionality requirement does not apply to inherently variable-length values such as strings and\n     unstructured chunks.\n\n Register name should contain only:\n   - Lowercase ASCII alphanumeric characters (a-z, 0-9)\n   - Full stop (.)\n   - Low line (underscore) (_)\n With the following limitations/recommendations:\n   - The name shall not begin with a decimal digit (0-9).\n   - The name shall neither begin nor end with a full stop.\n   - A low line shall not be followed by a non-alphanumeric character.\n   - The name should contain at least one full stop character.\n Other patterns and ASCII characters are reserved for special function registers (introduced below).\n\n\n   ENVIRONMENT VARIABLES\n\n This section applies only to software nodes executed in a high-level operating system that supports environment\n variables or an equivalent mechanism.\n\n When a software node is launched, it is usually necessary to provide some of its configuration information early,\n particularly that which is related to Cyphal networking, before the node is started. Environment variables offer\n a convenient way of addressing this. Software nodes that support the register interface should evaluate the\n available environment variables during initialization and update their registers (whether they are stored in\n a persistent storage or in memory) accoringly. This should be completed before the first register read access.\n\n A register name is mapped to an environment variable name as follows:\n   - the name is upper-cased;\n   - full stop characters are replaced with double low line characters.\n For example: 'motor.inductance_dq' is mapped to 'MOTOR__INDUCTANCE_DQ'.\n\n Register values are represented in environment variables as follows:\n   - string:                         utf-8 or platform-specific\n   - unstructured:                   as-is\n   - bit, integer*, natural*, real*: space-separated decimals\n\n If an environment variable matches the name of an existing register but its value cannot be converted to the\n register's type, an error should be raised.\n\n If an environment variable does not match the name of any register, it may be ignored. However, if the implementation\n can reliably deduce the type and purpose of the register, it may create one automatically. This provision is to\n support applications where the register schema may be altered by configuration.\n\n\n   SPECIAL FUNCTION REGISTERS\n\n The following optional special function register names are defined:\n   - suffix '<' is used to define an immutable persistent value that contains the maximum value\n     of the respective register.\n   - suffix '>' is like above, used to define the minimum value of the respective register.\n   - suffix '=' is like above, used to define the default value of the respective register.\n   - prefix '*' is reserved for raw memory access (to be defined later).\n Examples:\n   - register name \"system.parameter\"\n   - maximum value is contained in the register named \"system.parameter<\" (optional)\n   - minimum value is contained in the register named \"system.parameter>\" (optional)\n   - default value is contained in the register named \"system.parameter=\" (optional)\n\n The type and dimensionality of the special function registers containing the minimum, maximum, and the default\n value of a register shall be the same as those of the register they relate to.\n\n If a written value exceeds the minimum/maximum specified by the respective special function registers,\n the server may either adjust the value automatically, or to retain the old value, depending on which behavior\n suits the objectives of the application better.\n The values of registers containing non-scalar numerical entities should be compared elementwise.\n\n\n   STANDARD REGISTERS\n\n The following table specifies the register name patterns that are reserved by the specification for\n common functions. These conventions are not mandatory to follow, but implementers are recommended to adhere because\n they enable enhanced introspection capabilities and simplify device configuration and diagnostics.\n\n   REGISTER NAME PATTERN                               TYPE            FLAGS                   RECOMMENDED DEFAULT\n =====================================================================================================================\n\n   uavcan.node.id                                      natural16[1]    mutable, persistent     65535 (unset/PnP)\n\n Contains the node-ID of the local node. Values above the maximum valid node-ID for the current transport\n indicate that the node-ID is not set; if plug-and-play is supported, it will be used by the node to obtain an\n automatic node-ID. Invalid values other than 65535 should be avoided for consistency.\n\n ---------------------------------------------------------------------------------------------------------------------\n\n   uavcan.node.description                             string          mutable, persistent     (empty)\n\n User/integrator-defined, human-readable description of this specific node.\n This is intended for use by a system integrator and should not be set by the manufacturer of a component.\n For example: on a quad-rotor drone this might read \"motor 2\" for one of the ESC nodes.\n\n ---------------------------------------------------------------------------------------------------------------------\n\n   uavcan.pub.PORT_NAME.id                             natural16[1]    mutable, persistent     65535 (unset, invalid)\n   uavcan.sub.PORT_NAME.id                             ditto           ditto                   ditto\n   uavcan.cln.PORT_NAME.id                             ditto           ditto                   ditto\n   uavcan.srv.PORT_NAME.id                             ditto           ditto                   ditto\n\n Publication/subscription/client/server port-ID, respectively. These registers are configured by the system integrator\n or an autoconfiguration authority when the node is first connected to a network.\n\n The \"PORT_NAME\" defines the human-friendly name of the port, which is related to the corresponding function\n or a network service supported by the node. The name shall match the following POSIX ERE expression:\n\n   [a-zA-Z_][a-zA-Z0-9_]*\n\n The names are defined by the vendor of the node. The user/integrator is expected to understand their meaning and\n relation to the functional capabilities of the node by reading the technical documentation provided by the vendor.\n\n A port whose port-ID register is unset (invalid value) remains inactive (unused); the corresponding function may\n be disabled. For example, a register named \"uavcan.pub.measurement.id\" defines the subject-ID of a measurement\n published by this node; if the register contains an invalid value (above the maximum valid subject-ID),\n said measurement is not published.\n\n The same name is used in other similar registers defined below. Network introspection and autoconfiguration tools\n will expect to find a register of this form for every configurable port supported by the node.\n\n ---------------------------------------------------------------------------------------------------------------------\n\n   uavcan.pub.PORT_NAME.type                           string          immutable, persistent   N/A\n   uavcan.sub.PORT_NAME.type                           ditto           ditto                   ditto\n   uavcan.cln.PORT_NAME.type                           ditto           ditto                   ditto\n   uavcan.srv.PORT_NAME.type                           ditto           ditto                   ditto\n\n Publication/subscription/client/server full data type name and dot-separated version numbers, respectively.\n These registers are set by the vendor once and typically they are to remain unchanged (hence \"immutable\").\n The \"PORT_NAME\" defines the human-friendly name of the port as specified above.\n For example, a register named \"uavcan.pub.measurement.type\" may contain \"uavcan.si.sample.angle.Quaternion.1.0\".\n\n ---------------------------------------------------------------------------------------------------------------------\n\n   uavcan.diagnostic.*\n\n Prefix reserved for future use.\n\n ---------------------------------------------------------------------------------------------------------------------\n\n   uavcan.can.bitrate                                  natural32[2]    implementation-defined  implementation-defined\n   uavcan.can.iface                                    string          mutable, persistent     implementation-defined\n\n These registers are only relevant for nodes that support Cyphal/CAN.\n\n uavcan.can.bitrate defines the CAN bus bit rate: the first value is the arbitration bit rate, the second is the\n data phase bit rate. Nodes that support only Classic CAN should ignore the second value. Nodes that support CAN FD\n should initialize in the Classic CAN mode (MTU 8 bytes, BRS flag not set) if the values are equal. If CAN bitrate\n is not configurable or is always auto-detected, this register may be omitted or made immutable; otherwise it should\n be mutable and persistent.\n\n uavcan.can.iface is only relevant for software nodes or nodes that are capable of using different CAN interfaces.\n The value is a space-separated list of CAN interface names to use. The name format is implementation-defined\n (for example, \"can0\").\n\n ---------------------------------------------------------------------------------------------------------------------\n\n   uavcan.udp.*\n\n Prefix reserved for future use.\n\n ---------------------------------------------------------------------------------------------------------------------#\n\n   uavcan.serial.*\n\n Prefix reserved for future use.\n\n ---------------------------------------------------------------------------------------------------------------------"
-            )]
             pub struct AccessResponse {
                 #[cfg_attr(
                     not(doctest),
@@ -11575,10 +11549,6 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             /// Size ranges from 1 to 256 bytes
             ///
-            #[cfg_attr(
-                not(doctest),
-                doc = " This service allows the caller to discover the names of all registers available on the server\n by iterating the index field from zero until an empty name is returned.\n\n The ordering of the registers shall remain constant while the server is running.\n The ordering is not guaranteed to remain unchanged when the server node is restarted."
-            )]
             pub struct ListResponse {
                 #[cfg_attr(
                     not(doctest),
@@ -15176,10 +15146,6 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             ///
             /// Fixed size 7 bytes
             ///
-            #[cfg_attr(
-                not(doctest),
-                doc = " Every node that acts as a time synchronization master, or is capable of acting as such,\n should support this service.\n Its objective is to provide information about which time system is currently used in the network.\n\n Once a time system is chosen, it cannot be changed as long as at least one node on the network is running.\n In other words, the time system cannot be changed while the network is operating.\n An implication of this is that if there are redundant time synchronization masters, they all shall\n use the same time system always."
-            )]
             pub struct GetSynchronizationMasterInfoResponse {
                 #[cfg_attr(
                     not(doctest),
@@ -15437,11 +15403,6 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
             impl TimeSystem {
                 #[cfg_attr(
                     not(doctest),
-                    doc = " Application-specific time system of unknown properties."
-                )]
-                pub const APPLICATION_SPECIFIC: u8 = 15;
-                #[cfg_attr(
-                    not(doctest),
                     doc = " Monotonic time since boot.\n Monotonic time is a time reference that doesn't change rate or make leaps."
                 )]
                 pub const MONOTONIC_SINCE_BOOT: u8 = 0;
@@ -15450,6 +15411,11 @@ Extended(crate::uavcan::metatransport::can::extended_arbitration_id_0_1::Extende
                     doc = " International Atomic Time; https://en.wikipedia.org/wiki/International_Atomic_Time.\n The timestamp value contains the number of microseconds elapsed since 1970-01-01T00:00:00Z TAI.\n TAI is always a fixed integer number of seconds ahead of GPS time.\n Systems that use GPS time as a reference should convert that to TAI by adding the fixed difference.\n GPS time is not supported for reasons of consistency across different positioning systems and applications."
                 )]
                 pub const TAI: u8 = 1;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Application-specific time system of unknown properties."
+                )]
+                pub const APPLICATION_SPECIFIC: u8 = 15;
             }
             impl ::canadensis_encoding::Serialize for TimeSystem {
                 fn size_bits(&self) -> usize {

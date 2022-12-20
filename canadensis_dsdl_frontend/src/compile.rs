@@ -65,7 +65,7 @@ impl<'p> CompileContext<'p> {
     ///
     /// If the current file defines a service type, constants declared in the request section
     /// are not available in the response section.
-    pub fn constants(&self) -> &BTreeMap<String, Constant> {
+    pub fn constants(&self) -> &Constants {
         &self.current_file.constants
     }
 
@@ -418,7 +418,7 @@ struct FileState {
     /// The path components of the package that the file is in
     path: Vec<String>,
     /// Constants defined in the file so far
-    constants: BTreeMap<String, Constant>,
+    constants: Constants,
     /// True if this type is deprecated
     ///
     /// For service types, this applies to both the request and response.
@@ -435,7 +435,7 @@ impl Default for FileState {
     fn default() -> Self {
         FileState {
             path: vec![],
-            constants: BTreeMap::new(),
+            constants: Constants::default(),
             deprecated: false,
             state: Some(State::Message),
             comments: String::new(),
@@ -462,6 +462,7 @@ impl FileState {
                     kind: MessageKind::Struct(Struct { fields }),
                     bit_length: length,
                     constants: self.take_constants(),
+                    comments: mem::take(&mut self.comments),
                 };
                 self.state = Some(State::Response(message));
                 Ok(())
@@ -479,6 +480,7 @@ impl FileState {
                     }),
                     bit_length: length,
                     constants: self.take_constants(),
+                    comments: mem::take(&mut self.comments),
                 };
                 self.state = Some(State::Response(message));
                 Ok(())
@@ -649,8 +651,7 @@ impl FileState {
         // If state is not State::Message, the comment applies to the most recent field, variant,
         // or constant.
         // Find the most recent constant for comparison.
-        let last_constant: Option<&mut Constant> =
-            self.constants.values_mut().max_by_key(|c| c.end_offset());
+        let last_constant: Option<&mut Constant> = self.constants.last_mut();
 
         match self.state.as_mut().expect("No state") {
             State::Message => {
@@ -675,7 +676,16 @@ impl FileState {
                 apply_comment_to_constant_or_variant(last_constant, variants.last_mut(), comment);
             }
             State::Response(_) => {
-                // Don't expect a comment here, ignore
+                if let Some(last_constant) = last_constant {
+                    // Have at least one constant, comment belongs there
+                    last_constant.append_comment(comment);
+                } else {
+                    // Comment applies to top-level
+                    if !self.comments.is_empty() {
+                        self.comments.push('\n');
+                    }
+                    self.comments.push_str(comment);
+                }
             }
             State::ResponseStruct(_, StructState::Collecting(fields), _) => {
                 apply_comment_to_constant_or_field(last_constant, fields.last_mut(), comment);
@@ -702,12 +712,12 @@ impl FileState {
                     extent,
                     kind: MessageKind::Struct(Struct { fields }),
                     bit_length: length.pad_to_alignment(COMPOSITE_ALIGNMENT),
-                    constants: Constants::from_map(self.constants),
+                    constants: self.constants,
+                    comments: self.comments,
                 };
                 Ok(CompiledDsdl {
                     fixed_port_id,
                     kind: DsdlKind::Message(message),
-                    comments: self.comments,
                 })
             }
             State::ResponseStruct(request, StructState::End(fields, extent), length) => {
@@ -716,12 +726,12 @@ impl FileState {
                     extent,
                     kind: MessageKind::Struct(Struct { fields }),
                     bit_length: length.pad_to_alignment(COMPOSITE_ALIGNMENT),
-                    constants: Constants::from_map(self.constants),
+                    constants: self.constants,
+                    comments: self.comments,
                 };
                 Ok(CompiledDsdl {
                     fixed_port_id,
                     kind: DsdlKind::Service { request, response },
-                    comments: self.comments,
                 })
             }
             State::MessageUnion(UnionState::End(variants, extent, length)) => {
@@ -734,12 +744,12 @@ impl FileState {
                         variants,
                     }),
                     bit_length: length.pad_to_alignment(COMPOSITE_ALIGNMENT),
-                    constants: Constants::from_map(self.constants),
+                    constants: self.constants,
+                    comments: self.comments,
                 };
                 Ok(CompiledDsdl {
                     fixed_port_id,
                     kind: DsdlKind::Message(message),
-                    comments: self.comments,
                 })
             }
             State::ResponseUnion(request, UnionState::End(variants, extent, length)) => {
@@ -752,12 +762,12 @@ impl FileState {
                         variants,
                     }),
                     bit_length: length.pad_to_alignment(COMPOSITE_ALIGNMENT),
-                    constants: Constants::from_map(self.constants),
+                    constants: self.constants,
+                    comments: self.comments,
                 };
                 Ok(CompiledDsdl {
                     fixed_port_id,
                     kind: DsdlKind::Service { request, response },
-                    comments: self.comments,
                 })
             }
             State::Message
@@ -777,7 +787,7 @@ impl FileState {
     /// Removes and returns the current constants map, replacing it with an empty map
     #[must_use]
     fn take_constants(&mut self) -> Constants {
-        Constants::from_map(mem::take(&mut self.constants))
+        mem::take(&mut self.constants)
     }
 }
 

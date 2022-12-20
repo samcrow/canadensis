@@ -54,13 +54,17 @@ fn write_complex_size_expression(f: &mut Formatter, ty: &GeneratedType) -> Resul
             for variant in genum.variants.iter() {
                 // Match arm (inner value is called `inner`)
                 writeln!(f, "{}::{}(inner) => {{", ty.name.type_name, variant.name)?;
-                Display::fmt(
-                    &WriteFieldSize {
-                        ty: &variant.cyphal_ty,
-                        expr: "inner",
-                    },
-                    f,
-                )?;
+                if let Some(ty) = &variant.ty {
+                    Display::fmt(
+                        &WriteFieldSize {
+                            ty: &ty.cyphal_ty,
+                            expr: "inner",
+                        },
+                        f,
+                    )?;
+                } else {
+                    // No data, no size, nothing to do
+                }
 
                 // End match arm
                 writeln!(f, "}}")?;
