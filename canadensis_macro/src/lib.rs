@@ -48,7 +48,13 @@ fn types_from_dsdl_inner(
                         )
                     })?;
                     let code =
-                        canadensis_codegen_rust::generate_code(&compiled, &external_packages);
+                        canadensis_codegen_rust::generate_code(&compiled, &external_packages)
+                            .map_err(|e| {
+                                make_error(
+                                    name.span(),
+                                    format!("Failed to generate code from DSDL: {}", ErrorChain(e)),
+                                )
+                            })?;
                     let code_string = code.to_string();
                     let parsed_code: proc_macro2::TokenStream = code_string
                         .parse()

@@ -124,6 +124,58 @@ pub mod canadensis {
 Note that this file contains only the custom `ContainsHealth` type, and refers to
 the existing `Health` type `canadensis_data_types::uavcan::node::health_1_0::Health`.
 
+### Generating enums
+
+All non-union DSDL types normally get converted into Rust structs. Some DSDL
+types are better represented as Rust enums because they have a single integer
+field that is allowed to have certain predefined values. Two examples of this are
+`uavcan.node.Health.1.0` and `uavcan.diagnostic.Severity.1.0`.
+
+This software does not currently automatically produce enums for non-union DSDL
+types. Instead, a DSDL type (message, request, or response) can be marked with
+a `#[canadensis(enum)]` comment to enable enum generation. The `#` must be at
+the beginning of the line for the comment to be recognized. The comment should
+be before the first field.
+
+For a DSDL type to produce a Rust enum, it must follow all the following rules:
+* The type is not a union
+* The type has exactly one field, and that field has an unsigned integer type
+* If the type has any constants, each constant has the same type as the field
+* No two constants in the type have the same value
+
+Any type marked with `#[canadensis(enum)]` that does not follow the rules
+will cause a code generation error.
+
+In the generated code, each constant becomes an enum variant. The normal Rust
+enum limitations apply. When deserializing, any value that is not equal to
+one of the DSDL constants will cause an error.
+
+#### Example
+
+DSDL:
+```text
+#[canadensis(enum)]
+uint1 value
+
+uint1 BUTTERCREAM = 0
+uint1 PASTRY_CREAM = 1
+
+@sealed
+```
+
+Generated code:
+```rust
+/// `canadensis.Uint1Exhaustive.1.0`
+///
+/// Fixed size 1 bytes
+///
+#[cfg_attr(not(doctest), doc = "[canadensis(enum)]")]
+pub enum Uint1Exhaustive {
+    Buttercream,
+    PastryCream,
+}
+```
+
 ## Limitations
 
 * Types that support zero-copy serialization/deserialization are always labeled

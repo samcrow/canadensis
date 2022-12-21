@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_core`: Added `remove` function to `SessionTracker` (Breaking change)
 - `canadensis_codegen_rust`: Added the ability to produce documentation comments in generated code based on DSDL
   comments
+- `canadensis_codegen_rust`: Added the ability to generate enums from DSDL types marked with `#[canadensis(enum)]`
+- `canadensis_codegen_rust`: Breaking change: Code generation can fail with an error
 - `canadensis_data_types`: Added documentation from DSDL comments
 
 
@@ -19,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_udp`: Major rework for [new version of Cyphal/UDP](https://forum.opencyphal.org/t/cyphal-udp-architectural-issues-caused-by-the-dependency-between-the-nodes-ip-address-and-its-identity/1765/60)
 - `canadensis_dsdl_parser`: Breaking change: Added comment parsing
 - `canadensis_dsdl_frontend`: Breaking change: Added comment handling, made some struct fields private
+- `canadensis_dsdl_frontend`: Constants are now stored in the order they are declared in the DSDL file, instead of
+  alphabetical order by name
+- `canadensis_data_types`: Changed the order of constants to match the order in the DSDL files
+- `canadensis_macro`: Code generation can fail with an error
 
 
 ## [canadensis_core-v0.2.3](https://github.com/samcrow/canadensis/tree/canadensis_core-v0.2.3) - 2022-10-18
