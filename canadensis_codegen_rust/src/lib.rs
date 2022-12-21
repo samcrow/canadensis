@@ -224,7 +224,7 @@ fn generate_rust_type<'c>(
                     extent,
                     role,
                     cyphal_struct,
-                    message.constants(),
+                    message.constants().clone(),
                     deprecated,
                     comments,
                     external_packages,
@@ -242,12 +242,12 @@ fn generate_rust_type<'c>(
                 extent,
                 role,
                 cyphal_union,
-                message.constants(),
+                message.constants().clone(),
                 deprecated,
                 comments,
                 external_packages,
             ))
-        },
+        }
     }
 }
 
@@ -286,7 +286,7 @@ struct GeneratedType<'c> {
     extent: Extent,
     role: MessageRole,
     kind: GeneratedTypeKind<'c>,
-    constants: &'c Constants,
+    constants: Constants,
     deprecated: bool,
     comments: &'c str,
 }
@@ -304,7 +304,7 @@ impl<'c> GeneratedType<'c> {
         extent: Extent,
         role: MessageRole,
         cyphal_struct: &'c Struct,
-        constants: &'c Constants,
+        constants: Constants,
         deprecated: bool,
         comments: &'c str,
         external_packages: &BTreeMap<Vec<String>, Vec<String>>,
@@ -342,7 +342,7 @@ impl<'c> GeneratedType<'c> {
         extent: Extent,
         role: MessageRole,
         cyphal_union: &'c Union,
-        constants: &'c Constants,
+        constants: Constants,
         deprecated: bool,
         comments: &'c str,
         external_packages: &BTreeMap<Vec<String>, Vec<String>>,
@@ -384,7 +384,7 @@ impl<'c> GeneratedType<'c> {
         extent: Extent,
         role: MessageRole,
         kind: GeneratedTypeKind<'c>,
-        constants: &'c Constants,
+        constants: Constants,
         deprecated: bool,
         comments: &'c str,
     ) -> Self {
@@ -829,7 +829,7 @@ mod fmt_impl {
             )?;
 
             if supports_zero_copy {
-                // Add some static assertions about the type size and field layout
+                // Add some assertions about the type size and field layout
                 writeln!(f, "#[test] fn test_layout() {{")?;
                 // Check total size
                 writeln!(
@@ -865,7 +865,7 @@ mod fmt_impl {
                     }
                     GeneratedTypeKind::Enum(_) => unreachable!("Enums can't be zero-copy"),
                 }
-
+                // End of test function
                 writeln!(f, "}}")?;
             }
 

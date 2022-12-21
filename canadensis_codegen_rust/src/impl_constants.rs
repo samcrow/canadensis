@@ -11,7 +11,7 @@ pub(crate) struct ImplementConstants<'t, 'c>(pub &'t GeneratedType<'c>);
 impl Display for ImplementConstants<'_, '_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         writeln!(f, "impl {} {{", self.0.name.type_name)?;
-        for (name, constant) in self.0.constants {
+        for (name, constant) in &self.0.constants {
             let name = make_rust_identifier(name.clone());
             let rust_type_name: String = match constant.ty() {
                 PrimitiveType::Boolean => "bool".into(),

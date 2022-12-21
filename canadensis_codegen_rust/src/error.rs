@@ -6,7 +6,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(thiserror::Error, Debug)]
 pub enum EnumError {
-    #[error("Multiple fields in enum type, expected one discriminant field")]
+    #[error("Multiple fields or no field in enum type, expected one discriminant field")]
     EnumMultipleFields,
     #[error("Field {0} must be an unsigned integer")]
     FieldType(String),

@@ -132,8 +132,8 @@ pub(crate) fn generate_enum_from_struct<'a>(
             discriminant_bits,
             variants,
         }),
-        // TODO: The constants should be empty. They were all consumed to make the variants.
-        constants,
+        // Constants were all consumed to make the variants
+        Constants::default(),
         deprecated,
         comments,
     ))

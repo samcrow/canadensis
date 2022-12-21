@@ -63,11 +63,19 @@ impl Display for ImplementSerialize<'_, '_> {
                         writeln!(f, "{}::{} => {{", self.ty.name.type_name, variant.name)?;
                     }
                     // Write discriminant
-                    writeln!(
-                        f,
-                        "cursor.write_aligned_u{}({});",
-                        genum.discriminant_bits, variant.discriminant
-                    )?;
+                    if have_aligned_write_functions(genum.discriminant_bits) {
+                        writeln!(
+                            f,
+                            "cursor.write_aligned_u{}({});",
+                            genum.discriminant_bits, variant.discriminant
+                        )?;
+                    } else {
+                        writeln!(
+                            f,
+                            "cursor.write_u{}({});",
+                            genum.discriminant_bits, variant.discriminant
+                        )?;
+                    }
                     // Write the content of this variant
                     Display::fmt(&SerializeVariant(variant), f)?;
 
@@ -85,6 +93,15 @@ impl Display for ImplementSerialize<'_, '_> {
         // End of impl
         writeln!(f, "}}")?;
         Ok(())
+    }
+}
+
+/// Returns true if canadensis_encoding has a write_aligned function for an unsigned integer
+/// with the specified number of bits
+fn have_aligned_write_functions(bits: u8) -> bool {
+    match bits {
+        8 | 16 | 32 | 64 => true,
+        _ => false,
     }
 }
 
