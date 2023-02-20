@@ -8,7 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `canadensis`: Added loopback publishing/requesting functions and loopback handler function
+- `canadensis_bxcan`: Added support for loopback frames, with timestamps based on the transmit time calculated by
+  software
+- `canadensis_can`: Added support for loopback frames and transfers
 - `canadensis_core`: Added `remove` function to `SessionTracker` (Breaking change)
+- `canadensis_core`: Added `loopback` field to transfer types (Breaking change)
 - `canadensis_codegen_rust`: Added the ability to produce documentation comments in generated code based on DSDL
   comments
 - `canadensis_codegen_rust`: Added the ability to generate enums from DSDL types marked with `#[canadensis(enum)]`
