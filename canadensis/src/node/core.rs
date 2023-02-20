@@ -88,6 +88,8 @@ where
         &mut self.driver
     }
 
+    /// Categorizes a transfer as a message, request, response, or loopback,
+    /// and calls the corresponding method of the handler
     fn handle_incoming_transfer<H>(
         &mut self,
         transfer: Transfer<Vec<u8>, C::Instant, U::Transport>,
@@ -95,33 +97,40 @@ where
     ) where
         H: TransferHandler<<Self as Node>::Instant, U::Transport>,
     {
-        match transfer.header {
-            Header::Message(message_header) => {
-                let message_transfer = MessageTransfer {
-                    header: message_header,
-                    payload: transfer.payload,
-                };
-                handler.handle_message(self, &message_transfer);
-            }
-            Header::Request(service_header) => {
-                let token = ResponseToken {
-                    service: service_header.service,
-                    client: service_header.source.clone(),
-                    transfer: service_header.transfer_id.clone(),
-                    priority: service_header.priority.clone(),
-                };
-                let service_transfer = ServiceTransfer {
-                    header: service_header,
-                    payload: transfer.payload,
-                };
-                handler.handle_request(self, token, &service_transfer);
-            }
-            Header::Response(service_header) => {
-                let service_transfer = ServiceTransfer {
-                    header: service_header,
-                    payload: transfer.payload,
-                };
-                handler.handle_response(self, &service_transfer);
+        if transfer.loopback {
+            handler.handle_loopback(self, &transfer);
+        } else {
+            match transfer.header {
+                Header::Message(message_header) => {
+                    let message_transfer = MessageTransfer {
+                        header: message_header,
+                        loopback: transfer.loopback,
+                        payload: transfer.payload,
+                    };
+                    handler.handle_message(self, &message_transfer);
+                }
+                Header::Request(service_header) => {
+                    let token = ResponseToken {
+                        service: service_header.service,
+                        client: service_header.source.clone(),
+                        transfer: service_header.transfer_id.clone(),
+                        priority: service_header.priority.clone(),
+                    };
+                    let service_transfer = ServiceTransfer {
+                        header: service_header,
+                        loopback: transfer.loopback,
+                        payload: transfer.payload,
+                    };
+                    handler.handle_request(self, token, &service_transfer);
+                }
+                Header::Response(service_header) => {
+                    let service_transfer = ServiceTransfer {
+                        header: service_header,
+                        loopback: transfer.loopback,
+                        payload: transfer.payload,
+                    };
+                    handler.handle_response(self, &service_transfer);
+                }
             }
         }
     }
@@ -141,6 +150,7 @@ where
                 source: self.node_id.clone(),
                 destination: token.client,
             }),
+            loopback: false,
             payload,
         };
         self.transmitter
@@ -219,6 +229,27 @@ where
         )
     }
 
+    fn publish_loopback<M>(
+        &mut self,
+        token: &PublishToken<M>,
+        payload: &M,
+    ) -> nb::Result<(), T::Error>
+    where
+        M: Message + Serialize,
+    {
+        let publisher = self
+            .publishers
+            .get_mut(&token.0)
+            .expect("Bug: Token exists but no publisher");
+        publisher.publish_loopback(
+            &mut self.clock,
+            token.0,
+            payload,
+            &mut self.transmitter,
+            &mut self.driver,
+        )
+    }
+
     /// Sets up to send requests for a service
     ///
     /// This also subscribes to the corresponding responses.
@@ -285,6 +316,32 @@ where
             .get_mut(&token.0)
             .expect("Bug: No requester for token");
         requester.send(
+            &mut self.clock,
+            token.0,
+            payload,
+            destination,
+            &mut self.transmitter,
+            &mut self.driver,
+        )
+    }
+
+    fn send_request_loopback<M>(
+        &mut self,
+        token: &ServiceToken<M>,
+        payload: &M,
+        destination: <Self::Transport as Transport>::NodeId,
+    ) -> nb::Result<
+        <Self::Transport as Transport>::TransferId,
+        <Self::Transmitter as Transmitter<Self::Instant>>::Error,
+    >
+    where
+        M: Request + Serialize,
+    {
+        let requester = self
+            .requesters
+            .get_mut(&token.0)
+            .expect("Bug: No requester for token");
+        requester.send_loopback(
             &mut self.clock,
             token.0,
             payload,

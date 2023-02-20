@@ -377,7 +377,11 @@ where
                         },
                     );
                 }
-                Some(Transfer { header, payload })
+                Some(Transfer {
+                    header,
+                    loopback: false,
+                    payload,
+                })
             } else {
                 // The subscription was removed while receiving the transfer
                 None

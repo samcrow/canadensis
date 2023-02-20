@@ -93,6 +93,8 @@ where
 pub trait TransferHandler<I: Instant, T: Transport> {
     /// Potentially handles an incoming message transfer
     ///
+    /// This function does not handle any loopback transfers.
+    ///
     /// This function returns true if the message was handled and should not be sent on to other
     /// handlers.
     ///
@@ -106,6 +108,8 @@ pub trait TransferHandler<I: Instant, T: Transport> {
     }
 
     /// Potentially handles an incoming service request
+    ///
+    /// This function does not handle any loopback transfers.
     ///
     /// This function returns true if the request was handled and should not be sent on to other
     /// handlers.
@@ -122,6 +126,8 @@ pub trait TransferHandler<I: Instant, T: Transport> {
 
     /// Potentially handles an incoming service response
     ///
+    /// This function does not handle any loopback transfers.
+    ///
     /// This function returns true if the response was handled and should not be sent on to other
     /// handlers.
     ///
@@ -131,6 +137,23 @@ pub trait TransferHandler<I: Instant, T: Transport> {
         _node: &mut N,
         _transfer: &ServiceTransfer<Vec<u8>, I, T>,
     ) -> bool {
+        false
+    }
+
+    /// Potentially handles a loopback transfer sent from this node
+    ///
+    /// All loopback transfers (message, request, and response) are handled here.
+    ///
+    /// This function returns true if the response was handled and should not be sent on to other
+    /// handlers.
+    ///
+    /// The default implementation does nothing and returns false.
+    fn handle_loopback<N: Node<Instant = I, Transport = T>>(
+        &mut self,
+        node: &mut N,
+        transfer: &Transfer<Vec<u8>, I, T>,
+    ) -> bool {
+        drop((node, transfer));
         false
     }
 
@@ -175,6 +198,14 @@ where
         transfer: &ServiceTransfer<Vec<u8>, I, T>,
     ) -> bool {
         <H as TransferHandler<I, T>>::handle_response(self, node, transfer)
+    }
+
+    fn handle_loopback<N: Node<Instant = I, Transport = T>>(
+        &mut self,
+        node: &mut N,
+        transfer: &Transfer<Vec<u8>, I, T>,
+    ) -> bool {
+        <H as TransferHandler<I, T>>::handle_loopback(self, node, transfer)
     }
 
     fn chain<H1>(self, next: H1) -> TransferHandlerChain<Self, H1>
@@ -270,6 +301,19 @@ where
             self.handler1.handle_response(node, transfer)
         }
     }
+
+    fn handle_loopback<N: Node<Instant = I, Transport = T>>(
+        &mut self,
+        node: &mut N,
+        transfer: &Transfer<Vec<u8>, I, T>,
+    ) -> bool {
+        let handled = self.handler0.handle_loopback(node, transfer);
+        if handled {
+            true
+        } else {
+            self.handler1.handle_loopback(node, transfer)
+        }
+    }
 }
 
 /// A Cyphal node
@@ -337,6 +381,17 @@ pub trait Node {
     where
         T: Message + Serialize;
 
+    /// Publishes a message with the loopback flag set to true
+    ///
+    /// A token can be created by calling [`start_publishing`](#tymethod.start_publishing).
+    fn publish_loopback<T>(
+        &mut self,
+        token: &PublishToken<T>,
+        payload: &T,
+    ) -> nb::Result<(), <Self::Transmitter as Transmitter<Self::Instant>>::Error>
+    where
+        T: Message + Serialize;
+
     /// Sets up to send requests for a service
     ///
     /// This also subscribes to the corresponding responses.
@@ -373,6 +428,21 @@ pub trait Node {
     where
         T: Request + Serialize;
 
+    /// Sends a service request to another node, with the loopback flag set to true
+    ///
+    /// On success, this function returns the transfer ID of the request.
+    fn send_request_loopback<T>(
+        &mut self,
+        token: &ServiceToken<T>,
+        payload: &T,
+        destination: <Self::Transport as Transport>::NodeId,
+    ) -> nb::Result<
+        <Self::Transport as Transport>::TransferId,
+        <Self::Transmitter as Transmitter<Self::Instant>>::Error,
+    >
+    where
+        T: Request + Serialize;
+
     /// Subscribes to messages on a topic
     fn subscribe_message(
         &mut self,
@@ -394,6 +464,8 @@ pub trait Node {
     /// This function requires a response token to match this response to its corresponding
     /// request. The token is passed to a transfer handler along with a request, so that the handler
     /// can send a response.
+    ///
+    /// The response has its loopback flag set to false.
     fn send_response<T>(
         &mut self,
         token: ResponseToken<Self::Transport>,

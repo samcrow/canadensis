@@ -62,6 +62,32 @@ where
         transmitter: &mut T,
         driver: &mut T::Driver,
     ) -> nb::Result<(), AnonymousPublishError<T::Error>> {
+        self.send_inner(payload, false, clock, transmitter, driver)
+    }
+
+    /// Prepares an anonymous message, with the loopback flag set, for sending and pushes it into
+    /// the provided transmitter
+    ///
+    /// This function returns an error if the message is too long to fit into one frame, or if
+    /// memory allocation fails.
+    pub fn send_loopback(
+        &mut self,
+        payload: &M,
+        clock: &mut C,
+        transmitter: &mut T,
+        driver: &mut T::Driver,
+    ) -> nb::Result<(), AnonymousPublishError<T::Error>> {
+        self.send_inner(payload, true, clock, transmitter, driver)
+    }
+
+    fn send_inner(
+        &mut self,
+        payload: &M,
+        loopback: bool,
+        clock: &mut C,
+        transmitter: &mut T,
+        driver: &mut T::Driver,
+    ) -> nb::Result<(), AnonymousPublishError<T::Error>> {
         // Check that the message fits into one frame
         // Convert to bites, rounding up
         let payload_size_bytes = (payload.size_bits() + 7) / 8;
@@ -71,7 +97,14 @@ where
         // Part 1: Serialize
         let deadline = self.timeout + clock.now();
         do_serialize(payload, |payload_bytes| {
-            self.send_payload(payload_bytes, deadline, transmitter, clock, driver)
+            self.send_payload(
+                payload_bytes,
+                deadline,
+                loopback,
+                transmitter,
+                clock,
+                driver,
+            )
         })
         .map_err(|e| e.map(AnonymousPublishError::Transport))?;
         Ok(())
@@ -81,6 +114,7 @@ where
         &mut self,
         payload: &[u8],
         deadline: C::Instant,
+        loopback: bool,
         transmitter: &mut T,
         clock: &mut C,
         driver: &mut T::Driver,
@@ -94,6 +128,7 @@ where
                 subject: self.subject,
                 source: None,
             }),
+            loopback,
             payload,
         };
         self.next_transfer_id = self.next_transfer_id.clone().increment();

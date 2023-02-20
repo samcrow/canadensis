@@ -12,6 +12,8 @@ use core::fmt::Debug;
 pub struct Session<I> {
     /// Timestamp of the first frame received in this transfer
     transfer_timestamp: I,
+    /// Loopback flag of the first frame received in this transfer
+    loopback: bool,
     /// Transfer reassembly
     buildup: Buildup,
 }
@@ -28,9 +30,11 @@ where
         transfer_timestamp: I,
         transfer_id: CanTransferId,
         max_payload_length: usize,
+        loopback: bool,
     ) -> Result<Self, OutOfMemoryError> {
         Ok(Session {
             transfer_timestamp,
+            loopback,
             buildup: Buildup::new(transfer_id, max_payload_length)?,
         })
     }
@@ -53,6 +57,10 @@ where
             // This is a frame from some other transfer. Ignore it, but keep this session to receive
             // possible later frames.
             log::info!("Frame transfer ID does not match, ignoring");
+            return Ok(None);
+        }
+        if frame.loopback() != self.loopback {
+            log::info!("Frame loopback flag does not match, ignoring");
             return Ok(None);
         }
         // Check if this frame will make the transfer exceed the maximum length
@@ -108,6 +116,7 @@ where
 
         Ok(Some(Transfer {
             header: transfer_header,
+            loopback: self.loopback,
             payload: transfer_data,
         }))
     }

@@ -276,6 +276,15 @@ impl<I, T: Transport + ?Sized> Header<I, T> {
 pub struct Transfer<A, I, T: Transport + ?Sized> {
     /// The transfer header
     pub header: Header<I, T>,
+    /// The loopback flag
+    ///
+    /// The exact meaning of this flag depends on the transport. Generally, when a transport
+    /// handles an outgoing loopback transfer, it creates a duplicate transfer with the loopback
+    /// flag set to true and sends that transfer back through the local receiving process.
+    ///
+    /// If the transport does not support loopback, this flag has no effect.
+    ///
+    pub loopback: bool,
     /// The actual transfer payload
     ///
     /// The type A usually implements `AsRef<[u8]>`. It is often a `Vec<u8>` or a `&[u8]`.
@@ -290,6 +299,7 @@ where
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Transfer")
             .field("header", &self.header)
+            .field("loopback", &self.loopback)
             .field("payload", &self.payload)
             .finish()
     }
@@ -304,7 +314,9 @@ where
     T::NodeId: PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
-        self.header == other.header && self.payload == other.payload
+        self.header == other.header
+            && self.loopback == other.loopback
+            && self.payload == other.payload
     }
 }
 impl<A, I, T: Transport + ?Sized> Clone for Transfer<A, I, T>
@@ -318,6 +330,7 @@ where
     fn clone(&self) -> Self {
         Transfer {
             header: self.header.clone(),
+            loopback: self.loopback,
             payload: self.payload.clone(),
         }
     }
@@ -328,6 +341,15 @@ where
 pub struct MessageTransfer<A, I, T: Transport + ?Sized> {
     /// The transfer header
     pub header: MessageHeader<I, T>,
+    /// The loopback flag
+    ///
+    /// The exact meaning of this flag depends on the transport. Generally, when a transport
+    /// handles an outgoing loopback transfer, it creates a duplicate transfer with the loopback
+    /// flag set to true and sends that transfer back through the local receiving process.
+    ///
+    /// If the transport does not support loopback, this flag has no effect.
+    ///
+    pub loopback: bool,
     /// The actual transfer payload
     ///
     /// The type A usually implements `AsRef<[u8]>`. It is often a `Vec<u8>` or a `&[u8]`.
@@ -342,6 +364,7 @@ where
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Transfer")
             .field("header", &self.header)
+            .field("loopback", &self.loopback)
             .field("payload", &self.payload)
             .finish()
     }
@@ -356,7 +379,9 @@ where
     T::NodeId: PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
-        self.header == other.header && self.payload == other.payload
+        self.header == other.header
+            && self.loopback == other.loopback
+            && self.payload == other.payload
     }
 }
 
@@ -365,6 +390,15 @@ where
 pub struct ServiceTransfer<A, I, T: Transport + ?Sized> {
     /// The transfer header
     pub header: ServiceHeader<I, T>,
+    /// The loopback flag
+    ///
+    /// The exact meaning of this flag depends on the transport. Generally, when a transport
+    /// handles an outgoing loopback transfer, it creates a duplicate transfer with the loopback
+    /// flag set to true and sends that transfer back through the local receiving process.
+    ///
+    /// If the transport does not support loopback, this flag has no effect.
+    ///
+    pub loopback: bool,
     /// The actual transfer payload
     ///
     /// The type A usually implements `AsRef<[u8]>`. It is often a `Vec<u8>` or a `&[u8]`.
@@ -379,6 +413,7 @@ where
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Transfer")
             .field("header", &self.header)
+            .field("loopback", &self.loopback)
             .field("payload", &self.payload)
             .finish()
     }
@@ -393,6 +428,8 @@ where
     T::NodeId: PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
-        self.header == other.header && self.payload == other.payload
+        self.header == other.header
+            && self.loopback == other.loopback
+            && self.payload == other.payload
     }
 }
