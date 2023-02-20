@@ -217,6 +217,17 @@ where
         self.node.node_mut().publish(token, payload)
     }
 
+    fn publish_loopback<T>(
+        &mut self,
+        token: &PublishToken<T>,
+        payload: &T,
+    ) -> nb::Result<(), <Self::Transmitter as Transmitter<Self::Instant>>::Error>
+    where
+        T: Message + Serialize,
+    {
+        self.node.node_mut().publish_loopback(token, payload)
+    }
+
     fn start_sending_requests<T>(
         &mut self,
         service: ServiceId,
@@ -263,6 +274,23 @@ where
         self.node
             .node_mut()
             .send_request(token, payload, destination)
+    }
+
+    fn send_request_loopback<T>(
+        &mut self,
+        token: &ServiceToken<T>,
+        payload: &T,
+        destination: <Self::Transport as Transport>::NodeId,
+    ) -> nb::Result<
+        <Self::Transport as Transport>::TransferId,
+        <Self::Transmitter as Transmitter<Self::Instant>>::Error,
+    >
+    where
+        T: Request + Serialize,
+    {
+        self.node
+            .node_mut()
+            .send_request_loopback(token, payload, destination)
     }
 
     fn subscribe_message(

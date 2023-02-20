@@ -98,6 +98,7 @@ impl<I: Instant> Subscription<I> {
             payload.try_extend_from_slice(data_without_tail)?;
             let transfer = Transfer {
                 header: frame_header,
+                loopback: frame.loopback(),
                 payload,
             };
             Ok(Some(transfer))
@@ -138,6 +139,7 @@ impl<I: Instant> Subscription<I> {
                     frame_header.timestamp(),
                     tail.transfer_id,
                     self.payload_size_max,
+                    frame.loopback(),
                 )?)?);
                 log::debug!(
                     "Created new session for transfer ID {:?} on port {:?}",
@@ -186,6 +188,7 @@ impl<I: Instant> Subscription<I> {
 
         Ok(Some(Transfer {
             header: frame_header,
+            loopback: frame.loopback(),
             payload: transfer_data,
         }))
     }

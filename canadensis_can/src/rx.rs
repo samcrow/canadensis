@@ -279,19 +279,27 @@ where
             }
         };
         // Check that the frame is actually destined for this node, and this node can handle services
+        // Exception: Loopback frames came from this node and are always accepted
         if let Header::Request(service_header) | Header::Response(service_header) = &frame_header {
-            if let Some(this_id) = self.id {
-                if service_header.destination != this_id {
-                    // This frame is a service request or response going to some other node
-                    return Ok(None);
-                }
-            } else {
-                // This node is anonymous, so it must ignore all service frames
+            if !(frame.loopback() || self.can_accept_service(service_header)) {
                 return Ok(None);
             }
         }
-
         self.accept_sane_frame(frame, frame_header, tail)
+    }
+
+    fn can_accept_service(&self, service_header: &ServiceHeader<I, CanTransport>) -> bool {
+        if let Some(this_id) = self.id {
+            if service_header.destination != this_id {
+                // This frame is a service request or response going to some other node
+                false
+            } else {
+                true
+            }
+        } else {
+            // This node is anonymous, so it must ignore all service frames
+            false
+        }
     }
 
     /// Handles an incoming frame that has passed sanity checks and has a parsed header and tail byte

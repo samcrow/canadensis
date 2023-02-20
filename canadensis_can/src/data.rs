@@ -111,6 +111,12 @@ impl<I> Frame<I> {
         }
     }
 
+    /// Sets the timestamp
+    #[inline]
+    pub fn set_timestamp(&mut self, timestamp: I) {
+        self.timestamp = timestamp;
+    }
+
     /// Sets the loopback flag
     #[inline]
     pub fn set_loopback(&mut self, loopback: bool) {

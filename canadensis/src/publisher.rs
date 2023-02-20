@@ -38,6 +38,9 @@ impl<I: Instant, T: Transmitter<I>> Publisher<I, T> {
         }
     }
 
+    /// Publishes a message
+    ///
+    /// The loopback flag is set to false
     pub fn publish<M, C>(
         &mut self,
         clock: &mut C,
@@ -55,15 +58,53 @@ impl<I: Instant, T: Transmitter<I>> Publisher<I, T> {
         // Part 1: Serialize
         do_serialize(payload, |payload_bytes| {
             // Part 2: Split into frames and put frames in the queue
-            self.send_payload(subject, payload_bytes, deadline, transmitter, clock, driver)
+            self.send_payload(
+                subject,
+                payload_bytes,
+                deadline,
+                false,
+                transmitter,
+                clock,
+                driver,
+            )
+        })
+    }
+    /// Publishes a loopback message
+    pub fn publish_loopback<M, C>(
+        &mut self,
+        clock: &mut C,
+        subject: SubjectId,
+        payload: &M,
+        transmitter: &mut T,
+        driver: &mut T::Driver,
+    ) -> nb::Result<(), T::Error>
+    where
+        M: Message + Serialize,
+        I: Instant,
+        C: Clock<Instant = I>,
+    {
+        let deadline = self.timeout + clock.now();
+        // Part 1: Serialize
+        do_serialize(payload, |payload_bytes| {
+            // Part 2: Split into frames and put frames in the queue
+            self.send_payload(
+                subject,
+                payload_bytes,
+                deadline,
+                true,
+                transmitter,
+                clock,
+                driver,
+            )
         })
     }
 
-    pub fn send_payload<C>(
+    fn send_payload<C>(
         &mut self,
         subject: SubjectId,
         payload: &[u8],
         deadline: I,
+        loopback: bool,
         transmitter: &mut T,
         clock: &mut C,
         driver: &mut T::Driver,
@@ -81,6 +122,7 @@ impl<I: Instant, T: Transmitter<I>> Publisher<I, T> {
                 subject,
                 source: Some(self.source.clone()),
             }),
+            loopback,
             payload,
         };
         self.next_transfer_id = self.next_transfer_id.clone().increment();

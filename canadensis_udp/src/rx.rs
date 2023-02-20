@@ -367,6 +367,7 @@ where
                 };
                 Ok(Some(Transfer {
                     header,
+                    loopback: false,
                     payload: reassembled,
                 }))
             }

@@ -66,6 +66,38 @@ impl<I: Instant, T: Transmitter<I>, R: TransferIdTracker<T::Transport>> Requeste
                 service,
                 destination,
                 deadline,
+                false,
+                transmitter,
+                clock,
+                driver,
+            )
+        })
+    }
+
+    /// Sends a loopback service request and returns its transfer ID
+    pub fn send_loopback<Q, C>(
+        &mut self,
+        clock: &mut C,
+        service: ServiceId,
+        payload: &Q,
+        destination: <T::Transport as Transport>::NodeId,
+        transmitter: &mut T,
+        driver: &mut T::Driver,
+    ) -> nb::Result<<T::Transport as Transport>::TransferId, T::Error>
+    where
+        Q: Serialize + Request,
+        C: Clock<Instant = I>,
+    {
+        // Part 1: Serialize
+        let deadline = self.timeout + clock.now();
+        do_serialize(payload, |payload_bytes| {
+            // Part 2: Split into frames and send
+            self.send_payload(
+                payload_bytes,
+                service,
+                destination,
+                deadline,
+                true,
                 transmitter,
                 clock,
                 driver,
@@ -79,6 +111,7 @@ impl<I: Instant, T: Transmitter<I>, R: TransferIdTracker<T::Transport>> Requeste
         service: ServiceId,
         destination: <T::Transport as Transport>::NodeId,
         deadline: I,
+        loopback: bool,
         transmitter: &mut T,
         clock: &mut C,
         driver: &mut T::Driver,
@@ -100,6 +133,7 @@ impl<I: Instant, T: Transmitter<I>, R: TransferIdTracker<T::Transport>> Requeste
                 source: self.this_node.clone(),
                 destination,
             }),
+            loopback,
             payload,
         };
 

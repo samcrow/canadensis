@@ -67,6 +67,7 @@ where
         // Convert the transfer payload into borrowed form
         let transfer = Transfer {
             header: transfer.header,
+            loopback: transfer.loopback,
             payload: transfer.payload.as_ref(),
         };
 
@@ -153,6 +154,7 @@ where
                 // Filled up a frame
                 self.push_frame(
                     transfer.header.timestamp(),
+                    transfer.loopback,
                     can_id,
                     &frame_data,
                     driver,
@@ -173,6 +175,7 @@ where
                     // Filled up a frame
                     self.push_frame(
                         transfer.header.timestamp(),
+                        transfer.loopback,
                         can_id,
                         &frame_data,
                         driver,
@@ -185,6 +188,7 @@ where
         let last_frame_data = breakdown.finish();
         self.push_frame(
             transfer.header.timestamp(),
+            transfer.loopback,
             can_id,
             &last_frame_data,
             driver,
@@ -200,6 +204,7 @@ where
     fn push_frame(
         &mut self,
         timestamp: I,
+        loopback: bool,
         id: CanId,
         data: &[u8],
         driver: &mut D,
@@ -208,7 +213,8 @@ where
     where
         I: Clone,
     {
-        let frame = Frame::new(timestamp, id, data);
+        let mut frame = Frame::new(timestamp, id, data);
+        frame.set_loopback(loopback);
         // If a lower-priority frame was removed, drop it
         driver.transmit(frame, now).map(drop)
     }
