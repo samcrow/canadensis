@@ -33,6 +33,7 @@ fn test_heartbeat() {
                 subject: SubjectId::try_from(7509).unwrap(),
                 source: Some(CanNodeId::try_from(42u8).unwrap()),
             }),
+            loopback: false,
             payload: &[0x00, 0x00, 0x00, 0x00, 0x04, 0x78, 0x68],
         },
         &mut ZeroClock,
@@ -60,6 +61,7 @@ fn test_heartbeat() {
                 subject: SubjectId::try_from(7509).unwrap(),
                 source: Some(CanNodeId::try_from(42u8).unwrap()),
             }),
+            loopback: false,
             payload: &[0x01, 0x00, 0x00, 0x00, 0x04, 0x78, 0x68],
         },
         &mut ZeroClock,
@@ -92,6 +94,7 @@ fn test_string() {
                 subject: SubjectId::try_from(4919).unwrap(),
                 source: None,
             }),
+            loopback: false,
             payload: &[
                 0x00, 0x18, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21,
             ],
@@ -129,6 +132,7 @@ fn test_node_info_request() {
                 source: CanNodeId::try_from(123u8).unwrap(),
                 destination: CanNodeId::try_from(42u8).unwrap(),
             }),
+            loopback: false,
             payload: &[],
         },
         &mut ZeroClock,
@@ -161,6 +165,7 @@ fn test_node_info_response() {
                 source: CanNodeId::try_from(42u8).unwrap(),
                 destination: CanNodeId::try_from(123u8).unwrap(),
             }),
+            loopback: false,
             payload: &b"\x01\x00\x00\x00\x01\x00\x00\
                     \x00\x00\x00\x00\x00\x00\x00\
                     \x00\x00\x00\x00\x00\x00\x00\
@@ -213,6 +218,7 @@ fn test_array() {
                 subject: SubjectId::try_from(4919).unwrap(),
                 source: Some(CanNodeId::try_from(59u8).unwrap()),
             }),
+            loopback: false,
             payload: &[
                 0x00, 0xb8, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
                 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19,

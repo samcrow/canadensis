@@ -57,6 +57,7 @@ fn main() {
                 subject: SubjectId::try_from(73u16).unwrap(),
                 source: Some(local_node_id),
             }),
+            loopback: false,
             payload: &payload,
         };
 

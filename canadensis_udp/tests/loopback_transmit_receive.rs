@@ -51,6 +51,7 @@ fn transmit_receive_message_two_frames() {
             subject: SubjectId::try_from(73u16).unwrap(),
             source: Some(transmit_node_id),
         }),
+        loopback: false,
         payload,
     };
     check_loopback::<_, _, MTU>(
@@ -82,6 +83,7 @@ fn transmit_receive_message_one_byte_one_frame() {
             subject,
             source: Some(8.try_into().unwrap()),
         }),
+        loopback: false,
         payload: vec![0x27],
     };
     check_loopback::<_, _, 1472>(
@@ -109,6 +111,7 @@ fn transmit_receive_request_one_byte_one_frame() {
             source: 8.try_into().unwrap(),
             destination: 993.try_into().unwrap(),
         }),
+        loopback: false,
         payload: vec![0x27],
     };
     check_loopback::<_, _, 1472>(
@@ -136,6 +139,7 @@ fn transmit_receive_response_one_byte_one_frame() {
             source: 8.try_into().unwrap(),
             destination: 993.try_into().unwrap(),
         }),
+        loopback: false,
         payload: vec![0x27],
     };
     check_loopback::<_, _, 1472>(

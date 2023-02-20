@@ -54,6 +54,7 @@ fn test_heartbeat() {
             subject: heartbeat_subject,
             source: Some(42u8.try_into().unwrap()),
         }),
+        loopback: false,
         payload: vec![0x00, 0x00, 0x00, 0x00, 0x04, 0x78, 0x68],
     };
     assert_eq!(expected, transfer);
@@ -86,6 +87,7 @@ fn test_string() {
             subject: string_subject,
             source: None,
         }),
+        loopback: false,
         payload: b"\x00\x18Hello world!\x00".to_vec(),
     };
     assert_eq!(expected, transfer);
@@ -118,6 +120,7 @@ fn test_node_info_request() {
             source: 123u8.try_into().unwrap(),
             destination: 42u8.try_into().unwrap(),
         }),
+        loopback: false,
         payload: vec![],
     };
     assert_eq!(expected, transfer);
@@ -188,6 +191,7 @@ fn test_node_info_response() {
                     source: 42u8.try_into().unwrap(),
                     destination: 123u8.try_into().unwrap(),
                 }),
+                loopback: false,
                 payload: payload.to_vec(),
             };
             assert_eq!(expected, transfer);
@@ -248,6 +252,7 @@ fn test_array() {
             subject,
             source: Some(59u8.try_into().unwrap()),
         }),
+        loopback: false,
         payload: [
             0x00, 0xb8, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
             0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19,
@@ -335,6 +340,7 @@ fn test_multi_frame_anonymous() {
             subject: subject_id,
             source: Some(64u8.try_into().unwrap()),
         }),
+        loopback: false,
         payload: vec![0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8],
     };
 
@@ -385,6 +391,7 @@ fn test_anonymous_receive_multi_frame() {
             subject: 8166.try_into().unwrap(),
             source: Some(126u8.try_into().unwrap()),
         }),
+        loopback: false,
         payload: vec![190, 159, 33, 213, 34, 64, 1, 103, 0],
     };
 

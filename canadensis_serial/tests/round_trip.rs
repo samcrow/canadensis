@@ -36,6 +36,7 @@ fn round_trip_no_payload() {
             subject,
             source: Some(37u16.try_into().unwrap()),
         }),
+        loopback: false,
         payload: vec![],
     };
     tx.push(transfer.clone(), &mut ZeroClock, &mut driver)
