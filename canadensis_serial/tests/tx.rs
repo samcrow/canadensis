@@ -22,6 +22,7 @@ fn transmit_capacity_1() {
             subject: 9u16.try_into().unwrap(),
             source: Some(37u16.try_into().unwrap()),
         }),
+        loopback: false,
         payload: [],
     };
     assert!(tx.push(transfer, &mut ZeroClock, &mut driver).is_err());
@@ -42,6 +43,7 @@ fn transmit_minimum_capacity() {
             subject: 9u16.try_into().unwrap(),
             source: Some(37u16.try_into().unwrap()),
         }),
+        loopback: false,
         payload: [],
     };
     tx.push(transfer, &mut ZeroClock, &mut driver).unwrap();
