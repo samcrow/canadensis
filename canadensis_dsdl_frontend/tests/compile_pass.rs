@@ -33,6 +33,12 @@ fn compile_all() -> Result<(), Error> {
     Ok(())
 }
 
+#[test]
+fn compile_split_namespace() -> Result<(), Error> {
+    test_compile_subdirs(&["tests/split_namespace/part1", "tests/split_namespace/part2"])?;
+    Ok(())
+}
+
 /// Checks that the library returns a reasonable error and does not loop forever
 /// when DSDL types have cyclic dependencies.
 #[test]
