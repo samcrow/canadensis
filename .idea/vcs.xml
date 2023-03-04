@@ -2,5 +2,6 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/canadensis_dsdl_frontend/tests/public_regulated_data_types" vcs="Git" />
   </component>
 </project>
