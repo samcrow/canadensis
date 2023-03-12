@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_dsdl_frontend`: Constants are now stored in the order they are declared in the DSDL file, instead of
   alphabetical order by name
 - `canadensis_data_types`: Changed the order of constants to match the order in the DSDL files
+- `canadensis_data_types`: Regenerated code to match revision 935973babe11755d8070e67452b3508b4b6833e2
+  of <https://github.com/OpenCyphal/public_regulated_data_types/>
 - `canadensis_macro`: Code generation can fail with an error
 
 

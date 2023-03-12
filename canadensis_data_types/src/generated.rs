@@ -8975,8 +8975,11 @@ Extended
                     }
                 }
             }
+            #[allow(deprecated)]
+            #[deprecated]
             pub mod list_0_1 {
                 #[cfg_attr(not(doctest), doc = "The fixed subject ID for this message type")]
+                #[deprecated]
                 pub const SUBJECT: ::canadensis_core::SubjectId =
                     ::canadensis_core::SubjectId::from_truncating(7510);
 
@@ -8986,8 +8989,9 @@ Extended
                 ///
                 #[cfg_attr(
                     not(doctest),
-                    doc = " A list of ports that this node is using:\n - Subjects published by this node (whether periodically or ad-hoc).\n - Subjects that this node is subscribed to (a datalogger or a debugger would typically subscribe to all subjects).\n - RPC services consumed by this node (i.e., service clients).\n - RPC services provided by this node (i.e., service servers).\n\n All nodes should implement this capability to provide network introspection and diagnostic capabilities.\n This message should be published using the fixed subject-ID as follows:\n - At the OPTIONAL priority level at least every MAX_PUBLICATION_PERIOD seconds.\n - At the OPTIONAL or SLOW priority level within MAX_PUBLICATION_PERIOD after the port configuration is changed."
+                    doc = " A list of ports that this node is using:\n - Subjects published by this node (whether periodically or ad-hoc).\n - Subjects that this node is subscribed to (a datalogger or a debugger would typically subscribe to all subjects).\n - RPC services consumed by this node (i.e., service clients).\n - RPC services provided by this node (i.e., service servers).\n\n All nodes should implement this capability to provide network introspection and diagnostic capabilities.\n This message should be published using the fixed subject-ID as follows:\n - At the OPTIONAL priority level at least every MAX_PUBLICATION_PERIOD seconds.\n - At the OPTIONAL or SLOW priority level within MAX_PUBLICATION_PERIOD after the port configuration is changed.\n Replaced with v1."
                 )]
+                #[deprecated]
                 pub struct List {
                     ///
                     /// `uavcan.node.port.SubjectIDList.0.1`
@@ -9013,6 +9017,91 @@ Extended
                     /// Always aligned,
                     /// size 512 bits
                     pub servers: crate::uavcan::node::port::service_id_list_0_1::ServiceIDList,
+                }
+                impl ::canadensis_encoding::DataType for List {
+                    /// This type is sealed.
+                    const EXTENT_BYTES: Option<u32> = None;
+                }
+                impl ::canadensis_encoding::Message for List {}
+                impl List {
+                    #[cfg_attr(
+                        not(doctest),
+                        doc = " [seconds]\n If the port configuration is not updated in this amount of time, the node should publish this message anyway."
+                    )]
+                    pub const MAX_PUBLICATION_PERIOD: u8 = 10;
+                }
+                impl ::canadensis_encoding::Serialize for List {
+                    fn size_bits(&self) -> usize {
+                        32 + (self.publishers).size_bits()
+                            + 32
+                            + (self.subscribers).size_bits()
+                            + 32
+                            + 512
+                            + 32
+                            + 512
+                            + 0
+                    }
+                    fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                        cursor.write_composite(&self.publishers);
+                        cursor.write_composite(&self.subscribers);
+                        cursor.write_composite(&self.clients);
+                        cursor.write_composite(&self.servers);
+                    }
+                }
+                impl ::canadensis_encoding::Deserialize for List {
+                    fn deserialize(
+                        cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                    ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                    where
+                        Self: Sized,
+                    {
+                        Ok(List {
+                            publishers: { cursor.read_composite()? },
+                            subscribers: { cursor.read_composite()? },
+                            clients: { cursor.read_composite()? },
+                            servers: { cursor.read_composite()? },
+                        })
+                    }
+                }
+            }
+            pub mod list_1_0 {
+                #[cfg_attr(not(doctest), doc = "The fixed subject ID for this message type")]
+                pub const SUBJECT: ::canadensis_core::SubjectId =
+                    ::canadensis_core::SubjectId::from_truncating(7510);
+
+                /// `uavcan.node.port.List.1.0`
+                ///
+                /// Size ranges from 146 to 2194 bytes
+                ///
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " A list of ports that this node is using:\n - Subjects published by this node (whether periodically or ad-hoc).\n - Subjects that this node is subscribed to (a datalogger or a debugger would typically subscribe to all subjects).\n - RPC services consumed by this node (i.e., service clients).\n - RPC services provided by this node (i.e., service servers).\n\n All nodes should implement this capability to provide network introspection and diagnostic capabilities.\n This message should be published using the fixed subject-ID as follows:\n - At the OPTIONAL priority level at least every MAX_PUBLICATION_PERIOD seconds.\n - At the OPTIONAL or SLOW priority level within MAX_PUBLICATION_PERIOD after the port configuration is changed."
+                )]
+                pub struct List {
+                    ///
+                    /// `uavcan.node.port.SubjectIDList.1.0`
+                    ///
+                    /// Always aligned,
+                    /// size ranges from 8 to 8200 bits
+                    pub publishers: crate::uavcan::node::port::subject_id_list_1_0::SubjectIDList,
+                    ///
+                    /// `uavcan.node.port.SubjectIDList.1.0`
+                    ///
+                    /// Always aligned,
+                    /// size ranges from 8 to 8200 bits
+                    pub subscribers: crate::uavcan::node::port::subject_id_list_1_0::SubjectIDList,
+                    ///
+                    /// `uavcan.node.port.ServiceIDList.1.0`
+                    ///
+                    /// Always aligned,
+                    /// size 512 bits
+                    pub clients: crate::uavcan::node::port::service_id_list_1_0::ServiceIDList,
+                    ///
+                    /// `uavcan.node.port.ServiceIDList.1.0`
+                    ///
+                    /// Always aligned,
+                    /// size 512 bits
+                    pub servers: crate::uavcan::node::port::service_id_list_1_0::ServiceIDList,
                 }
                 impl ::canadensis_encoding::DataType for List {
                     /// This type is sealed.
@@ -9106,8 +9195,65 @@ Extended
                     }
                 }
             }
+            #[allow(deprecated)]
+            #[deprecated]
             pub mod service_id_list_0_1 {
                 /// `uavcan.node.port.ServiceIDList.0.1`
+                ///
+                /// Fixed size 64 bytes
+                ///
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " A list of service identifiers.\n This is a trivial constant-size bitmask with some reserved space in case the range of service-ID is increased\n in a future revision of the protocol.\n Replaced with v1."
+                )]
+                #[deprecated]
+                pub struct ServiceIDList {
+                    #[cfg_attr(
+                        not(doctest),
+                        doc = " The index represents the identifier value. True -- present/used. False -- absent/unused."
+                    )]
+                    ///
+                    /// `saturated bool[512]`
+                    ///
+                    /// Always aligned,
+                    /// size 512 bits
+                    pub mask: ::canadensis_encoding::bits::BitArray<64>,
+                }
+                impl ::canadensis_encoding::DataType for ServiceIDList {
+                    /// This type is delimited with an extent of 128 bytes.
+                    const EXTENT_BYTES: Option<u32> = Some(128);
+                }
+                impl ::canadensis_encoding::Message for ServiceIDList {}
+                impl ServiceIDList {
+                    pub const CAPACITY: u16 = 512;
+                }
+                impl ::canadensis_encoding::Serialize for ServiceIDList {
+                    fn size_bits(&self) -> usize {
+                        512
+                    }
+                    fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                        (self.mask).serialize(cursor);
+                    }
+                }
+                impl ::canadensis_encoding::Deserialize for ServiceIDList {
+                    fn deserialize(
+                        cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                    ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                    where
+                        Self: Sized,
+                    {
+                        Ok(ServiceIDList {
+                            mask: {
+                                ::canadensis_encoding::bits::BitArray::deserialize(
+                                    512_usize, cursor,
+                                )
+                            },
+                        })
+                    }
+                }
+            }
+            pub mod service_id_list_1_0 {
+                /// `uavcan.node.port.ServiceIDList.1.0`
                 ///
                 /// Fixed size 64 bytes
                 ///
@@ -9206,8 +9352,114 @@ Extended
                     }
                 }
             }
+            #[allow(deprecated)]
+            #[deprecated]
             pub mod subject_id_list_0_1 {
                 /// `uavcan.node.port.SubjectIDList.0.1`
+                ///
+                /// Size ranges from 1 to 1025 bytes
+                ///
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " A list of subject identifiers.\n The range of subject-ID is large, so using a fixed-size bitmask would make this type difficult to handle on\n resource-constrained systems. To address that, we provide two extra options: a simple variable-length list,\n and a special case that indicates that every subject-ID is in use.\n Replaced with v1."
+                )]
+                #[deprecated]
+                pub enum SubjectIDList {
+                    #[cfg_attr(
+                        not(doctest),
+                        doc = " The index represents the identifier value. True -- present/used. False -- absent/unused."
+                    )]
+                    ///
+                    /// saturated bool[8192]
+                    Mask(::canadensis_encoding::bits::BitArray<1024>),
+                    #[cfg_attr(
+                        not(doctest),
+                        doc = " A list of identifiers that can be used instead of the mask if most of the identifiers are unused."
+                    )]
+                    ///
+                    /// uavcan.node.port.SubjectID.1.0[<=255]
+                    SparseList(
+                        ::heapless::Vec<crate::uavcan::node::port::subject_id_1_0::SubjectID, 255>,
+                    ),
+                    #[cfg_attr(
+                        not(doctest),
+                        doc = " A special case indicating that all identifiers are in use.\n Reserve space in case the range is extended in the future."
+                    )]
+                    ///
+                    /// uavcan.primitive.Empty.1.0
+                    Total(crate::uavcan::primitive::empty_1_0::Empty),
+                }
+                impl ::canadensis_encoding::DataType for SubjectIDList {
+                    /// This type is delimited with an extent of 4097 bytes.
+                    const EXTENT_BYTES: Option<u32> = Some(4097);
+                }
+                impl ::canadensis_encoding::Message for SubjectIDList {}
+                impl SubjectIDList {
+                    pub const CAPACITY: u16 = 8192;
+                }
+                impl ::canadensis_encoding::Serialize for SubjectIDList {
+                    fn size_bits(&self) -> usize {
+                        8 + match self {
+                            SubjectIDList::Mask(inner) => (inner).len() * 1,
+                            SubjectIDList::SparseList(inner) => 8 + (inner).len() * 16,
+                            SubjectIDList::Total(inner) => 0,
+                        }
+                    }
+                    fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                        match self {
+                            SubjectIDList::Mask(inner) => {
+                                cursor.write_aligned_u8(0);
+                                (*inner).serialize(cursor);
+                            }
+                            SubjectIDList::SparseList(inner) => {
+                                cursor.write_aligned_u8(1);
+                                cursor.write_aligned_u8((*inner).len() as u8);
+                                for value in (*inner).iter() {
+                                    cursor.write_composite(value);
+                                }
+                            }
+                            SubjectIDList::Total(inner) => {
+                                cursor.write_aligned_u8(2);
+                                cursor.write_composite(inner);
+                            }
+                        }
+                    }
+                }
+                impl ::canadensis_encoding::Deserialize for SubjectIDList {
+                    fn deserialize(
+                        cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                    ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                    where
+                        Self: Sized,
+                    {
+                        match cursor.read_aligned_u8() as _ {
+                            0 => Ok(SubjectIDList::Mask({
+                                ::canadensis_encoding::bits::BitArray::deserialize(
+                                    8192_usize, cursor,
+                                )
+                            })),
+                            1 => Ok(SubjectIDList::SparseList({
+                                let length = cursor.read_u8() as _;
+                                if length <= 255 {
+                                    let mut elements = ::heapless::Vec::new();
+                                    for _ in 0..length {
+                                        let _ = elements.push(cursor.read_composite()?);
+                                    }
+                                    elements
+                                } else {
+                                    return Err(
+                                        ::canadensis_encoding::DeserializeError::ArrayLength,
+                                    );
+                                }
+                            })),
+                            2 => Ok(SubjectIDList::Total({ cursor.read_composite()? })),
+                            _ => Err(::canadensis_encoding::DeserializeError::UnionTag),
+                        }
+                    }
+                }
+            }
+            pub mod subject_id_list_1_0 {
+                /// `uavcan.node.port.SubjectIDList.1.0`
                 ///
                 /// Size ranges from 1 to 1025 bytes
                 ///
@@ -11354,7 +11606,7 @@ Extended
             ///
             #[cfg_attr(
                 not(doctest),
-                doc = " Registers are strongly-typed named values used to store the configuration parameters of a node.\n This service is used to write and read a register.\n\n\n   READ/WRITE BEHAVIORS\n\n The write operation is performed first, unless skipped by sending an empty value in the request.\n The server may attempt to convert the type of the supplied value to the correct type if there is a type mismatch\n (e.g. uint8 may be converted to uint16); however, servers are not required to perform implicit type conversion,\n and the rules of such conversion are not explicitly specified, so this behavior should not be relied upon.\n\n On the next step the register will be read regardless of the outcome of the write operation. As such, if the write\n operation could not be performed (e.g. due to a type mismatch or any other issue), the register will retain its old\n value. By evaluating the response the caller can determine whether the register was written successfully.\n\n The write-read sequence is not guaranteed to be atomic, meaning that external influences may cause the register to\n change its value between the write and the subsequent read operation. The caller is responsible for handling that\n case properly.\n\n The timestamp provided in the response corresponds to the time when the register was read. The timestamp may\n be empty if the server does not support timestamping or its clock is not (yet) synchronized with the network.\n\n If only read is desired, but not write, the caller shall provide a value of type 'empty'. That will signal the server\n that the write operation shall be skipped, and it will proceed to read the register immediately.\n\n If the requested register does not exist, the write operation will have no effect and the returned value will be\n empty. Existing registers should not return 'empty' when read since that would make them indistinguishable from\n nonexistent registers.\n\n\n   REGISTER DEFINITION REQUIREMENTS\n\n Registers shall never change their type or flags as long as the server is running. Meaning that:\n   - Mutability and persistence flags cannot change their states.\n   - Read operations shall always return values of the same type and same dimensionality.\n     The dimensionality requirement does not apply to inherently variable-length values such as strings and\n     unstructured chunks.\n\n Register name should contain only:\n   - Lowercase ASCII alphanumeric characters (a-z, 0-9)\n   - Full stop (.)\n   - Low line (underscore) (_)\n With the following limitations/recommendations:\n   - The name shall not begin with a decimal digit (0-9).\n   - The name shall neither begin nor end with a full stop.\n   - A low line shall not be followed by a non-alphanumeric character.\n   - The name should contain at least one full stop character.\n Other patterns and ASCII characters are reserved for special function registers (introduced below).\n\n\n   ENVIRONMENT VARIABLES\n\n This section applies only to software nodes executed in a high-level operating system that supports environment\n variables or an equivalent mechanism.\n\n When a software node is launched, it is usually necessary to provide some of its configuration information early,\n particularly that which is related to Cyphal networking, before the node is started. Environment variables offer\n a convenient way of addressing this. Software nodes that support the register interface should evaluate the\n available environment variables during initialization and update their registers (whether they are stored in\n a persistent storage or in memory) accoringly. This should be completed before the first register read access.\n\n A register name is mapped to an environment variable name as follows:\n   - the name is upper-cased;\n   - full stop characters are replaced with double low line characters.\n For example: 'motor.inductance_dq' is mapped to 'MOTOR__INDUCTANCE_DQ'.\n\n Register values are represented in environment variables as follows:\n   - string:                         utf-8 or platform-specific\n   - unstructured:                   as-is\n   - bit, integer*, natural*, real*: space-separated decimals\n\n If an environment variable matches the name of an existing register but its value cannot be converted to the\n register's type, an error should be raised.\n\n If an environment variable does not match the name of any register, it may be ignored. However, if the implementation\n can reliably deduce the type and purpose of the register, it may create one automatically. This provision is to\n support applications where the register schema may be altered by configuration.\n\n\n   SPECIAL FUNCTION REGISTERS\n\n The following optional special function register names are defined:\n   - suffix '<' is used to define an immutable persistent value that contains the maximum value\n     of the respective register.\n   - suffix '>' is like above, used to define the minimum value of the respective register.\n   - suffix '=' is like above, used to define the default value of the respective register.\n   - prefix '*' is reserved for raw memory access (to be defined later).\n Examples:\n   - register name \"system.parameter\"\n   - maximum value is contained in the register named \"system.parameter<\" (optional)\n   - minimum value is contained in the register named \"system.parameter>\" (optional)\n   - default value is contained in the register named \"system.parameter=\" (optional)\n\n The type and dimensionality of the special function registers containing the minimum, maximum, and the default\n value of a register shall be the same as those of the register they relate to.\n\n If a written value exceeds the minimum/maximum specified by the respective special function registers,\n the server may either adjust the value automatically, or to retain the old value, depending on which behavior\n suits the objectives of the application better.\n The values of registers containing non-scalar numerical entities should be compared elementwise.\n\n\n   STANDARD REGISTERS\n\n The following table specifies the register name patterns that are reserved by the specification for\n common functions. These conventions are not mandatory to follow, but implementers are recommended to adhere because\n they enable enhanced introspection capabilities and simplify device configuration and diagnostics.\n\n   REGISTER NAME PATTERN                               TYPE            FLAGS                   RECOMMENDED DEFAULT\n =====================================================================================================================\n\n   uavcan.node.id                                      natural16[1]    mutable, persistent     65535 (unset/PnP)\n\n Contains the node-ID of the local node. Values above the maximum valid node-ID for the current transport\n indicate that the node-ID is not set; if plug-and-play is supported, it will be used by the node to obtain an\n automatic node-ID. Invalid values other than 65535 should be avoided for consistency.\n\n ---------------------------------------------------------------------------------------------------------------------\n\n   uavcan.node.description                             string          mutable, persistent     (empty)\n\n User/integrator-defined, human-readable description of this specific node.\n This is intended for use by a system integrator and should not be set by the manufacturer of a component.\n For example: on a quad-rotor drone this might read \"motor 2\" for one of the ESC nodes.\n\n ---------------------------------------------------------------------------------------------------------------------\n\n   uavcan.pub.PORT_NAME.id                             natural16[1]    mutable, persistent     65535 (unset, invalid)\n   uavcan.sub.PORT_NAME.id                             ditto           ditto                   ditto\n   uavcan.cln.PORT_NAME.id                             ditto           ditto                   ditto\n   uavcan.srv.PORT_NAME.id                             ditto           ditto                   ditto\n\n Publication/subscription/client/server port-ID, respectively. These registers are configured by the system integrator\n or an autoconfiguration authority when the node is first connected to a network.\n\n The \"PORT_NAME\" defines the human-friendly name of the port, which is related to the corresponding function\n or a network service supported by the node. The name shall match the following POSIX ERE expression:\n\n   [a-zA-Z_][a-zA-Z0-9_]*\n\n The names are defined by the vendor of the node. The user/integrator is expected to understand their meaning and\n relation to the functional capabilities of the node by reading the technical documentation provided by the vendor.\n\n A port whose port-ID register is unset (invalid value) remains inactive (unused); the corresponding function may\n be disabled. For example, a register named \"uavcan.pub.measurement.id\" defines the subject-ID of a measurement\n published by this node; if the register contains an invalid value (above the maximum valid subject-ID),\n said measurement is not published.\n\n The same name is used in other similar registers defined below. Network introspection and autoconfiguration tools\n will expect to find a register of this form for every configurable port supported by the node.\n\n ---------------------------------------------------------------------------------------------------------------------\n\n   uavcan.pub.PORT_NAME.type                           string          immutable, persistent   N/A\n   uavcan.sub.PORT_NAME.type                           ditto           ditto                   ditto\n   uavcan.cln.PORT_NAME.type                           ditto           ditto                   ditto\n   uavcan.srv.PORT_NAME.type                           ditto           ditto                   ditto\n\n Publication/subscription/client/server full data type name and dot-separated version numbers, respectively.\n These registers are set by the vendor once and typically they are to remain unchanged (hence \"immutable\").\n The \"PORT_NAME\" defines the human-friendly name of the port as specified above.\n For example, a register named \"uavcan.pub.measurement.type\" may contain \"uavcan.si.sample.angle.Quaternion.1.0\".\n\n ---------------------------------------------------------------------------------------------------------------------\n\n   uavcan.diagnostic.*\n\n Prefix reserved for future use.\n\n ---------------------------------------------------------------------------------------------------------------------\n\n   uavcan.can.bitrate                                  natural32[2]    implementation-defined  implementation-defined\n   uavcan.can.iface                                    string          mutable, persistent     implementation-defined\n\n These registers are only relevant for nodes that support Cyphal/CAN.\n\n uavcan.can.bitrate defines the CAN bus bit rate: the first value is the arbitration bit rate, the second is the\n data phase bit rate. Nodes that support only Classic CAN should ignore the second value. Nodes that support CAN FD\n should initialize in the Classic CAN mode (MTU 8 bytes, BRS flag not set) if the values are equal. If CAN bitrate\n is not configurable or is always auto-detected, this register may be omitted or made immutable; otherwise it should\n be mutable and persistent.\n\n uavcan.can.iface is only relevant for software nodes or nodes that are capable of using different CAN interfaces.\n The value is a space-separated list of CAN interface names to use. The name format is implementation-defined\n (for example, \"can0\").\n\n ---------------------------------------------------------------------------------------------------------------------\n\n   uavcan.udp.*\n\n Prefix reserved for future use.\n\n ---------------------------------------------------------------------------------------------------------------------#\n\n   uavcan.serial.*\n\n Prefix reserved for future use.\n\n ---------------------------------------------------------------------------------------------------------------------"
+                doc = " Registers are strongly-typed named values used to store the configuration parameters of a node.\n This service is used to write and read a register.\n\n\n   READ/WRITE BEHAVIORS\n\n The write operation is performed first, unless skipped by sending an empty value in the request.\n The server may attempt to convert the type of the supplied value to the correct type if there is a type mismatch\n (e.g. uint8 may be converted to uint16); however, servers are not required to perform implicit type conversion,\n and the rules of such conversion are not explicitly specified, so this behavior should not be relied upon.\n\n On the next step the register will be read regardless of the outcome of the write operation. As such, if the write\n operation could not be performed (e.g. due to a type mismatch or any other issue), the register will retain its old\n value. By evaluating the response the caller can determine whether the register was written successfully.\n\n The write-read sequence is not guaranteed to be atomic, meaning that external influences may cause the register to\n change its value between the write and the subsequent read operation. The caller is responsible for handling that\n case properly.\n\n The timestamp provided in the response corresponds to the time when the register was read. The timestamp may\n be empty if the server does not support timestamping or its clock is not (yet) synchronized with the network.\n\n If only read is desired, but not write, the caller shall provide a value of type 'empty'. That will signal the server\n that the write operation shall be skipped, and it will proceed to read the register immediately.\n\n If the requested register does not exist, the write operation will have no effect and the returned value will be\n empty. Existing registers should not return 'empty' when read since that would make them indistinguishable from\n nonexistent registers.\n\n\n   REGISTER DEFINITION REQUIREMENTS\n\n Registers shall never change their type or flags as long as the server is running. Meaning that:\n   - Mutability and persistence flags cannot change their states.\n   - Read operations shall always return values of the same type and same dimensionality.\n     The dimensionality requirement does not apply to inherently variable-length values such as strings and\n     unstructured chunks.\n\n Register name should contain only:\n   - Lowercase ASCII alphanumeric characters (a-z, 0-9)\n   - Full stop (.)\n   - Low line (underscore) (_)\n With the following limitations/recommendations:\n   - The name shall not begin with a decimal digit (0-9).\n   - The name shall neither begin nor end with a full stop.\n   - A low line shall not be followed by a non-alphanumeric character.\n   - The name should contain at least one full stop character.\n Other patterns and ASCII characters are reserved for special function registers (introduced below).\n\n\n   ENVIRONMENT VARIABLES\n\n This section applies only to software nodes executed in a high-level operating system that supports environment\n variables or an equivalent mechanism.\n\n When a software node is launched, it is usually necessary to provide some of its configuration information early,\n particularly that which is related to Cyphal networking, before the node is started. Environment variables offer\n a convenient way of addressing this. Software nodes that support the register interface should evaluate the\n available environment variables during initialization and update their registers (whether they are stored in\n a persistent storage or in memory) accoringly. This should be completed before the first register read access.\n\n A register name is mapped to an environment variable name as follows:\n   - the name is upper-cased;\n   - full stop characters are replaced with double low line characters.\n For example: 'motor.inductance_dq' is mapped to 'MOTOR__INDUCTANCE_DQ'.\n\n Register values are represented in environment variables as follows:\n   - string:                         utf-8 or platform-specific\n   - unstructured:                   as-is\n   - bit, integer*, natural*, real*: space-separated decimals\n\n If an environment variable matches the name of an existing register but its value cannot be converted to the\n register's type, an error should be raised.\n\n If an environment variable does not match the name of any register, it may be ignored. However, if the implementation\n can reliably deduce the type and purpose of the register, it may create one automatically. This provision is to\n support applications where the register schema may be altered by configuration.\n\n\n   SPECIAL FUNCTION REGISTERS\n\n The following optional special function register names are defined:\n   - suffix '<' is used to define an immutable persistent value that contains the maximum value\n     of the respective register.\n   - suffix '>' is like above, used to define the minimum value of the respective register.\n   - suffix '=' is like above, used to define the default value of the respective register.\n   - prefix '*' is reserved for raw memory access (to be defined later).\n Examples:\n   - register name \"system.parameter\"\n   - maximum value is contained in the register named \"system.parameter<\" (optional)\n   - minimum value is contained in the register named \"system.parameter>\" (optional)\n   - default value is contained in the register named \"system.parameter=\" (optional)\n\n The type and dimensionality of the special function registers containing the minimum, maximum, and the default\n value of a register shall be the same as those of the register they relate to.\n\n If a written value exceeds the minimum/maximum specified by the respective special function registers,\n the server may either adjust the value automatically, or to retain the old value, depending on which behavior\n suits the objectives of the application better.\n The values of registers containing non-scalar numerical entities should be compared elementwise.\n\n\n   STANDARD REGISTERS\n\n The following table specifies the register name patterns that are reserved by the specification for\n common functions. These conventions are not mandatory to follow, but implementers are recommended to adhere because\n they enable enhanced introspection capabilities and simplify device configuration and diagnostics.\n\n   REGISTER NAME PATTERN                               TYPE            FLAGS                   RECOMMENDED DEFAULT\n =====================================================================================================================\n\n   uavcan.node.id                                      natural16[1]    mutable, persistent     65535 (unset/PnP)\n\n Contains the node-ID of the local node. Values above the maximum valid node-ID for the current transport\n indicate that the node-ID is not set; if plug-and-play is supported, it will be used by the node to obtain an\n automatic node-ID. Invalid values other than 65535 should be avoided for consistency.\n\n ---------------------------------------------------------------------------------------------------------------------\n\n   uavcan.node.description                             string          mutable, persistent     (empty)\n\n User/integrator-defined, human-readable description of this specific node.\n This is intended for use by a system integrator and should not be set by the manufacturer of a component.\n For example: on a quad-rotor drone this might read \"motor 2\" for one of the ESC nodes.\n\n ---------------------------------------------------------------------------------------------------------------------\n\n   uavcan.pub.PORT_NAME.id                             natural16[1]    mutable, persistent     65535 (unset, invalid)\n   uavcan.sub.PORT_NAME.id                             ditto           ditto                   ditto\n   uavcan.cln.PORT_NAME.id                             ditto           ditto                   ditto\n   uavcan.srv.PORT_NAME.id                             ditto           ditto                   ditto\n\n Publication/subscription/client/server port-ID, respectively. These registers are configured by the system integrator\n or an autoconfiguration authority when the node is first connected to a network.\n\n The \"PORT_NAME\" defines the human-friendly name of the port, which is related to the corresponding function\n or a network service supported by the node. The name shall match the following POSIX ERE expression:\n\n   [a-zA-Z_][a-zA-Z0-9_.]*\n\n The names are defined by the vendor of the node. The user/integrator is expected to understand their meaning and\n relation to the functional capabilities of the node by reading the technical documentation provided by the vendor.\n\n A port whose port-ID register is unset (invalid value) remains inactive (unused); the corresponding function may\n be disabled. For example, a register named \"uavcan.pub.measurement.id\" defines the subject-ID of a measurement\n published by this node; if the register contains an invalid value (above the maximum valid subject-ID),\n said measurement is not published.\n\n The same name is used in other similar registers defined below. Network introspection and autoconfiguration tools\n will expect to find a register of this form for every configurable port supported by the node.\n\n ---------------------------------------------------------------------------------------------------------------------\n\n   uavcan.pub.PORT_NAME.type                           string          immutable, persistent   N/A\n   uavcan.sub.PORT_NAME.type                           ditto           ditto                   ditto\n   uavcan.cln.PORT_NAME.type                           ditto           ditto                   ditto\n   uavcan.srv.PORT_NAME.type                           ditto           ditto                   ditto\n\n Publication/subscription/client/server full data type name and dot-separated version numbers, respectively.\n These registers are set by the vendor once and typically they are to remain unchanged (hence \"immutable\").\n The \"PORT_NAME\" defines the human-friendly name of the port as specified above.\n For example, a register named \"uavcan.pub.measurement.type\" may contain \"uavcan.si.sample.angle.Quaternion.1.0\".\n\n ---------------------------------------------------------------------------------------------------------------------\n\n   uavcan.diagnostic.*\n\n Prefix reserved for future use.\n\n ---------------------------------------------------------------------------------------------------------------------\n\n   uavcan.can.bitrate                                  natural32[2]    implementation-defined  implementation-defined\n   uavcan.can.iface                                    string          mutable, persistent     implementation-defined\n\n These registers are only relevant for nodes that support Cyphal/CAN.\n\n uavcan.can.bitrate defines the CAN bus bit rate: the first value is the arbitration bit rate, the second is the\n data phase bit rate. Nodes that support only Classic CAN should ignore the second value. Nodes that support CAN FD\n should initialize in the Classic CAN mode (MTU 8 bytes, BRS flag not set) if the values are equal. If CAN bitrate\n is not configurable or is always auto-detected, this register may be omitted or made immutable; otherwise it should\n be mutable and persistent.\n\n uavcan.can.iface is only relevant for software nodes or nodes that are capable of using different CAN interfaces.\n The value is a space-separated list of CAN interface names to use. The name format is implementation-defined\n (for example, \"can0\").\n\n ---------------------------------------------------------------------------------------------------------------------\n\n   uavcan.udp.*\n\n Prefix reserved for future use.\n\n ---------------------------------------------------------------------------------------------------------------------#\n\n   uavcan.serial.*\n\n Prefix reserved for future use.\n\n ---------------------------------------------------------------------------------------------------------------------"
             )]
             pub struct AccessRequest {
                 #[cfg_attr(
@@ -12878,9 +13130,280 @@ Extended
                     }
                 }
             }
+            pub mod luminance {
+                pub mod scalar_1_0 {
+                    /// `uavcan.si.sample.luminance.Scalar.1.0`
+                    ///
+                    /// Fixed size 11 bytes
+                    ///
+                    pub struct Scalar {
+                        ///
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
+                        ///
+                        /// Always aligned,
+                        /// size 56 bits
+                        pub timestamp:
+                            crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
+                        ///
+                        /// `saturated float32`
+                        ///
+                        /// Always aligned,
+                        /// size 32 bits
+                        pub candela_per_square_meter: f32,
+                    }
+                    impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
+                        const EXTENT_BYTES: Option<u32> = None;
+                    }
+                    impl ::canadensis_encoding::Message for Scalar {}
+                    impl Scalar {}
+                    impl ::canadensis_encoding::Serialize for Scalar {
+                        fn size_bits(&self) -> usize {
+                            88
+                        }
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_composite(&self.timestamp);
+                            cursor.write_f32(self.candela_per_square_meter);
+                        }
+                    }
+                    impl ::canadensis_encoding::Deserialize for Scalar {
+                        fn deserialize(
+                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                        where
+                            Self: Sized,
+                        {
+                            Ok(Scalar {
+                                timestamp: { cursor.read_composite()? },
+                                candela_per_square_meter: { cursor.read_f32() },
+                            })
+                        }
+                    }
+                }
+            }
             pub mod magnetic_field_strength {
+                #[allow(deprecated)]
+                #[deprecated]
                 pub mod scalar_1_0 {
                     /// `uavcan.si.sample.magnetic_field_strength.Scalar.1.0`
+                    ///
+                    /// Fixed size 11 bytes
+                    ///
+                    #[cfg_attr(
+                        not(doctest),
+                        doc = " Use v1.1 instead where the unit of measure is named correctly."
+                    )]
+                    #[deprecated]
+                    pub struct Scalar {
+                        ///
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
+                        ///
+                        /// Always aligned,
+                        /// size 56 bits
+                        pub timestamp:
+                            crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
+                        ///
+                        /// `saturated float32`
+                        ///
+                        /// Always aligned,
+                        /// size 32 bits
+                        pub tesla: f32,
+                    }
+                    impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
+                        const EXTENT_BYTES: Option<u32> = None;
+                    }
+                    impl ::canadensis_encoding::Message for Scalar {}
+                    impl Scalar {}
+                    impl ::canadensis_encoding::Serialize for Scalar {
+                        fn size_bits(&self) -> usize {
+                            88
+                        }
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_composite(&self.timestamp);
+                            cursor.write_f32(self.tesla);
+                        }
+                    }
+                    impl ::canadensis_encoding::Deserialize for Scalar {
+                        fn deserialize(
+                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                        where
+                            Self: Sized,
+                        {
+                            Ok(Scalar {
+                                timestamp: { cursor.read_composite()? },
+                                tesla: { cursor.read_f32() },
+                            })
+                        }
+                    }
+                }
+                pub mod scalar_1_1 {
+                    /// `uavcan.si.sample.magnetic_field_strength.Scalar.1.1`
+                    ///
+                    /// Fixed size 11 bytes
+                    ///
+                    pub struct Scalar {
+                        ///
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
+                        ///
+                        /// Always aligned,
+                        /// size 56 bits
+                        pub timestamp:
+                            crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
+                        ///
+                        /// `saturated float32`
+                        ///
+                        /// Always aligned,
+                        /// size 32 bits
+                        pub ampere_per_meter: f32,
+                    }
+                    impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
+                        const EXTENT_BYTES: Option<u32> = None;
+                    }
+                    impl ::canadensis_encoding::Message for Scalar {}
+                    impl Scalar {}
+                    impl ::canadensis_encoding::Serialize for Scalar {
+                        fn size_bits(&self) -> usize {
+                            88
+                        }
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_composite(&self.timestamp);
+                            cursor.write_f32(self.ampere_per_meter);
+                        }
+                    }
+                    impl ::canadensis_encoding::Deserialize for Scalar {
+                        fn deserialize(
+                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                        where
+                            Self: Sized,
+                        {
+                            Ok(Scalar {
+                                timestamp: { cursor.read_composite()? },
+                                ampere_per_meter: { cursor.read_f32() },
+                            })
+                        }
+                    }
+                }
+                #[allow(deprecated)]
+                #[deprecated]
+                pub mod vector3_1_0 {
+                    /// `uavcan.si.sample.magnetic_field_strength.Vector3.1.0`
+                    ///
+                    /// Fixed size 19 bytes
+                    ///
+                    #[cfg_attr(
+                        not(doctest),
+                        doc = " Use v1.1 instead where the unit of measure is named correctly."
+                    )]
+                    #[deprecated]
+                    pub struct Vector3 {
+                        ///
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
+                        ///
+                        /// Always aligned,
+                        /// size 56 bits
+                        pub timestamp:
+                            crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
+                        ///
+                        /// `saturated float32[3]`
+                        ///
+                        /// Always aligned,
+                        /// size 96 bits
+                        pub tesla: [f32; 3],
+                    }
+                    impl ::canadensis_encoding::DataType for Vector3 {
+                        /// This type is sealed.
+                        const EXTENT_BYTES: Option<u32> = None;
+                    }
+                    impl ::canadensis_encoding::Message for Vector3 {}
+                    impl Vector3 {}
+                    impl ::canadensis_encoding::Serialize for Vector3 {
+                        fn size_bits(&self) -> usize {
+                            152
+                        }
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_composite(&self.timestamp);
+                            for value in (self.tesla).iter() {
+                                cursor.write_f32(*value);
+                            }
+                        }
+                    }
+                    impl ::canadensis_encoding::Deserialize for Vector3 {
+                        fn deserialize(
+                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                        where
+                            Self: Sized,
+                        {
+                            Ok(Vector3 {
+                                timestamp: { cursor.read_composite()? },
+                                tesla: {
+                                    [cursor.read_f32(), cursor.read_f32(), cursor.read_f32()]
+                                },
+                            })
+                        }
+                    }
+                }
+                pub mod vector3_1_1 {
+                    /// `uavcan.si.sample.magnetic_field_strength.Vector3.1.1`
+                    ///
+                    /// Fixed size 19 bytes
+                    ///
+                    pub struct Vector3 {
+                        ///
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
+                        ///
+                        /// Always aligned,
+                        /// size 56 bits
+                        pub timestamp:
+                            crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
+                        ///
+                        /// `saturated float32[3]`
+                        ///
+                        /// Always aligned,
+                        /// size 96 bits
+                        pub ampere_per_meter: [f32; 3],
+                    }
+                    impl ::canadensis_encoding::DataType for Vector3 {
+                        /// This type is sealed.
+                        const EXTENT_BYTES: Option<u32> = None;
+                    }
+                    impl ::canadensis_encoding::Message for Vector3 {}
+                    impl Vector3 {}
+                    impl ::canadensis_encoding::Serialize for Vector3 {
+                        fn size_bits(&self) -> usize {
+                            152
+                        }
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_composite(&self.timestamp);
+                            for value in (self.ampere_per_meter).iter() {
+                                cursor.write_f32(*value);
+                            }
+                        }
+                    }
+                    impl ::canadensis_encoding::Deserialize for Vector3 {
+                        fn deserialize(
+                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                        where
+                            Self: Sized,
+                        {
+                            Ok(Vector3 {
+                                timestamp: { cursor.read_composite()? },
+                                ampere_per_meter: {
+                                    [cursor.read_f32(), cursor.read_f32(), cursor.read_f32()]
+                                },
+                            })
+                        }
+                    }
+                }
+            }
+            pub mod magnetic_flux_density {
+                pub mod scalar_1_0 {
+                    /// `uavcan.si.sample.magnetic_flux_density.Scalar.1.0`
                     ///
                     /// Fixed size 11 bytes
                     ///
@@ -12929,7 +13452,7 @@ Extended
                     }
                 }
                 pub mod vector3_1_0 {
-                    /// `uavcan.si.sample.magnetic_field_strength.Vector3.1.0`
+                    /// `uavcan.si.sample.magnetic_flux_density.Vector3.1.0`
                     ///
                     /// Fixed size 19 bytes
                     ///
@@ -14483,9 +15006,255 @@ Extended
                     }
                 }
             }
+            pub mod luminance {
+                pub mod scalar_1_0 {
+                    /// `uavcan.si.unit.luminance.Scalar.1.0`
+                    ///
+                    /// Fixed size 4 bytes
+                    ///
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
+                    pub struct Scalar {
+                        ///
+                        /// `saturated float32`
+                        ///
+                        /// Always aligned,
+                        /// size 32 bits
+                        pub candela_per_square_meter: f32,
+                    }
+                    impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
+                        const EXTENT_BYTES: Option<u32> = None;
+                    }
+                    impl ::canadensis_encoding::Message for Scalar {}
+                    impl Scalar {}
+                    impl ::canadensis_encoding::Serialize for Scalar {
+                        fn size_bits(&self) -> usize {
+                            32
+                        }
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                        }
+                    }
+                    impl ::canadensis_encoding::Deserialize for Scalar {
+                        fn deserialize(
+                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                        where
+                            Self: Sized,
+                        {
+                            Ok(Self::deserialize_zero_copy(cursor))
+                        }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
+                        assert_eq!(
+                            ::memoffset::offset_of!(Scalar, candela_per_square_meter) * 8,
+                            0
+                        );
+                    }
+                }
+            }
             pub mod magnetic_field_strength {
+                #[allow(deprecated)]
+                #[deprecated]
                 pub mod scalar_1_0 {
                     /// `uavcan.si.unit.magnetic_field_strength.Scalar.1.0`
+                    ///
+                    /// Fixed size 4 bytes
+                    ///
+                    #[cfg_attr(
+                        not(doctest),
+                        doc = " Use v1.1 instead where the unit of measure is named correctly."
+                    )]
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
+                    #[deprecated]
+                    pub struct Scalar {
+                        ///
+                        /// `saturated float32`
+                        ///
+                        /// Always aligned,
+                        /// size 32 bits
+                        pub tesla: f32,
+                    }
+                    impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
+                        const EXTENT_BYTES: Option<u32> = None;
+                    }
+                    impl ::canadensis_encoding::Message for Scalar {}
+                    impl Scalar {}
+                    impl ::canadensis_encoding::Serialize for Scalar {
+                        fn size_bits(&self) -> usize {
+                            32
+                        }
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                        }
+                    }
+                    impl ::canadensis_encoding::Deserialize for Scalar {
+                        fn deserialize(
+                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                        where
+                            Self: Sized,
+                        {
+                            Ok(Self::deserialize_zero_copy(cursor))
+                        }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
+                        assert_eq!(::memoffset::offset_of!(Scalar, tesla) * 8, 0);
+                    }
+                }
+                pub mod scalar_1_1 {
+                    /// `uavcan.si.unit.magnetic_field_strength.Scalar.1.1`
+                    ///
+                    /// Fixed size 4 bytes
+                    ///
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
+                    pub struct Scalar {
+                        ///
+                        /// `saturated float32`
+                        ///
+                        /// Always aligned,
+                        /// size 32 bits
+                        pub ampere_per_meter: f32,
+                    }
+                    impl ::canadensis_encoding::DataType for Scalar {
+                        /// This type is sealed.
+                        const EXTENT_BYTES: Option<u32> = None;
+                    }
+                    impl ::canadensis_encoding::Message for Scalar {}
+                    impl Scalar {}
+                    impl ::canadensis_encoding::Serialize for Scalar {
+                        fn size_bits(&self) -> usize {
+                            32
+                        }
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                        }
+                    }
+                    impl ::canadensis_encoding::Deserialize for Scalar {
+                        fn deserialize(
+                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                        where
+                            Self: Sized,
+                        {
+                            Ok(Self::deserialize_zero_copy(cursor))
+                        }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
+                        assert_eq!(::memoffset::offset_of!(Scalar, ampere_per_meter) * 8, 0);
+                    }
+                }
+                #[allow(deprecated)]
+                #[deprecated]
+                pub mod vector3_1_0 {
+                    /// `uavcan.si.unit.magnetic_field_strength.Vector3.1.0`
+                    ///
+                    /// Fixed size 12 bytes
+                    ///
+                    #[cfg_attr(
+                        not(doctest),
+                        doc = " Use v1.1 instead where the unit of measure is named correctly."
+                    )]
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
+                    #[deprecated]
+                    pub struct Vector3 {
+                        ///
+                        /// `saturated float32[3]`
+                        ///
+                        /// Always aligned,
+                        /// size 96 bits
+                        pub tesla: [f32; 3],
+                    }
+                    impl ::canadensis_encoding::DataType for Vector3 {
+                        /// This type is sealed.
+                        const EXTENT_BYTES: Option<u32> = None;
+                    }
+                    impl ::canadensis_encoding::Message for Vector3 {}
+                    impl Vector3 {}
+                    impl ::canadensis_encoding::Serialize for Vector3 {
+                        fn size_bits(&self) -> usize {
+                            96
+                        }
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                        }
+                    }
+                    impl ::canadensis_encoding::Deserialize for Vector3 {
+                        fn deserialize(
+                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                        where
+                            Self: Sized,
+                        {
+                            Ok(Self::deserialize_zero_copy(cursor))
+                        }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Vector3>() * 8, 96);
+                        assert_eq!(::memoffset::offset_of!(Vector3, tesla) * 8, 0);
+                    }
+                }
+                pub mod vector3_1_1 {
+                    /// `uavcan.si.unit.magnetic_field_strength.Vector3.1.1`
+                    ///
+                    /// Fixed size 12 bytes
+                    ///
+                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[repr(C, packed)]
+                    pub struct Vector3 {
+                        ///
+                        /// `saturated float32[3]`
+                        ///
+                        /// Always aligned,
+                        /// size 96 bits
+                        pub ampere_per_meter: [f32; 3],
+                    }
+                    impl ::canadensis_encoding::DataType for Vector3 {
+                        /// This type is sealed.
+                        const EXTENT_BYTES: Option<u32> = None;
+                    }
+                    impl ::canadensis_encoding::Message for Vector3 {}
+                    impl Vector3 {}
+                    impl ::canadensis_encoding::Serialize for Vector3 {
+                        fn size_bits(&self) -> usize {
+                            96
+                        }
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                        }
+                    }
+                    impl ::canadensis_encoding::Deserialize for Vector3 {
+                        fn deserialize(
+                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                        where
+                            Self: Sized,
+                        {
+                            Ok(Self::deserialize_zero_copy(cursor))
+                        }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Vector3>() * 8, 96);
+                        assert_eq!(::memoffset::offset_of!(Vector3, ampere_per_meter) * 8, 0);
+                    }
+                }
+            }
+            pub mod magnetic_flux_density {
+                pub mod scalar_1_0 {
+                    /// `uavcan.si.unit.magnetic_flux_density.Scalar.1.0`
                     ///
                     /// Fixed size 4 bytes
                     ///
@@ -14530,7 +15299,7 @@ Extended
                     }
                 }
                 pub mod vector3_1_0 {
-                    /// `uavcan.si.unit.magnetic_field_strength.Vector3.1.0`
+                    /// `uavcan.si.unit.magnetic_flux_density.Vector3.1.0`
                     ///
                     /// Fixed size 12 bytes
                     ///
