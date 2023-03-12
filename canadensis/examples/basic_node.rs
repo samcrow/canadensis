@@ -76,7 +76,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!(
         "Port list size: {} bytes",
-        std::mem::size_of::<canadensis_data_types::uavcan::node::port::list_0_1::List>()
+        std::mem::size_of::<canadensis_data_types::uavcan::node::port::list_1_0::List>()
     );
 
     let can = CANSocket::open(&can_interface).expect("Failed to open CAN interface");

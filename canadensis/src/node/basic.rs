@@ -10,10 +10,10 @@ use canadensis_data_types::uavcan::node::get_info_1_0::{self, GetInfoResponse};
 use canadensis_data_types::uavcan::node::health_1_0::Health;
 use canadensis_data_types::uavcan::node::heartbeat_1_0;
 use canadensis_data_types::uavcan::node::mode_1_0::Mode;
-use canadensis_data_types::uavcan::node::port::list_0_1::{self, List};
-use canadensis_data_types::uavcan::node::port::service_id_list_0_1::ServiceIDList;
+use canadensis_data_types::uavcan::node::port::list_1_0::{self, List};
+use canadensis_data_types::uavcan::node::port::service_id_list_1_0::ServiceIDList;
 use canadensis_data_types::uavcan::node::port::subject_id_1_0;
-use canadensis_data_types::uavcan::node::port::subject_id_list_0_1::SubjectIDList;
+use canadensis_data_types::uavcan::node::port::subject_id_list_1_0::SubjectIDList;
 use canadensis_encoding::bits::BitArray;
 use canadensis_encoding::{Message, Request, Response, Serialize};
 
@@ -64,7 +64,7 @@ where
             .map_err(NodeError::Receiver)?;
         let port_list_token = node
             .start_publishing(
-                list_0_1::SUBJECT,
+                list_1_0::SUBJECT,
                 milliseconds(1000),
                 Priority::Optional.into(),
             )
@@ -84,7 +84,7 @@ where
                     .unwrap();
                 published_topics
                     .push(subject_id_1_0::SubjectID {
-                        value: list_0_1::SUBJECT.into(),
+                        value: list_1_0::SUBJECT.into(),
                     })
                     .ok()
                     .unwrap();
