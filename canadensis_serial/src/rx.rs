@@ -1,17 +1,22 @@
-use crate::cobs::Unescaper;
-use crate::driver::ReceiveDriver;
-use crate::header_collector::HeaderCollector;
-use crate::{make_payload_crc, Error, SerialNodeId, SerialTransferId, SerialTransport};
 use alloc::vec::Vec;
+use core::cmp::Ordering;
+use core::convert::TryFrom;
+use core::marker::PhantomData;
+use core::mem;
+
+use fallible_collections::{FallibleVec, TryHashMap};
+
 use canadensis_core::subscription::SubscriptionManager;
 use canadensis_core::time::Instant;
 use canadensis_core::transfer::{Header, Transfer};
 use canadensis_core::transport::Receiver;
 use canadensis_core::{nb, OutOfMemoryError, ServiceId, ServiceSubscribeError, SubjectId};
-use core::cmp::Ordering;
-use core::marker::PhantomData;
-use core::mem;
-use fallible_collections::{FallibleVec, TryHashMap};
+use canadensis_header::Header as SerialHeader;
+
+use crate::cobs::Unescaper;
+use crate::driver::ReceiveDriver;
+use crate::header_collector::HeaderCollector;
+use crate::{make_payload_crc, Error, SerialNodeId, SerialTransferId, SerialTransport};
 
 /// A serial transport receiver
 ///
@@ -103,8 +108,9 @@ where
                         if header.is_done() {
                             // Got the complete header
                             let header = header.as_header();
-                            match header.into_header(now) {
+                            match SerialHeader::try_from(header) {
                                 Ok(header) => {
+                                    let header = header.as_core_header(now);
                                     if let Some(subscription) = self.is_interested(&header) {
                                         // Try to allocate memory for the incoming transfer
                                         // (add 4 bytes at the end for the CRC)

@@ -1,8 +1,7 @@
-use crate::header::SerialHeader;
-use core::mem;
+use canadensis_header::RawHeader;
 use zerocopy::FromBytes;
 
-const HEADER_BYTES: usize = mem::size_of::<SerialHeader>();
+const HEADER_BYTES: usize = canadensis_header::SIZE;
 
 pub struct HeaderCollector {
     /// The bytes that represent the header
@@ -35,7 +34,7 @@ impl HeaderCollector {
     }
 
     /// Interprets the bytes as a header
-    pub fn as_header(&self) -> SerialHeader {
-        SerialHeader::read_from(&self.bytes[..]).expect("Incorrect byte length or alignment")
+    pub fn as_header(&self) -> RawHeader {
+        RawHeader::read_from(&self.bytes[..]).expect("Incorrect byte length or alignment")
     }
 }

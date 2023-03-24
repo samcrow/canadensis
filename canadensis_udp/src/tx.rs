@@ -8,11 +8,11 @@ use canadensis_core::nb;
 use canadensis_core::time::{Clock, Instant};
 use canadensis_core::transfer::{Header, Transfer};
 use canadensis_core::transport::Transmitter;
+use canadensis_header::DataSpecifier;
 
 use crate::address::Address;
-use crate::header::DataSpecifier;
 use crate::tx::breakdown::{Breakdown, HeaderBase};
-use crate::{header, TRANSFER_CRC_SIZE};
+use crate::TRANSFER_CRC_SIZE;
 use crate::{Error, UdpTransport};
 
 mod breakdown;
@@ -34,7 +34,7 @@ where
     pub fn new(destination_port: u16) -> Self {
         // MTU must be big enough for the header, transfer CRC, and at least 1 byte of data
         assert!(
-            MTU > header::SIZE + TRANSFER_CRC_SIZE + 1,
+            MTU > canadensis_header::SIZE + TRANSFER_CRC_SIZE + 1,
             "MTU is too small"
         );
 
@@ -174,7 +174,7 @@ where
 
     fn mtu(&self) -> usize {
         // Subtract to get the maximum number of payload bytes per frame
-        MTU - header::SIZE - TRANSFER_CRC_SIZE
+        MTU - canadensis_header::SIZE - TRANSFER_CRC_SIZE
     }
 }
 

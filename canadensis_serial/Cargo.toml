@@ -21,6 +21,9 @@ hash32-derive = "0.1.1"
 [dependencies.canadensis_core]
 version = "0.2.0"
 path = "../canadensis_core"
+[dependencies.canadensis_header]
+version = "0.1.0"
+path = "../canadensis_header"
 
 [dev-dependencies]
 simplelog = "0.10.2"

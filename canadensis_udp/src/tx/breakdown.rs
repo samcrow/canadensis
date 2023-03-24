@@ -7,9 +7,9 @@ use zerocopy::AsBytes;
 
 use canadensis_core::Priority;
 
-use crate::header::{self, DataSpecifier, UdpHeader, ValidatedUdpHeader, LAST_FRAME};
 use crate::tx::UdpFrame;
 use crate::{data_crc, UdpTransferId, TRANSFER_CRC_SIZE};
+use canadensis_header::{DataSpecifier, Header, RawHeader, LAST_FRAME};
 
 /// An iterator that breaks a transfer into UDP frames and adds a CRC to each frame
 pub(crate) struct Breakdown<P: Iterator<Item = u8>, I> {
@@ -57,7 +57,7 @@ impl<P: Iterator<Item = u8>, I: Clone> Breakdown<P, I> {
             // Initialize the current frame with empty space for the header. The payload will follow.
             current_frame: {
                 let mut frame: Vec<u8> = Vec::with_capacity(mtu - TRANSFER_CRC_SIZE);
-                frame.extend_from_slice(&[0; header::SIZE]);
+                frame.extend_from_slice(&[0; canadensis_header::SIZE]);
                 frame
             },
             mtu,
@@ -69,9 +69,10 @@ impl<P: Iterator<Item = u8>, I: Clone> Breakdown<P, I> {
     ///
     /// This function also re-initializes self.current_frame with header::SIZE zero bytes
     /// so that payload bytes can be added.
-    fn take_frame(&mut self, header: &UdpHeader, crc: u32) -> UdpFrame<I> {
+    fn take_frame(&mut self, header: Header, crc: u32) -> UdpFrame<I> {
         // Copy the header into the current frame
-        self.current_frame[..header::SIZE].copy_from_slice(header.as_bytes());
+        self.current_frame[..canadensis_header::SIZE]
+            .copy_from_slice(RawHeader::from(header).as_bytes());
         // Add CRC
         self.current_frame.extend_from_slice(&crc.to_le_bytes());
         let frame = UdpFrame {
@@ -81,13 +82,14 @@ impl<P: Iterator<Item = u8>, I: Clone> Breakdown<P, I> {
         // Add space in the new current frame for the header
         self.current_frame
             .reserve_exact(self.mtu - TRANSFER_CRC_SIZE);
-        self.current_frame.extend_from_slice(&[0; header::SIZE]);
+        self.current_frame
+            .extend_from_slice(&[0; canadensis_header::SIZE]);
         frame
     }
 
     /// Generates and returns a Cyphal/UDP header, including the CRC
-    fn make_header(&self, last_frame: bool) -> UdpHeader {
-        ValidatedUdpHeader {
+    fn make_header(&self, last_frame: bool) -> Header {
+        Header {
             priority: self.header_base.priority,
             data_specifier: self.header_base.data_specifier.clone(),
             transfer_id: self.header_base.transfer_id,
@@ -125,23 +127,26 @@ where
                         // The CRC hasn't been added yet, so go all the way to the end.
                         let data_crc = {
                             let mut crc = data_crc();
-                            crc.digest(&self.current_frame[header::SIZE..self.current_frame.len()]);
+                            crc.digest(
+                                &self.current_frame
+                                    [canadensis_header::SIZE..self.current_frame.len()],
+                            );
                             crc.get_crc()
                         };
 
-                        let frame = self.take_frame(&header, data_crc);
+                        let frame = self.take_frame(header, data_crc);
                         self.frame_index += 1;
                         assert_eq!(self.frame_index & LAST_FRAME, 0, "Frame index too large");
                         break Some(frame);
                     }
                 }
                 None => {
-                    if self.current_frame.len() != header::SIZE {
+                    if self.current_frame.len() != canadensis_header::SIZE {
                         // End of data, return a frame with the last frame bit set
                         // and with a CRC covering all the data
                         let header = self.make_header(true);
                         let transfer_crc = self.transfer_crc.get_crc();
-                        let frame = self.take_frame(&header, transfer_crc);
+                        let frame = self.take_frame(header, transfer_crc);
                         self.done = true;
                         break Some(frame);
                     } else {
@@ -162,8 +167,8 @@ mod tests {
     use canadensis_core::time::Microseconds64;
     use canadensis_core::{Priority, ServiceId, SubjectId};
 
-    use crate::header::DataSpecifier;
-    use crate::{data_crc, header, header_crc, UdpNodeId, TRANSFER_CRC_SIZE};
+    use crate::{data_crc, UdpNodeId, TRANSFER_CRC_SIZE};
+    use canadensis_header::{header_crc, DataSpecifier};
 
     use super::{Breakdown, HeaderBase};
 
@@ -207,7 +212,7 @@ mod tests {
 
         assert_eq!(
             frame.data.len(),
-            header::SIZE + payload.len() + TRANSFER_CRC_SIZE
+            canadensis_header::SIZE + payload.len() + TRANSFER_CRC_SIZE
         );
         // Check everything before the header CRC
         let expected_bytes = [
@@ -221,12 +226,16 @@ mod tests {
             0xfe, 0x39, // Data
         ];
         assert_eq!(
-            HexDebug(&frame.data[..header::SIZE - 2]),
+            HexDebug(&frame.data[..canadensis_header::SIZE - 2]),
             HexDebug(expected_bytes.as_slice())
         );
-        check_header_crc(&frame.data[..header::SIZE]);
-        assert_eq!(frame.data[header::SIZE], payload[0], "Incorrect payload");
-        check_single_frame_data_crc(&frame.data[header::SIZE..]);
+        check_header_crc(&frame.data[..canadensis_header::SIZE]);
+        assert_eq!(
+            frame.data[canadensis_header::SIZE],
+            payload[0],
+            "Incorrect payload"
+        );
+        check_single_frame_data_crc(&frame.data[canadensis_header::SIZE..]);
     }
     #[test]
     fn test_one_full_frame() {
@@ -254,7 +263,7 @@ mod tests {
 
         assert_eq!(
             frame.data.len(),
-            header::SIZE + payload.len() + TRANSFER_CRC_SIZE
+            canadensis_header::SIZE + payload.len() + TRANSFER_CRC_SIZE
         );
         // Check everything before the header CRC
         let expected_bytes = [
@@ -268,16 +277,16 @@ mod tests {
             0x21, 0x10, // Data
         ];
         assert_eq!(
-            HexDebug(&frame.data[..header::SIZE - 2]),
+            HexDebug(&frame.data[..canadensis_header::SIZE - 2]),
             HexDebug(expected_bytes.as_slice())
         );
-        check_header_crc(&frame.data[..header::SIZE]);
+        check_header_crc(&frame.data[..canadensis_header::SIZE]);
         assert_eq!(
-            frame.data[header::SIZE..][..payload.len()],
+            frame.data[canadensis_header::SIZE..][..payload.len()],
             payload,
             "Incorrect payload"
         );
-        check_single_frame_data_crc(&frame.data[header::SIZE..]);
+        check_single_frame_data_crc(&frame.data[canadensis_header::SIZE..]);
     }
 
     #[test]
@@ -317,21 +326,24 @@ mod tests {
                 0xfe, 0xff, // Data
             ];
             assert_eq!(
-                HexDebug(&frame.data[..header::SIZE - 2]),
+                HexDebug(&frame.data[..canadensis_header::SIZE - 2]),
                 HexDebug(expected_bytes.as_slice())
             );
-            check_header_crc(&frame.data[..header::SIZE]);
+            check_header_crc(&frame.data[..canadensis_header::SIZE]);
             assert_eq!(
-                frame.data[header::SIZE..][..4],
+                frame.data[canadensis_header::SIZE..][..4],
                 payload[..4],
                 "Incorrect payload"
             );
-            check_single_frame_data_crc(&frame.data[header::SIZE..]);
+            check_single_frame_data_crc(&frame.data[canadensis_header::SIZE..]);
         }
         // Second frame
         {
             let frame = breakdown.next().expect("No frame");
-            assert_eq!(frame.data.len(), header::SIZE + 1 + TRANSFER_CRC_SIZE);
+            assert_eq!(
+                frame.data.len(),
+                canadensis_header::SIZE + 1 + TRANSFER_CRC_SIZE
+            );
             // Check everything before the header CRC
             let expected_bytes = [
                 0x1, // Version
@@ -344,11 +356,15 @@ mod tests {
                 0xfe, 0xff, // Data
             ];
             assert_eq!(
-                HexDebug(&frame.data[..header::SIZE - 2]),
+                HexDebug(&frame.data[..canadensis_header::SIZE - 2]),
                 HexDebug(expected_bytes.as_slice())
             );
-            check_header_crc(&frame.data[..header::SIZE]);
-            assert_eq!(frame.data[header::SIZE], payload[4], "Incorrect payload");
+            check_header_crc(&frame.data[..canadensis_header::SIZE]);
+            assert_eq!(
+                frame.data[canadensis_header::SIZE],
+                payload[4],
+                "Incorrect payload"
+            );
             // Because this is the last frame of a multi-frame transfer, the CRC should cover
             // the complete payload reassembled from all the frames.
             check_full_payload_crc(
@@ -360,12 +376,10 @@ mod tests {
     }
 
     fn check_header_crc(header_bytes: &[u8]) {
-        assert_eq!(header_bytes.len(), header::SIZE);
-        let (bytes_to_crc, crc_bytes) = header_bytes.split_at(header::SIZE - 2);
-        let actual_crc = u16::from_le_bytes([crc_bytes[0], crc_bytes[1]]);
+        assert_eq!(header_bytes.len(), canadensis_header::SIZE);
         let mut crc = header_crc();
-        crc.digest(bytes_to_crc);
-        assert_eq!(crc.get_crc(), actual_crc);
+        crc.digest(header_bytes);
+        assert_eq!(crc.get_crc(), 0);
     }
 
     fn check_single_frame_data_crc(payload_and_crc: &[u8]) {

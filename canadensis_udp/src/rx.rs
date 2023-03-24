@@ -11,13 +11,13 @@ use canadensis_core::time::Instant;
 use canadensis_core::transfer::{Header, MessageHeader, ServiceHeader, Transfer};
 use canadensis_core::transport::Receiver;
 use canadensis_core::{OutOfMemoryError, ServiceId, ServiceSubscribeError, SubjectId};
+use canadensis_header::{DataSpecifier, Header as UdpHeader, RawHeader};
 
 use crate::address::Address;
 use crate::driver::UdpSocket;
-use crate::header::{DataSpecifier, UdpHeader, ValidatedUdpHeader};
 use crate::rx::buildup::Buildup;
 use crate::rx::subscriptions::Subscriptions;
-use crate::{data_crc, header, MIN_PACKET_SIZE, TRANSFER_CRC_SIZE};
+use crate::{data_crc, MIN_PACKET_SIZE, TRANSFER_CRC_SIZE};
 use crate::{Error, UdpNodeId, UdpTransferId, UdpTransport};
 
 mod buildup;
@@ -89,13 +89,13 @@ where
             return Ok(None);
         }
         // Check header validity, ignore frames with invalid headers
-        let header = UdpHeader::read_from_prefix(buffer)
-            .and_then(|header| ValidatedUdpHeader::try_from(header).ok());
-        let header: ValidatedUdpHeader = match header {
+        let header =
+            RawHeader::read_from_prefix(buffer).and_then(|header| UdpHeader::try_from(header).ok());
+        let header: UdpHeader = match header {
             Some(header) => header,
             None => return Ok(None),
         };
-        let bytes_after_header = &buffer[header::SIZE..];
+        let bytes_after_header = &buffer[canadensis_header::SIZE..];
 
         // Look for a matching subscription
         match header.data_specifier {
@@ -287,7 +287,7 @@ where
 
     fn handle_frame(
         &mut self,
-        header: &ValidatedUdpHeader,
+        header: &UdpHeader,
         bytes_after_header: &[u8],
         now: I,
     ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, OutOfMemoryError> {
@@ -328,7 +328,7 @@ where
     fn convert_reassembly_result(
         &self,
         result: Result<Option<Vec<u8>>, OutOfMemoryError>,
-        header: &ValidatedUdpHeader,
+        header: &UdpHeader,
         now: I,
     ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, OutOfMemoryError> {
         match result {
@@ -338,7 +338,7 @@ where
                     DataSpecifier::Subject { from, subject, .. } => {
                         Header::Message(MessageHeader {
                             timestamp: now,
-                            transfer_id: header.transfer_id,
+                            transfer_id: header.transfer_id.into(),
                             priority: header.priority,
                             subject,
                             source: from,
@@ -347,7 +347,7 @@ where
                     DataSpecifier::ServiceRequest { service, from, to } => {
                         Header::Request(ServiceHeader {
                             timestamp: now,
-                            transfer_id: header.transfer_id,
+                            transfer_id: header.transfer_id.into(),
                             priority: header.priority,
                             service,
                             source: from,
@@ -357,7 +357,7 @@ where
                     DataSpecifier::ServiceResponse { service, from, to } => {
                         Header::Response(ServiceHeader {
                             timestamp: now,
-                            transfer_id: header.transfer_id,
+                            transfer_id: header.transfer_id.into(),
                             priority: header.priority,
                             service,
                             source: from,
@@ -391,7 +391,7 @@ where
 {
     fn handle_frame(
         &mut self,
-        header: &ValidatedUdpHeader,
+        header: &UdpHeader,
         bytes_after_header: &[u8],
         max_payload_length: usize,
     ) -> Result<Option<Vec<u8>>, OutOfMemoryError>;
@@ -407,7 +407,7 @@ where
     /// payload.
     fn handle_frame(
         &mut self,
-        header: &ValidatedUdpHeader,
+        header: &UdpHeader,
         bytes_after_header: &[u8],
         max_payload_length: usize,
     ) -> Result<Option<Vec<u8>>, OutOfMemoryError> {

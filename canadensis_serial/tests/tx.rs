@@ -29,8 +29,11 @@ fn transmit_capacity_1() {
 #[test]
 fn transmit_minimum_capacity() {
     let mut driver = MockDriver::default();
-    // Minimum queue capacity: 1 delimiter + 32 bytes header + 0 payload + 4 CRC + 1 delimiter + 1 zero escaping = 39 bytes
-    let mut tx = SerialTransmitter::<_, 39>::new();
+    // Minimum queue capacity: 1 delimiter + 24 bytes header + 0 payload + 4 CRC + 1 delimiter + 1 zero escaping = 31 bytes
+    const MIN_QUEUE_CAPACITY: usize = 1 + canadensis_header::SIZE + 0 + 4 + 1 + 1;
+    // Put extra capacity in the queue to detect if this fails
+    const QUEUE_CAPACITY: usize = 64;
+    let mut tx = SerialTransmitter::<_, QUEUE_CAPACITY>::new();
     let transfer: Transfer<[u8; 0], Microseconds32, SerialTransport> = Transfer {
         header: Header::Message(MessageHeader {
             timestamp: Microseconds32::new(0),
@@ -44,7 +47,7 @@ fn transmit_minimum_capacity() {
     tx.push(transfer, &mut ZeroClock, &mut driver).unwrap();
     tx.flush(&mut ZeroClock, &mut driver).unwrap();
     let queue: Vec<u8> = driver.iter().copied().collect();
-    assert_eq!(queue.len(), 39)
+    assert_eq!(queue.len(), MIN_QUEUE_CAPACITY)
 }
 
 /// A driver that stores frames in a queue and allows frames written to be read back

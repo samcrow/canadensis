@@ -1,0 +1,15 @@
+[package]
+name = "canadensis_header"
+version = "0.1.0"
+edition = "2021"
+keywords = ["uavcan", "uav", "can", "cyphal"]
+repository = "https://github.com/samcrow/canadensis"
+license = "MIT OR Apache-2.0"
+description = "The frame header format used by Cyphal/Serial and Cyphal/UDP"
+
+[dependencies]
+canadensis_core = { version = "0.2.3", path = "../canadensis_core" }
+zerocopy = "0.6.1"
+crc-any = "2.4.0"
+hash32 = "0.2.1"
+hash32-derive = "0.1.1"

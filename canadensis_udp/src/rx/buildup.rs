@@ -5,8 +5,8 @@ use alloc::vec::Vec;
 use fallible_collections::{FallibleVec, TryReserveError};
 
 use canadensis_core::{OutOfMemoryError, Priority};
+use canadensis_header::Header;
 
-use crate::header::ValidatedUdpHeader;
 use crate::UdpTransferId;
 
 // TODO: Add support for reassembling out-of-order frames
@@ -37,7 +37,7 @@ impl Buildup {
     /// This function attempts to allocate space for `max_length` payload bytes and returns an error
     /// if the allocation fails.
     pub fn new(
-        header: &ValidatedUdpHeader,
+        header: &Header,
         bytes_after_header: &[u8],
         max_length: usize,
     ) -> Result<Self, BuildupError> {
@@ -58,11 +58,7 @@ impl Buildup {
     /// Adds a frame to this buildup
     ///
     /// This function does not use dynamic memory allocation.
-    pub fn push(
-        &mut self,
-        header: &ValidatedUdpHeader,
-        bytes_after_header: &[u8],
-    ) -> Result<(), BuildupError> {
+    pub fn push(&mut self, header: &Header, bytes_after_header: &[u8]) -> Result<(), BuildupError> {
         if header.frame_index != self.next_frame_index {
             return Err(BuildupError::Index);
         }

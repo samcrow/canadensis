@@ -13,6 +13,7 @@ members = [
     "canadensis_dsdl_parser",
     "canadensis_encoding",
     "canadensis_filter_config",
+    "canadensis_header",
     "canadensis_linux",
     "canadensis_macro",
     "canadensis_pnp_client",

@@ -25,6 +25,7 @@
 
 extern crate alloc;
 extern crate canadensis_core;
+extern crate canadensis_header;
 extern crate crc_any;
 pub extern crate embedded_nal;
 extern crate fallible_collections;
@@ -35,21 +36,17 @@ extern crate log;
 extern crate nb;
 extern crate zerocopy;
 
-use core::convert::TryFrom;
+use canadensis_core::transport::Transport;
+use canadensis_core::{OutOfMemoryError, Priority};
+use canadensis_header::{NodeId16, TransferId64};
 use core::fmt::Debug;
-
-use crc_any::{CRCu16, CRCu32};
-use hash32_derive::Hash32;
-
-use canadensis_core::transport::{TransferId, Transport};
-use canadensis_core::{InvalidValue, OutOfMemoryError, Priority};
+use crc_any::CRCu32;
 
 pub use crate::rx::{UdpReceiver, UdpSessionData};
 pub use crate::tx::UdpTransmitter;
 
 mod address;
 pub mod driver;
-mod header;
 mod rx;
 mod tx;
 
@@ -62,7 +59,7 @@ const TRANSFER_CRC_SIZE: usize = 4;
 ///
 /// This is also the minimum MTU. It includes the Cyphal/UDP header, 1 byte of data, and the
 /// transfer CRC.
-pub const MIN_PACKET_SIZE: usize = header::SIZE + 1 + TRANSFER_CRC_SIZE;
+pub const MIN_PACKET_SIZE: usize = canadensis_header::SIZE + 1 + TRANSFER_CRC_SIZE;
 
 /// The default UDP port used for communication
 pub const DEFAULT_PORT: u16 = 9382;
@@ -79,40 +76,7 @@ impl Transport for UdpTransport {
 }
 
 /// A UDP node ID
-///
-/// This allows all u16 values except 65535, which is reserved for anonymous transfers
-#[derive(Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash32)]
-pub struct UdpNodeId(u16);
-
-const NODE_ID_RESERVED_ANONYMOUS_OR_BROADCAST: u16 = 0xffff;
-
-impl TryFrom<u16> for UdpNodeId {
-    type Error = InvalidValue;
-
-    fn try_from(value: u16) -> Result<Self, Self::Error> {
-        if value == NODE_ID_RESERVED_ANONYMOUS_OR_BROADCAST {
-            Err(InvalidValue)
-        } else {
-            Ok(UdpNodeId(value))
-        }
-    }
-}
-impl From<UdpNodeId> for u16 {
-    fn from(id: UdpNodeId) -> Self {
-        id.0
-    }
-}
-impl From<UdpNodeId> for u32 {
-    fn from(id: UdpNodeId) -> Self {
-        id.0.into()
-    }
-}
-
-impl From<UdpNodeId> for usize {
-    fn from(id: UdpNodeId) -> Self {
-        id.0.into()
-    }
-}
+pub type UdpNodeId = NodeId16;
 
 pub struct UdpTransferIds([UdpTransferId; u16::MAX as usize + 1]);
 
@@ -131,26 +95,7 @@ impl AsMut<[UdpTransferId]> for UdpTransferIds {
 /// A UDP transfer identifier
 ///
 /// This is just a `u64`.
-#[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Ord, PartialOrd)]
-pub struct UdpTransferId(u64);
-
-impl TransferId for UdpTransferId {
-    fn increment(self) -> Self {
-        UdpTransferId(self.0.wrapping_add(1))
-    }
-}
-
-impl From<UdpTransferId> for u64 {
-    fn from(id: UdpTransferId) -> Self {
-        id.0
-    }
-}
-
-impl From<u64> for UdpTransferId {
-    fn from(value: u64) -> Self {
-        UdpTransferId(value)
-    }
-}
+pub type UdpTransferId = TransferId64;
 
 #[derive(Debug)]
 pub enum Error<S> {
@@ -162,11 +107,6 @@ impl<S> From<OutOfMemoryError> for Error<S> {
     fn from(oom: OutOfMemoryError) -> Self {
         Error::Memory(oom)
     }
-}
-
-/// Returns a CRC calculator used for headers
-fn header_crc() -> CRCu16 {
-    CRCu16::crc16ccitt_false()
 }
 
 /// Returns a CRC calculator used for data

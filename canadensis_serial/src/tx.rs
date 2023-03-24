@@ -1,6 +1,5 @@
 use alloc::vec::Vec;
 use core::marker::PhantomData;
-use core::mem;
 
 use fallible_collections::FallibleVec;
 use heapless::Deque;
@@ -10,14 +9,14 @@ use canadensis_core::time::{Clock, Instant};
 use canadensis_core::transfer::Transfer;
 use canadensis_core::transport::Transmitter;
 use canadensis_core::{nb, OutOfMemoryError};
+use canadensis_header::{Header, RawHeader};
 
 use crate::driver::TransmitDriver;
-use crate::header::SerialHeader;
 use crate::SerialTransport;
 use crate::{cobs, Error};
 
 /// Number of bytes added for each frame for the header and payload CRC
-const PER_FRAME_ESCAPED_OVERHEAD: usize = mem::size_of::<SerialHeader>() + 4;
+const PER_FRAME_ESCAPED_OVERHEAD: usize = canadensis_header::SIZE + 4;
 /// Number of non-escaped bytes added for each frame for the start and end delimiters
 const PER_FRAME_UNESCAPED_OVERHEAD: usize = 1 + 1;
 /// The frame delimiter character
@@ -74,7 +73,7 @@ where
         if length_on_wire > (self.queue.capacity() - self.queue.len()) {
             return Err(nb::Error::Other(Error::Memory(OutOfMemoryError)));
         }
-        let header = SerialHeader::from(transfer.header);
+        let header = RawHeader::from(Header::from(transfer.header));
         let payload_crc = crate::make_payload_crc(transfer.payload.as_ref());
         // Escape the header, payload, and payload CRC into a temporary buffer
         let mut escape_buffer: Vec<u8> = FallibleVec::try_with_capacity(escaped_length)

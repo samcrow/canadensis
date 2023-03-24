@@ -14,7 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_codegen_rust`: Added the ability to generate enums from DSDL types marked with `#[canadensis(enum)]`
 - `canadensis_codegen_rust`: Breaking change: Code generation can fail with an error
 - `canadensis_data_types`: Added documentation from DSDL comments
-
+- `canadensis_header`: This is a new crate that specifies [the frame header format](https://forum.opencyphal.org/t/cyphal-udp-architectural-issues-caused-by-the-dependency-between-the-nodes-ip-address-and-its-identity/1765/60)
+  that Cyphal/UDP and Cyphal/Serial use
 
 ### Changed
 
@@ -29,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_data_types`: Regenerated code to match revision 935973babe11755d8070e67452b3508b4b6833e2
   of <https://github.com/OpenCyphal/public_regulated_data_types/>
 - `canadensis_macro`: Code generation can fail with an error
+- `canadensis_udp`: Breaking change: Changed header format
+- `canadensis_serial`: Breaking change: Changed header format
 
 
 ## [canadensis_core-v0.2.3](https://github.com/samcrow/canadensis/tree/canadensis_core-v0.2.3) - 2022-10-18
