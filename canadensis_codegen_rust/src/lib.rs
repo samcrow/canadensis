@@ -38,13 +38,13 @@ mod struct_as_enum;
 pub fn generated_code_dependencies() -> String {
     String::from(
         r#"[dependencies]
-half = { version = "1.8", features = ["zerocopy"] }
+half = { version = "2.2", features = ["zerocopy"] }
 heapless = "0.7.7"
 zerocopy = "0.6.0"
 canadensis_core = "0.2.0"
 canadensis_encoding = "0.2.0"
 [dev-dependencies]
-memoffset = "0.6.4"
+memoffset = "0.8.0"
 "#,
     )
 }

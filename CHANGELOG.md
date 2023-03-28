@@ -19,26 +19,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- `canadensis`: Replaced `uavcan.node.port.List.0.1` and associated data types with version 1.0.
+- `canadensis`: Breaking change: Replaced `uavcan.node.port.List.0.1` and associated data types with version 1.0.
   The DSDL and the structures of the types have not changed, only the version number.
 - `canadensis`: Clippy fixes
+- `canadensis`: Breaking change: Updated `half` dependency to 2.2
+- `canadensis`: Updated private dependencies
 - `canadensis_bxcan`: Clippy fixes
+- `canadensis_bxcan`: Breaking change: Removed deprecated functions `bxcan_frame_to_uavcan` and `uavcan_frame_to_bxcan`,
+  made the replacement functions private
+- `canadensis_bxcan`: Breaking change: Updated `bxcan` dependency to 0.7
 - `canadensis_codegen_rust`: Clippy fixes
-- `canadensis_udp`: Major rework for [new version of Cyphal/UDP](https://forum.opencyphal.org/t/cyphal-udp-architectural-issues-caused-by-the-dependency-between-the-nodes-ip-address-and-its-identity/1765/60)
+- `canadensis_codegen_rust`: Updated `clap` dependency to 4.1
+- `canadensis_codegen_rust`: Breaking change: Updated dependencies of generated code: `half` to 2.2, `memoffset` to 0.8
+- `canadensis_data_types`: Changed the order of constants to match the order in the DSDL files
+- `canadensis_data_types`: Regenerated code to match revision 935973babe11755d8070e67452b3508b4b6833e2
+  of <https://github.com/OpenCyphal/public_regulated_data_types/>
+- `canadensis_data_types`: Breaking change: Updated `half` dependency to 2.2, `memoffset` to 0.8
+- `canadensis_derive_register_block`: Updated `syn` dependency to 2.0
 - `canadensis_dsdl_parser`: Breaking change: Added comment parsing
 - `canadensis_dsdl_parser`: Breaking change: Made `Error` an opaque type instead of an alias to the Pest error type
 - `canadensis_dsdl_frontend`: Breaking change: Added comment handling, made some struct fields private
 - `canadensis_dsdl_frontend`: Constants are now stored in the order they are declared in the DSDL file, instead of
   alphabetical order by name
 - `canadensis_dsdl_frontend`: Clippy fixes
-- `canadensis_data_types`: Changed the order of constants to match the order in the DSDL files
-- `canadensis_data_types`: Regenerated code to match revision 935973babe11755d8070e67452b3508b4b6833e2
-  of <https://github.com/OpenCyphal/public_regulated_data_types/>
+- `canadensis_dsdl_frontend`: Breaking change: Updated `half` dependency to 2.2
 - `canadensis_encoding`: Clippy fixes
+- `canadensis_encoding`: Breaking change: Updated `half` dependency to 2.2
 - `canadensis_macro`: Code generation can fail with an error
+- `canadensis_macro`: Updated `syn` dependency to 2.0
+- `canadensis_macro`: Breaking change: Updated dependencies of generated code: `half` to 2.2, `memoffset` to 0.8
+- `canadensis_pnp_client`: Updated `crc-any` dependency to 2.4
+- `canadensis_serial`: Breaking change: Changed header format
+- `canadensis_serial`: Updated `simplelog` dependency to 0.12
+- `canadensis_udp`: Major rework for [new version of Cyphal/UDP](https://forum.opencyphal.org/t/cyphal-udp-architectural-issues-caused-by-the-dependency-between-the-nodes-ip-address-and-its-identity/1765/60)
 - `canadensis_udp`: Breaking change: Changed header format
 - `canadensis_udp`: Clippy fixes
-- `canadensis_serial`: Breaking change: Changed header format
+- `canadensis_udp`: Updated `simplelog` dependency to 0.12
+- `canadensis_write_crc`: Updated `object` dependency to 0.30
 
 
 ## [canadensis_core-v0.2.3](https://github.com/samcrow/canadensis/tree/canadensis_core-v0.2.3) - 2022-10-18

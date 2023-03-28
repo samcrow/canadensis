@@ -12,7 +12,7 @@ description = "Automatically generated types for all Cyphal public regulated dat
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-half = { version = "1.8", features = ["zerocopy"] }
+half = { version = "2.2", features = ["zerocopy"] }
 heapless = "0.7.7"
 zerocopy = "0.6.0"
 
@@ -24,5 +24,5 @@ version = "0.2.0"
 path = "../canadensis_encoding"
 
 [dev-dependencies]
-memoffset = "0.6.4"
+memoffset = "0.8.0"
 

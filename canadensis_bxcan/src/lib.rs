@@ -23,8 +23,10 @@ extern crate nb;
 
 pub mod pnp;
 
-use bxcan::filter::{BankConfig, Mask32};
-use bxcan::{Can, ExtendedId, FilterOwner, Instance, Mailbox};
+pub use bxcan::OverrunError;
+
+use bxcan::filter::Mask32;
+use bxcan::{Can, ExtendedId, Fifo, FilterOwner, Instance, Mailbox};
 use canadensis::core::subscription::Subscription;
 use canadensis::core::time::Instant;
 use canadensis::core::OutOfMemoryError;
@@ -138,7 +140,7 @@ where
     N: Instance + FilterOwner,
 {
     /// This matches the error type defined in bxcan
-    type Error = ();
+    type Error = OverrunError;
 
     fn receive(&mut self, now: I) -> nb::Result<Frame<I>, Self::Error> {
         loop {
@@ -171,16 +173,15 @@ where
                 for (i, filter) in optimized.iter().enumerate() {
                     let id = ExtendedId::new(filter.id()).unwrap();
                     let mask = ExtendedId::new(filter.mask()).unwrap();
-                    filters.enable_bank(
-                        i as u8,
-                        BankConfig::Mask32(Mask32::frames_with_ext_id(id, mask)),
-                    );
+                    filters.enable_bank(i as u8, Fifo::Fifo0, Mask32::frames_with_ext_id(id, mask));
                 }
             },
         );
         if status.is_err() {
             // Not enough memory to apply the ideal filters. Just accept all frames.
-            filters.clear().enable_bank(0, Mask32::accept_all());
+            filters
+                .clear()
+                .enable_bank(0, Fifo::Fifo0, Mask32::accept_all());
         }
     }
 
@@ -188,7 +189,7 @@ where
         self.can
             .modify_filters()
             .clear()
-            .enable_bank(0, Mask32::accept_all());
+            .enable_bank(0, Fifo::Fifo0, Mask32::accept_all());
     }
 }
 
@@ -252,23 +253,17 @@ impl<I> Default for DeadlineTracker<I> {
 /// # Panics
 ///
 /// This function panics if the provided frame has more than 8 bytes of data.
-pub fn cyphal_frame_to_bxcan<I>(frame: &canadensis_can::Frame<I>) -> bxcan::Frame {
+fn cyphal_frame_to_bxcan<I>(frame: &canadensis_can::Frame<I>) -> bxcan::Frame {
     let bxcan_id = bxcan::ExtendedId::new(frame.id().into()).unwrap();
     let bxcan_data = bxcan::Data::new(frame.data()).expect("Frame data more than 8 bytes");
     bxcan::Frame::new_data(bxcan_id, bxcan_data)
-}
-
-/// This function is a deprecated alias for [`cyphal_frame_to_bxcan`].
-#[deprecated(note = "Renamed to cyphal_frame_to_bxcan")]
-pub fn uavcan_frame_to_bxcan<I>(frame: &canadensis_can::Frame<I>) -> bxcan::Frame {
-    cyphal_frame_to_bxcan(frame)
 }
 
 /// Converts a bxCAN frame into a Canadensis frame
 ///
 /// This function returns an error if the frame does not have an extended ID, has an ID with an
 /// invalid format, or does not have any data.
-pub fn bxcan_frame_to_cyphal<I>(
+fn bxcan_frame_to_cyphal<I>(
     frame: &bxcan::Frame,
     timestamp: I,
 ) -> Result<canadensis_can::Frame<I>, InvalidFrameFormat> {
@@ -283,15 +278,6 @@ pub fn bxcan_frame_to_cyphal<I>(
         cyphal_id,
         cyphal_data.as_ref(),
     ))
-}
-
-/// This function is a deprecated alias for [`bxcan_frame_to_cyphal`].
-#[deprecated(note = "Renamed to bxcan_frame_to_cyphal")]
-pub fn bxcan_frame_to_uavcan<I>(
-    frame: &bxcan::Frame,
-    timestamp: I,
-) -> Result<canadensis_can::Frame<I>, InvalidFrameFormat> {
-    bxcan_frame_to_cyphal(frame, timestamp)
 }
 
 /// An error indicating that a frame did not have the correct format for use with Cyphal

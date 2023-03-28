@@ -26,4 +26,4 @@ version = "0.1.0"
 path = "../canadensis_header"
 
 [dev-dependencies]
-simplelog = "0.10.2"
+simplelog = "0.12.0"

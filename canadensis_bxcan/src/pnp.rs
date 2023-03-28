@@ -3,7 +3,7 @@
 //!
 
 use crate::BxCanDriver;
-use bxcan::{Can, FilterOwner, Instance};
+use bxcan::{Can, FilterOwner, Instance, OverrunError};
 use canadensis::core::time::Clock;
 use canadensis_can::queue::{SingleFrameQueue, SingleQueueDriver};
 use canadensis_can::{CanNodeId, CanReceiver, CanTransmitter, CanTransport, Error, Mtu};
@@ -36,7 +36,7 @@ where
     I: Instance + FilterOwner,
 {
     /// Creates a node ID allocation client
-    pub fn new(clock: C, can: Can<I>, unique_id: [u8; 16]) -> Result<Self, Error<()>> {
+    pub fn new(clock: C, can: Can<I>, unique_id: [u8; 16]) -> Result<Self, Error<OverrunError>> {
         let driver = BxCanDriver::new(can);
         let mut driver = SingleQueueDriver::new(SingleFrameQueue::new(), driver);
         let transmitter = CanTransmitter::new(Mtu::Can8);

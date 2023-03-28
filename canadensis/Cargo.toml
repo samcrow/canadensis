@@ -13,7 +13,7 @@ description = "A Cyphal implementation: Node types and re-exports from some othe
 fallible_collections = "0.4.0"
 hash32 = "0.2.1"
 heapless = "0.7.0"
-half = "1.8"
+half = "2.2"
 log = "0.4"
 
 # Depends on most other canadensis crates that are not transport-specific
@@ -35,8 +35,8 @@ path = "../canadensis_data_types"
 
 [dev-dependencies]
 socketcan = "1.7.0"
-rand = "0.7.3"
-simplelog = "0.10.2"
+rand = "0.8.0"
+simplelog = "0.12.0"
 
 [dev-dependencies.canadensis_linux]
 version = "0.2.0"

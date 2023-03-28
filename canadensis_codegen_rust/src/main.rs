@@ -3,12 +3,11 @@ extern crate canadensis_dsdl_frontend;
 extern crate clap;
 
 use canadensis_dsdl_frontend::Package;
-use clap::{AppSettings, Arg, SubCommand};
+use clap::{value_parser, Arg, Command};
 use std::collections::BTreeMap;
-use std::ffi::{OsStr, OsString};
 use std::fs::File;
 use std::io::{BufWriter, Write};
-use std::process::Command;
+use std::path::{Path, PathBuf};
 use std::{env, process};
 
 fn main() {
@@ -68,8 +67,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// Finds rustfmt in the default path and runs it to format the code at the provided path
-fn run_rustfmt(output_path: &OsStr) -> Result<(), Box<dyn std::error::Error>> {
-    let start_status = Command::new("rustfmt").arg(output_path).status();
+fn run_rustfmt(output_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let start_status = std::process::Command::new("rustfmt")
+        .arg(output_path)
+        .status();
     match start_status {
         Ok(exit_status) => {
             if exit_status.success() {
@@ -92,9 +93,9 @@ fn run_rustfmt(output_path: &OsStr) -> Result<(), Box<dyn std::error::Error>> {
 enum Args {
     Compile {
         /// Input folder paths with DSDL files to read
-        input_folders: Vec<OsString>,
+        input_folders: Vec<PathBuf>,
         /// Output file path
-        output_file: OsString,
+        output_file: PathBuf,
         /// DSDL packages that should not be generated, but instead refer to some other Rust module
         ///
         /// Each key is a list of Cyphal package name segments (like ["uavcan", "node"]).
@@ -107,52 +108,55 @@ enum Args {
 }
 
 fn get_args() -> Args {
-    let app = clap::App::new("canadensis_generate_code")
+    let app = clap::Command::new("canadensis_generate_code")
         .version(clap::crate_version!())
         .about("Generates Rust data types and serialization code from Cyphal DSDL files")
-        .setting(AppSettings::SubcommandRequiredElseHelp)
-        .subcommand(SubCommand::with_name("compile").about("Parses DSDL files and generates Rust code")
+        .subcommand_required(true)
+        .subcommand(Command::new("compile").about("Parses DSDL files and generates Rust code")
         .arg(
-            Arg::with_name("input")
+            Arg::new("input")
                 .index(1)
                 .required(true)
-                .multiple(true)
+                .num_args(1..)
+                .value_parser(value_parser!(PathBuf))
                 .help("One or more paths to directories with DSDL files"),
         )
         .arg(
-            Arg::with_name("output_file")
-                .short("o")
+            Arg::new("output_file")
+                .short('o')
                 .long("output-file")
                 .required(true)
+                .value_parser(value_parser!(PathBuf))
                 .default_value("lib.rs")
                 .help("The file to write the generated code to"),
         )
         .arg(
-            Arg::with_name("external_package")
+            Arg::new("external_package")
                 .long("external-package")
-                .multiple(true)
-                .validator(validate_external_package)
+                .num_args(0..)
+                .value_parser(validate_external_package)
                 .value_name("cyphal-package,rust-module-path")
                 .help("A DSDL package name and corresponding Rust module path that will not be generated"),
         )
-            .arg(Arg::with_name("rustfmt")
+            .arg(Arg::new("rustfmt")
                 .long("rustfmt")
+                .num_args(0)
                 .help("Run rustfmt to format the generated code")
         ))
-        .subcommand(SubCommand::with_name("print-dependencies")
+        .subcommand(Command::new("print-dependencies")
             .about("Prints the packages that the generated code depends on (for use in Cargo.toml)"));
     let matches = app.get_matches();
 
     match matches.subcommand() {
-        ("compile", Some(matches)) => Args::Compile {
+        Some(("compile", matches)) => Args::Compile {
             input_folders: matches
-                .values_of_os("input")
+                .get_many::<PathBuf>("input")
                 .unwrap()
-                .map(OsString::from)
+                .cloned()
                 .collect(),
-            output_file: matches.value_of_os("output_file").unwrap().into(),
+            output_file: matches.get_one::<PathBuf>("output_file").unwrap().clone(),
             external_packages: matches
-                .values_of("external_package")
+                .get_many::<String>("external_package")
                 .map(|values| {
                     values
                         .map(|s| ExternalPackage::parse(s).expect("Invalid external package"))
@@ -160,22 +164,21 @@ fn get_args() -> Args {
                         .collect()
                 })
                 .unwrap_or_else(BTreeMap::new),
-            rustfmt: matches.is_present("rustfmt"),
+            rustfmt: matches.contains_id("rustfmt"),
         },
-        ("print-dependencies", _) => Args::PrintDependencies,
-        _ => panic!("Unrecognized subcommand"),
+        Some(("print-dependencies", _)) => Args::PrintDependencies,
+        _ => panic!("Unrecognized Subcommand"),
     }
 }
 
 /// Validates an external package name pair
-fn validate_external_package(package: String) -> Result<(), String> {
-    ExternalPackage::parse(&package)
-        .ok_or_else(|| {
-            "Invalid external package, expected [cyphal-package],[rust-module-path]".into()
-        })
-        .map(drop)
+fn validate_external_package(package: &str) -> Result<ExternalPackage, String> {
+    ExternalPackage::parse(&package).ok_or_else(|| {
+        "Invalid external package, expected [cyphal-package],[rust-module-path]".into()
+    })
 }
 
+#[derive(Debug, Clone)]
 struct ExternalPackage {
     package: Vec<String>,
     rust_module: Vec<String>,
