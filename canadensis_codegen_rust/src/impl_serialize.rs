@@ -99,10 +99,7 @@ impl Display for ImplementSerialize<'_, '_> {
 /// Returns true if canadensis_encoding has a write_aligned function for an unsigned integer
 /// with the specified number of bits
 fn have_aligned_write_functions(bits: u8) -> bool {
-    match bits {
-        8 | 16 | 32 | 64 => true,
-        _ => false,
-    }
+    matches!(bits, 8 | 16 | 32 | 64)
 }
 
 struct SerializeField<'f, 'c>(&'f GeneratedField<'c>);
@@ -158,7 +155,7 @@ struct WriteVariant<'t> {
     ty: &'t ResolvedType,
 }
 
-impl<'t> Display for WriteVariant<'_> {
+impl Display for WriteVariant<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match &self.ty {
             ResolvedType::Scalar(ResolvedScalarType::Composite { .. }) => {
@@ -181,7 +178,7 @@ struct WriteAlignedField<'t> {
     ty: &'t ResolvedType,
 }
 
-impl<'t> Display for WriteAlignedField<'_> {
+impl Display for WriteAlignedField<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match &self.ty {
             ResolvedType::Scalar(scalar) => match scalar {

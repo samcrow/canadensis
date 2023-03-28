@@ -99,10 +99,9 @@ pub trait TransferHandler<I: Instant, T: Transport> {
     /// The default implementation does nothing and returns false.
     fn handle_message<N: Node<Instant = I, Transport = T>>(
         &mut self,
-        node: &mut N,
-        transfer: &MessageTransfer<Vec<u8>, I, T>,
+        _node: &mut N,
+        _transfer: &MessageTransfer<Vec<u8>, I, T>,
     ) -> bool {
-        drop((node, transfer));
         false
     }
 
@@ -114,11 +113,10 @@ pub trait TransferHandler<I: Instant, T: Transport> {
     /// The default implementation does nothing and returns false.
     fn handle_request<N: Node<Instant = I, Transport = T>>(
         &mut self,
-        node: &mut N,
-        token: ResponseToken<T>,
-        transfer: &ServiceTransfer<Vec<u8>, I, T>,
+        _node: &mut N,
+        _token: ResponseToken<T>,
+        _transfer: &ServiceTransfer<Vec<u8>, I, T>,
     ) -> bool {
-        drop((node, token, transfer));
         false
     }
 
@@ -130,10 +128,9 @@ pub trait TransferHandler<I: Instant, T: Transport> {
     /// The default implementation does nothing and returns false.
     fn handle_response<N: Node<Instant = I, Transport = T>>(
         &mut self,
-        node: &mut N,
-        transfer: &ServiceTransfer<Vec<u8>, I, T>,
+        _node: &mut N,
+        _transfer: &ServiceTransfer<Vec<u8>, I, T>,
     ) -> bool {
-        drop((node, transfer));
         false
     }
 

@@ -93,7 +93,7 @@ pub(crate) fn generate_enum_from_struct<'a>(
         let entry = values_used_and_names.entry(constant_value);
         match entry {
             Entry::Vacant(entry) => {
-                entry.insert(&name);
+                entry.insert(name);
             }
             Entry::Occupied(entry) => {
                 return Err(EnumError::ConstantValue {

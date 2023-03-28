@@ -468,7 +468,7 @@ fn type_supports_zero_copy(ty: &ResolvedType) -> bool {
 
 fn scalar_supports_zero_copy(scalar: &ResolvedScalarType) -> bool {
     match scalar {
-        ResolvedScalarType::Composite { inner, .. } => message_supports_zero_copy(&*inner),
+        ResolvedScalarType::Composite { inner, .. } => message_supports_zero_copy(inner),
         ResolvedScalarType::Primitive(primitive) => match primitive {
             PrimitiveType::Boolean => false,
             PrimitiveType::Int { bits } | PrimitiveType::UInt { bits, .. } => {

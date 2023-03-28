@@ -12,10 +12,7 @@ pub struct Constants(Vec<(String, Constant)>);
 impl Constants {
     /// Returns true if a constant with the provided name is already stored
     pub(crate) fn contains_key(&self, name: &str) -> bool {
-        self.0
-            .iter()
-            .find(|(entry_name, _)| entry_name == name)
-            .is_some()
+        self.0.iter().any(|(entry_name, _)| entry_name == name)
     }
 
     /// Inserts a constant

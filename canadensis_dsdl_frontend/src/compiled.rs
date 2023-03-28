@@ -178,7 +178,7 @@ impl Field {
     pub fn name(&self) -> Option<&str> {
         match &self.kind {
             FieldKind::Padding(_) => None,
-            FieldKind::Data { name, .. } => Some(&*name),
+            FieldKind::Data { name, .. } => Some(name),
         }
     }
 }

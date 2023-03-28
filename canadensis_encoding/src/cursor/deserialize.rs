@@ -177,7 +177,7 @@ impl<'b> ReadCursor<'b> {
 
     /// Returns the value of the current byte being read, or 0 if the cursor is past the end
     fn read_current(&self) -> u8 {
-        self.bytes.get(0).cloned().unwrap_or(0)
+        self.bytes.first().cloned().unwrap_or(0)
     }
     /// Returns the value of the byte after current byte being read, or 0 if that position is past
     /// the end

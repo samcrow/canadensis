@@ -1,12 +1,10 @@
 //! String literal unescaping
 
-use crate::ast::error;
-use crate::Rule;
-use pest::error::Error;
+use crate::{make_error, Error};
 use pest::Span;
 
 // Unescapes a string with the escape sequences described in table 3.4 of the specification
-pub fn unescape_string(s: &str, span: Span<'_>) -> Result<String, Error<Rule>> {
+pub fn unescape_string(s: &str, span: Span<'_>) -> Result<String, Error> {
     let mut unescaped = String::with_capacity(s.len());
     let mut state = State::Idle;
     for c in s.chars() {
@@ -64,7 +62,7 @@ pub fn unescape_string(s: &str, span: Span<'_>) -> Result<String, Error<Rule>> {
                         State::Unicode0of8
                     }
                     _ => {
-                        return Err(error(
+                        return Err(make_error(
                             format!("Unexpected character '{}' after \\ in string literal", c),
                             span.clone(),
                         ))
@@ -87,7 +85,7 @@ pub fn unescape_string(s: &str, span: Span<'_>) -> Result<String, Error<Rule>> {
             State::Unicode3of4(mut escape_chars) => {
                 escape_chars.push(c);
                 let value = u16::from_str_radix(&escape_chars, 16).map_err(|e| {
-                    error(
+                    make_error(
                         format!(
                             "Invalid 4-digit unicode escape sequence \"\\u{}\": {}",
                             escape_chars, e
@@ -96,7 +94,7 @@ pub fn unescape_string(s: &str, span: Span<'_>) -> Result<String, Error<Rule>> {
                     )
                 })?;
                 let constructed = char::from_u32(value.into()).ok_or_else(||
-                    error(format!("Unicode escape sequence \\u{:04x} does not represent a valid scalar value", value), span.clone())
+                    make_error(format!("Unicode escape sequence \\u{:04x} does not represent a valid scalar value", value), span.clone())
                 )?;
                 unescaped.push(constructed);
                 State::Idle
@@ -133,7 +131,7 @@ pub fn unescape_string(s: &str, span: Span<'_>) -> Result<String, Error<Rule>> {
             State::Unicode7of8(mut escape_chars) => {
                 escape_chars.push(c);
                 let value = u32::from_str_radix(&escape_chars, 16).map_err(|e| {
-                    error(
+                    make_error(
                         format!(
                             "Invalid 8-digit unicode escape sequence \"\\U{}\": {}",
                             escape_chars, e
@@ -142,7 +140,7 @@ pub fn unescape_string(s: &str, span: Span<'_>) -> Result<String, Error<Rule>> {
                     )
                 })?;
                 let constructed = char::from_u32(value).ok_or_else(||
-                    error(format!("Unicode escape sequence \\U{:08x} does not represent a valid scalar value", value), span.clone())
+                    make_error(format!("Unicode escape sequence \\U{:08x} does not represent a valid scalar value", value), span.clone())
                 )?;
                 unescaped.push(constructed);
                 State::Idle
@@ -152,7 +150,7 @@ pub fn unescape_string(s: &str, span: Span<'_>) -> Result<String, Error<Rule>> {
     if state == State::Idle {
         Ok(unescaped)
     } else {
-        Err(error("Unexpected end of escape sequence".to_owned(), span))
+        Err(make_error("Unexpected end of escape sequence", span))
     }
 }
 
@@ -177,12 +175,11 @@ enum State {
 #[cfg(test)]
 mod test {
     use super::unescape_string;
-    use crate::Rule;
-    use pest::error::Error;
+    use crate::Error;
     use pest::Span;
 
     #[test]
-    fn no_escapes() -> Result<(), Error<Rule>> {
+    fn no_escapes() -> Result<(), Error> {
         check_unescape("", "")?;
         check_unescape("a", "a")?;
         check_unescape("aaAAAAAAaaAAaaaaaaaaa", "aaAAAAAAaaAAaaaaaaaaa")?;
@@ -192,7 +189,7 @@ mod test {
     }
 
     #[test]
-    fn escapes() -> Result<(), Error<Rule>> {
+    fn escapes() -> Result<(), Error> {
         check_unescape(r#"\\\r\n\t\'\""#, "\\\r\n\t'\"")?;
         check_unescape(r#"\"ain\'t\""#, r#""ain't""#)?;
         check_unescape(r#"oh,\u0020hi\U0000000aMark"#, "oh, hi\nMark")?;
@@ -224,7 +221,7 @@ mod test {
         check_unescape(r#"\Uffffffff"#, "").unwrap_err();
     }
 
-    fn check_unescape(original: &str, expected: &str) -> Result<(), Error<Rule>> {
+    fn check_unescape(original: &str, expected: &str) -> Result<(), Error> {
         let dummy_span = Span::new("a", 0, 1).unwrap();
         let unescaped = unescape_string(original, dummy_span)?;
         assert_eq!(unescaped, expected);

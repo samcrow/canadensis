@@ -338,7 +338,7 @@ where
                     DataSpecifier::Subject { from, subject, .. } => {
                         Header::Message(MessageHeader {
                             timestamp: now,
-                            transfer_id: header.transfer_id.into(),
+                            transfer_id: header.transfer_id,
                             priority: header.priority,
                             subject,
                             source: from,
@@ -347,7 +347,7 @@ where
                     DataSpecifier::ServiceRequest { service, from, to } => {
                         Header::Request(ServiceHeader {
                             timestamp: now,
-                            transfer_id: header.transfer_id.into(),
+                            transfer_id: header.transfer_id,
                             priority: header.priority,
                             service,
                             source: from,
@@ -357,7 +357,7 @@ where
                     DataSpecifier::ServiceResponse { service, from, to } => {
                         Header::Response(ServiceHeader {
                             timestamp: now,
-                            transfer_id: header.transfer_id.into(),
+                            transfer_id: header.transfer_id,
                             priority: header.priority,
                             service,
                             source: from,

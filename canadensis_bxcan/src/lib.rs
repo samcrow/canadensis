@@ -206,7 +206,7 @@ where
             if now.overflow_safe_compare(&deadline) == Ordering::Greater {
                 // Deadline has passed, abort transmission
                 // Ignore if the mailbox is really empty or the frame has been transmitted.
-                can.abort(mailbox.clone());
+                can.abort(*mailbox);
             }
         }
     }

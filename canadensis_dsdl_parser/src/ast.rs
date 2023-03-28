@@ -4,12 +4,11 @@ use crate::ast::types::{
     ArrayLength, ArrayType, CastMode, Definition, Expression, ExpressionAtom, ExpressionType,
     Literal, LiteralType, PrimitiveType, ScalarType, Statement, Type, TypeVersion, VersionedType,
 };
-use crate::{make_error, Identifier, Rule};
+use crate::{make_error, Error, Identifier, Rule};
 use num_bigint::BigInt;
 use num_rational::BigRational;
 use num_traits::identities::Zero;
 use num_traits::pow::Pow;
-use pest::error::{Error, ErrorVariant};
 use pest::iterators::{Pair, Pairs};
 use pest::Span;
 
@@ -17,9 +16,7 @@ pub(crate) mod types;
 mod unescape;
 
 /// Converts a Pest parse tree into an abstract syntax tree
-pub(crate) fn parse_to_ast(
-    statements: Pairs<'_, Rule>,
-) -> Result<Definition<'_>, pest::error::Error<Rule>> {
+pub(crate) fn parse_to_ast(statements: Pairs<'_, Rule>) -> Result<Definition<'_>, Error> {
     let mut ast_statements: Vec<Statement> = Vec::new();
     let mut eof_span = None;
 
@@ -53,7 +50,7 @@ pub(crate) fn parse_to_ast(
     })
 }
 
-fn parse_directive(directive: Pair<'_, Rule>) -> Result<Statement<'_>, pest::error::Error<Rule>> {
+fn parse_directive(directive: Pair<'_, Rule>) -> Result<Statement<'_>, Error> {
     debug_assert_eq!(directive.as_rule(), Rule::statement_directive);
     let inner = directive.into_inner().next().unwrap();
     match inner.as_rule() {
@@ -77,7 +74,7 @@ fn parse_directive(directive: Pair<'_, Rule>) -> Result<Statement<'_>, pest::err
     }
 }
 
-fn parse_constant(constant: Pair<'_, Rule>) -> Result<Statement<'_>, pest::error::Error<Rule>> {
+fn parse_constant(constant: Pair<'_, Rule>) -> Result<Statement<'_>, Error> {
     debug_assert_eq!(constant.as_rule(), Rule::statement_constant);
     let mut parts = constant.into_inner();
 
@@ -96,7 +93,7 @@ fn parse_constant(constant: Pair<'_, Rule>) -> Result<Statement<'_>, pest::error
     })
 }
 
-fn parse_field(field: Pair<'_, Rule>) -> Result<Statement<'_>, pest::error::Error<Rule>> {
+fn parse_field(field: Pair<'_, Rule>) -> Result<Statement<'_>, Error> {
     debug_assert_eq!(field.as_rule(), Rule::statement_field);
     let span = field.as_span();
     let mut children = field.into_inner();
@@ -113,7 +110,7 @@ fn parse_field(field: Pair<'_, Rule>) -> Result<Statement<'_>, pest::error::Erro
     })
 }
 
-fn parse_padding_field(field: Pair<'_, Rule>) -> Result<Statement<'_>, pest::error::Error<Rule>> {
+fn parse_padding_field(field: Pair<'_, Rule>) -> Result<Statement<'_>, Error> {
     debug_assert_eq!(field.as_rule(), Rule::statement_padding_field);
     let field_span = field.as_span();
     let void = field.into_inner().next().unwrap();
@@ -125,14 +122,14 @@ fn parse_padding_field(field: Pair<'_, Rule>) -> Result<Statement<'_>, pest::err
             span: field_span,
         })
     } else {
-        Err(error(
-            "Padding length must be between 1 and 64 bits inclusive".to_owned(),
+        Err(make_error(
+            "Padding length must be between 1 and 64 bits inclusive",
             field_span,
         ))
     }
 }
 
-fn parse_expression(pair: Pair<'_, Rule>) -> Result<Expression<'_>, pest::error::Error<Rule>> {
+fn parse_expression(pair: Pair<'_, Rule>) -> Result<Expression<'_>, Error> {
     let rule = pair.as_rule();
     let pair_span = pair.as_span();
     let mut children = pair.into_inner();
@@ -235,7 +232,7 @@ fn parse_binary_op<'i, I, F>(
     span: Span<'i>,
     children: I,
     mut op_handler: F,
-) -> Result<Expression<'i>, Error<Rule>>
+) -> Result<Expression<'i>, Error>
 where
     I: IntoIterator<Item = Pair<'i, Rule>>,
     F: FnMut(Rule, Box<Expression<'i>>, Box<Expression<'i>>) -> ExpressionType<'i>,
@@ -271,7 +268,7 @@ fn get_deepest_rule(mut pair: Pair<'_, Rule>) -> Rule {
     rule
 }
 
-fn parse_expression_atom(atom: Pair<'_, Rule>) -> Result<ExpressionAtom<'_>, Error<Rule>> {
+fn parse_expression_atom(atom: Pair<'_, Rule>) -> Result<ExpressionAtom<'_>, Error> {
     let rule = atom.as_rule();
     match rule {
         Rule::expression_parenthesized => {
@@ -288,7 +285,7 @@ fn parse_expression_atom(atom: Pair<'_, Rule>) -> Result<ExpressionAtom<'_>, Err
     }
 }
 
-fn parse_data_type(dtype: Pair<'_, Rule>) -> Result<Type<'_>, Error<Rule>> {
+fn parse_data_type(dtype: Pair<'_, Rule>) -> Result<Type<'_>, Error> {
     let array_or_scalar = dtype.into_inner().next().expect("No child");
     match array_or_scalar.as_rule() {
         Rule::type_array => Ok(Type::Array(parse_array_type(array_or_scalar)?)),
@@ -297,7 +294,7 @@ fn parse_data_type(dtype: Pair<'_, Rule>) -> Result<Type<'_>, Error<Rule>> {
     }
 }
 
-fn parse_scalar_type(dtype: Pair<'_, Rule>) -> Result<ScalarType, Error<Rule>> {
+fn parse_scalar_type(dtype: Pair<'_, Rule>) -> Result<ScalarType, Error> {
     debug_assert_eq!(dtype.as_rule(), Rule::type_scalar);
     let type_span = dtype.as_span();
     let child = dtype.into_inner().next().expect("No child");
@@ -310,8 +307,8 @@ fn parse_scalar_type(dtype: Pair<'_, Rule>) -> Result<ScalarType, Error<Rule>> {
             if (1..=64).contains(&bits) {
                 Ok(ScalarType::Void { bits })
             } else {
-                Err(error(
-                    "Void type length must be between 1 and 64 bits inclusive".to_owned(),
+                Err(make_error(
+                    "Void type length must be between 1 and 64 bits inclusive",
                     type_span,
                 ))
             }
@@ -320,7 +317,7 @@ fn parse_scalar_type(dtype: Pair<'_, Rule>) -> Result<ScalarType, Error<Rule>> {
     }
 }
 
-fn parse_versioned_type(versioned: Pair<'_, Rule>) -> Result<VersionedType<'_>, Error<Rule>> {
+fn parse_versioned_type(versioned: Pair<'_, Rule>) -> Result<VersionedType<'_>, Error> {
     debug_assert_eq!(versioned.as_rule(), Rule::type_versioned);
     let mut path_and_name = Vec::new();
     let mut version = None;
@@ -344,18 +341,18 @@ fn parse_versioned_type(versioned: Pair<'_, Rule>) -> Result<VersionedType<'_>, 
     let version = version.expect("No version");
     Ok(VersionedType {
         path: path.to_vec(),
-        name: *name,
+        name,
         version,
     })
 }
 
-fn parse_version_digits(pair: Pair<'_, Rule>) -> Result<u8, Error<Rule>> {
+fn parse_version_digits(pair: Pair<'_, Rule>) -> Result<u8, Error> {
     pair.as_str()
         .parse()
         .map_err(|e| make_error(format!("Invalid version number: {}", e), pair.as_span()))
 }
 
-fn parse_array_type(dtype: Pair<'_, Rule>) -> Result<ArrayType, Error<Rule>> {
+fn parse_array_type(dtype: Pair<'_, Rule>) -> Result<ArrayType, Error> {
     debug_assert_eq!(dtype.as_rule(), Rule::type_array);
     let variant = dtype.into_inner().next().unwrap();
     let variant_rule = variant.as_rule();
@@ -379,7 +376,7 @@ fn parse_array_type(dtype: Pair<'_, Rule>) -> Result<ArrayType, Error<Rule>> {
     })
 }
 
-fn parse_literal(literal: Pair<'_, Rule>) -> Result<Literal<'_>, Error<Rule>> {
+fn parse_literal(literal: Pair<'_, Rule>) -> Result<Literal<'_>, Error> {
     let rule = literal.as_rule();
     let span = literal.as_span();
     let lit_type = match rule {
@@ -413,7 +410,7 @@ fn parse_literal(literal: Pair<'_, Rule>) -> Result<Literal<'_>, Error<Rule>> {
     })
 }
 
-fn parse_real_literal(literal: Pair<'_, Rule>) -> Result<BigRational, Error<Rule>> {
+fn parse_real_literal(literal: Pair<'_, Rule>) -> Result<BigRational, Error> {
     let variant = literal.into_inner().next().unwrap();
     match variant.as_rule() {
         Rule::literal_real_exponent_notation => parse_real_exponent_notation(variant),
@@ -422,7 +419,7 @@ fn parse_real_literal(literal: Pair<'_, Rule>) -> Result<BigRational, Error<Rule
     }
 }
 
-fn parse_real_exponent_notation(literal: Pair<'_, Rule>) -> Result<BigRational, Error<Rule>> {
+fn parse_real_exponent_notation(literal: Pair<'_, Rule>) -> Result<BigRational, Error> {
     // This contains a literal_real_point_notation or literal_real_digits,
     // followed by a literal_real_exponent.
     let mut children = literal.into_inner();
@@ -449,7 +446,7 @@ fn parse_real_exponent_notation(literal: Pair<'_, Rule>) -> Result<BigRational, 
     Ok(before_exp * scaling)
 }
 
-fn parse_real_point_notation(literal: Pair<'_, Rule>) -> Result<BigRational, Error<Rule>> {
+fn parse_real_point_notation(literal: Pair<'_, Rule>) -> Result<BigRational, Error> {
     debug_assert_eq!(literal.as_rule(), Rule::literal_real_point_notation);
     let span = literal.as_span();
     let mut children = literal.into_inner();
@@ -466,13 +463,13 @@ fn parse_real_point_notation(literal: Pair<'_, Rule>) -> Result<BigRational, Err
     let whole_number_digits: BigInt = whole_number_digits
         .as_str()
         .parse()
-        .map_err(|e| error(format!("Invalid real literal: {}", e), span.clone()))?;
+        .map_err(|e| make_error(format!("Invalid real literal: {}", e), span.clone()))?;
 
     if let Some(fractional_digits) = fractional_digits {
         debug_assert_eq!(fractional_digits.as_rule(), Rule::literal_real_digits);
         let num_fractional_digits = fractional_digits.as_str().len();
         let fractional_digits: BigInt = fractional_digits.as_str().parse().map_err(|e| {
-            error(
+            make_error(
                 format!("Invalid fractional part of real literal: {}", e),
                 span,
             )
@@ -488,7 +485,7 @@ fn parse_real_point_notation(literal: Pair<'_, Rule>) -> Result<BigRational, Err
     }
 }
 
-fn parse_string_literal(literal: Pair<'_, Rule>) -> Result<String, Error<Rule>> {
+fn parse_string_literal(literal: Pair<'_, Rule>) -> Result<String, Error> {
     // Zoom in to the quoted variant
     let literal = literal.into_inner().next().unwrap();
     let between_quotes = literal
@@ -608,7 +605,7 @@ fn parse_decimal_digits(variant: Pair<'_, Rule>) -> BigInt {
     value
 }
 
-fn parse_primitive_type(dtype: Pair<'_, Rule>) -> Result<PrimitiveType, Error<Rule>> {
+fn parse_primitive_type(dtype: Pair<'_, Rule>) -> Result<PrimitiveType, Error> {
     debug_assert_eq!(dtype.as_rule(), Rule::type_primitive);
     let inner = dtype.into_inner().next().expect("No inner type");
     let inner_rule = inner.as_rule();
@@ -623,17 +620,15 @@ fn parse_primitive_type(dtype: Pair<'_, Rule>) -> Result<PrimitiveType, Error<Ru
 fn parse_primitive_type_name(
     name: Pair<'_, Rule>,
     cast_mode: CastMode,
-) -> Result<PrimitiveType, Error<Rule>> {
+) -> Result<PrimitiveType, Error> {
     debug_assert_eq!(name.as_rule(), Rule::type_primitive_name);
     let name_span = name.as_span();
     let name_kind = name.into_inner().next().expect("No name kind");
     let name_kind_rule = name_kind.as_rule();
     match name_kind_rule {
         Rule::type_primitive_name_boolean => match cast_mode {
-            CastMode::Truncated => Err(Error::new_from_span(
-                ErrorVariant::CustomError {
-                    message: "A boolean type with truncated cast mode is not allowed".to_owned(),
-                },
+            CastMode::Truncated => Err(make_error(
+                "A boolean type with truncated cast mode is not allowed",
                 name_span,
             )),
             CastMode::Saturated => Ok(PrimitiveType::Boolean),
@@ -652,8 +647,8 @@ fn parse_primitive_type_name(
                     16 => Ok(PrimitiveType::Float16 { mode: cast_mode }),
                     32 => Ok(PrimitiveType::Float32 { mode: cast_mode }),
                     64 => Ok(PrimitiveType::Float64 { mode: cast_mode }),
-                    _ => Err(error(
-                        "Invalid length for floating-point type".to_owned(),
+                    _ => Err(make_error(
+                        "Invalid length for floating-point type",
                         suffix.as_span(),
                     )),
                 },
@@ -669,7 +664,7 @@ fn parse_integer_type(
     name_kind_rule: Rule,
     bits: u8,
     cast_mode: CastMode,
-) -> Result<PrimitiveType, Error<Rule>> {
+) -> Result<PrimitiveType, Error> {
     if valid_integer_length(bits) {
         match name_kind_rule {
             Rule::type_primitive_name_unsigned_integer => Ok(PrimitiveType::UInt {
@@ -678,27 +673,24 @@ fn parse_integer_type(
             }),
             Rule::type_primitive_name_signed_integer => match cast_mode {
                 CastMode::Saturated => Ok(PrimitiveType::Int { bits }),
-                CastMode::Truncated => Err(error(
-                    "Signed integers cannot use truncated mode".to_owned(),
+                CastMode::Truncated => Err(make_error(
+                    "Signed integers cannot use truncated mode",
                     name_span,
                 )),
             },
             _ => unreachable!("Unexpected rule for integer type"),
         }
     } else {
-        Err(error(
-            "Invalid length for integer type".to_owned(),
-            name_span,
-        ))
+        Err(make_error("Invalid length for integer type", name_span))
     }
 }
 
-fn parse_bit_length_suffix(suffix: &Pair<'_, Rule>) -> Result<u8, Error<Rule>> {
+fn parse_bit_length_suffix(suffix: &Pair<'_, Rule>) -> Result<u8, Error> {
     debug_assert_eq!(suffix.as_rule(), Rule::type_bit_length_suffix);
     suffix
         .as_str()
         .parse()
-        .map_err(|e| error(format!("Invalid type length: {}", e), suffix.as_span()))
+        .map_err(|e| make_error(format!("Invalid type length: {}", e), suffix.as_span()))
 }
 
 fn valid_integer_length(bits: u8) -> bool {
@@ -766,9 +758,4 @@ uint8[<=2] sprinkles
         };
         let _ast = parse_to_ast(definition).unwrap();
     }
-}
-
-/// Convenience function to create an error from a message and span
-fn error(message: String, span: Span<'_>) -> Error<Rule> {
-    Error::new_from_span(ErrorVariant::CustomError { message }, span)
 }

@@ -125,7 +125,7 @@ struct ReadUnalignedField<'t> {
     ty: &'t ResolvedType,
 }
 
-impl<'t> Display for ReadUnalignedField<'_> {
+impl Display for ReadUnalignedField<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match &self.ty {
             ResolvedType::Scalar(scalar) => match scalar {

@@ -97,7 +97,6 @@ impl<P: Iterator<Item = u8>, I: Clone> Breakdown<P, I> {
             last_frame,
             data: self.header_base.data,
         }
-        .into()
     }
 }
 
