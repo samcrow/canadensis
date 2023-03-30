@@ -41,8 +41,8 @@ pub fn generated_code_dependencies() -> String {
 half = { version = "2.2", features = ["zerocopy"] }
 heapless = "0.7.7"
 zerocopy = "0.6.0"
-canadensis_core = "0.2.0"
-canadensis_encoding = "0.2.0"
+canadensis_core = "0.3.0"
+canadensis_encoding = "0.3.0"
 [dev-dependencies]
 memoffset = "0.8.0"
 "#,

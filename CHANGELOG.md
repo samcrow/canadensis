@@ -50,6 +50,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_udp`: Updated `simplelog` dependency to 0.12
 - `canadensis_udp`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
 
+## [canadensis_codegen_rust-v0.4.1](https://github.com/samcrow/canadensis/releases/tag/canadensis_codegen_rust-v0.4.1) - 2023-03-30
+
+### Fixed
+- Fixed incorrect versions of dependencies printed by `canadensis_codegen_rust print-dependencies`
+
 ## [canadensis_codegen_rust-v0.4.0](https://github.com/samcrow/canadensis/releases/tag/canadensis_codegen_rust-v0.4.0) - 2023-03-30
 
 ### Added
