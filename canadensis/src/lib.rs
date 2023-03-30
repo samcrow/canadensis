@@ -150,10 +150,9 @@ pub trait TransferHandler<I: Instant, T: Transport> {
     /// The default implementation does nothing and returns false.
     fn handle_loopback<N: Node<Instant = I, Transport = T>>(
         &mut self,
-        node: &mut N,
-        transfer: &Transfer<Vec<u8>, I, T>,
+        _node: &mut N,
+        _transfer: &Transfer<Vec<u8>, I, T>,
     ) -> bool {
-        drop((node, transfer));
         false
     }
 

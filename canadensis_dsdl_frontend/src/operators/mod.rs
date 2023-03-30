@@ -48,7 +48,7 @@ where
             let new_elements: Result<Set, TypeError> = set
                 .into_iter()
                 .map(|element| match element {
-                    Value::Rational(rhs) => rational_op(lhs.clone(), rhs, span.clone()),
+                    Value::Rational(rhs) => rational_op(lhs.clone(), rhs, span),
                     _ => panic!(
                         "Element {:?} does not match set type {}",
                         element,
@@ -64,7 +64,7 @@ where
             let new_elements: Result<Set, TypeError> = set
                 .into_iter()
                 .map(|element| match element {
-                    Value::Rational(lhs) => rational_op(lhs, rhs.clone(), span.clone()),
+                    Value::Rational(lhs) => rational_op(lhs, rhs.clone(), span),
                     _ => panic!(
                         "Element {:?} does not match set type {}",
                         element,

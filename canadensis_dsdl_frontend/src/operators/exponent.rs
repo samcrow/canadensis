@@ -38,14 +38,14 @@ fn approx_exponent(
 ) -> Result<Value, Error> {
     let base = base.to_f64().ok_or_else(|| {
         span_error!(
-            span.clone(),
+            span,
             "Can't convert base {} to a floating-point approximation",
             base
         )
     })?;
     let exponent = exponent.to_f64().ok_or_else(|| {
         span_error!(
-            span.clone(),
+            span,
             "Can't convert exponent {} to a floating-point approximation",
             exponent
         )

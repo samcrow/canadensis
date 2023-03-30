@@ -299,7 +299,7 @@ impl PersistentContext {
                 }
                 Statement::Field { ty, name, span } => {
                     let ty = convert_type(&mut ctx(self, &mut state), ty)?;
-                    let ty = ty.resolve(&mut ctx(self, &mut state), span.clone())?;
+                    let ty = ty.resolve(&mut ctx(self, &mut state), span)?;
                     let ty_alignment = ty.alignment();
                     let ty_length = ty.size();
 

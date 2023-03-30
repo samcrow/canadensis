@@ -196,7 +196,7 @@ fn parse_expression(pair: Pair<'_, Rule>) -> Result<Expression<'_>, Error> {
 
                 expression = Expression {
                     expression: ExpressionType::Attribute(Box::new(expression), rhs.as_str()),
-                    span: pair_span.clone(),
+                    span: pair_span,
                 };
             }
 
@@ -250,7 +250,7 @@ where
         let new_expr_type = op_handler(operator_rule, Box::new(expression), Box::new(rhs));
         expression = Expression {
             expression: new_expr_type,
-            span: span.clone(),
+            span,
         };
     }
 
@@ -463,7 +463,7 @@ fn parse_real_point_notation(literal: Pair<'_, Rule>) -> Result<BigRational, Err
     let whole_number_digits: BigInt = whole_number_digits
         .as_str()
         .parse()
-        .map_err(|e| make_error(format!("Invalid real literal: {}", e), span.clone()))?;
+        .map_err(|e| make_error(format!("Invalid real literal: {}", e), span))?;
 
     if let Some(fractional_digits) = fractional_digits {
         debug_assert_eq!(fractional_digits.as_rule(), Rule::literal_real_digits);

@@ -37,7 +37,7 @@ impl Constant {
         value: Expression,
     ) -> Result<Self, Error> {
         let ty: PrimitiveType = ty.into();
-        let value_span = value.span.clone();
+        let value_span = value.span;
         let end_offset = value_span.end();
         if is_reserved_keyword(name.name) {
             return Err(span_error!(
