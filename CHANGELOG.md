@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis`: Added loopback publishing/requesting functions and loopback handler function
 - `canadensis_bxcan`: Added support for loopback frames, with timestamps based on the transmit time calculated by
   software
-- `canadensis_can`: Added support for loopback frames and transfers
+- `canadensis_can`: Breaking change: Added support for loopback frames and transfers
 - `canadensis_core`: Added `remove` function to `SessionTracker` (Breaking change)
 - `canadensis_core`: Added `loopback` field to transfer types (Breaking change)
 - `canadensis_codegen_rust`: Added the ability to produce documentation comments in generated code based on DSDL
@@ -29,13 +29,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis`: Clippy fixes
 - `canadensis`: Breaking change: Updated `half` dependency to 2.2
 - `canadensis`: Updated private dependencies
+- `canadensis`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
 - `canadensis_bxcan`: Clippy fixes
 - `canadensis_bxcan`: Breaking change: Removed deprecated functions `bxcan_frame_to_uavcan` and `uavcan_frame_to_bxcan`,
   made the replacement functions private
 - `canadensis_bxcan`: Breaking change: Updated `bxcan` dependency to 0.7
+- `canadensis_bxcan`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
+- `canadensis_can`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
 - `canadensis_codegen_rust`: Clippy fixes
 - `canadensis_codegen_rust`: Updated `clap` dependency to 4.1
 - `canadensis_codegen_rust`: Breaking change: Updated dependencies of generated code: `half` to 2.2, `memoffset` to 0.8
+- `canadensis_core`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
 - `canadensis_data_types`: Changed the order of constants to match the order in the DSDL files
 - `canadensis_data_types`: Regenerated code to match revision 935973babe11755d8070e67452b3508b4b6833e2
   of <https://github.com/OpenCyphal/public_regulated_data_types/>
@@ -50,16 +54,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_dsdl_frontend`: Breaking change: Updated `half` dependency to 2.2
 - `canadensis_encoding`: Clippy fixes
 - `canadensis_encoding`: Breaking change: Updated `half` dependency to 2.2
+- `canadensis_linux`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
 - `canadensis_macro`: Code generation can fail with an error
 - `canadensis_macro`: Updated `syn` dependency to 2.0
 - `canadensis_macro`: Breaking change: Updated dependencies of generated code: `half` to 2.2, `memoffset` to 0.8
 - `canadensis_pnp_client`: Updated `crc-any` dependency to 2.4
+- `canadensis_pnp_client`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
 - `canadensis_serial`: Breaking change: Changed header format
 - `canadensis_serial`: Updated `simplelog` dependency to 0.12
+- `canadensis_serial`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
 - `canadensis_udp`: Major rework for [new version of Cyphal/UDP](https://forum.opencyphal.org/t/cyphal-udp-architectural-issues-caused-by-the-dependency-between-the-nodes-ip-address-and-its-identity/1765/60)
 - `canadensis_udp`: Breaking change: Changed header format
 - `canadensis_udp`: Clippy fixes
 - `canadensis_udp`: Updated `simplelog` dependency to 0.12
+- `canadensis_udp`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
 - `canadensis_write_crc`: Updated `object` dependency to 0.30
 
 
