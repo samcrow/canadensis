@@ -22,9 +22,9 @@ pub trait Transport {
 }
 
 /// A transmitter that can send outgoing transfers
-pub trait Transmitter<I>
+pub trait Transmitter<C>
 where
-    I: Instant,
+    C: Clock,
 {
     /// The transport that this transmitter works with
     type Transport: Transport;
@@ -39,15 +39,14 @@ where
     ///
     /// The transport implementation may block until the entire transfer is sent, or put frames in
     /// a queue to be sent separately.
-    fn push<A, C>(
+    fn push<A>(
         &mut self,
-        transfer: Transfer<A, I, Self::Transport>,
+        transfer: Transfer<A, C::Instant, Self::Transport>,
         clock: &mut C,
         driver: &mut Self::Driver,
     ) -> nb::Result<(), Self::Error>
     where
-        A: AsRef<[u8]>,
-        C: Clock<Instant = I>;
+        A: AsRef<[u8]>;
 
     /// Attempts to send all queued outgoing frames
     ///
@@ -61,9 +60,7 @@ where
     /// * `Ok(())`: All frames were sent
     /// * `Err(nb::Error::WouldBlock)`: At least one frame could not be sent yet
     /// * `Err(nb::Error::Other(e))`: Some other error occurred
-    fn flush<C>(&mut self, clock: &mut C, driver: &mut Self::Driver) -> nb::Result<(), Self::Error>
-    where
-        C: Clock<Instant = I>;
+    fn flush(&mut self, clock: &mut C, driver: &mut Self::Driver) -> nb::Result<(), Self::Error>;
 
     /// Returns the maximum transmission unit of this transport, in bytes
     ///

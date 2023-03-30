@@ -106,7 +106,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let receiver = CanReceiver::new(node_id, Mtu::Can8);
     let core_node: CoreNode<
         SystemClock,
-        CanTransmitter<Microseconds64, Queue>,
+        CanTransmitter<SystemClock, Queue>,
         CanReceiver<Microseconds64, Queue>,
         TransferIdFixedMap<CanTransport, TRANSFER_IDS>,
         Queue,

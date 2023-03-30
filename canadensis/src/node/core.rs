@@ -35,15 +35,15 @@ pub struct CoreNode<C, T, U, TR, D, const P: usize, const R: usize>
 where
     C: Clock,
     U: Receiver<C::Instant>,
-    T: Transmitter<C::Instant>,
+    T: Transmitter<C>,
 {
     clock: C,
     transmitter: T,
     receiver: U,
     driver: D,
     node_id: <T::Transport as Transport>::NodeId,
-    publishers: FnvIndexMap<SubjectId, Publisher<C::Instant, T>, P>,
-    requesters: FnvIndexMap<ServiceId, Requester<C::Instant, T, TR>, R>,
+    publishers: FnvIndexMap<SubjectId, Publisher<C, T>, P>,
+    requesters: FnvIndexMap<ServiceId, Requester<C, T, TR>, R>,
 }
 
 impl<C, T, U, N, TR, D, const P: usize, const R: usize> CoreNode<C, T, U, TR, D, P, R>
@@ -51,7 +51,7 @@ where
     C: Clock,
     N: Transport,
     U: Receiver<C::Instant, Transport = N, Driver = D>,
-    T: Transmitter<C::Instant, Transport = N, Driver = D>,
+    T: Transmitter<C, Transport = N, Driver = D>,
     TR: TransferIdTracker<N>,
 {
     /// Creates a node
@@ -162,7 +162,7 @@ impl<C, T, U, N, TR, D, const P: usize, const R: usize> Node for CoreNode<C, T, 
 where
     C: Clock,
     N: Transport,
-    T: Transmitter<<C as Clock>::Instant, Transport = N, Driver = D>,
+    T: Transmitter<C, Transport = N, Driver = D>,
     U: Receiver<<C as Clock>::Instant, Transport = N, Driver = D>,
     TR: TransferIdTracker<N>,
 {
@@ -332,7 +332,7 @@ where
         destination: <Self::Transport as Transport>::NodeId,
     ) -> nb::Result<
         <Self::Transport as Transport>::TransferId,
-        <Self::Transmitter as Transmitter<Self::Instant>>::Error,
+        <Self::Transmitter as Transmitter<Self::Clock>>::Error,
     >
     where
         M: Request + Serialize,

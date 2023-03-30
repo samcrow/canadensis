@@ -5,7 +5,7 @@ use fallible_collections::FallibleVec;
 use heapless::Deque;
 use zerocopy::AsBytes;
 
-use canadensis_core::time::{Clock, Instant};
+use canadensis_core::time::Clock;
 use canadensis_core::transfer::Transfer;
 use canadensis_core::transport::Transmitter;
 use canadensis_core::{nb, OutOfMemoryError};
@@ -46,24 +46,23 @@ impl<D, const C: usize> Default for SerialTransmitter<D, C> {
     }
 }
 
-impl<I, D, const C: usize> Transmitter<I> for SerialTransmitter<D, C>
+impl<L, D, const C: usize> Transmitter<L> for SerialTransmitter<D, C>
 where
-    I: Instant,
+    L: Clock,
     D: TransmitDriver,
 {
     type Transport = SerialTransport;
     type Driver = D;
     type Error = Error<D::Error>;
 
-    fn push<A, CL>(
+    fn push<A>(
         &mut self,
-        transfer: Transfer<A, I, Self::Transport>,
-        _clock: &mut CL,
+        transfer: Transfer<A, L::Instant, Self::Transport>,
+        _clock: &mut L,
         _driver: &mut D,
     ) -> nb::Result<(), Self::Error>
     where
         A: AsRef<[u8]>,
-        CL: Clock<Instant = I>,
     {
         // Check queue capacity with worst-case escaping
         let frame_length = transfer.payload.as_ref().len() + PER_FRAME_ESCAPED_OVERHEAD;
@@ -104,10 +103,7 @@ where
         Ok(())
     }
 
-    fn flush<CL>(&mut self, _clock: &mut CL, driver: &mut D) -> nb::Result<(), Self::Error>
-    where
-        CL: Clock<Instant = I>,
-    {
+    fn flush(&mut self, _clock: &mut L, driver: &mut D) -> nb::Result<(), Self::Error> {
         while let Some(byte) = self.queue.pop_front() {
             match driver.send_byte(byte) {
                 Ok(()) => {}

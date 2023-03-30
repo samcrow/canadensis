@@ -17,7 +17,7 @@ use canadensis_encoding::{Message, Serialize};
 /// Anonymous nodes have some limitations:
 /// * They can only send messages, not service requests or responses
 /// * They cannot send multi-frame messages
-pub struct AnonymousPublisher<C: Clock, M, T: Transmitter<C::Instant>> {
+pub struct AnonymousPublisher<C: Clock, M, T: Transmitter<C>> {
     /// The priority of transfers from this transmitter
     priority: <T::Transport as Transport>::Priority,
     /// The subject to transmit on
@@ -34,7 +34,7 @@ impl<C, M, T> AnonymousPublisher<C, M, T>
 where
     C: Clock,
     M: Message + Serialize,
-    T: Transmitter<C::Instant>,
+    T: Transmitter<C>,
 {
     /// Creates an anonymous message publisher
     pub fn new(

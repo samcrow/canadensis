@@ -68,7 +68,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     const REQUESTERS: usize = 2;
     let core_node: CoreNode<
         SystemClock,
-        CanTransmitter<Microseconds64, LinuxCan>,
+        CanTransmitter<SystemClock, LinuxCan>,
         CanReceiver<Microseconds64, LinuxCan>,
         TransferIdFixedMap<CanTransport, TRANSFER_IDS>,
         LinuxCan,

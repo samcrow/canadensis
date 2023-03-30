@@ -28,7 +28,7 @@ pub use bxcan::OverrunError;
 use bxcan::filter::Mask32;
 use bxcan::{Can, ExtendedId, Fifo, FilterOwner, Instance, Mailbox};
 use canadensis::core::subscription::Subscription;
-use canadensis::core::time::Instant;
+use canadensis::core::time::{Clock, Instant};
 use canadensis::core::OutOfMemoryError;
 use canadensis_can::driver::{optimize_filters, ReceiveDriver, TransmitDriver};
 use canadensis_can::{CanNodeId, Frame};
@@ -40,19 +40,20 @@ use heapless::Deque;
 const LOOPBACK_CAPACITY: usize = 2;
 
 /// A CAN driver that wraps a bxCAN device and keeps track of deadlines for queued frames
-pub struct BxCanDriver<I, N>
+pub struct BxCanDriver<C, N>
 where
+    C: Clock,
     N: Instance,
 {
     can: Can<N>,
-    deadlines: DeadlineTracker<I>,
+    deadlines: DeadlineTracker<C::Instant>,
     /// Copies of transmitted loopback frames that have not yet been received
-    loopback_frames: Deque<Frame<I>, LOOPBACK_CAPACITY>,
+    loopback_frames: Deque<Frame<C::Instant>, LOOPBACK_CAPACITY>,
 }
 
-impl<I, N> BxCanDriver<I, N>
+impl<C, N> BxCanDriver<C, N>
 where
-    I: Instant + Clone,
+    C: Clock,
     N: Instance,
 {
     /// Creates a CAN driver
@@ -86,9 +87,9 @@ where
     /// Tries to transmit a frame, and assumes that the frame's deadline has not passed
     fn transmit_inner(
         &mut self,
-        frame: &Frame<I>,
-        deadline: I,
-    ) -> nb::Result<Option<Frame<I>>, <Self as TransmitDriver<I>>::Error> {
+        frame: &Frame<C::Instant>,
+        deadline: C::Instant,
+    ) -> nb::Result<Option<Frame<C::Instant>>, <Self as TransmitDriver<C>>::Error> {
         let frame = cyphal_frame_to_bxcan(frame);
         match self.can.transmit(&frame) {
             Ok(status) => {
@@ -115,16 +116,16 @@ where
         }
     }
 }
-impl<I, N> BxCanDriver<I, N>
+impl<C, N> BxCanDriver<C, N>
 where
-    I: Instant + Clone,
+    C: Clock,
     N: Instance + FilterOwner,
 {
     /// Tries to receive a frame from the CAN bus
     fn receive_from_bus(
         &mut self,
-        now: I,
-    ) -> nb::Result<Frame<I>, <Self as ReceiveDriver<I>>::Error> {
+        now: C::Instant,
+    ) -> nb::Result<Frame<C::Instant>, <Self as ReceiveDriver<C::Instant>>::Error> {
         loop {
             match self.can.receive() {
                 Ok(frame) => {
@@ -140,7 +141,9 @@ where
         }
     }
     /// Tries to receive a frame from the loopback queue
-    fn receive_loopback(&mut self) -> nb::Result<Frame<I>, <Self as ReceiveDriver<I>>::Error> {
+    fn receive_loopback(
+        &mut self,
+    ) -> nb::Result<Frame<C::Instant>, <Self as ReceiveDriver<C::Instant>>::Error> {
         match self.loopback_frames.pop_front() {
             Some(frame) => Ok(frame),
             None => Err(nb::Error::WouldBlock),
@@ -148,9 +151,9 @@ where
     }
 }
 
-impl<I, N> TransmitDriver<I> for BxCanDriver<I, N>
+impl<C, N> TransmitDriver<C> for BxCanDriver<C, N>
 where
-    I: Instant,
+    C: Clock,
     N: Instance,
 {
     type Error = Infallible;
@@ -165,7 +168,12 @@ where
         }
     }
 
-    fn transmit(&mut self, frame: Frame<I>, now: I) -> nb::Result<Option<Frame<I>>, Self::Error> {
+    fn transmit(
+        &mut self,
+        frame: Frame<C::Instant>,
+        clock: &mut C,
+    ) -> nb::Result<Option<Frame<C::Instant>>, Self::Error> {
+        let now = clock.now();
         clean_expired_frames(&mut self.deadlines, &mut self.can, now);
         // Check that the frame's deadline has not passed
         let deadline = frame.timestamp();
@@ -174,7 +182,8 @@ where
                 // Deadline is now or in the future. Continue to transmit.
                 let transmit_status = self.transmit_inner(&frame, deadline);
                 if transmit_status.is_ok() && frame.loopback() {
-                    // Loopback frame successfully sent; store a copy with its timestamp set to now
+                    // Loopback frame successfully sent; store a copy with its timestamp set to
+                    // the time just before it was sent
                     let mut loopback_frame = frame;
                     loopback_frame.set_timestamp(now);
                     // If the loopback queue is full, drop this frame
@@ -189,15 +198,15 @@ where
         }
     }
 
-    fn flush(&mut self, _now: I) -> nb::Result<(), Self::Error> {
+    fn flush(&mut self, _clock: &mut C) -> nb::Result<(), Self::Error> {
         // The hardware does this automatically
         Ok(())
     }
 }
 
-impl<I, N> ReceiveDriver<I> for BxCanDriver<I, N>
+impl<C, N> ReceiveDriver<C::Instant> for BxCanDriver<C, N>
 where
-    I: Instant,
+    C: Clock,
     N: Instance + FilterOwner,
 {
     /// This matches the error type defined in bxcan
@@ -208,7 +217,7 @@ where
     /// If both loopback and non-loopback frames are waiting, this function returns a non-loopback
     /// frame.
     ///
-    fn receive(&mut self, now: I) -> nb::Result<Frame<I>, Self::Error> {
+    fn receive(&mut self, now: C::Instant) -> nb::Result<Frame<C::Instant>, Self::Error> {
         match self.receive_from_bus(now) {
             Ok(frame) => Ok(frame),
             Err(nb::Error::Other(e)) => Err(nb::Error::Other(e)),

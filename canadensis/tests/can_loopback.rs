@@ -18,6 +18,7 @@ use canadensis_core::transfer::{MessageTransfer, ServiceTransfer, Transfer};
 use canadensis_core::{OutOfMemoryError, Priority};
 use canadensis_data_types::uavcan::time::synchronization_1_0::{self, Synchronization};
 use canadensis_encoding::Deserialize;
+
 use log::LevelFilter;
 use simplelog::{ColorChoice, Config, TerminalMode};
 use std::cell::Cell;
@@ -38,7 +39,7 @@ fn can_loopback_time_sync() {
     let node_id = CanNodeId::try_from(3_u8).unwrap();
     let mut node: CoreNode<
         StubClock<'_>,
-        CanTransmitter<Microseconds64, LoopbackOnlyDriver>,
+        CanTransmitter<StubClock<'_>, LoopbackOnlyDriver>,
         CanReceiver<Microseconds64, LoopbackOnlyDriver>,
         TransferIdFixedMap<CanTransport, 4>,
         LoopbackOnlyDriver,
@@ -120,7 +121,7 @@ struct LoopbackOnlyDriver {
     loopback_frames: VecDeque<Frame<Microseconds64>>,
 }
 
-impl TransmitDriver<Microseconds64> for LoopbackOnlyDriver {
+impl TransmitDriver<StubClock<'_>> for LoopbackOnlyDriver {
     type Error = Infallible;
 
     fn try_reserve(&mut self, _frames: usize) -> Result<(), OutOfMemoryError> {
@@ -131,9 +132,10 @@ impl TransmitDriver<Microseconds64> for LoopbackOnlyDriver {
     fn transmit(
         &mut self,
         frame: Frame<Microseconds64>,
-        now: Microseconds64,
+        clock: &mut StubClock<'_>,
     ) -> canadensis::nb::Result<Option<Frame<Microseconds64>>, Self::Error> {
         log::trace!("LoopbackOnlyDriver::transmit");
+        let now = clock.now();
         if frame.timestamp() < now {
             log::debug!("Frame timed out");
             return Ok(None);
@@ -148,7 +150,7 @@ impl TransmitDriver<Microseconds64> for LoopbackOnlyDriver {
         Ok(None)
     }
 
-    fn flush(&mut self, _now: Microseconds64) -> canadensis::nb::Result<(), Self::Error> {
+    fn flush(&mut self, _clock: &mut StubClock<'_>) -> canadensis::nb::Result<(), Self::Error> {
         // Nothing to do
         Ok(())
     }

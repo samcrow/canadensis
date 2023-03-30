@@ -13,7 +13,7 @@ use crate::driver::{ReceiveDriver, TransmitDriver};
 use crate::types::CanNodeId;
 use crate::Frame;
 use canadensis_core::subscription::Subscription;
-use canadensis_core::time::Instant;
+use canadensis_core::time::{Clock, Instant};
 use canadensis_core::{nb, OutOfMemoryError};
 
 /// A queue of outgoing frames
@@ -75,11 +75,11 @@ impl<Q, D> SingleQueueDriver<Q, D> {
     }
 }
 
-impl<I, Q, D> TransmitDriver<I> for SingleQueueDriver<Q, D>
+impl<C, Q, D> TransmitDriver<C> for SingleQueueDriver<Q, D>
 where
-    I: Instant,
-    Q: FrameQueue<I>,
-    D: TransmitDriver<I>,
+    C: Clock,
+    Q: FrameQueue<C::Instant>,
+    D: TransmitDriver<C>,
 {
     type Error = D::Error;
 
@@ -90,7 +90,11 @@ where
     /// Adds a frame to the back of the queue
     ///
     /// This function returns `Err(nb::Error::WouldBlock)` if the queue is full.
-    fn transmit(&mut self, frame: Frame<I>, _now: I) -> nb::Result<Option<Frame<I>>, Self::Error> {
+    fn transmit(
+        &mut self,
+        frame: Frame<C::Instant>,
+        _clock: &mut C,
+    ) -> nb::Result<Option<Frame<C::Instant>>, Self::Error> {
         self.queue
             .push_frame(frame)
             .map(|_oom| None)
@@ -98,8 +102,8 @@ where
     }
 
     /// Attempts to send all queued frames to the driver
-    fn flush(&mut self, now: I) -> nb::Result<(), Self::Error> {
-        flush_single_queue(&mut self.queue, &mut self.driver, now)
+    fn flush(&mut self, clock: &mut C) -> nb::Result<(), Self::Error> {
+        flush_single_queue(&mut self.queue, &mut self.driver, clock)
     }
 }
 
@@ -129,24 +133,25 @@ where
 ///
 /// This function discards frames with a deadline less than the current time (`now`).
 ///
-pub fn flush_single_queue<I, Q, D>(
+pub fn flush_single_queue<C, Q, D>(
     queue: &mut Q,
     driver: &mut D,
-    now: I,
+    clock: &mut C,
 ) -> nb::Result<(), D::Error>
 where
-    I: Instant,
-    Q: FrameQueue<I>,
-    D: TransmitDriver<I>,
+    C: Clock,
+    Q: FrameQueue<C::Instant>,
+    D: TransmitDriver<C>,
 {
     while let Some(frame) = queue.pop_frame() {
+        let now = clock.now();
         if frame_is_expired(&frame, &now) {
             // Frame deadline has passed
             drop(frame);
             continue;
         }
 
-        match driver.transmit(frame.clone(), now) {
+        match driver.transmit(frame.clone(), clock) {
             Ok(None) => { /* Transmitted, keep going and try the next frame */ }
             Ok(Some(removed_frame)) => {
                 // Removed a lower-priority frame

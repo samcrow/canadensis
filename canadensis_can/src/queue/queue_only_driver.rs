@@ -7,6 +7,7 @@ use crate::types::CanNodeId;
 use crate::Frame;
 use alloc::vec::Vec;
 use canadensis_core::subscription::Subscription;
+use canadensis_core::time::Clock;
 use canadensis_core::{nb, OutOfMemoryError};
 use core::convert::Infallible;
 use fallible_collections::FallibleVec;
@@ -85,8 +86,10 @@ impl<I: Default, const TC: usize, const RC: usize> Default for QueueOnlyDriver<I
     }
 }
 
-impl<I: Default + Clone, const TC: usize, const RC: usize> TransmitDriver<I>
-    for QueueOnlyDriver<I, TC, RC>
+impl<C: Clock, const TC: usize, const RC: usize> TransmitDriver<C>
+    for QueueOnlyDriver<C::Instant, TC, RC>
+where
+    C::Instant: Default,
 {
     type Error = Infallible;
 
@@ -94,14 +97,18 @@ impl<I: Default + Clone, const TC: usize, const RC: usize> TransmitDriver<I>
         self.tx_queue.try_reserve(frames)
     }
 
-    fn transmit(&mut self, frame: Frame<I>, _now: I) -> nb::Result<Option<Frame<I>>, Self::Error> {
+    fn transmit(
+        &mut self,
+        frame: Frame<C::Instant>,
+        _clock: &mut C,
+    ) -> nb::Result<Option<Frame<C::Instant>>, Self::Error> {
         self.tx_queue
             .push_frame(frame)
             .map(|_oom| None)
             .map_err(|_oom| nb::Error::WouldBlock)
     }
 
-    fn flush(&mut self, _now: I) -> nb::Result<(), Self::Error> {
+    fn flush(&mut self, _clock: &mut C) -> nb::Result<(), Self::Error> {
         // Can't do anything here. Frames have to be removed externally.
         Ok(())
     }

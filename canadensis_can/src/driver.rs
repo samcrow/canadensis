@@ -4,6 +4,7 @@ use crate::data::Frame;
 use crate::types::CanNodeId;
 use alloc::vec::Vec;
 use canadensis_core::subscription::Subscription;
+use canadensis_core::time::Clock;
 use canadensis_core::{nb, OutOfMemoryError, ServiceId, SubjectId};
 use canadensis_filter_config::{optimize, Filter};
 use core::fmt::Debug;
@@ -16,7 +17,10 @@ use fallible_collections::FallibleVec;
 ///
 /// The result type is `nb::Result`, which allows the driver to indicate that it cannot send a
 /// frame.
-pub trait TransmitDriver<I> {
+pub trait TransmitDriver<C>
+where
+    C: Clock,
+{
     /// The error type
     type Error: Debug;
 
@@ -30,10 +34,14 @@ pub trait TransmitDriver<I> {
     ///
     /// If this driver contains a queue, this function may add the frame to the queue and not
     /// immediately transmit until `flush()` is called.
-    fn transmit(&mut self, frame: Frame<I>, now: I) -> nb::Result<Option<Frame<I>>, Self::Error>;
+    fn transmit(
+        &mut self,
+        frame: Frame<C::Instant>,
+        clock: &mut C,
+    ) -> nb::Result<Option<Frame<C::Instant>>, Self::Error>;
     /// Attempts to flush all frames out of any in-memory queues that may exist and transmit
     /// them
-    fn flush(&mut self, now: I) -> nb::Result<(), Self::Error>;
+    fn flush(&mut self, clock: &mut C) -> nb::Result<(), Self::Error>;
 }
 
 /// A CAN driver that can receive frames
