@@ -68,8 +68,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_udp`: Clippy fixes
 - `canadensis_udp`: Updated `simplelog` dependency to 0.12
 - `canadensis_udp`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
-- `canadensis_write_crc`: Updated `object` dependency to 0.30
 
+## [canadensis_write_crc-0.1.4](https://github.com/samcrow/canadensis/releases/tag/canadensis_write_crc-v0.1.4) - 2023-03-29
+
+- `canadensis_write_crc`: Updated `object` dependency to 0.30
 
 ## [canadensis_core-v0.2.3](https://github.com/samcrow/canadensis/tree/canadensis_core-v0.2.3) - 2022-10-18
 
