@@ -12,8 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_bxcan`: Added support for loopback frames, with timestamps based on the transmit time calculated by
   software
 - `canadensis_data_types`: Added documentation from DSDL comments
-- `canadensis_header`: This is a new crate that specifies [the frame header format](https://forum.opencyphal.org/t/cyphal-udp-architectural-issues-caused-by-the-dependency-between-the-nodes-ip-address-and-its-identity/1765/60)
-  that Cyphal/UDP and Cyphal/Serial use
 
 ### Changed
 
@@ -44,6 +42,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_udp`: Clippy fixes
 - `canadensis_udp`: Updated `simplelog` dependency to 0.12
 - `canadensis_udp`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
+
+## [canadensis_header-v0.1.0](https://github.com/samcrow/canadensis/releases/tag/canadensis_header-v0.1.0) - 2023-03-30
+
+### Added
+- `canadensis_header`: This is a new crate that specifies [the frame header format](https://forum.opencyphal.org/t/cyphal-udp-architectural-issues-caused-by-the-dependency-between-the-nodes-ip-address-and-its-identity/1765/60)
+  that Cyphal/UDP and Cyphal/Serial use
 
 ## [canadensis_can-v0.3.0](https://github.com/samcrow/canadensis/releases/tag/canadensis_can-v0.3.0) - 2023-03-30
 
