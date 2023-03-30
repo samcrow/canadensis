@@ -1,7 +1,7 @@
 [package]
 # TODO: This needs a better name
 name = "canadensis_macro"
-version = "0.2.3"
+version = "0.3.0"
 authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
 keywords = ["uavcan", "cyphal"]
 license = "MIT OR Apache-2.0"
