@@ -42,11 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   of <https://github.com/OpenCyphal/public_regulated_data_types/>
 - `canadensis_data_types`: Breaking change: Updated `half` dependency to 2.2, `memoffset` to 0.8
 - `canadensis_derive_register_block`: Updated `syn` dependency to 2.0
-- `canadensis_dsdl_frontend`: Breaking change: Added comment handling, made some struct fields private
-- `canadensis_dsdl_frontend`: Constants are now stored in the order they are declared in the DSDL file, instead of
-  alphabetical order by name
-- `canadensis_dsdl_frontend`: Clippy fixes
-- `canadensis_dsdl_frontend`: Breaking change: Updated `half` dependency to 2.2
 - `canadensis_linux`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
 - `canadensis_macro`: Code generation can fail with an error
 - `canadensis_macro`: Updated `syn` dependency to 2.0
@@ -62,7 +57,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_udp`: Updated `simplelog` dependency to 0.12
 - `canadensis_udp`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
 
-## [canadensis_dsdl_parser-v0.3.0](canadensis_dsdl_parser-v0.3.0)- 2023-03-30
+## [canadensis_dsdl_frontend-v0.4.0](https://github.com/samcrow/canadensis/releases/tag/canadensis_dsdl_frontend-v0.4.0)- 2023-03-30
+
+## Changed
+- `canadensis_dsdl_frontend`: Breaking change: Added comment handling, made some struct fields private
+- `canadensis_dsdl_frontend`: Constants are now stored in the order they are declared in the DSDL file, instead of
+  alphabetical order by name
+- `canadensis_dsdl_frontend`: Clippy fixes
+- `canadensis_dsdl_frontend`: Breaking change: Updated `half` dependency to 2.2
+
+## [canadensis_dsdl_parser-v0.3.0](https://github.com/samcrow/canadensis/releases/tag/canadensis_dsdl_parser-v0.3.0)- 2023-03-30
 
 ## Added
 - `canadensis_dsdl_parser`: Breaking change: Added comment parsing
