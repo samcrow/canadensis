@@ -24,7 +24,7 @@ path = "../canadensis_core"
 version = "0.2.0"
 path = "../canadensis_derive_register_block"
 [dependencies.canadensis_encoding]
-version = "0.2.0"
+version = "0.3.0"
 path = "../canadensis_encoding"
 
 # canadensis_data_types is likely to change more frequently. Because of the Heartbeat and NodeInfo types, this is still
