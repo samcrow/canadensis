@@ -1,6 +1,6 @@
 [package]
 name = "canadensis_dsdl_parser"
-version = "0.2.3"
+version = "0.3.0"
 edition = "2018"
 keywords = ["uavcan", "cyphal"]
 description = "Parser for the Cyphal Data Structure Description Language"

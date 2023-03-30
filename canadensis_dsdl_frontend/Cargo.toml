@@ -21,7 +21,7 @@ once_cell = "1.8.0"
 heck = "0.4.0"
 
 [dependencies.canadensis_dsdl_parser]
-version = "0.2.0"
+version = "0.3.0"
 path = "../canadensis_dsdl_parser"
 [dependencies.canadensis_bit_length_set]
 version = "0.3.0"
