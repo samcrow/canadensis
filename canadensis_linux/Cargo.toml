@@ -15,7 +15,7 @@ socketcan = "1.7.0"
 log = "0.4"
 
 [dependencies.canadensis_can]
-version = "0.2.0"
+version = "0.3.0"
 path = "../canadensis_can"
 [dependencies.canadensis_core]
 version = "0.3.0"
