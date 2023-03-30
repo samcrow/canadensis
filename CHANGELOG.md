@@ -49,8 +49,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   alphabetical order by name
 - `canadensis_dsdl_frontend`: Clippy fixes
 - `canadensis_dsdl_frontend`: Breaking change: Updated `half` dependency to 2.2
-- `canadensis_encoding`: Clippy fixes
-- `canadensis_encoding`: Breaking change: Updated `half` dependency to 2.2
 - `canadensis_linux`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
 - `canadensis_macro`: Code generation can fail with an error
 - `canadensis_macro`: Updated `syn` dependency to 2.0
@@ -65,6 +63,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_udp`: Clippy fixes
 - `canadensis_udp`: Updated `simplelog` dependency to 0.12
 - `canadensis_udp`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
+
+## [canadensis_encoding-v0.3.0](https://github.com/samcrow/canadensis/releases/tag/canadensis_encoding-v0.3.0) - 2023-03-30
+
+## Changed
+- `canadensis_encoding`: Clippy fixes
+- `canadensis_encoding`: Breaking change: Updated `half` dependency to 2.2
 
 ## [canadensis_core-v0.3.0](https://github.com/samcrow/canadensis/releases/tag/canadensis_core-v0.3.0) - 2023-03-29
 
