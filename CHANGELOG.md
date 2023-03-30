@@ -12,8 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_bxcan`: Added support for loopback frames, with timestamps based on the transmit time calculated by
   software
 - `canadensis_can`: Breaking change: Added support for loopback frames and transfers
-- `canadensis_core`: Added `remove` function to `SessionTracker` (Breaking change)
-- `canadensis_core`: Added `loopback` field to transfer types (Breaking change)
 - `canadensis_codegen_rust`: Added the ability to produce documentation comments in generated code based on DSDL
   comments
 - `canadensis_codegen_rust`: Added the ability to generate enums from DSDL types marked with `#[canadensis(enum)]`
@@ -39,7 +37,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_codegen_rust`: Clippy fixes
 - `canadensis_codegen_rust`: Updated `clap` dependency to 4.1
 - `canadensis_codegen_rust`: Breaking change: Updated dependencies of generated code: `half` to 2.2, `memoffset` to 0.8
-- `canadensis_core`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
 - `canadensis_data_types`: Changed the order of constants to match the order in the DSDL files
 - `canadensis_data_types`: Regenerated code to match revision 935973babe11755d8070e67452b3508b4b6833e2
   of <https://github.com/OpenCyphal/public_regulated_data_types/>
@@ -69,8 +66,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_udp`: Updated `simplelog` dependency to 0.12
 - `canadensis_udp`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
 
+## [canadensis_core-v0.3.0](https://github.com/samcrow/canadensis/releases/tag/canadensis_core-v0.3.0) - 2023-03-29
+
+### Added
+- `canadensis_core`: Added `remove` function to `SessionTracker` (Breaking change)
+- `canadensis_core`: Added `loopback` field to transfer types (Breaking change)
+### Changed
+- `canadensis_core`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
+
 ## [canadensis_write_crc-0.1.4](https://github.com/samcrow/canadensis/releases/tag/canadensis_write_crc-v0.1.4) - 2023-03-29
 
+### Changed
 - `canadensis_write_crc`: Updated `object` dependency to 0.30
 
 ## [canadensis_core-v0.2.3](https://github.com/samcrow/canadensis/tree/canadensis_core-v0.2.3) - 2022-10-18
