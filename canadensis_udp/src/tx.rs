@@ -84,24 +84,23 @@ where
     }
 }
 
-impl<I, S, const MTU: usize> Transmitter<I> for UdpTransmitter<S, MTU>
+impl<C, S, const MTU: usize> Transmitter<C> for UdpTransmitter<S, MTU>
 where
-    I: Instant,
+    C: Clock,
     S: crate::driver::UdpSocket,
 {
     type Transport = UdpTransport;
     type Driver = S;
     type Error = Error<S::Error>;
 
-    fn push<A, C>(
+    fn push<A>(
         &mut self,
-        transfer: Transfer<A, I, Self::Transport>,
+        transfer: Transfer<A, C::Instant, Self::Transport>,
         clock: &mut C,
         socket: &mut S,
     ) -> nb::Result<(), Self::Error>
     where
         A: AsRef<[u8]>,
-        C: Clock<Instant = I>,
     {
         let deadline = transfer.header.timestamp();
         let (header_base, dest_address) = match transfer.header {
@@ -159,14 +158,11 @@ where
         .map_err(nb::Error::Other)
     }
 
-    fn flush<C>(
+    fn flush(
         &mut self,
         _clock: &mut C,
         _socket: &mut S,
-    ) -> canadensis_core::nb::Result<(), Self::Error>
-    where
-        C: Clock<Instant = I>,
-    {
+    ) -> canadensis_core::nb::Result<(), Self::Error> {
         // Because the push() function blocks until everything has been transmitted, nothing is
         // needed here.
         Ok(())

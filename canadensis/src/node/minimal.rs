@@ -36,7 +36,7 @@ where
     /// * `node`: The underlying node (this is usually a [`CoreNode`](crate::node::CoreNode))
     pub fn new(
         mut node: N,
-    ) -> Result<Self, StartSendError<<N::Transmitter as Transmitter<N::Instant>>::Error>> {
+    ) -> Result<Self, StartSendError<<N::Transmitter as Transmitter<N::Clock>>::Error>> {
         // Default heartbeat settings
         let heartbeat = Heartbeat {
             uptime: 0,
@@ -73,14 +73,14 @@ where
     /// Either `run_periodic_tasks` or `run_per_second_tasks` should be called, but not both.
     pub fn run_per_second_tasks(
         &mut self,
-    ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Instant>>::Error> {
+    ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Clock>>::Error> {
         self.send_heartbeat()
     }
 
     /// Publishes a heartbeat message
     fn send_heartbeat(
         &mut self,
-    ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Instant>>::Error> {
+    ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Clock>>::Error> {
         self.heartbeat.uptime = self.heartbeat.uptime.saturating_add(1);
         self.node.publish(&self.heartbeat_token, &self.heartbeat)
     }

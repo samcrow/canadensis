@@ -110,7 +110,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let core_node: CoreNode<
         SystemClock,
-        CanTransmitter<Microseconds64, Queue>,
+        CanTransmitter<SystemClock, Queue>,
         CanReceiver<Microseconds64, Queue>,
         TransferIdFixedMap<CanTransport, TRANSFER_IDS>,
         Queue,

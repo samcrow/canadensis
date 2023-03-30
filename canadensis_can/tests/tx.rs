@@ -263,17 +263,26 @@ fn test_array() {
 /// This does not keep the frames in order by priority, but it is correct as long as it is used for
 /// only one transfer at a time.
 #[derive(Default)]
-struct MockDriver<I> {
-    queue: VecDeque<Frame<I>>,
+struct MockDriver<C>
+where
+    C: Clock,
+{
+    queue: VecDeque<Frame<C::Instant>>,
 }
 
-impl<I> MockDriver<I> {
-    fn pop_frame(&mut self) -> Option<Frame<I>> {
+impl<C> MockDriver<C>
+where
+    C: Clock,
+{
+    fn pop_frame(&mut self) -> Option<Frame<C::Instant>> {
         self.queue.pop_front()
     }
 }
 
-impl<I> TransmitDriver<I> for MockDriver<I> {
+impl<C> TransmitDriver<C> for MockDriver<C>
+where
+    C: Clock,
+{
     type Error = Infallible;
 
     fn try_reserve(&mut self, frames: usize) -> Result<(), OutOfMemoryError> {
@@ -283,19 +292,20 @@ impl<I> TransmitDriver<I> for MockDriver<I> {
 
     fn transmit(
         &mut self,
-        frame: Frame<I>,
-        _now: I,
-    ) -> canadensis_core::nb::Result<Option<Frame<I>>, Self::Error> {
+        frame: Frame<C::Instant>,
+        _clock: &mut C,
+    ) -> canadensis_core::nb::Result<Option<Frame<C::Instant>>, Self::Error> {
         self.queue.push_back(frame);
         Ok(None)
     }
 
-    fn flush(&mut self, _now: I) -> canadensis_core::nb::Result<(), Self::Error> {
+    fn flush(&mut self, _clock: &mut C) -> canadensis_core::nb::Result<(), Self::Error> {
         Ok(())
     }
 }
 
 /// A clock that produces a Microseconds32 value that is always zero
+#[derive(Default)]
 struct ZeroClock;
 
 impl Clock for ZeroClock {

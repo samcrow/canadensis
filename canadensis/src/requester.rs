@@ -11,18 +11,18 @@ use canadensis_encoding::{Request, Serialize};
 use crate::serialize::do_serialize;
 
 /// Assembles transfers and manages transfer IDs to send service requests
-pub struct Requester<I: Instant, T: Transmitter<I>, R> {
+pub struct Requester<C: Clock, T: Transmitter<C>, R> {
     /// The ID of this node
     this_node: <T::Transport as Transport>::NodeId,
     /// The priority of transfers from this transmitter
     priority: <T::Transport as Transport>::Priority,
     /// The timeout for sending transfers
-    timeout: I::Duration,
+    timeout: <<C as Clock>::Instant as Instant>::Duration,
     /// The ID of the next transfer to send, for each destination node
     transfer_ids: R,
 }
 
-impl<I: Instant, T: Transmitter<I>, R: TransferIdTracker<T::Transport>> Requester<I, T, R> {
+impl<C: Clock, T: Transmitter<C>, R: TransferIdTracker<T::Transport>> Requester<C, T, R> {
     /// Creates a service request transmitter
     ///
     /// this_node: The ID of this node
@@ -32,7 +32,7 @@ impl<I: Instant, T: Transmitter<I>, R: TransferIdTracker<T::Transport>> Requeste
     /// service: The service ID to request
     pub fn new(
         this_node: <T::Transport as Transport>::NodeId,
-        timeout: I::Duration,
+        timeout: <<C as Clock>::Instant as Instant>::Duration,
         priority: <T::Transport as Transport>::Priority,
     ) -> Self {
         Requester {
@@ -44,7 +44,7 @@ impl<I: Instant, T: Transmitter<I>, R: TransferIdTracker<T::Transport>> Requeste
     }
 
     /// Sends a service request and returns its transfer ID
-    pub fn send<Q, C>(
+    pub fn send<Q>(
         &mut self,
         clock: &mut C,
         service: ServiceId,
@@ -55,7 +55,6 @@ impl<I: Instant, T: Transmitter<I>, R: TransferIdTracker<T::Transport>> Requeste
     ) -> nb::Result<<T::Transport as Transport>::TransferId, T::Error>
     where
         Q: Serialize + Request,
-        C: Clock<Instant = I>,
     {
         // Part 1: Serialize
         let deadline = self.timeout + clock.now();
@@ -75,7 +74,7 @@ impl<I: Instant, T: Transmitter<I>, R: TransferIdTracker<T::Transport>> Requeste
     }
 
     /// Sends a loopback service request and returns its transfer ID
-    pub fn send_loopback<Q, C>(
+    pub fn send_loopback<Q>(
         &mut self,
         clock: &mut C,
         service: ServiceId,
@@ -86,7 +85,6 @@ impl<I: Instant, T: Transmitter<I>, R: TransferIdTracker<T::Transport>> Requeste
     ) -> nb::Result<<T::Transport as Transport>::TransferId, T::Error>
     where
         Q: Serialize + Request,
-        C: Clock<Instant = I>,
     {
         // Part 1: Serialize
         let deadline = self.timeout + clock.now();
@@ -105,20 +103,17 @@ impl<I: Instant, T: Transmitter<I>, R: TransferIdTracker<T::Transport>> Requeste
         })
     }
 
-    fn send_payload<C>(
+    fn send_payload(
         &mut self,
         payload: &[u8],
         service: ServiceId,
         destination: <T::Transport as Transport>::NodeId,
-        deadline: I,
+        deadline: C::Instant,
         loopback: bool,
         transmitter: &mut T,
         clock: &mut C,
         driver: &mut T::Driver,
-    ) -> nb::Result<<T::Transport as Transport>::TransferId, T::Error>
-    where
-        C: Clock<Instant = I>,
-    {
+    ) -> nb::Result<<T::Transport as Transport>::TransferId, T::Error> {
         // Assemble the transfer
         let transfer_id = self
             .transfer_ids
@@ -196,16 +191,16 @@ impl<T: Transport, const C: usize> TransferIdTracker<T> for TransferIdFixedMap<T
 mod fmt_impl {
     use core::fmt::{Debug, Formatter, Result};
 
-    use canadensis_core::time::Instant;
+    use canadensis_core::time::{Clock, Instant};
     use canadensis_core::transport::{Transmitter, Transport};
 
     use crate::requester::Requester;
 
-    impl<I, T, R> Debug for Requester<I, T, R>
+    impl<C, T, R> Debug for Requester<C, T, R>
     where
-        I: Instant,
-        T: Transmitter<I>,
-        I::Duration: Debug,
+        C: Clock,
+        T: Transmitter<C>,
+        <<C as Clock>::Instant as Instant>::Duration: Debug,
         <T::Transport as Transport>::TransferId: Debug,
         <T::Transport as Transport>::Priority: Debug,
         <T::Transport as Transport>::NodeId: Debug,

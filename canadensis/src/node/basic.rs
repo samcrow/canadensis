@@ -53,7 +53,7 @@ where
     ) -> Result<
         Self,
         NodeError<
-            StartSendError<<N::Transmitter as Transmitter<N::Instant>>::Error>,
+            StartSendError<<N::Transmitter as Transmitter<N::Clock>>::Error>,
             <N::Receiver as Receiver<N::Instant>>::Error,
         >,
     > {
@@ -113,7 +113,7 @@ where
     /// This function must be called once per second to send heartbeat and port list messages
     pub fn run_per_second_tasks(
         &mut self,
-    ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Instant>>::Error> {
+    ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Clock>>::Error> {
         self.node.run_per_second_tasks()?;
         if self.seconds_since_port_list_published == 10 {
             self.seconds_since_port_list_published = 1;
@@ -126,7 +126,7 @@ where
 
     fn publish_port_list(
         &mut self,
-    ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Instant>>::Error> {
+    ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Clock>>::Error> {
         self.node
             .node_mut()
             .publish(&self.port_list_token, &self.port_list)
@@ -184,7 +184,7 @@ where
         subject: SubjectId,
         timeout: <<N::Clock as Clock>::Instant as Instant>::Duration,
         priority: <Self::Transport as Transport>::Priority,
-    ) -> Result<PublishToken<T>, StartSendError<<N::Transmitter as Transmitter<N::Instant>>::Error>>
+    ) -> Result<PublishToken<T>, StartSendError<<N::Transmitter as Transmitter<N::Clock>>::Error>>
     where
         T: Message,
     {
@@ -210,7 +210,7 @@ where
         &mut self,
         token: &PublishToken<T>,
         payload: &T,
-    ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Instant>>::Error>
+    ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Clock>>::Error>
     where
         T: Message + Serialize,
     {
@@ -221,7 +221,7 @@ where
         &mut self,
         token: &PublishToken<T>,
         payload: &T,
-    ) -> nb::Result<(), <Self::Transmitter as Transmitter<Self::Instant>>::Error>
+    ) -> nb::Result<(), <Self::Transmitter as Transmitter<Self::Clock>>::Error>
     where
         T: Message + Serialize,
     {
@@ -266,7 +266,7 @@ where
         destination: <Self::Transport as Transport>::NodeId,
     ) -> nb::Result<
         <Self::Transport as Transport>::TransferId,
-        <N::Transmitter as Transmitter<N::Instant>>::Error,
+        <N::Transmitter as Transmitter<N::Clock>>::Error,
     >
     where
         T: Request + Serialize,
@@ -283,7 +283,7 @@ where
         destination: <Self::Transport as Transport>::NodeId,
     ) -> nb::Result<
         <Self::Transport as Transport>::TransferId,
-        <Self::Transmitter as Transmitter<Self::Instant>>::Error,
+        <Self::Transmitter as Transmitter<Self::Clock>>::Error,
     >
     where
         T: Request + Serialize,
@@ -330,7 +330,7 @@ where
         token: ResponseToken<Self::Transport>,
         timeout: <<N::Clock as Clock>::Instant as Instant>::Duration,
         payload: &T,
-    ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Instant>>::Error>
+    ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Clock>>::Error>
     where
         T: Response + Serialize,
     {
@@ -339,7 +339,7 @@ where
 
     fn flush(
         &mut self,
-    ) -> canadensis_core::nb::Result<(), <N::Transmitter as Transmitter<N::Instant>>::Error> {
+    ) -> canadensis_core::nb::Result<(), <N::Transmitter as Transmitter<N::Clock>>::Error> {
         self.node.node_mut().flush()
     }
 

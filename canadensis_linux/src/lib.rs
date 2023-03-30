@@ -33,7 +33,7 @@ impl LinuxCan {
     }
 }
 
-impl TransmitDriver<Microseconds64> for LinuxCan {
+impl TransmitDriver<SystemClock> for LinuxCan {
     type Error = io::Error;
 
     fn try_reserve(&mut self, _frames: usize) -> Result<(), OutOfMemoryError> {
@@ -44,9 +44,10 @@ impl TransmitDriver<Microseconds64> for LinuxCan {
     fn transmit(
         &mut self,
         frame: Frame<Microseconds64>,
-        now: Microseconds64,
+        clock: &mut SystemClock,
     ) -> nb::Result<Option<Frame<Microseconds64>>, Self::Error> {
         // Drop this frame if its deadline has passed
+        let now = clock.now();
         if frame.timestamp().overflow_safe_compare(&now) == Ordering::Less {
             log::warn!("Dropping frame that has missed its deadline");
             return Ok(None);
@@ -66,7 +67,7 @@ impl TransmitDriver<Microseconds64> for LinuxCan {
             })
     }
 
-    fn flush(&mut self, _now: Microseconds64) -> canadensis_core::nb::Result<(), Self::Error> {
+    fn flush(&mut self, _clock: &mut SystemClock) -> canadensis_core::nb::Result<(), Self::Error> {
         // Presumably this happens automatically
         Ok(())
     }

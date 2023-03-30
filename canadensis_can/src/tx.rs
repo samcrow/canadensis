@@ -7,7 +7,7 @@ use core::iter;
 use core::marker::PhantomData;
 
 use canadensis_core::nb;
-use canadensis_core::time::{Clock, Instant};
+use canadensis_core::time::Clock;
 use canadensis_core::transfer::{Header, ServiceHeader, Transfer};
 use canadensis_core::transport::Transmitter;
 
@@ -23,7 +23,7 @@ mod breakdown;
 mod tx_test;
 
 /// Splits outgoing transfers into frames
-pub struct CanTransmitter<I, D> {
+pub struct CanTransmitter<C, D> {
     /// Transport MTU (including the tail byte)
     mtu: usize,
     /// Number of transfers successfully transmitted
@@ -35,14 +35,14 @@ pub struct CanTransmitter<I, D> {
     ///
     /// A failure to allocate memory is considered an error. CAN bus errors are ignored.
     error_count: u64,
-    _instant: PhantomData<I>,
+    _clock: PhantomData<C>,
     _driver: PhantomData<D>,
 }
 
-impl<I, D> Transmitter<I> for CanTransmitter<I, D>
+impl<C, D> Transmitter<C> for CanTransmitter<C, D>
 where
-    I: Instant,
-    D: TransmitDriver<I>,
+    C: Clock,
+    D: TransmitDriver<C>,
 {
     type Transport = CanTransport;
     type Driver = D;
@@ -54,15 +54,14 @@ where
     ///
     /// This function returns an error if the queue does not have enough space to hold all
     /// the required frames.
-    fn push<A, C>(
+    fn push<A>(
         &mut self,
-        transfer: Transfer<A, I, CanTransport>,
+        transfer: Transfer<A, C::Instant, CanTransport>,
         clock: &mut C,
         driver: &mut D,
     ) -> nb::Result<(), Self::Error>
     where
         A: AsRef<[u8]>,
-        C: Clock<Instant = I>,
     {
         // Convert the transfer payload into borrowed form
         let transfer = Transfer {
@@ -71,7 +70,7 @@ where
             payload: transfer.payload.as_ref(),
         };
 
-        match self.push_inner(transfer, clock.now(), driver) {
+        match self.push_inner(transfer, clock, driver) {
             Ok(()) => {
                 self.transfer_count = self.transfer_count.wrapping_add(1);
                 Ok(())
@@ -83,11 +82,8 @@ where
         }
     }
 
-    fn flush<C>(&mut self, clock: &mut C, driver: &mut D) -> nb::Result<(), Self::Error>
-    where
-        C: Clock<Instant = I>,
-    {
-        driver.flush(clock.now()).map_err(|e| e.map(Error::Driver))
+    fn flush(&mut self, clock: &mut C, driver: &mut D) -> nb::Result<(), Self::Error> {
+        driver.flush(clock).map_err(|e| e.map(Error::Driver))
     }
 
     fn mtu(&self) -> usize {
@@ -96,9 +92,10 @@ where
     }
 }
 
-impl<I, D> CanTransmitter<I, D>
+impl<C, D> CanTransmitter<C, D>
 where
-    D: TransmitDriver<I>,
+    C: Clock,
+    D: TransmitDriver<C>,
 {
     /// Creates a transmitter
     ///
@@ -108,7 +105,7 @@ where
             mtu: mtu as usize,
             transfer_count: 0,
             error_count: 0,
-            _instant: PhantomData,
+            _clock: PhantomData,
             _driver: PhantomData,
         }
     }
@@ -122,13 +119,10 @@ where
 
     fn push_inner(
         &mut self,
-        transfer: Transfer<&[u8], I, CanTransport>,
-        now: I,
+        transfer: Transfer<&[u8], C::Instant, CanTransport>,
+        clock: &mut C,
         driver: &mut D,
-    ) -> nb::Result<(), Error<D::Error>>
-    where
-        I: Clone,
-    {
+    ) -> nb::Result<(), Error<D::Error>> {
         let frame_stats = crate::calculate_frame_stats(transfer.payload.len(), self.mtu);
         // Check that enough space is available in the queue for all the frames.
         // Return an error if space is not available.
@@ -158,7 +152,7 @@ where
                     can_id,
                     &frame_data,
                     driver,
-                    now.clone(),
+                    clock,
                 )
                 .map_err(|e| e.map(Error::Driver))?;
                 frames += 1;
@@ -179,7 +173,7 @@ where
                         can_id,
                         &frame_data,
                         driver,
-                        now.clone(),
+                        clock,
                     )
                     .map_err(|e| e.map(Error::Driver))?;
                 }
@@ -192,7 +186,7 @@ where
             can_id,
             &last_frame_data,
             driver,
-            now,
+            clock,
         )
         .map_err(|e| e.map(Error::Driver))?;
         Ok(())
@@ -203,20 +197,17 @@ where
     /// If the driver returns a removed lower-priority frame, this function discards it.
     fn push_frame(
         &mut self,
-        timestamp: I,
+        timestamp: C::Instant,
         loopback: bool,
         id: CanId,
         data: &[u8],
         driver: &mut D,
-        now: I,
-    ) -> nb::Result<(), D::Error>
-    where
-        I: Clone,
-    {
+        clock: &mut C,
+    ) -> nb::Result<(), D::Error> {
         let mut frame = Frame::new(timestamp, id, data);
         frame.set_loopback(loopback);
         // If a lower-priority frame was removed, drop it
-        driver.transmit(frame, now).map(drop)
+        driver.transmit(frame, clock).map(drop)
     }
 
     /// Returns the number of transfers successfully transmitted

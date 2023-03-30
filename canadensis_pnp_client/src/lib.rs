@@ -26,7 +26,7 @@ use core::marker::PhantomData;
 use crc_any::CRCu64;
 
 /// A plug-and-play allocation client that can be used to find a node ID
-pub struct PnpClient<C: Clock, M, T: Transmitter<C::Instant>, R: Receiver<C::Instant>> {
+pub struct PnpClient<C: Clock, M, T: Transmitter<C>, R: Receiver<C::Instant>> {
     /// The unique ID of this node
     unique_id: [u8; 16],
     /// Publisher used to send messages
@@ -42,7 +42,7 @@ impl<C, M, T, R, P> PnpClient<C, M, T, R>
 where
     C: Clock,
     M: AllocationMessage<P>,
-    T: Transmitter<C::Instant, Transport = P>,
+    T: Transmitter<C, Transport = P>,
     R: Receiver<C::Instant, Transport = P>,
     P: Transport,
 {

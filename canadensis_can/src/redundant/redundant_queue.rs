@@ -1,5 +1,6 @@
 use crate::driver::TransmitDriver;
 use crate::Frame;
+use canadensis_core::time::Clock;
 use canadensis_core::{nb, OutOfMemoryError};
 
 /// An aggregation of two outgoing frame queues that can be used for double-redundant transports
@@ -32,11 +33,11 @@ impl<D0, D1> RedundantDriver<D0, D1> {
     }
 }
 
-impl<I, D0, D1> TransmitDriver<I> for RedundantDriver<D0, D1>
+impl<C, D0, D1> TransmitDriver<C> for RedundantDriver<D0, D1>
 where
-    I: Clone,
-    D0: TransmitDriver<I>,
-    D1: TransmitDriver<I>,
+    C: Clock,
+    D0: TransmitDriver<C>,
+    D1: TransmitDriver<C>,
 {
     type Error = RedundantError<D0::Error, D1::Error>;
     /// Tries to reserve space on both queues, returning `Ok(())` if the operation succeeded
@@ -55,16 +56,20 @@ where
     /// If a driver failed to allocate memory during the most recent call to
     /// [`try_reserve`](#method.try_reserve), this function does not attempt to push a frame onto
     /// that queue.
-    fn transmit(&mut self, frame: Frame<I>, now: I) -> nb::Result<Option<Frame<I>>, Self::Error> {
+    fn transmit(
+        &mut self,
+        frame: Frame<C::Instant>,
+        clock: &mut C,
+    ) -> nb::Result<Option<Frame<C::Instant>>, Self::Error> {
         // If a queue failed to reserve memory in the last call to try_reserve(),
         // don't try to push the frame there.
         let push_status_0 = if self.status0.is_ok() {
-            self.driver0.transmit(frame.clone(), now.clone())
+            self.driver0.transmit(frame.clone(), clock)
         } else {
             Err(nb::Error::WouldBlock)
         };
         let push_status_1 = if self.status1.is_ok() {
-            self.driver1.transmit(frame, now)
+            self.driver1.transmit(frame, clock)
         } else {
             Err(nb::Error::WouldBlock)
         };
@@ -83,9 +88,9 @@ where
         }
     }
 
-    fn flush(&mut self, now: I) -> nb::Result<(), Self::Error> {
-        let flush_status_0 = self.driver0.flush(now.clone());
-        let flush_status_1 = self.driver1.flush(now);
+    fn flush(&mut self, clock: &mut C) -> nb::Result<(), Self::Error> {
+        let flush_status_0 = self.driver0.flush(clock);
+        let flush_status_1 = self.driver1.flush(clock);
         // This is successful if at least one driver successfully flushed its frames
         match (flush_status_0, flush_status_1) {
             (Ok(()), _) => Ok(()),

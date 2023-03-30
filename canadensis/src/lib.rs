@@ -328,7 +328,7 @@ pub trait Node {
     /// The transport that this node uses
     type Transport: Transport;
     /// The transmitter that this node uses
-    type Transmitter: Transmitter<Self::Instant, Transport = Self::Transport>;
+    type Transmitter: Transmitter<Self::Clock, Transport = Self::Transport>;
     /// The receiver that this node uses
     type Receiver: Receiver<Self::Instant, Transport = Self::Transport>;
 
@@ -360,7 +360,7 @@ pub trait Node {
         priority: <Self::Transport as Transport>::Priority,
     ) -> Result<
         PublishToken<T>,
-        StartSendError<<Self::Transmitter as Transmitter<Self::Instant>>::Error>,
+        StartSendError<<Self::Transmitter as Transmitter<Self::Clock>>::Error>,
     >
     where
         T: Message;
@@ -377,7 +377,7 @@ pub trait Node {
         &mut self,
         token: &PublishToken<T>,
         payload: &T,
-    ) -> nb::Result<(), <Self::Transmitter as Transmitter<Self::Instant>>::Error>
+    ) -> nb::Result<(), <Self::Transmitter as Transmitter<Self::Clock>>::Error>
     where
         T: Message + Serialize;
 
@@ -388,7 +388,7 @@ pub trait Node {
         &mut self,
         token: &PublishToken<T>,
         payload: &T,
-    ) -> nb::Result<(), <Self::Transmitter as Transmitter<Self::Instant>>::Error>
+    ) -> nb::Result<(), <Self::Transmitter as Transmitter<Self::Clock>>::Error>
     where
         T: Message + Serialize;
 
@@ -423,7 +423,7 @@ pub trait Node {
         destination: <Self::Transport as Transport>::NodeId,
     ) -> nb::Result<
         <Self::Transport as Transport>::TransferId,
-        <Self::Transmitter as Transmitter<Self::Instant>>::Error,
+        <Self::Transmitter as Transmitter<Self::Clock>>::Error,
     >
     where
         T: Request + Serialize;
@@ -438,7 +438,7 @@ pub trait Node {
         destination: <Self::Transport as Transport>::NodeId,
     ) -> nb::Result<
         <Self::Transport as Transport>::TransferId,
-        <Self::Transmitter as Transmitter<Self::Instant>>::Error,
+        <Self::Transmitter as Transmitter<Self::Clock>>::Error,
     >
     where
         T: Request + Serialize;
@@ -471,13 +471,12 @@ pub trait Node {
         token: ResponseToken<Self::Transport>,
         timeout: <<<Self as Node>::Clock as Clock>::Instant as Instant>::Duration,
         payload: &T,
-    ) -> nb::Result<(), <Self::Transmitter as Transmitter<Self::Instant>>::Error>
+    ) -> nb::Result<(), <Self::Transmitter as Transmitter<Self::Clock>>::Error>
     where
         T: Response + Serialize;
 
     /// Attempts to flush all outgoing frames
-    fn flush(&mut self)
-        -> nb::Result<(), <Self::Transmitter as Transmitter<Self::Instant>>::Error>;
+    fn flush(&mut self) -> nb::Result<(), <Self::Transmitter as Transmitter<Self::Clock>>::Error>;
 
     // Component access
 

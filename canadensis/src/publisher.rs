@@ -8,18 +8,18 @@ use canadensis_encoding::{Message, Serialize};
 /// Assembles transfers and manages transfer IDs to send messages
 ///
 /// The subject ID is not part of this struct because it is used as a key in the map of publishers.
-pub struct Publisher<I: Instant, T: Transmitter<I>> {
+pub struct Publisher<C: Clock, T: Transmitter<C>> {
     /// The ID of the next transfer sent
     next_transfer_id: <T::Transport as Transport>::TransferId,
     /// Timeout for sending a transfer, measured from the time the payload is serialized
-    timeout: I::Duration,
+    timeout: <<C as Clock>::Instant as Instant>::Duration,
     /// Priority for transfers
     priority: <T::Transport as Transport>::Priority,
     /// ID of this node
     source: <T::Transport as Transport>::NodeId,
 }
 
-impl<I: Instant, T: Transmitter<I>> Publisher<I, T> {
+impl<C: Clock, T: Transmitter<C>> Publisher<C, T> {
     /// Creates a message transmitter
     ///
     /// node: The ID of this node
@@ -27,7 +27,7 @@ impl<I: Instant, T: Transmitter<I>> Publisher<I, T> {
     /// priority: The priority to use for messages
     pub fn new(
         node_id: <T::Transport as Transport>::NodeId,
-        timeout: I::Duration,
+        timeout: <<C as Clock>::Instant as Instant>::Duration,
         priority: <T::Transport as Transport>::Priority,
     ) -> Self {
         Publisher {
@@ -41,7 +41,7 @@ impl<I: Instant, T: Transmitter<I>> Publisher<I, T> {
     /// Publishes a message
     ///
     /// The loopback flag is set to false
-    pub fn publish<M, C>(
+    pub fn publish<M>(
         &mut self,
         clock: &mut C,
         subject: SubjectId,
@@ -51,8 +51,6 @@ impl<I: Instant, T: Transmitter<I>> Publisher<I, T> {
     ) -> nb::Result<(), T::Error>
     where
         M: Message + Serialize,
-        I: Instant,
-        C: Clock<Instant = I>,
     {
         let deadline = self.timeout + clock.now();
         // Part 1: Serialize
@@ -70,7 +68,7 @@ impl<I: Instant, T: Transmitter<I>> Publisher<I, T> {
         })
     }
     /// Publishes a loopback message
-    pub fn publish_loopback<M, C>(
+    pub fn publish_loopback<M>(
         &mut self,
         clock: &mut C,
         subject: SubjectId,
@@ -80,8 +78,6 @@ impl<I: Instant, T: Transmitter<I>> Publisher<I, T> {
     ) -> nb::Result<(), T::Error>
     where
         M: Message + Serialize,
-        I: Instant,
-        C: Clock<Instant = I>,
     {
         let deadline = self.timeout + clock.now();
         // Part 1: Serialize
@@ -99,20 +95,16 @@ impl<I: Instant, T: Transmitter<I>> Publisher<I, T> {
         })
     }
 
-    fn send_payload<C>(
+    fn send_payload(
         &mut self,
         subject: SubjectId,
         payload: &[u8],
-        deadline: I,
+        deadline: C::Instant,
         loopback: bool,
         transmitter: &mut T,
         clock: &mut C,
         driver: &mut T::Driver,
-    ) -> nb::Result<(), T::Error>
-    where
-        I: Clone,
-        C: Clock<Instant = I>,
-    {
+    ) -> nb::Result<(), T::Error> {
         // Assemble the transfer
         let transfer = Transfer {
             header: Header::Message(MessageHeader {
@@ -133,15 +125,15 @@ impl<I: Instant, T: Transmitter<I>> Publisher<I, T> {
 
 mod fmt_impl {
     use crate::publisher::Publisher;
-    use canadensis_core::time::Instant;
+    use canadensis_core::time::{Clock, Instant};
     use canadensis_core::transport::{Transmitter, Transport};
     use core::fmt::{Debug, Formatter, Result};
 
-    impl<I, T> Debug for Publisher<I, T>
+    impl<C, T> Debug for Publisher<C, T>
     where
-        I: Instant,
-        I::Duration: Debug,
-        T: Transmitter<I>,
+        C: Clock,
+        <<C as Clock>::Instant as Instant>::Duration: Debug,
+        T: Transmitter<C>,
         <T::Transport as Transport>::TransferId: Debug,
         <T::Transport as Transport>::Priority: Debug,
         <T::Transport as Transport>::NodeId: Debug,
