@@ -18,7 +18,7 @@ log = "0.4"
 version = "0.2.0"
 path = "../canadensis_can"
 [dependencies.canadensis_core]
-version = "0.2.0"
+version = "0.3.0"
 path = "../canadensis_core"
 [dependencies.canadensis_filter_config]
 version = "0.2.0"
