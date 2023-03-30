@@ -6,13 +6,14 @@ extern crate canadensis_can;
 extern crate canadensis_core;
 
 use core::convert::{TryFrom, TryInto};
+use std::cell::Cell;
 use std::collections::VecDeque;
 
 use canadensis_can::driver::ReceiveDriver;
 use canadensis_can::{CanId, CanNodeId, CanReceiver, Frame, Mtu};
 use canadensis_core::nb;
 use canadensis_core::subscription::Subscription;
-use canadensis_core::time::{Instant, MicrosecondDuration32, Microseconds32};
+use canadensis_core::time::{Clock, Instant, MicrosecondDuration32, Microseconds32};
 use canadensis_core::transfer::*;
 use canadensis_core::transport::Receiver;
 use canadensis_core::{Priority, ServiceId, SubjectId};
@@ -41,8 +42,10 @@ fn test_heartbeat() {
         0x107d552a.try_into().unwrap(),
         &[0x00, 0x00, 0x00, 0x00, 0x04, 0x78, 0x68, 0xe0],
     ));
+    let clock = ClockOwner::default();
+    clock.set_ticks(0);
     let transfer = rx
-        .receive(instant(0), &mut driver)
+        .receive(&mut clock.make_clock(), &mut driver)
         .unwrap()
         .expect("Didn't get a transfer");
 
@@ -74,8 +77,10 @@ fn test_string() {
         0x11133775.try_into().unwrap(),
         b"\x00\x18Hello world!\x00\xe0",
     ));
+    let clock = ClockOwner::default();
+    clock.set_ticks(0);
     let transfer = rx
-        .receive(instant(0), &mut driver)
+        .receive(&mut clock.make_clock(), &mut driver)
         .unwrap()
         .expect("Didn't get a transfer");
 
@@ -106,8 +111,10 @@ fn test_node_info_request() {
         0x136b957b.try_into().unwrap(),
         &[0xe1],
     ));
+    let clock = ClockOwner::default();
+    clock.set_ticks(0);
     let transfer = rx
-        .receive(instant(0), &mut driver)
+        .receive(&mut clock.make_clock(), &mut driver)
         .unwrap()
         .expect("Didn't get a transfer");
 
@@ -164,6 +171,7 @@ fn test_node_info_response() {
         (&[0xe7, 0x61], 200),
     ];
 
+    let clock = ClockOwner::default();
     for (i, &(frame_data, frame_time)) in frames_and_times.iter().enumerate() {
         let frame = Frame::new(
             instant(frame_time),
@@ -171,13 +179,14 @@ fn test_node_info_response() {
             frame_data,
         );
         driver.push(frame);
+        clock.set_ticks(frame_time);
         if i != frames_and_times.len() - 1 {
-            let maybe_transfer = rx.receive(instant(frame_time), &mut driver).unwrap();
+            let maybe_transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
             assert!(maybe_transfer.is_none());
         } else {
             // End of transfer
             let transfer = rx
-                .receive(instant(frame_time), &mut driver)
+                .receive(&mut clock.make_clock(), &mut driver)
                 .unwrap()
                 .expect("Didn't get a transfer");
 
@@ -201,6 +210,7 @@ fn test_node_info_response() {
 #[test]
 fn test_node_info_response_timeout() {
     let mut driver = StubDriver::default();
+    let clock = ClockOwner::default();
     let mut rx = CanReceiver::new(123u8.try_into().unwrap(), Mtu::Can8);
 
     let service = ServiceId::try_from(430).unwrap();
@@ -230,7 +240,8 @@ fn test_node_info_response_timeout() {
         );
         driver.push(frame);
         // When the last frame is accepted, it has timed out and the whole transfer gets discarded.
-        let maybe_transfer = rx.receive(instant(frame_time), &mut driver).unwrap();
+        clock.set_ticks(frame_time);
+        let maybe_transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
         assert!(maybe_transfer.is_none());
     }
 }
@@ -238,6 +249,7 @@ fn test_node_info_response_timeout() {
 #[cfg(feature = "can-fd")]
 fn test_array() {
     let mut driver = StubDriver::default();
+    let clock = ClockOwner::default();
     let mut rx = CanReceiver::new(0u8.try_into().unwrap(), Mtu::CanFd64);
 
     let subject = SubjectId::try_from(4919).unwrap();
@@ -290,13 +302,14 @@ fn test_array() {
             frame_data,
         );
         driver.push(frame);
+        clock.set_ticks(i as u32);
         if i != frames.len() - 1 {
-            let maybe_transfer = rx.receive(instant(i as u32), &mut driver).unwrap();
+            let maybe_transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
             assert!(maybe_transfer.is_none());
         } else {
             // End of transfer
             let transfer = rx
-                .receive(instant(i as u32), &mut driver)
+                .receive(&mut clock.make_clock(), &mut driver)
                 .unwrap()
                 .expect("Didn't get a transfer");
 
@@ -344,21 +357,35 @@ fn test_multi_frame_anonymous() {
         payload: vec![0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8],
     };
 
+    let clock = ClockOwner::default();
+    clock.set_ticks(1);
     driver.push(Frame::new(TestInstant::new(1), non_anonymous_id, frames[0]));
-    assert_eq!(Ok(None), receiver.receive(instant(1), &mut driver));
+    assert_eq!(
+        Ok(None),
+        receiver.receive(&mut clock.make_clock(), &mut driver)
+    );
+    clock.set_ticks(2);
     driver.push(Frame::new(TestInstant::new(2), non_anonymous_id, frames[1]));
     assert_eq!(
         Ok(Some(non_anonymous_transfer)),
-        receiver.receive(instant(2), &mut driver)
+        receiver.receive(&mut clock.make_clock(), &mut driver)
     );
     // Now make it anonymous
     let anonymous_id: CanId = 0b100_0_1_011_0000000001010_0_1000000_u32
         .try_into()
         .unwrap();
+    clock.set_ticks(1);
     driver.push(Frame::new(TestInstant::new(1), anonymous_id, frames[0]));
-    assert_eq!(Ok(None), receiver.receive(instant(1), &mut driver));
+    assert_eq!(
+        Ok(None),
+        receiver.receive(&mut clock.make_clock(), &mut driver)
+    );
+    clock.set_ticks(2);
     driver.push(Frame::new(TestInstant::new(2), anonymous_id, frames[1]));
-    assert_eq!(Ok(None), receiver.receive(instant(2), &mut driver));
+    assert_eq!(
+        Ok(None),
+        receiver.receive(&mut clock.make_clock(), &mut driver)
+    );
 }
 
 /// Tests an anonymous receiver receiving a multi-frame non-anonymous transfer
@@ -395,12 +422,15 @@ fn test_anonymous_receive_multi_frame() {
         payload: vec![190, 159, 33, 213, 34, 64, 1, 103, 0],
     };
 
+    let clock = ClockOwner::default();
+    clock.set_ticks(frames[0].timestamp().as_microseconds());
     driver.push(frames[0].clone());
-    assert_eq!(Ok(None), rx.receive(frames[0].timestamp(), &mut driver));
+    assert_eq!(Ok(None), rx.receive(&mut clock.make_clock(), &mut driver));
+    clock.set_ticks(frames[1].timestamp().as_microseconds());
     driver.push(frames[1].clone());
     assert_eq!(
         Ok(Some(expected_transfer)),
-        rx.receive(frames[1].timestamp(), &mut driver)
+        rx.receive(&mut clock.make_clock(), &mut driver)
     );
 }
 
@@ -418,7 +448,9 @@ fn test_ignore_request_to_other_node() {
         0x136b957b.try_into().unwrap(),
         &[0xe1],
     ));
-    let transfer = rx.receive(instant(302), &mut driver).unwrap();
+    let clock = ClockOwner::default();
+    clock.set_ticks(302);
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
 
     assert_eq!(transfer, None);
 }
@@ -428,20 +460,23 @@ fn test_ignore_request_to_other_node() {
 /// This does not keep the frames in order by priority, but it is correct as long as it is used for
 /// only one transfer at a time.
 #[derive(Default)]
-struct StubDriver<I> {
-    frames: VecDeque<Frame<I>>,
+struct StubDriver {
+    frames: VecDeque<Frame<Microseconds32>>,
 }
 
-impl<I> StubDriver<I> {
-    fn push(&mut self, frame: Frame<I>) {
+impl StubDriver {
+    fn push(&mut self, frame: Frame<Microseconds32>) {
         self.frames.push_back(frame)
     }
 }
 
-impl<I> ReceiveDriver<I> for StubDriver<I> {
+impl ReceiveDriver<StubClock<'_>> for StubDriver {
     type Error = ();
 
-    fn receive(&mut self, _now: I) -> nb::Result<Frame<I>, Self::Error> {
+    fn receive(
+        &mut self,
+        _clock: &mut StubClock<'_>,
+    ) -> nb::Result<Frame<Microseconds32>, Self::Error> {
         self.frames.pop_front().ok_or(nb::Error::WouldBlock)
     }
 
@@ -454,5 +489,29 @@ impl<I> ReceiveDriver<I> for StubDriver<I> {
 
     fn apply_accept_all(&mut self) {
         // Nothing to do
+    }
+}
+
+struct StubClock<'a> {
+    count: &'a Cell<u32>,
+}
+impl Clock for StubClock<'_> {
+    type Instant = Microseconds32;
+
+    fn now(&mut self) -> Self::Instant {
+        Microseconds32::new(self.count.get())
+    }
+}
+#[derive(Default)]
+struct ClockOwner {
+    count: Cell<u32>,
+}
+
+impl ClockOwner {
+    pub fn set_ticks(&self, count: u32) {
+        self.count.set(count)
+    }
+    pub fn make_clock(&self) -> StubClock<'_> {
+        StubClock { count: &self.count }
     }
 }

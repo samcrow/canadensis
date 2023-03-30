@@ -114,12 +114,12 @@ where
     }
 }
 
-impl<I: Default + Clone, const TC: usize, const RC: usize> ReceiveDriver<I>
-    for QueueOnlyDriver<I, TC, RC>
+impl<C: Clock, const TC: usize, const RC: usize> ReceiveDriver<C>
+    for QueueOnlyDriver<C::Instant, TC, RC>
 {
     type Error = Infallible;
 
-    fn receive(&mut self, _now: I) -> nb::Result<Frame<I>, Self::Error> {
+    fn receive(&mut self, _clock: &mut C) -> nb::Result<Frame<C::Instant>, Self::Error> {
         self.rx_queue.pop_front().ok_or(nb::Error::WouldBlock)
     }
 

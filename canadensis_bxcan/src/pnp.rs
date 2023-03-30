@@ -17,10 +17,10 @@ pub struct BxCanPnpClient<C: Clock, M, I: Instance + FilterOwner> {
     pub client: PnpClient<
         C,
         M,
-        CanTransmitter<C, SingleQueueDriver<SingleFrameQueue<C::Instant>, BxCanDriver<C, I>>>,
-        CanReceiver<C::Instant, SingleQueueDriver<SingleFrameQueue<C::Instant>, BxCanDriver<C, I>>>,
+        CanTransmitter<C, SingleQueueDriver<C, SingleFrameQueue<C::Instant>, BxCanDriver<C, I>>>,
+        CanReceiver<C, SingleQueueDriver<C, SingleFrameQueue<C::Instant>, BxCanDriver<C, I>>>,
     >,
-    driver: SingleQueueDriver<SingleFrameQueue<C::Instant>, BxCanDriver<C, I>>,
+    driver: SingleQueueDriver<C, SingleFrameQueue<C::Instant>, BxCanDriver<C, I>>,
 }
 
 impl<C, M, I> BxCanPnpClient<C, M, I>
@@ -51,8 +51,8 @@ where
     }
 
     /// Handles and parses incoming CAN frames, and returns a node ID if one was received
-    pub fn handle_incoming_frames(&mut self, now: C::Instant) -> Option<CanNodeId> {
-        match self.client.receive(now, &mut self.driver) {
+    pub fn handle_incoming_frames(&mut self, clock: &mut C) -> Option<CanNodeId> {
+        match self.client.receive(clock, &mut self.driver) {
             Ok(Some(id)) => Some(id),
             Ok(None) | Err(_) => None,
         }

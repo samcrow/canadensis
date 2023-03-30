@@ -34,7 +34,7 @@ use crate::{Node, PublishToken, ResponseToken, ServiceToken, StartSendError, Tra
 pub struct CoreNode<C, T, U, TR, D, const P: usize, const R: usize>
 where
     C: Clock,
-    U: Receiver<C::Instant>,
+    U: Receiver<C>,
     T: Transmitter<C>,
 {
     clock: C,
@@ -50,7 +50,7 @@ impl<C, T, U, N, TR, D, const P: usize, const R: usize> CoreNode<C, T, U, TR, D,
 where
     C: Clock,
     N: Transport,
-    U: Receiver<C::Instant, Transport = N, Driver = D>,
+    U: Receiver<C, Transport = N, Driver = D>,
     T: Transmitter<C, Transport = N, Driver = D>,
     TR: TransferIdTracker<N>,
 {
@@ -163,7 +163,7 @@ where
     C: Clock,
     N: Transport,
     T: Transmitter<C, Transport = N, Driver = D>,
-    U: Receiver<<C as Clock>::Instant, Transport = N, Driver = D>,
+    U: Receiver<C, Transport = N, Driver = D>,
     TR: TransferIdTracker<N>,
 {
     type Clock = C;
@@ -176,7 +176,7 @@ where
     where
         H: TransferHandler<Self::Instant, Self::Transport>,
     {
-        if let Some(transfer) = self.receiver.receive(self.clock.now(), &mut self.driver)? {
+        if let Some(transfer) = self.receiver.receive(&mut self.clock, &mut self.driver)? {
             self.handle_incoming_transfer(transfer, handler)
         }
         Ok(())

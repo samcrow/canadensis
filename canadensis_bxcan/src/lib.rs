@@ -124,12 +124,12 @@ where
     /// Tries to receive a frame from the CAN bus
     fn receive_from_bus(
         &mut self,
-        now: C::Instant,
-    ) -> nb::Result<Frame<C::Instant>, <Self as ReceiveDriver<C::Instant>>::Error> {
+        clock: &mut C,
+    ) -> nb::Result<Frame<C::Instant>, <Self as ReceiveDriver<C>>::Error> {
         loop {
             match self.can.receive() {
                 Ok(frame) => {
-                    if let Ok(frame) = bxcan_frame_to_cyphal(&frame, now.clone()) {
+                    if let Ok(frame) = bxcan_frame_to_cyphal(&frame, clock.now()) {
                         break Ok(frame);
                     }
                     // Otherwise the frame is remote or basic ID, not compatible with Cyphal.
@@ -143,7 +143,7 @@ where
     /// Tries to receive a frame from the loopback queue
     fn receive_loopback(
         &mut self,
-    ) -> nb::Result<Frame<C::Instant>, <Self as ReceiveDriver<C::Instant>>::Error> {
+    ) -> nb::Result<Frame<C::Instant>, <Self as ReceiveDriver<C>>::Error> {
         match self.loopback_frames.pop_front() {
             Some(frame) => Ok(frame),
             None => Err(nb::Error::WouldBlock),
@@ -204,7 +204,7 @@ where
     }
 }
 
-impl<C, N> ReceiveDriver<C::Instant> for BxCanDriver<C, N>
+impl<C, N> ReceiveDriver<C> for BxCanDriver<C, N>
 where
     C: Clock,
     N: Instance + FilterOwner,
@@ -217,8 +217,8 @@ where
     /// If both loopback and non-loopback frames are waiting, this function returns a non-loopback
     /// frame.
     ///
-    fn receive(&mut self, now: C::Instant) -> nb::Result<Frame<C::Instant>, Self::Error> {
-        match self.receive_from_bus(now) {
+    fn receive(&mut self, clock: &mut C) -> nb::Result<Frame<C::Instant>, Self::Error> {
+        match self.receive_from_bus(clock) {
             Ok(frame) => Ok(frame),
             Err(nb::Error::Other(e)) => Err(nb::Error::Other(e)),
             // No frames waiting from the bus. Try the loopback queue.

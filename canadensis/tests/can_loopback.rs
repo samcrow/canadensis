@@ -40,7 +40,7 @@ fn can_loopback_time_sync() {
     let mut node: CoreNode<
         StubClock<'_>,
         CanTransmitter<StubClock<'_>, LoopbackOnlyDriver>,
-        CanReceiver<Microseconds64, LoopbackOnlyDriver>,
+        CanReceiver<StubClock<'_>, LoopbackOnlyDriver>,
         TransferIdFixedMap<CanTransport, 4>,
         LoopbackOnlyDriver,
         4,
@@ -155,12 +155,12 @@ impl TransmitDriver<StubClock<'_>> for LoopbackOnlyDriver {
         Ok(())
     }
 }
-impl ReceiveDriver<Microseconds64> for LoopbackOnlyDriver {
+impl ReceiveDriver<StubClock<'_>> for LoopbackOnlyDriver {
     type Error = Infallible;
 
     fn receive(
         &mut self,
-        _now: Microseconds64,
+        _clock: &mut StubClock<'_>,
     ) -> canadensis::nb::Result<Frame<Microseconds64>, Self::Error> {
         self.loopback_frames
             .pop_front()

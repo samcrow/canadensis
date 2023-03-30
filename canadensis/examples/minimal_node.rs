@@ -36,7 +36,6 @@ use std::time::Duration;
 
 use socketcan::CANSocket;
 
-use canadensis::core::time::Microseconds64;
 use canadensis::node::{CoreNode, MinimalNode};
 use canadensis::requester::TransferIdFixedMap;
 use canadensis::Node;
@@ -69,7 +68,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let core_node: CoreNode<
         SystemClock,
         CanTransmitter<SystemClock, LinuxCan>,
-        CanReceiver<Microseconds64, LinuxCan>,
+        CanReceiver<SystemClock, LinuxCan>,
         TransferIdFixedMap<CanTransport, TRANSFER_IDS>,
         LinuxCan,
         PUBLISHERS,

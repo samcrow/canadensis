@@ -26,7 +26,7 @@ use core::marker::PhantomData;
 use crc_any::CRCu64;
 
 /// A plug-and-play allocation client that can be used to find a node ID
-pub struct PnpClient<C: Clock, M, T: Transmitter<C>, R: Receiver<C::Instant>> {
+pub struct PnpClient<C: Clock, M, T: Transmitter<C>, R: Receiver<C>> {
     /// The unique ID of this node
     unique_id: [u8; 16],
     /// Publisher used to send messages
@@ -43,7 +43,7 @@ where
     C: Clock,
     M: AllocationMessage<P>,
     T: Transmitter<C, Transport = P>,
-    R: Receiver<C::Instant, Transport = P>,
+    R: Receiver<C, Transport = P>,
     P: Transport,
 {
     /// Creates a new plug-and-play client
@@ -87,10 +87,10 @@ where
     /// This function returns the node ID if one was assigned.
     pub fn receive(
         &mut self,
-        now: C::Instant,
+        clock: &mut C,
         driver: &mut R::Driver,
     ) -> Result<Option<P::NodeId>, R::Error> {
-        if let Some(transfer_in) = self.receiver.receive(now, driver)? {
+        if let Some(transfer_in) = self.receiver.receive(clock, driver)? {
             if let Ok(message) = M::deserialize_from_bytes(&transfer_in.payload) {
                 if message.matches_unique_id(&self.unique_id) {
                     if let Some(node_id) = message.node_id() {

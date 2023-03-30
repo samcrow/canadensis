@@ -330,7 +330,7 @@ pub trait Node {
     /// The transmitter that this node uses
     type Transmitter: Transmitter<Self::Clock, Transport = Self::Transport>;
     /// The receiver that this node uses
-    type Receiver: Receiver<Self::Instant, Transport = Self::Transport>;
+    type Receiver: Receiver<Self::Clock, Transport = Self::Transport>;
 
     /// Receives any available incoming frames and attempts ot reassemble them into a transfer
     ///
@@ -342,7 +342,7 @@ pub trait Node {
     fn receive<H>(
         &mut self,
         handler: &mut H,
-    ) -> Result<(), <Self::Receiver as Receiver<Self::Instant>>::Error>
+    ) -> Result<(), <Self::Receiver as Receiver<Self::Clock>>::Error>
     where
         H: TransferHandler<Self::Instant, Self::Transport>;
 
@@ -404,7 +404,7 @@ pub trait Node {
         receive_timeout: <<<Self as Node>::Clock as Clock>::Instant as Instant>::Duration,
         response_payload_size_max: usize,
         priority: <Self::Transport as Transport>::Priority,
-    ) -> Result<ServiceToken<T>, StartSendError<<Self::Receiver as Receiver<Self::Instant>>::Error>>
+    ) -> Result<ServiceToken<T>, StartSendError<<Self::Receiver as Receiver<Self::Clock>>::Error>>
     where
         T: Request;
 
@@ -449,7 +449,7 @@ pub trait Node {
         subject: SubjectId,
         payload_size_max: usize,
         timeout: <<<Self as Node>::Clock as Clock>::Instant as Instant>::Duration,
-    ) -> Result<(), <Self::Receiver as Receiver<Self::Instant>>::Error>;
+    ) -> Result<(), <Self::Receiver as Receiver<Self::Clock>>::Error>;
 
     /// Subscribes to requests for a service
     fn subscribe_request(
@@ -457,7 +457,7 @@ pub trait Node {
         service: ServiceId,
         payload_size_max: usize,
         timeout: <<<Self as Node>::Clock as Clock>::Instant as Instant>::Duration,
-    ) -> Result<(), <Self::Receiver as Receiver<Self::Instant>>::Error>;
+    ) -> Result<(), <Self::Receiver as Receiver<Self::Clock>>::Error>;
 
     /// Responds to a service request
     ///

@@ -19,7 +19,7 @@ use crate::rx::session::SessionError;
 use crate::rx::subscription::{Subscription, SubscriptionError};
 use crate::types::{CanNodeId, CanTransferId, CanTransport, Error};
 use crate::Mtu;
-use canadensis_core::time::Instant;
+use canadensis_core::time::{Clock, Instant};
 use canadensis_core::transfer::{Header, MessageHeader, ServiceHeader, Transfer};
 use canadensis_core::transport::Receiver;
 use canadensis_core::{
@@ -28,13 +28,13 @@ use canadensis_core::{
 
 /// Handles subscriptions and assembles incoming frames into transfers
 #[derive(Debug)]
-pub struct CanReceiver<I: Instant, D> {
+pub struct CanReceiver<C: Clock, D> {
     /// Subscriptions for messages
-    subscriptions_message: Vec<Subscription<I>>,
+    subscriptions_message: Vec<Subscription<C::Instant>>,
     /// Subscriptions for service responses
-    subscriptions_response: Vec<Subscription<I>>,
+    subscriptions_response: Vec<Subscription<C::Instant>>,
     /// Subscriptions for service requests
-    subscriptions_request: Vec<Subscription<I>>,
+    subscriptions_request: Vec<Subscription<C::Instant>>,
     /// The ID of this node, or None if this node is anonymous
     id: Option<CanNodeId>,
     /// MTU of the transport
@@ -50,10 +50,10 @@ pub struct CanReceiver<I: Instant, D> {
     _driver: PhantomData<D>,
 }
 
-impl<I, D> Receiver<I> for CanReceiver<I, D>
+impl<C, D> Receiver<C> for CanReceiver<C, D>
 where
-    I: Instant,
-    D: ReceiveDriver<I>,
+    C: Clock,
+    D: ReceiveDriver<C>,
 {
     type Transport = CanTransport;
     type Driver = D;
@@ -61,15 +61,15 @@ where
 
     fn receive(
         &mut self,
-        now: I,
+        clock: &mut C,
         driver: &mut Self::Driver,
-    ) -> Result<Option<Transfer<Vec<u8>, I, Self::Transport>>, Self::Error> {
+    ) -> Result<Option<Transfer<Vec<u8>, C::Instant, Self::Transport>>, Self::Error> {
         // The current time is equal to or greater than the frame timestamp. Use that timestamp
         // to clean up expired sessions.
-        self.clean_expired_sessions(now);
+        self.clean_expired_sessions(clock.now());
         // Loop until all available frames have been handled
         loop {
-            match driver.receive(now) {
+            match driver.receive(clock) {
                 Ok(frame) => {
                     match self.accept_frame(frame) {
                         Ok(Some(transfer)) => break Ok(Some(transfer)),
@@ -101,7 +101,7 @@ where
         &mut self,
         subject: SubjectId,
         payload_size_max: usize,
-        timeout: I::Duration,
+        timeout: <<C as Clock>::Instant as Instant>::Duration,
         driver: &mut Self::Driver,
     ) -> Result<(), Self::Error> {
         self.subscribe(
@@ -142,7 +142,7 @@ where
         &mut self,
         service: ServiceId,
         payload_size_max: usize,
-        timeout: I::Duration,
+        timeout: <<C as Clock>::Instant as Instant>::Duration,
         driver: &mut Self::Driver,
     ) -> Result<(), ServiceSubscribeError<Self::Error>> {
         if self.id.is_some() {
@@ -188,7 +188,7 @@ where
         &mut self,
         service: ServiceId,
         payload_size_max: usize,
-        timeout: I::Duration,
+        timeout: <<C as Clock>::Instant as Instant>::Duration,
         driver: &mut Self::Driver,
     ) -> Result<(), ServiceSubscribeError<Self::Error>> {
         if self.id.is_some() {
@@ -213,10 +213,10 @@ where
     }
 }
 
-impl<I, D> CanReceiver<I, D>
+impl<C, D> CanReceiver<C, D>
 where
-    I: Instant,
-    D: ReceiveDriver<I>,
+    C: Clock,
+    D: ReceiveDriver<C>,
 {
     /// Creates a receiver
     ///
@@ -266,8 +266,8 @@ where
     /// not subscribed to will be silently ignored.
     fn accept_frame(
         &mut self,
-        frame: Frame<I>,
-    ) -> Result<Option<Transfer<Vec<u8>, I, CanTransport>>, OutOfMemoryError> {
+        frame: Frame<C::Instant>,
+    ) -> Result<Option<Transfer<Vec<u8>, C::Instant, CanTransport>>, OutOfMemoryError> {
         // Part 1: basic frame checks
         let (frame_header, tail) = match Self::frame_sanity_check(&frame) {
             Some(data) => data,
@@ -288,7 +288,7 @@ where
         self.accept_sane_frame(frame, frame_header, tail)
     }
 
-    fn can_accept_service(&self, service_header: &ServiceHeader<I, CanTransport>) -> bool {
+    fn can_accept_service(&self, service_header: &ServiceHeader<C::Instant, CanTransport>) -> bool {
         if let Some(this_id) = self.id {
             if service_header.destination != this_id {
                 // This frame is a service request or response going to some other node
@@ -305,10 +305,10 @@ where
     /// Handles an incoming frame that has passed sanity checks and has a parsed header and tail byte
     fn accept_sane_frame(
         &mut self,
-        frame: Frame<I>,
-        frame_header: Header<I, CanTransport>,
+        frame: Frame<C::Instant>,
+        frame_header: Header<C::Instant, CanTransport>,
         tail: TailByte,
-    ) -> Result<Option<Transfer<Vec<u8>, I, CanTransport>>, OutOfMemoryError> {
+    ) -> Result<Option<Transfer<Vec<u8>, C::Instant, CanTransport>>, OutOfMemoryError> {
         let kind = TransferKind::from_header(&frame_header);
         let subscriptions = self.subscriptions_for_kind(kind);
         if let Some(subscription) = subscriptions
@@ -342,7 +342,9 @@ where
 
     /// Runs basic sanity checks on an incoming frame. Returns the header and tail byte if the frame
     /// is valid.
-    fn frame_sanity_check(frame: &Frame<I>) -> Option<(Header<I, CanTransport>, TailByte)> {
+    fn frame_sanity_check(
+        frame: &Frame<C::Instant>,
+    ) -> Option<(Header<C::Instant, CanTransport>, TailByte)> {
         // Frame must have a tail byte to be valid
         let tail_byte = TailByte::parse(*frame.data().last()?);
 
@@ -368,7 +370,7 @@ where
         kind: TransferKind,
         port_id: PortId,
         payload_size_max: usize,
-        timeout: I::Duration,
+        timeout: <<C as Clock>::Instant as Instant>::Duration,
     ) -> Result<(), OutOfMemoryError> {
         // Remove any existing subscription, ignore result
         self.unsubscribe(kind, port_id);
@@ -390,7 +392,7 @@ where
         subscriptions.retain(|sub| sub.port_id() != port_id);
     }
 
-    fn subscriptions_for_kind(&mut self, kind: TransferKind) -> &mut Vec<Subscription<I>> {
+    fn subscriptions_for_kind(&mut self, kind: TransferKind) -> &mut Vec<Subscription<C::Instant>> {
         match kind {
             TransferKind::Message => &mut self.subscriptions_message,
             TransferKind::Response => &mut self.subscriptions_response,
@@ -418,7 +420,7 @@ where
     }
 
     /// Deletes all sessions that have expired
-    fn clean_expired_sessions(&mut self, now: I) {
+    fn clean_expired_sessions(&mut self, now: C::Instant) {
         clean_sessions_from_subscriptions(&mut self.subscriptions_message, &now);
         clean_sessions_from_subscriptions(&mut self.subscriptions_request, &now);
         clean_sessions_from_subscriptions(&mut self.subscriptions_response, &now);

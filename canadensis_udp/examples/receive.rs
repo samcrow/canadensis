@@ -15,7 +15,7 @@ use simplelog::{ColorChoice, TermLogger};
 use zerocopy::AsBytes;
 
 use canadensis_core::session::SessionDynamicMap;
-use canadensis_core::time::{Clock, MicrosecondDuration64, Microseconds64};
+use canadensis_core::time::{MicrosecondDuration64, Microseconds64};
 use canadensis_core::transport::Receiver;
 use canadensis_linux::SystemClock;
 use canadensis_udp::driver::StdUdpSocket;
@@ -38,7 +38,7 @@ fn main() {
     // Note: This MTU includes space for the header
     const MTU: usize = 1472;
     let mut receiver = UdpReceiver::<
-        Microseconds64,
+        SystemClock,
         SessionDynamicMap<Microseconds64, UdpNodeId, UdpTransferId, UdpSessionData>,
         StdUdpSocket,
         MTU,
@@ -54,7 +54,7 @@ fn main() {
 
     // Instead of a real asynchronous IO system, just poll periodically
     loop {
-        match receiver.receive(clock.now(), &mut socket) {
+        match receiver.receive(&mut clock, &mut socket) {
             Ok(Some(transfer)) => {
                 println!("{:#?}", transfer.header);
                 for byte in transfer.payload.as_bytes() {

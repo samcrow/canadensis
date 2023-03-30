@@ -48,11 +48,14 @@ where
 ///
 /// The result type is `nb::Result`, which allows the driver to indicate that no frame is available
 /// to receive.
-pub trait ReceiveDriver<I> {
+pub trait ReceiveDriver<C>
+where
+    C: Clock,
+{
     /// The error type
     type Error: Debug;
     /// Attempts to receive a frame without blocking
-    fn receive(&mut self, now: I) -> nb::Result<Frame<I>, Self::Error>;
+    fn receive(&mut self, clock: &mut C) -> nb::Result<Frame<C::Instant>, Self::Error>;
 
     /// Sets up frame reception filters to accept only frames matching the provided subscriptions
     ///
