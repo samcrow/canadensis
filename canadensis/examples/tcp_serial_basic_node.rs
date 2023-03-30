@@ -94,7 +94,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         SystemClock,
         SerialTransmitter<SocketDriver, 256>,
         SerialReceiver<
-            Microseconds64,
+            SystemClock,
             SocketDriver,
             DynamicSubscriptionManager<Subscription<Microseconds64>>,
         >,

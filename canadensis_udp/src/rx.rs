@@ -7,7 +7,7 @@ use fallible_collections::FallibleVec;
 use zerocopy::FromBytes;
 
 use canadensis_core::session::{Session, SessionTracker};
-use canadensis_core::time::Instant;
+use canadensis_core::time::{Clock, Instant};
 use canadensis_core::transfer::{Header, MessageHeader, ServiceHeader, Transfer};
 use canadensis_core::transport::Receiver;
 use canadensis_core::{OutOfMemoryError, ServiceId, ServiceSubscribeError, SubjectId};
@@ -24,11 +24,11 @@ mod buildup;
 mod subscriptions;
 
 /// UDP transport receiver
-pub struct UdpReceiver<I, T, S, const MTU: usize>
+pub struct UdpReceiver<C, T, S, const MTU: usize>
 where
-    I: Instant,
+    C: Clock,
 {
-    subscriptions: Subscriptions<I, T>,
+    subscriptions: Subscriptions<C::Instant, T>,
     /// The ID of this node, or None if this node is anonymous
     node_id: Option<UdpNodeId>,
     /// The IP address of the local interface that the socket is bound to
@@ -37,10 +37,10 @@ where
     _session_tracker: PhantomData<T>,
 }
 
-impl<I, T, S, const MTU: usize> UdpReceiver<I, T, S, MTU>
+impl<C, T, S, const MTU: usize> UdpReceiver<C, T, S, MTU>
 where
-    I: Instant,
-    T: SessionTracker<I, UdpNodeId, UdpTransferId, UdpSessionData> + Default,
+    C: Clock,
+    T: SessionTracker<C::Instant, UdpNodeId, UdpTransferId, UdpSessionData> + Default,
     S: UdpSocket,
 {
     pub fn new(node_id: Option<UdpNodeId>, interface_address: Ipv4Addr) -> Self {
@@ -53,9 +53,9 @@ where
         }
     }
 
-    fn clean_expired_sessions(&mut self, now: I)
+    fn clean_expired_sessions(&mut self, now: C::Instant)
     where
-        T: SessionTracker<I, UdpNodeId, UdpTransferId, UdpSessionData> + Default,
+        T: SessionTracker<C::Instant, UdpNodeId, UdpTransferId, UdpSessionData> + Default,
     {
         for subscription in self.subscriptions.message_iter_mut() {
             subscription.clean_expired_sessions(now);
@@ -77,9 +77,10 @@ where
     /// * `Err(e)` if a socket or memory allocation error occurred
     fn accept_inner(
         &mut self,
-        now: I,
+        now: C::Instant,
         socket: &mut S,
-    ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, Error<nb::Error<S::Error>>> {
+    ) -> Result<Option<Transfer<Vec<u8>, C::Instant, UdpTransport>>, Error<nb::Error<S::Error>>>
+    {
         let mut buffer: [u8; MTU] = [0; MTU];
         let bytes_received = socket.recv(&mut buffer).map_err(Error::Socket)?;
         let buffer = &buffer[..bytes_received];
@@ -163,10 +164,10 @@ where
     }
 }
 
-impl<I, T, S, const MTU: usize> Receiver<I> for UdpReceiver<I, T, S, MTU>
+impl<C, T, S, const MTU: usize> Receiver<C> for UdpReceiver<C, T, S, MTU>
 where
-    I: Instant,
-    T: SessionTracker<I, UdpNodeId, UdpTransferId, UdpSessionData> + Default,
+    C: Clock,
+    T: SessionTracker<C::Instant, UdpNodeId, UdpTransferId, UdpSessionData> + Default,
     S: UdpSocket,
 {
     type Transport = UdpTransport;
@@ -175,12 +176,12 @@ where
 
     fn receive(
         &mut self,
-        now: I,
+        clock: &mut C,
         socket: &mut S,
-    ) -> Result<Option<Transfer<Vec<u8>, I, Self::Transport>>, Self::Error> {
+    ) -> Result<Option<Transfer<Vec<u8>, C::Instant, Self::Transport>>, Self::Error> {
         // Loop until all incoming packets have been read
         let result = loop {
-            match self.accept_inner(now, socket) {
+            match self.accept_inner(clock.now(), socket) {
                 Ok(Some(transfer)) => break Ok(Some(transfer)),
                 Ok(None) => { /* Keep going and try to read another packet */ }
                 Err(Error::Socket(nb::Error::WouldBlock)) => {
@@ -191,7 +192,7 @@ where
                 Err(Error::Socket(nb::Error::Other(e))) => break Err(Error::Socket(e)),
             }
         };
-        self.clean_expired_sessions(now);
+        self.clean_expired_sessions(clock.now());
         result
     }
 
@@ -199,7 +200,7 @@ where
         &mut self,
         subject: SubjectId,
         payload_size_max: usize,
-        timeout: <I as Instant>::Duration,
+        timeout: <C::Instant as Instant>::Duration,
         socket: &mut S,
     ) -> Result<(), Self::Error> {
         socket
@@ -219,7 +220,7 @@ where
         &mut self,
         service: ServiceId,
         payload_size_max: usize,
-        timeout: <I as Instant>::Duration,
+        timeout: <C::Instant as Instant>::Duration,
         socket: &mut S,
     ) -> Result<(), ServiceSubscribeError<Self::Error>> {
         self.service_subscribe_check_multicast(socket)
@@ -242,7 +243,7 @@ where
         &mut self,
         service: ServiceId,
         payload_size_max: usize,
-        timeout: <I as Instant>::Duration,
+        timeout: <C::Instant as Instant>::Duration,
         socket: &mut S,
     ) -> Result<(), ServiceSubscribeError<Self::Error>> {
         self.service_subscribe_check_multicast(socket)

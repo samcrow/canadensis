@@ -8,6 +8,7 @@ pub use self::array_queue::ArrayQueue;
 pub use self::queue_only_driver::QueueOnlyDriver;
 pub use self::single_frame_queue::SingleFrameQueue;
 use core::cmp::Ordering;
+use core::marker::PhantomData;
 
 use crate::driver::{ReceiveDriver, TransmitDriver};
 use crate::types::CanNodeId;
@@ -49,15 +50,20 @@ pub trait FrameQueue<I> {
 }
 
 /// A single transmit queue and a single driver
-pub struct SingleQueueDriver<Q, D> {
+pub struct SingleQueueDriver<C, Q, D> {
     queue: Q,
     driver: D,
+    _clock: PhantomData<C>,
 }
 
-impl<Q, D> SingleQueueDriver<Q, D> {
+impl<C, Q, D> SingleQueueDriver<C, Q, D> {
     /// Creates a queue and driver pair
     pub fn new(queue: Q, driver: D) -> Self {
-        SingleQueueDriver { queue, driver }
+        SingleQueueDriver {
+            queue,
+            driver,
+            _clock: PhantomData,
+        }
     }
 
     /// Breaks down this queue driver into its queue and driver
@@ -75,7 +81,7 @@ impl<Q, D> SingleQueueDriver<Q, D> {
     }
 }
 
-impl<C, Q, D> TransmitDriver<C> for SingleQueueDriver<Q, D>
+impl<C, Q, D> TransmitDriver<C> for SingleQueueDriver<C, Q, D>
 where
     C: Clock,
     Q: FrameQueue<C::Instant>,
@@ -107,14 +113,15 @@ where
     }
 }
 
-impl<I, Q, D> ReceiveDriver<I> for SingleQueueDriver<Q, D>
+impl<C, Q, D> ReceiveDriver<C> for SingleQueueDriver<C, Q, D>
 where
-    D: ReceiveDriver<I>,
+    C: Clock,
+    D: ReceiveDriver<C>,
 {
     type Error = D::Error;
 
-    fn receive(&mut self, now: I) -> nb::Result<Frame<I>, Self::Error> {
-        self.driver.receive(now)
+    fn receive(&mut self, clock: &mut C) -> nb::Result<Frame<C::Instant>, Self::Error> {
+        self.driver.receive(clock)
     }
 
     fn apply_filters<S>(&mut self, local_node: Option<CanNodeId>, subscriptions: S)

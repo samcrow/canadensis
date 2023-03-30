@@ -139,7 +139,7 @@ where
     /// for requests.
     pub fn subscribe_requests<N>(
         node: &mut N,
-    ) -> Result<(), <N::Receiver as Receiver<N::Instant>>::Error>
+    ) -> Result<(), <N::Receiver as Receiver<N::Clock>>::Error>
     where
         N: Node,
     {

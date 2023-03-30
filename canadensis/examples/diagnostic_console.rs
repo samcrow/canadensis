@@ -11,15 +11,14 @@ extern crate socketcan;
 use std::env;
 use std::error::Error;
 use std::process;
-use std::time::Instant;
 
-use canadensis::core::time::{Clock, MicrosecondDuration64, Microseconds64};
+use canadensis::core::time::MicrosecondDuration64;
 use canadensis::core::transport::Receiver;
 use canadensis::encoding::{DataType, Deserialize, ReadCursor};
 use canadensis_can::{CanReceiver, Mtu};
 use canadensis_data_types::uavcan::diagnostic::record_1_1::{self, Record};
 use canadensis_data_types::uavcan::diagnostic::severity_1_0::Severity;
-use canadensis_linux::LinuxCan;
+use canadensis_linux::{LinuxCan, SystemClock};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let interface = env::args().skip(1).next().unwrap_or_else(|| {
@@ -41,7 +40,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .unwrap();
 
     loop {
-        match receiver.receive(clock.now(), &mut can) {
+        match receiver.receive(&mut clock, &mut can) {
             Ok(Some(transfer)) => {
                 match Record::deserialize(&mut ReadCursor::new(&transfer.payload)) {
                     Ok(log_record) => {
@@ -76,28 +75,5 @@ fn main() -> Result<(), Box<dyn Error>> {
             Ok(None) => {}
             Err(e) => panic!("{:?}", e),
         }
-    }
-}
-
-#[derive(Debug, Clone)]
-struct SystemClock {
-    start_time: Instant,
-}
-
-impl SystemClock {
-    pub fn new() -> Self {
-        SystemClock {
-            start_time: Instant::now(),
-        }
-    }
-}
-
-impl Clock for SystemClock {
-    type Instant = Microseconds64;
-
-    fn now(&mut self) -> Self::Instant {
-        let since_start = Instant::now().duration_since(self.start_time);
-        let microseconds = since_start.as_micros();
-        Microseconds64::new(microseconds as u64)
     }
 }

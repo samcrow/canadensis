@@ -154,7 +154,7 @@ fn transmit_receive_response_one_byte_one_frame() {
 }
 
 type TestUdpReceiver<const MTU: usize> = UdpReceiver<
-    Microseconds64,
+    SystemClock,
     SessionDynamicMap<Microseconds64, UdpNodeId, UdpTransferId, UdpSessionData>,
     StdUdpSocket,
     MTU,
@@ -212,7 +212,7 @@ fn check_loopback<S, U, const MTU: usize>(
 
         let timeout = Instant::now() + Duration::from_secs(1);
         loop {
-            match receiver.receive(clock.now(), &mut receive_socket) {
+            match receiver.receive(clock, &mut receive_socket) {
                 Ok(Some(received_transfer)) => {
                     assert_eq!(&received_transfer.payload, &transfer.payload);
                     break;
@@ -268,7 +268,7 @@ fn send_and_expect_not_received<const MTU: usize>(
 
         let timeout = Instant::now() + Duration::from_millis(100);
         loop {
-            match receiver.receive(clock.now(), receive_socket) {
+            match receiver.receive(clock, receive_socket) {
                 Ok(Some(received_transfer)) => {
                     panic!(
                         "Received transfer when not subscribed: {:#?}",

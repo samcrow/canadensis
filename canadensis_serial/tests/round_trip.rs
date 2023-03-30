@@ -45,17 +45,17 @@ fn round_trip_no_payload() {
     let wire_bytes: Vec<u8> = driver.iter().copied().collect();
     println!("{:02x?}", wire_bytes);
 
-    let mut rx = SerialReceiver::<
-        Microseconds32,
+    let mut rx: SerialReceiver<
+        ZeroClock,
         MockDriver,
         DynamicSubscriptionManager<Subscription<Microseconds32>>,
-    >::new(SerialNodeId::try_from(360).unwrap());
+    > = SerialReceiver::new(SerialNodeId::try_from(360).unwrap());
     rx.subscribe_message(subject, 0, MicrosecondDuration32::new(0), &mut driver)
         .unwrap();
 
     // Only need to call receive once. It will read all the available frames.
     let received = rx
-        .receive(Microseconds32::new(0), &mut driver)
+        .receive(&mut ZeroClock, &mut driver)
         .unwrap()
         .expect("No transfer");
 

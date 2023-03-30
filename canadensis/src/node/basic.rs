@@ -54,7 +54,7 @@ where
         Self,
         NodeError<
             StartSendError<<N::Transmitter as Transmitter<N::Clock>>::Error>,
-            <N::Receiver as Receiver<N::Instant>>::Error,
+            <N::Receiver as Receiver<N::Clock>>::Error,
         >,
     > {
         // The MinimalNode takes care of heartbeats.
@@ -168,7 +168,7 @@ where
     fn receive<H>(
         &mut self,
         handler: &mut H,
-    ) -> Result<(), <N::Receiver as Receiver<N::Instant>>::Error>
+    ) -> Result<(), <N::Receiver as Receiver<N::Clock>>::Error>
     where
         H: TransferHandler<Self::Instant, Self::Transport>,
     {
@@ -234,7 +234,7 @@ where
         receive_timeout: <<N::Clock as Clock>::Instant as Instant>::Duration,
         response_payload_size_max: usize,
         priority: <Self::Transport as Transport>::Priority,
-    ) -> Result<ServiceToken<T>, StartSendError<<N::Receiver as Receiver<N::Instant>>::Error>>
+    ) -> Result<ServiceToken<T>, StartSendError<<N::Receiver as Receiver<N::Clock>>::Error>>
     where
         T: Request,
     {
@@ -298,7 +298,7 @@ where
         subject: SubjectId,
         payload_size_max: usize,
         timeout: <<N::Clock as Clock>::Instant as Instant>::Duration,
-    ) -> Result<(), <N::Receiver as Receiver<N::Instant>>::Error> {
+    ) -> Result<(), <N::Receiver as Receiver<N::Clock>>::Error> {
         self.node
             .node_mut()
             .subscribe_message(subject, payload_size_max, timeout)?;
@@ -314,7 +314,7 @@ where
         service: ServiceId,
         payload_size_max: usize,
         timeout: <<N::Clock as Clock>::Instant as Instant>::Duration,
-    ) -> Result<(), <N::Receiver as Receiver<N::Instant>>::Error> {
+    ) -> Result<(), <N::Receiver as Receiver<N::Clock>>::Error> {
         self.node
             .node_mut()
             .subscribe_request(service, payload_size_max, timeout)?;

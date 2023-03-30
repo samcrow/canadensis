@@ -97,7 +97,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     const QUEUE_CAPACITY: usize = 1210;
-    type Queue = SingleQueueDriver<ArrayQueue<Microseconds64, QUEUE_CAPACITY>, LinuxCan>;
+    type Queue =
+        SingleQueueDriver<SystemClock, ArrayQueue<Microseconds64, QUEUE_CAPACITY>, LinuxCan>;
     let queue_driver: Queue = SingleQueueDriver::new(ArrayQueue::new(), can);
 
     // Create a node with capacity for 8 publishers and 8 requesters
@@ -111,7 +112,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let core_node: CoreNode<
         SystemClock,
         CanTransmitter<SystemClock, Queue>,
-        CanReceiver<Microseconds64, Queue>,
+        CanReceiver<SystemClock, Queue>,
         TransferIdFixedMap<CanTransport, TRANSFER_IDS>,
         Queue,
         PUBLISHERS,

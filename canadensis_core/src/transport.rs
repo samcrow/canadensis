@@ -72,9 +72,9 @@ where
 }
 
 /// A receiver that can assemble incoming frames into transfers
-pub trait Receiver<I>
+pub trait Receiver<C>
 where
-    I: Instant,
+    C: Clock,
 {
     /// The transport that this transmitter works with
     type Transport: Transport;
@@ -103,9 +103,9 @@ where
     /// incoming frames and delete sessions that have timed out.
     fn receive(
         &mut self,
-        now: I,
+        clock: &mut C,
         driver: &mut Self::Driver,
-    ) -> Result<Option<Transfer<Vec<u8>, I, Self::Transport>>, Self::Error>;
+    ) -> Result<Option<Transfer<Vec<u8>, C::Instant, Self::Transport>>, Self::Error>;
 
     /// Subscribes to messages on a subject
     ///
@@ -125,7 +125,7 @@ where
         &mut self,
         subject: SubjectId,
         payload_size_max: usize,
-        timeout: I::Duration,
+        timeout: <<C as Clock>::Instant as Instant>::Duration,
         driver: &mut Self::Driver,
     ) -> Result<(), Self::Error>;
 
@@ -154,7 +154,7 @@ where
         &mut self,
         service: ServiceId,
         payload_size_max: usize,
-        timeout: I::Duration,
+        timeout: <<C as Clock>::Instant as Instant>::Duration,
         driver: &mut Self::Driver,
     ) -> Result<(), ServiceSubscribeError<Self::Error>>;
 
@@ -183,7 +183,7 @@ where
         &mut self,
         service: ServiceId,
         payload_size_max: usize,
-        timeout: I::Duration,
+        timeout: <<C as Clock>::Instant as Instant>::Duration,
         driver: &mut Self::Driver,
     ) -> Result<(), ServiceSubscribeError<Self::Error>>;
 
