@@ -36,9 +36,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_data_types`: Breaking change: Updated `half` dependency to 2.2, `memoffset` to 0.8
 - `canadensis_derive_register_block`: Updated `syn` dependency to 2.0
 - `canadensis_linux`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
-- `canadensis_macro`: Code generation can fail with an error
-- `canadensis_macro`: Updated `syn` dependency to 2.0
-- `canadensis_macro`: Breaking change: Updated dependencies of generated code: `half` to 2.2, `memoffset` to 0.8
 - `canadensis_pnp_client`: Updated `crc-any` dependency to 2.4
 - `canadensis_pnp_client`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
 - `canadensis_serial`: Breaking change: Changed header format
@@ -49,6 +46,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_udp`: Clippy fixes
 - `canadensis_udp`: Updated `simplelog` dependency to 0.12
 - `canadensis_udp`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
+
+## [canadensis_macro-v0.3.0](https://github.com/samcrow/canadensis/releases/tag/canadensis_macro-v0.3.0) - 2023-03-30
+
+### Changed
+- `canadensis_macro`: Code generation can fail with an error
+- `canadensis_macro`: Updated `syn` dependency to 2.0
+- `canadensis_macro`: Breaking change: Updated dependencies of generated code: `half` to 2.2, `memoffset` to 0.8
 
 ## [canadensis_codegen_rust-v0.4.1](https://github.com/samcrow/canadensis/releases/tag/canadensis_codegen_rust-v0.4.1) - 2023-03-30
 
