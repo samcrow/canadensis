@@ -173,7 +173,7 @@ fn get_args() -> Args {
 
 /// Validates an external package name pair
 fn validate_external_package(package: &str) -> Result<ExternalPackage, String> {
-    ExternalPackage::parse(&package).ok_or_else(|| {
+    ExternalPackage::parse(package).ok_or_else(|| {
         "Invalid external package, expected [cyphal-package],[rust-module-path]".into()
     })
 }

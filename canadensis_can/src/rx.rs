@@ -288,17 +288,12 @@ where
         self.accept_sane_frame(frame, frame_header, tail)
     }
 
+    /// Returns true if this node is not anonymous and matches the destination node ID of the
+    /// provided service header
     fn can_accept_service(&self, service_header: &ServiceHeader<C::Instant, CanTransport>) -> bool {
-        if let Some(this_id) = self.id {
-            if service_header.destination != this_id {
-                // This frame is a service request or response going to some other node
-                false
-            } else {
-                true
-            }
-        } else {
-            // This node is anonymous, so it must ignore all service frames
-            false
+        match self.id {
+            Some(local_id) if local_id == service_header.destination => true,
+            Some(_) | None => false,
         }
     }
 

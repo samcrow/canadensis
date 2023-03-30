@@ -64,7 +64,7 @@ pub fn unescape_string(s: &str, span: Span<'_>) -> Result<String, Error> {
                     _ => {
                         return Err(make_error(
                             format!("Unexpected character '{}' after \\ in string literal", c),
-                            span.clone(),
+                            span,
                         ))
                     }
                 }
@@ -90,11 +90,11 @@ pub fn unescape_string(s: &str, span: Span<'_>) -> Result<String, Error> {
                             "Invalid 4-digit unicode escape sequence \"\\u{}\": {}",
                             escape_chars, e
                         ),
-                        span.clone(),
+                        span,
                     )
                 })?;
                 let constructed = char::from_u32(value.into()).ok_or_else(||
-                    make_error(format!("Unicode escape sequence \\u{:04x} does not represent a valid scalar value", value), span.clone())
+                    make_error(format!("Unicode escape sequence \\u{:04x} does not represent a valid scalar value", value), span)
                 )?;
                 unescaped.push(constructed);
                 State::Idle
@@ -136,11 +136,11 @@ pub fn unescape_string(s: &str, span: Span<'_>) -> Result<String, Error> {
                             "Invalid 8-digit unicode escape sequence \"\\U{}\": {}",
                             escape_chars, e
                         ),
-                        span.clone(),
+                        span,
                     )
                 })?;
                 let constructed = char::from_u32(value).ok_or_else(||
-                    make_error(format!("Unicode escape sequence \\U{:08x} does not represent a valid scalar value", value), span.clone())
+                    make_error(format!("Unicode escape sequence \\U{:08x} does not represent a valid scalar value", value), span)
                 )?;
                 unescaped.push(constructed);
                 State::Idle

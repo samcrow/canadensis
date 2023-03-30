@@ -278,7 +278,7 @@ fn evaluate_array_length(
     cx: &mut CompileContext<'_>,
     length: Expression<'_>,
 ) -> Result<u64, Error> {
-    let length_span = length.span.clone();
+    let length_span = length.span;
     match evaluate_expression(cx, length)? {
         Value::Rational(rational) => {
             if rational.is_integer() {
@@ -359,7 +359,7 @@ pub(crate) fn convert_type(
                     })
                 }
                 canadensis_dsdl_parser::ArrayLength::Exclusive(length) => {
-                    let length_span = length.span.clone();
+                    let length_span = length.span;
                     let length = evaluate_array_length(cx, length)?;
                     if length > 0 {
                         // Convert to inclusive length by subtracting 1

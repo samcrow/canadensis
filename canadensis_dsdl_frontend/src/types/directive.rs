@@ -23,7 +23,7 @@ pub(crate) fn evaluate_directive(
         }
         "extent" => match expression {
             Some(expression) => {
-                let expression_span = expression.span.clone();
+                let expression_span = expression.span;
                 match evaluate_expression(cx, expression)? {
                     Value::Rational(value) => {
                         if value.is_integer() && !value.is_negative() {
@@ -86,7 +86,7 @@ pub(crate) fn evaluate_directive(
         }
         "assert" => match expression {
             Some(expr) => {
-                let expr_span = expr.span.clone();
+                let expr_span = expr.span;
                 match evaluate_expression(cx, expr)? {
                     Value::Boolean(true) => Ok(()),
                     Value::Boolean(false) => Err(span_error!(expr_span, "Assertion failed")),
