@@ -12,10 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_bxcan`: Added support for loopback frames, with timestamps based on the transmit time calculated by
   software
 - `canadensis_can`: Breaking change: Added support for loopback frames and transfers
-- `canadensis_codegen_rust`: Added the ability to produce documentation comments in generated code based on DSDL
-  comments
-- `canadensis_codegen_rust`: Added the ability to generate enums from DSDL types marked with `#[canadensis(enum)]`
-- `canadensis_codegen_rust`: Breaking change: Code generation can fail with an error
 - `canadensis_data_types`: Added documentation from DSDL comments
 - `canadensis_header`: This is a new crate that specifies [the frame header format](https://forum.opencyphal.org/t/cyphal-udp-architectural-issues-caused-by-the-dependency-between-the-nodes-ip-address-and-its-identity/1765/60)
   that Cyphal/UDP and Cyphal/Serial use
@@ -34,9 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_bxcan`: Breaking change: Updated `bxcan` dependency to 0.7
 - `canadensis_bxcan`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
 - `canadensis_can`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
-- `canadensis_codegen_rust`: Clippy fixes
-- `canadensis_codegen_rust`: Updated `clap` dependency to 4.1
-- `canadensis_codegen_rust`: Breaking change: Updated dependencies of generated code: `half` to 2.2, `memoffset` to 0.8
 - `canadensis_data_types`: Changed the order of constants to match the order in the DSDL files
 - `canadensis_data_types`: Regenerated code to match revision 935973babe11755d8070e67452b3508b4b6833e2
   of <https://github.com/OpenCyphal/public_regulated_data_types/>
@@ -57,25 +50,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_udp`: Updated `simplelog` dependency to 0.12
 - `canadensis_udp`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
 
-## [canadensis_dsdl_frontend-v0.4.0](https://github.com/samcrow/canadensis/releases/tag/canadensis_dsdl_frontend-v0.4.0)- 2023-03-30
+## [canadensis_codegen_rust-v0.4.0](https://github.com/samcrow/canadensis/releases/tag/canadensis_codegen_rust-v0.4.0) - 2023-03-30
 
-## Changed
+### Added
+- `canadensis_codegen_rust`: Added the ability to produce documentation comments in generated code based on DSDL
+  comments
+- `canadensis_codegen_rust`: Added the ability to generate enums from DSDL types marked with `#[canadensis(enum)]`
+### Changed
+- `canadensis_codegen_rust`: Clippy fixes
+- `canadensis_codegen_rust`: Updated `clap` dependency to 4.1
+- `canadensis_codegen_rust`: Breaking change: Updated dependencies of generated code: `half` to 2.2, `memoffset` to 0.8
+- `canadensis_codegen_rust`: Breaking change: Code generation can fail with an error
+
+## [canadensis_dsdl_frontend-v0.4.0](https://github.com/samcrow/canadensis/releases/tag/canadensis_dsdl_frontend-v0.4.0) - 2023-03-30
+
+### Changed
 - `canadensis_dsdl_frontend`: Breaking change: Added comment handling, made some struct fields private
 - `canadensis_dsdl_frontend`: Constants are now stored in the order they are declared in the DSDL file, instead of
   alphabetical order by name
 - `canadensis_dsdl_frontend`: Clippy fixes
 - `canadensis_dsdl_frontend`: Breaking change: Updated `half` dependency to 2.2
 
-## [canadensis_dsdl_parser-v0.3.0](https://github.com/samcrow/canadensis/releases/tag/canadensis_dsdl_parser-v0.3.0)- 2023-03-30
+## [canadensis_dsdl_parser-v0.3.0](https://github.com/samcrow/canadensis/releases/tag/canadensis_dsdl_parser-v0.3.0) - 2023-03-30
 
-## Added
+### Added
 - `canadensis_dsdl_parser`: Breaking change: Added comment parsing
-## Changed
+### Changed
 - `canadensis_dsdl_parser`: Breaking change: Made `Error` an opaque type instead of an alias to the Pest error type
 
 ## [canadensis_encoding-v0.3.0](https://github.com/samcrow/canadensis/releases/tag/canadensis_encoding-v0.3.0) - 2023-03-30
 
-## Changed
+### Changed
 - `canadensis_encoding`: Clippy fixes
 - `canadensis_encoding`: Breaking change: Updated `half` dependency to 2.2
 
