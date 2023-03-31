@@ -25,10 +25,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   made the replacement functions private
 - `canadensis_bxcan`: Breaking change: Updated `bxcan` dependency to 0.7
 - `canadensis_bxcan`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
-- `canadensis_derive_register_block`: Updated `syn` dependency to 2.0
 - `canadensis_linux`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
 - `canadensis_pnp_client`: Updated `crc-any` dependency to 2.4
 - `canadensis_pnp_client`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
+
+## [canadensis_derive_register_block-v0.2.2](https://github.com/samcrow/canadensis/releases/tag/canadensis_derive_register_block-v0.2.2) - 2023-03-30
+
+### Changed
+- `canadensis_derive_register_block`: Updated `syn` dependency to 2.0
 
 ## [canadensis_data_types-v0.3.0](https://github.com/samcrow/canadensis/releases/tag/canadensis_data_types-v0.3.0) - 2023-03-30
 
