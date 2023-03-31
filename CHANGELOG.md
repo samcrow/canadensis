@@ -8,18 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `canadensis`: Added loopback publishing/requesting functions and loopback handler function
 - `canadensis_bxcan`: Added support for loopback frames, with timestamps based on the transmit time calculated by
   software
 
 ### Changed
 
-- `canadensis`: Breaking change: Replaced `uavcan.node.port.List.0.1` and associated data types with version 1.0.
-  The DSDL and the structures of the types have not changed, only the version number.
-- `canadensis`: Clippy fixes
-- `canadensis`: Breaking change: Updated `half` dependency to 2.2
-- `canadensis`: Updated private dependencies
-- `canadensis`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
 - `canadensis_bxcan`: Clippy fixes
 - `canadensis_bxcan`: Breaking change: Removed deprecated functions `bxcan_frame_to_uavcan` and `uavcan_frame_to_bxcan`,
   made the replacement functions private
@@ -28,6 +21,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_linux`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
 - `canadensis_pnp_client`: Updated `crc-any` dependency to 2.4
 - `canadensis_pnp_client`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
+
+## [canadensis-v0.3.0](https://github.com/samcrow/canadensis/releases/tag/canadensis-v0.3.0) - 2023-03-30
+
+### Added
+- `canadensis`: Added loopback publishing/requesting functions and loopback handler function
+### Changed
+- `canadensis`: Breaking change: Replaced `uavcan.node.port.List.0.1` and associated data types with version 1.0.
+  The DSDL and the structures of the types have not changed, only the version number.
+- `canadensis`: Clippy fixes
+- `canadensis`: Breaking change: Updated `half` dependency to 2.2
+- `canadensis`: Updated private dependencies
+- `canadensis`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
+
+### Changed
 
 ## [canadensis_derive_register_block-v0.2.2](https://github.com/samcrow/canadensis/releases/tag/canadensis_derive_register_block-v0.2.2) - 2023-03-30
 
