@@ -34,6 +34,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_linux`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
 - `canadensis_pnp_client`: Updated `crc-any` dependency to 2.4
 - `canadensis_pnp_client`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
+
+## [canadensis_serial-v0.4.0](https://github.com/samcrow/canadensis/releases/tag/canadensis_serial-v0.4.0) - 2023-03-30
+
+### Changed
 - `canadensis_serial`: Breaking change: Changed header format
 - `canadensis_serial`: Updated `simplelog` dependency to 0.12
 - `canadensis_serial`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
