@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [canadensis_bxcan-v0.3.0](https://github.com/samcrow/canadensis/releases/tag/canadensis_bxcan-v0.3.0) - 2023-03-30
+
 ### Added
 
 - `canadensis_bxcan`: Added support for loopback frames, with timestamps based on the transmit time calculated by
