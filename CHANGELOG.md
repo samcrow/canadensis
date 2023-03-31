@@ -11,7 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis`: Added loopback publishing/requesting functions and loopback handler function
 - `canadensis_bxcan`: Added support for loopback frames, with timestamps based on the transmit time calculated by
   software
-- `canadensis_data_types`: Added documentation from DSDL comments
 
 ### Changed
 
@@ -26,14 +25,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   made the replacement functions private
 - `canadensis_bxcan`: Breaking change: Updated `bxcan` dependency to 0.7
 - `canadensis_bxcan`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
-- `canadensis_data_types`: Changed the order of constants to match the order in the DSDL files
-- `canadensis_data_types`: Regenerated code to match revision 935973babe11755d8070e67452b3508b4b6833e2
-  of <https://github.com/OpenCyphal/public_regulated_data_types/>
-- `canadensis_data_types`: Breaking change: Updated `half` dependency to 2.2, `memoffset` to 0.8
 - `canadensis_derive_register_block`: Updated `syn` dependency to 2.0
 - `canadensis_linux`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
 - `canadensis_pnp_client`: Updated `crc-any` dependency to 2.4
 - `canadensis_pnp_client`: Breaking change: Moved clock down into drivers to make frame timestamps more accurate
+
+## [canadensis_data_types-v0.3.0](https://github.com/samcrow/canadensis/releases/tag/canadensis_data_types-v0.3.0) - 2023-03-30
+
+### Added
+- `canadensis_data_types`: Added documentation from DSDL comments
+
+### Changed
+- `canadensis_data_types`: Changed the order of constants to match the order in the DSDL files
+- `canadensis_data_types`: Regenerated code to match revision 935973babe11755d8070e67452b3508b4b6833e2
+  of <https://github.com/OpenCyphal/public_regulated_data_types/>
+- `canadensis_data_types`: Breaking change: Updated `half` dependency to 2.2, `memoffset` to 0.8
 
 ## [canadensis_serial-v0.4.0](https://github.com/samcrow/canadensis/releases/tag/canadensis_serial-v0.4.0) - 2023-03-30
 
