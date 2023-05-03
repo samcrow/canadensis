@@ -609,10 +609,16 @@ fn parse_primitive_type(dtype: Pair<'_, Rule>) -> Result<PrimitiveType, Error> {
     debug_assert_eq!(dtype.as_rule(), Rule::type_primitive);
     let inner = dtype.into_inner().next().expect("No inner type");
     let inner_rule = inner.as_rule();
-    let type_name = inner.into_inner().last().expect("No type name");
     match inner_rule {
-        Rule::type_primitive_truncated => parse_primitive_type_name(type_name, CastMode::Truncated),
-        Rule::type_primitive_saturated => parse_primitive_type_name(type_name, CastMode::Saturated),
+        Rule::type_primitive_truncated => {
+            let type_name = inner.into_inner().last().expect("No type name");
+            parse_primitive_type_name(type_name, CastMode::Truncated)
+        }
+        Rule::type_primitive_saturated => {
+            let type_name = inner.into_inner().last().expect("No type name");
+            parse_primitive_type_name(type_name, CastMode::Saturated)
+        }
+        Rule::type_primitive_name_boolean => Ok(PrimitiveType::Boolean),
         _ => unreachable!("Unexpected rule in type_primitive"),
     }
 }
@@ -626,13 +632,6 @@ fn parse_primitive_type_name(
     let name_kind = name.into_inner().next().expect("No name kind");
     let name_kind_rule = name_kind.as_rule();
     match name_kind_rule {
-        Rule::type_primitive_name_boolean => match cast_mode {
-            CastMode::Truncated => Err(make_error(
-                "A boolean type with truncated cast mode is not allowed",
-                name_span,
-            )),
-            CastMode::Saturated => Ok(PrimitiveType::Boolean),
-        },
         Rule::type_primitive_name_unsigned_integer
         | Rule::type_primitive_name_signed_integer
         | Rule::type_primitive_name_floating_point => {
