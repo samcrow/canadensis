@@ -100,14 +100,35 @@ fn parse_field(field: Pair<'_, Rule>) -> Result<Statement<'_>, Error> {
     let dtype = children.next().expect("No dtype");
     let identifier = children.next().expect("No identifier");
 
+    let type_span = dtype.as_span();
+    let ty = parse_data_type(dtype)?;
+    check_field_type(&ty, type_span)?;
+
     Ok(Statement::Field {
-        ty: parse_data_type(dtype)?,
+        ty,
         name: Identifier {
             name: identifier.as_str(),
             span: identifier.as_span(),
         },
         span,
     })
+}
+
+/// Checks that the provided type is allowed to be the type of a field, and returns an error if not
+fn check_field_type(ty: &Type, span: Span<'_>) -> Result<(), Error> {
+    match ty {
+        Type::Scalar(ScalarType::Primitive(PrimitiveType::Utf8 | PrimitiveType::Byte)) => Err(
+            make_error("utf8 or byte type must be part of an array", span),
+        ),
+        Type::Array(ArrayType {
+            element: ScalarType::Primitive(PrimitiveType::Utf8),
+            length: ArrayLength::Fixed(_),
+        }) => Err(make_error(
+            "utf8 type must be part of a variable-length array",
+            span,
+        )),
+        _ => Ok(()),
+    }
 }
 
 fn parse_padding_field(field: Pair<'_, Rule>) -> Result<Statement<'_>, Error> {
@@ -619,6 +640,8 @@ fn parse_primitive_type(dtype: Pair<'_, Rule>) -> Result<PrimitiveType, Error> {
             parse_primitive_type_name(type_name, CastMode::Saturated)
         }
         Rule::type_primitive_name_boolean => Ok(PrimitiveType::Boolean),
+        Rule::type_primitive_name_utf8 => Ok(PrimitiveType::Utf8),
+        Rule::type_primitive_name_byte => Ok(PrimitiveType::Byte),
         _ => unreachable!("Unexpected rule in type_primitive"),
     }
 }

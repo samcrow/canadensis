@@ -476,7 +476,9 @@ fn scalar_supports_zero_copy(scalar: &ResolvedScalarType) -> bool {
             }
             PrimitiveType::Float16 { .. }
             | PrimitiveType::Float32 { .. }
-            | PrimitiveType::Float64 { .. } => true,
+            | PrimitiveType::Float64 { .. }
+            | PrimitiveType::Byte
+            | PrimitiveType::Utf8 => true,
         },
         ResolvedScalarType::Void { .. } => false,
     }
@@ -624,6 +626,7 @@ fn scalar_to_rust_type(
         }
         ResolvedScalarType::Primitive(primitive) => match primitive {
             PrimitiveType::Boolean => "bool".to_owned(),
+            PrimitiveType::Byte | PrimitiveType::Utf8 => "u8".to_owned(),
             PrimitiveType::Int { bits, .. } => format!("i{}", round_up_integer_size(*bits)),
             PrimitiveType::UInt { bits, .. } => format!("u{}", round_up_integer_size(*bits)),
             PrimitiveType::Float16 { .. } => "::half::f16".to_owned(),

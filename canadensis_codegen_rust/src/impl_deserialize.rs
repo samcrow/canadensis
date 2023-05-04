@@ -128,24 +128,7 @@ struct ReadUnalignedField<'t> {
 impl Display for ReadUnalignedField<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match &self.ty {
-            ResolvedType::Scalar(scalar) => match scalar {
-                ResolvedScalarType::Composite { .. } => {
-                    write!(f, "cursor.read_composite()?")?;
-                }
-                ResolvedScalarType::Primitive(primitive) => match primitive {
-                    PrimitiveType::Boolean => write!(f, "cursor.read_bool()")?,
-                    PrimitiveType::Int { bits } => {
-                        Display::fmt(&CallRead { bits: *bits }, f)?;
-                    }
-                    PrimitiveType::UInt { bits, .. } => {
-                        Display::fmt(&CallRead { bits: *bits }, f)?;
-                    }
-                    PrimitiveType::Float16 { .. } => writeln!(f, "cursor.read_f16()")?,
-                    PrimitiveType::Float32 { .. } => writeln!(f, "cursor.read_f32()")?,
-                    PrimitiveType::Float64 { .. } => writeln!(f, "cursor.read_f64()")?,
-                },
-                ResolvedScalarType::Void { bits } => writeln!(f, "cursor.skip_{}();", *bits)?,
-            },
+            ResolvedType::Scalar(scalar) => Display::fmt(&ReadUnalignedScalar { ty: scalar }, f)?,
             ResolvedType::FixedArray {
                 inner: ResolvedScalarType::Primitive(PrimitiveType::Boolean),
                 len,
@@ -230,6 +213,9 @@ impl Display for ReadUnalignedScalar<'_> {
             }
             ResolvedScalarType::Primitive(primitive) => match primitive {
                 PrimitiveType::Boolean => write!(f, "cursor.read_bool()")?,
+                PrimitiveType::Utf8 | PrimitiveType::Byte => {
+                    Display::fmt(&CallRead { bits: 8 }, f)?
+                }
                 PrimitiveType::Int { bits } => Display::fmt(&CallRead { bits: *bits }, f)?,
                 PrimitiveType::UInt { bits, .. } => Display::fmt(&CallRead { bits: *bits }, f)?,
                 PrimitiveType::Float16 { .. } => write!(f, "cursor.read_f16()")?,

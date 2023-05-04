@@ -15,6 +15,9 @@ impl Display for ImplementConstants<'_, '_> {
             let name = make_rust_identifier(name.clone());
             let rust_type_name: String = match constant.ty() {
                 PrimitiveType::Boolean => "bool".into(),
+                PrimitiveType::Byte | PrimitiveType::Utf8 => {
+                    panic!("Constant type can't be byte or utf8")
+                }
                 PrimitiveType::Int { bits } => format!("i{}", round_up_integer_size(*bits)),
                 PrimitiveType::UInt { bits, .. } => format!("u{}", round_up_integer_size(*bits)),
                 PrimitiveType::Float16 { .. } => "::half::f16".into(),
