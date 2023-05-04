@@ -52,7 +52,9 @@ type_version_specifier = {literal_integer_decimal ~ "." ~ literal_integer_decima
 
 type_primitive = {type_primitive_truncated
                | type_primitive_saturated
-               | type_primitive_name_boolean}
+               | type_primitive_name_boolean
+               | type_primitive_name_utf8
+               | type_primitive_name_byte}
 
 type_primitive_truncated =  {"truncated" ~ ws ~ type_primitive_name}
 type_primitive_saturated = { ("saturated" ~ ws)? ~ type_primitive_name  }   // Defaults to this.
@@ -64,8 +66,10 @@ type_primitive_name = {type_primitive_name_unsigned_integer
 type_primitive_name_unsigned_integer = {"uint" ~ type_bit_length_suffix}
 type_primitive_name_signed_integer   = {"int" ~ type_bit_length_suffix}
 type_primitive_name_floating_point   = {"float" ~ type_bit_length_suffix}
-// bool is in a slightly different category because it can't have a cast mode
+// Some primitive types can't have cast modes
 type_primitive_name_boolean = {"bool"}
+type_primitive_name_utf8 = {"utf8"}
+type_primitive_name_byte = {"byte"}
 
 type_void = {"void" ~ type_bit_length_suffix}
 

@@ -184,6 +184,7 @@ impl Display for WriteScalarSize<'_> {
             }
             ResolvedScalarType::Primitive(primitive) => match primitive {
                 PrimitiveType::Boolean => write!(f, "1")?,
+                PrimitiveType::Byte | PrimitiveType::Utf8 => write!(f, "8")?,
                 PrimitiveType::Int { bits } => write!(f, "{}", *bits)?,
                 PrimitiveType::UInt { bits, .. } => write!(f, "{}", *bits)?,
                 PrimitiveType::Float16 { .. } => write!(f, "16")?,
