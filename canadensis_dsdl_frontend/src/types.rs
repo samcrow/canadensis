@@ -206,6 +206,8 @@ impl From<canadensis_dsdl_parser::PrimitiveType> for PrimitiveType {
     fn from(primitive: canadensis_dsdl_parser::PrimitiveType) -> Self {
         match primitive {
             canadensis_dsdl_parser::PrimitiveType::Boolean => PrimitiveType::Boolean,
+            canadensis_dsdl_parser::PrimitiveType::Utf8 => PrimitiveType::Utf8,
+            canadensis_dsdl_parser::PrimitiveType::Byte => PrimitiveType::Byte,
             canadensis_dsdl_parser::PrimitiveType::Int { bits } => PrimitiveType::Int { bits },
             canadensis_dsdl_parser::PrimitiveType::UInt { bits, mode } => {
                 PrimitiveType::UInt { bits, mode }
@@ -286,6 +288,10 @@ impl ScalarType {
 pub enum PrimitiveType {
     /// Boolean, always saturated
     Boolean,
+    /// Character in a UTF-8 string (serialized like uint8)
+    Utf8,
+    /// Arbitrary 8-bit data (serialized like uint8)
+    Byte,
     /// Signed integer, always saturated
     Int { bits: u8 },
     /// Unsigned integer
@@ -302,7 +308,10 @@ impl PrimitiveType {
     /// Returns the cast mode of this type
     pub fn cast_mode(&self) -> CastMode {
         match self {
-            PrimitiveType::Boolean | PrimitiveType::Int { .. } => CastMode::Saturated,
+            PrimitiveType::Boolean
+            | PrimitiveType::Int { .. }
+            | PrimitiveType::Utf8
+            | PrimitiveType::Byte => CastMode::Saturated,
             PrimitiveType::UInt { mode, .. }
             | PrimitiveType::Float16 { mode }
             | PrimitiveType::Float32 { mode }
@@ -313,6 +322,7 @@ impl PrimitiveType {
     pub fn bit_length(&self) -> u64 {
         match self {
             PrimitiveType::Boolean => 1,
+            PrimitiveType::Utf8 | PrimitiveType::Byte => 8,
             PrimitiveType::Int { bits } | PrimitiveType::UInt { bits, .. } => u64::from(*bits),
             PrimitiveType::Float16 { .. } => 16,
             PrimitiveType::Float32 { .. } => 32,
@@ -368,7 +378,9 @@ mod fmt_impl {
                 CastMode::Saturated => "saturated",
             };
             match self {
-                PrimitiveType::Boolean => write!(f, "{} bool", mode_str),
+                PrimitiveType::Boolean => write!(f, "bool"),
+                PrimitiveType::Utf8 => write!(f, "utf8"),
+                PrimitiveType::Byte => write!(f, "byte"),
                 PrimitiveType::Int { bits, .. } => {
                     write!(f, "{} int{}", mode_str, *bits)
                 }

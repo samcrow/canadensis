@@ -189,6 +189,17 @@ impl Display for WriteAlignedField<'_> {
                     PrimitiveType::Boolean => {
                         writeln!(f, "cursor.write_bool({});", self.field_expr)?
                     }
+                    PrimitiveType::Byte | PrimitiveType::Utf8 => {
+                        // Same as uint8
+                        Display::fmt(
+                            &CallWriteAligned {
+                                bits: 8,
+                                name: self.field_expr,
+                                as_uint: false,
+                            },
+                            f,
+                        )?;
+                    }
                     PrimitiveType::Int { bits } => {
                         Display::fmt(
                             &CallWriteAligned {
@@ -300,6 +311,17 @@ impl Display for WriteUnalignedField<'_> {
                 ResolvedScalarType::Primitive(primitive) => match primitive {
                     PrimitiveType::Boolean => {
                         writeln!(f, "cursor.write_bool({});", self.field_expr)?
+                    }
+                    PrimitiveType::Byte | PrimitiveType::Utf8 => {
+                        // Same as uint8
+                        Display::fmt(
+                            &CallWrite {
+                                bits: 8,
+                                name: self.field_expr,
+                                as_uint: false,
+                            },
+                            f,
+                        )?;
                     }
                     PrimitiveType::Int { bits } => Display::fmt(
                         &CallWrite {
@@ -429,7 +451,7 @@ impl Display for WriteArrayElements<'_> {
                     )?;
                     writeln!(f, "}}")
                 }
-                PrimitiveType::UInt { bits: 8, .. } => {
+                PrimitiveType::UInt { bits: 8, .. } | PrimitiveType::Byte | PrimitiveType::Utf8 => {
                     // Special case for byte arrays
                     writeln!(f, "cursor.write_bytes(&({})[..]);", self.array_expr)
                 }

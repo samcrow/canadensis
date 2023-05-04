@@ -130,6 +130,10 @@ pub enum ScalarType<'i> {
 pub enum PrimitiveType {
     /// Boolean, always saturated
     Boolean,
+    /// Character in a UTF-8 string (serialized like uint8)
+    Utf8,
+    /// Arbitrary 8-bit data (serialized like uint8)
+    Byte,
     /// Signed integer, always saturated
     Int { bits: u8 },
     /// Unsigned integer
