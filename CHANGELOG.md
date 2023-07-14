@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+
+### Added
+- `canadensis_dsdl_parser`: Added support for `byte` and `utf8` types (this is a breaking change for code that uses
+  this library, but it does not break compatibility with any existing DSDL file)
+- `canadensis_dsdl_frontend`: Added support for `byte` and `utf8` types (this is a breaking change for code that uses
+  this library, but it does not break compatibility with any existing DSDL file)
+- `canadensis_codegen_rust`: Added support for `byte` and `utf8` (code generation is the same as for uint8)
+
+### Changed
+
+- `canadensis_dsdl_parser`: Breaking change: Removed `saturated bool` type
+
 ### Fixed
 
 - `canadensis_dsdl_frontend`: Fixed duplicate error text
@@ -13,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   compatibility
 - `canadensis_encoding`: Added default-features = false to half dependency to fix no_std compatibility
 - `canadensis_data_types`: Added default-features = false to half dependency to fix no_std compatibility
+
 
 ## [canadensis_bxcan-v0.3.0](https://github.com/samcrow/canadensis/releases/tag/canadensis_bxcan-v0.3.0) - 2023-03-30
 

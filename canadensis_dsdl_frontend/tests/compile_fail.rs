@@ -24,10 +24,13 @@ fn compile_fail() -> io::Result<()> {
             continue;
         }
         let case_name = entry.file_name();
+        println!("==== Compile-fail case {:?} ====", case_name);
 
         match try_compile_package(&entry.path()) {
             Ok(_) => failed_tests.push(case_name),
-            Err(_) => {}
+            Err(e) => {
+                println!("Failed to compile, as expected: {}", PrintCause(&e));
+            }
         }
     }
 
@@ -42,6 +45,21 @@ fn try_compile_package(path: &Path) -> Result<CompiledPackage, Error> {
     let mut package = Package::new();
     package.add_files(path)?;
     package.compile()
+}
+
+struct PrintCause<'a, E>(&'a E);
+impl<E> std::fmt::Display for PrintCause<'_, E>
+where
+    E: std::error::Error,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(&self.0, f)?;
+        if let Some(source) = self.0.source() {
+            f.write_str("\ncaused by: ")?;
+            std::fmt::Display::fmt(&PrintCause(&source), f)?;
+        }
+        Ok(())
+    }
 }
 
 /// Tests a file with a combined path and name that are 256 characters long, which is longer

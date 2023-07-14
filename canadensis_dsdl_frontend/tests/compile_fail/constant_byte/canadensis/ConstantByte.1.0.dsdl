@@ -1,0 +1,4 @@
+
+byte LUXURY = 'y'
+
+@sealed

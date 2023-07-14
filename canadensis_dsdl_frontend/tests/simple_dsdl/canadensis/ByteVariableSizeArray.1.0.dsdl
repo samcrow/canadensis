@@ -1,0 +1,4 @@
+
+byte[<=128] frog_color
+
+@extent 256 * 8
