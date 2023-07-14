@@ -54,7 +54,7 @@ pub enum Error {
         #[source]
         inner: Box<Error>,
     },
-    #[error("{0}")]
+    #[error("Invalid DSDL")]
     Compile(
         #[from]
         #[source]
