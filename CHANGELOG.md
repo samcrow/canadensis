@@ -9,8 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `canadensis_codegen_rust`: Added default-features = false to half dependency in generated code to fix no_std
   compatibility
-- `canadensis_encoding`: Added default-features = false to half dependency to fix no_std compatibility
 - `canadensis_data_types`: Added default-features = false to half dependency to fix no_std compatibility
+
+## [canadensis_encoding-v0.3.1](https://github.com/samcrow/canadensis/releases/tag/canadensis_encoding-v0.3.1) - 2023-09-05
+
+### Fixed
+
+- `canadensis_encoding`: Added default-features = false to half dependency to fix no_std compatibility
 
 ## [canadensis_dsdl_frontend-v0.4.1](https://github.com/samcrow/canadensis/releases/tag/canadensis_dsdl_frontend-v0.4.1) - 2023-09-05
 
