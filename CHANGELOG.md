@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - `canadensis_data_types`: Added default-features = false to half dependency to fix no_std compatibility
+- `canadensis`: Added default-features = false to half dependency to fix no_std compatibility
+- `canadensis_macro`: Added default-features = false to half dependency to fix no_std compatibility
 
 ## [canadensis_codegen_rust-v0.4.2](https://github.com/samcrow/canadensis/releases/tag/canadensis_codegen_rust-v0.4.2) - 2023-09-05
 
