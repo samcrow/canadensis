@@ -35,7 +35,7 @@ pub trait SubscriptionManager<S> {
     fn unsubscribe_response(&mut self, service: ServiceId) -> Option<S>;
 
     /// Returns a subscription corresponding to the provided header, if one exists
-    fn find_subscription<I, T: Transport>(&self, header: &Header<I, T>) -> Option<&S> {
+    fn find_subscription<T: Transport>(&self, header: &Header<T>) -> Option<&S> {
         match header {
             Header::Message(MessageHeader { subject, .. }) => {
                 self.find_message_subscription(*subject)
@@ -49,7 +49,7 @@ pub trait SubscriptionManager<S> {
         }
     }
     /// Returns a subscription corresponding to the provided header, if one exists
-    fn find_subscription_mut<I, T: Transport>(&mut self, header: &Header<I, T>) -> Option<&mut S> {
+    fn find_subscription_mut<T: Transport>(&mut self, header: &Header<T>) -> Option<&mut S> {
         match header {
             Header::Message(MessageHeader { subject, .. }) => {
                 self.find_message_subscription_mut(*subject)

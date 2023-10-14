@@ -2,7 +2,7 @@
 
 use heapless::FnvIndexMap;
 
-use canadensis_core::time::{Clock, Instant};
+use canadensis_core::time::{Clock, MicrosecondDuration32, Microseconds32};
 use canadensis_core::transfer::{Header, ServiceHeader, Transfer};
 use canadensis_core::transport::{TransferId, Transmitter, Transport};
 use canadensis_core::{nb, OutOfMemoryError, ServiceId};
@@ -17,7 +17,7 @@ pub struct Requester<C: Clock, T: Transmitter<C>, R> {
     /// The priority of transfers from this transmitter
     priority: <T::Transport as Transport>::Priority,
     /// The timeout for sending transfers
-    timeout: <<C as Clock>::Instant as Instant>::Duration,
+    timeout: MicrosecondDuration32,
     /// The ID of the next transfer to send, for each destination node
     transfer_ids: R,
 }
@@ -32,7 +32,7 @@ impl<C: Clock, T: Transmitter<C>, R: TransferIdTracker<T::Transport>> Requester<
     /// service: The service ID to request
     pub fn new(
         this_node: <T::Transport as Transport>::NodeId,
-        timeout: <<C as Clock>::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
         priority: <T::Transport as Transport>::Priority,
     ) -> Self {
         Requester {
@@ -108,7 +108,7 @@ impl<C: Clock, T: Transmitter<C>, R: TransferIdTracker<T::Transport>> Requester<
         payload: &[u8],
         service: ServiceId,
         destination: <T::Transport as Transport>::NodeId,
-        deadline: C::Instant,
+        deadline: Microseconds32,
         loopback: bool,
         transmitter: &mut T,
         clock: &mut C,
@@ -191,7 +191,7 @@ impl<T: Transport, const C: usize> TransferIdTracker<T> for TransferIdFixedMap<T
 mod fmt_impl {
     use core::fmt::{Debug, Formatter, Result};
 
-    use canadensis_core::time::{Clock, Instant};
+    use canadensis_core::time::Clock;
     use canadensis_core::transport::{Transmitter, Transport};
 
     use crate::requester::Requester;
@@ -200,7 +200,6 @@ mod fmt_impl {
     where
         C: Clock,
         T: Transmitter<C>,
-        <<C as Clock>::Instant as Instant>::Duration: Debug,
         <T::Transport as Transport>::TransferId: Debug,
         <T::Transport as Transport>::Priority: Debug,
         <T::Transport as Transport>::NodeId: Debug,

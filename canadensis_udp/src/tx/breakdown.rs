@@ -5,6 +5,7 @@ use core::mem;
 use crc_any::CRCu32;
 use zerocopy::AsBytes;
 
+use canadensis_core::time::Microseconds32;
 use canadensis_core::Priority;
 
 use crate::tx::UdpFrame;
@@ -12,11 +13,11 @@ use crate::{data_crc, UdpTransferId, TRANSFER_CRC_SIZE};
 use canadensis_header::{DataSpecifier, Header, RawHeader, LAST_FRAME};
 
 /// An iterator that breaks a transfer into UDP frames and adds a CRC to each frame
-pub(crate) struct Breakdown<P: Iterator<Item = u8>, I> {
+pub(crate) struct Breakdown<P: Iterator<Item = u8>> {
     /// Basic header information to apply to all frames
     header_base: HeaderBase,
     /// The transmit deadline for this transfer
-    deadline: I,
+    deadline: Microseconds32,
     /// The payload iterator
     payload: Peekable<P>,
     /// The index of the frame currently being assembled
@@ -45,8 +46,8 @@ pub(crate) struct HeaderBase {
     pub data: u16,
 }
 
-impl<P: Iterator<Item = u8>, I: Clone> Breakdown<P, I> {
-    pub fn new(header_base: HeaderBase, deadline: I, payload: P, mtu: usize) -> Self {
+impl<P: Iterator<Item = u8>> Breakdown<P> {
+    pub fn new(header_base: HeaderBase, deadline: Microseconds32, payload: P, mtu: usize) -> Self {
         Breakdown {
             header_base,
             deadline,
@@ -69,14 +70,14 @@ impl<P: Iterator<Item = u8>, I: Clone> Breakdown<P, I> {
     ///
     /// This function also re-initializes self.current_frame with header::SIZE zero bytes
     /// so that payload bytes can be added.
-    fn take_frame(&mut self, header: Header, crc: u32) -> UdpFrame<I> {
+    fn take_frame(&mut self, header: Header, crc: u32) -> UdpFrame {
         // Copy the header into the current frame
         self.current_frame[..canadensis_header::SIZE]
             .copy_from_slice(RawHeader::from(header).as_bytes());
         // Add CRC
         self.current_frame.extend_from_slice(&crc.to_le_bytes());
         let frame = UdpFrame {
-            deadline: self.deadline.clone(),
+            deadline: self.deadline,
             data: mem::take(&mut self.current_frame),
         };
         // Add space in the new current frame for the header
@@ -100,12 +101,11 @@ impl<P: Iterator<Item = u8>, I: Clone> Breakdown<P, I> {
     }
 }
 
-impl<P, I> Iterator for Breakdown<P, I>
+impl<P> Iterator for Breakdown<P>
 where
     P: Iterator<Item = u8>,
-    I: Clone,
 {
-    type Item = UdpFrame<I>;
+    type Item = UdpFrame;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.done {
@@ -163,7 +163,7 @@ mod tests {
     use std::convert::TryFrom;
     use std::iter;
 
-    use canadensis_core::time::Microseconds64;
+    use canadensis_core::time::Microseconds32;
     use canadensis_core::{Priority, ServiceId, SubjectId};
 
     use crate::{data_crc, UdpNodeId, TRANSFER_CRC_SIZE};
@@ -184,7 +184,7 @@ mod tests {
         };
         // No payload, should produce no frame
         let mut breakdown =
-            Breakdown::new(header_base, Microseconds64::new(0), iter::empty(), 1472);
+            Breakdown::new(header_base, Microseconds32::new(0), iter::empty(), 1472);
         assert!(breakdown.next().is_none(), "Unexpected frame");
     }
 
@@ -202,7 +202,7 @@ mod tests {
         let payload: [u8; 1] = [0xf2];
         let mut breakdown = Breakdown::new(
             header_base,
-            Microseconds64::new(0),
+            Microseconds32::new(0),
             IntoIterator::into_iter(payload),
             1472,
         );
@@ -253,7 +253,7 @@ mod tests {
         let mtu = 32;
         let mut breakdown = Breakdown::new(
             header_base,
-            Microseconds64::new(0),
+            Microseconds32::new(0),
             IntoIterator::into_iter(payload),
             mtu,
         );
@@ -305,7 +305,7 @@ mod tests {
         let mtu = 32;
         let mut breakdown = Breakdown::new(
             header_base,
-            Microseconds64::new(0),
+            Microseconds32::new(0),
             IntoIterator::into_iter(payload),
             mtu,
         );

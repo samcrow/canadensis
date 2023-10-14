@@ -1,5 +1,5 @@
 use crate::serialize::do_serialize;
-use canadensis_core::time::{Clock, Instant};
+use canadensis_core::time::{Clock, MicrosecondDuration32, Microseconds32};
 use canadensis_core::transfer::{Header, MessageHeader, Transfer};
 use canadensis_core::transport::{TransferId, Transmitter, Transport};
 use canadensis_core::{nb, SubjectId};
@@ -12,7 +12,7 @@ pub struct Publisher<C: Clock, T: Transmitter<C>> {
     /// The ID of the next transfer sent
     next_transfer_id: <T::Transport as Transport>::TransferId,
     /// Timeout for sending a transfer, measured from the time the payload is serialized
-    timeout: <<C as Clock>::Instant as Instant>::Duration,
+    timeout: MicrosecondDuration32,
     /// Priority for transfers
     priority: <T::Transport as Transport>::Priority,
     /// ID of this node
@@ -27,7 +27,7 @@ impl<C: Clock, T: Transmitter<C>> Publisher<C, T> {
     /// priority: The priority to use for messages
     pub fn new(
         node_id: <T::Transport as Transport>::NodeId,
-        timeout: <<C as Clock>::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
         priority: <T::Transport as Transport>::Priority,
     ) -> Self {
         Publisher {
@@ -99,7 +99,7 @@ impl<C: Clock, T: Transmitter<C>> Publisher<C, T> {
         &mut self,
         subject: SubjectId,
         payload: &[u8],
-        deadline: C::Instant,
+        deadline: Microseconds32,
         loopback: bool,
         transmitter: &mut T,
         clock: &mut C,
@@ -125,14 +125,13 @@ impl<C: Clock, T: Transmitter<C>> Publisher<C, T> {
 
 mod fmt_impl {
     use crate::publisher::Publisher;
-    use canadensis_core::time::{Clock, Instant};
+    use canadensis_core::time::Clock;
     use canadensis_core::transport::{Transmitter, Transport};
     use core::fmt::{Debug, Formatter, Result};
 
     impl<C, T> Debug for Publisher<C, T>
     where
         C: Clock,
-        <<C as Clock>::Instant as Instant>::Duration: Debug,
         T: Transmitter<C>,
         <T::Transport as Transport>::TransferId: Debug,
         <T::Transport as Transport>::Priority: Debug,

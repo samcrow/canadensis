@@ -17,10 +17,10 @@ pub struct BxCanPnpClient<C: Clock, M, I: Instance + FilterOwner> {
     pub client: PnpClient<
         C,
         M,
-        CanTransmitter<C, SingleQueueDriver<C, SingleFrameQueue<C::Instant>, BxCanDriver<C, I>>>,
-        CanReceiver<C, SingleQueueDriver<C, SingleFrameQueue<C::Instant>, BxCanDriver<C, I>>>,
+        CanTransmitter<C, SingleQueueDriver<C, SingleFrameQueue, BxCanDriver<I>>>,
+        CanReceiver<C, SingleQueueDriver<C, SingleFrameQueue, BxCanDriver<I>>>,
     >,
-    driver: SingleQueueDriver<C, SingleFrameQueue<C::Instant>, BxCanDriver<C, I>>,
+    driver: SingleQueueDriver<C, SingleFrameQueue, BxCanDriver<I>>,
 }
 
 impl<C, M, I> BxCanPnpClient<C, M, I>

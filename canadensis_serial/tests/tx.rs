@@ -14,7 +14,7 @@ use std::convert::{Infallible, TryInto};
 fn transmit_capacity_1() {
     let mut driver = MockDriver::default();
     let mut tx = SerialTransmitter::<_, 1>::new();
-    let transfer: Transfer<[u8; 0], Microseconds32, SerialTransport> = Transfer {
+    let transfer: Transfer<[u8; 0], SerialTransport> = Transfer {
         header: Header::Message(MessageHeader {
             timestamp: Microseconds32::new(0),
             transfer_id: 0.into(),
@@ -35,7 +35,7 @@ fn transmit_minimum_capacity() {
     // Put extra capacity in the queue to detect if this fails
     const QUEUE_CAPACITY: usize = 64;
     let mut tx = SerialTransmitter::<_, QUEUE_CAPACITY>::new();
-    let transfer: Transfer<[u8; 0], Microseconds32, SerialTransport> = Transfer {
+    let transfer: Transfer<[u8; 0], SerialTransport> = Transfer {
         header: Header::Message(MessageHeader {
             timestamp: Microseconds32::new(0),
             transfer_id: 330.into(),
@@ -86,9 +86,7 @@ impl ReceiveDriver for MockDriver {
 pub struct ZeroClock;
 
 impl Clock for ZeroClock {
-    type Instant = Microseconds32;
-
-    fn now(&mut self) -> Self::Instant {
+    fn now(&mut self) -> Microseconds32 {
         Microseconds32::new(0)
     }
 }

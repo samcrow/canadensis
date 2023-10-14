@@ -7,7 +7,7 @@ use fallible_collections::FallibleVec;
 use zerocopy::FromBytes;
 
 use canadensis_core::session::{Session, SessionTracker};
-use canadensis_core::time::{Clock, Instant};
+use canadensis_core::time::{Clock, MicrosecondDuration32, Microseconds32};
 use canadensis_core::transfer::{Header, MessageHeader, ServiceHeader, Transfer};
 use canadensis_core::transport::Receiver;
 use canadensis_core::{OutOfMemoryError, ServiceId, ServiceSubscribeError, SubjectId};
@@ -24,23 +24,20 @@ mod buildup;
 mod subscriptions;
 
 /// UDP transport receiver
-pub struct UdpReceiver<C, T, S, const MTU: usize>
-where
-    C: Clock,
-{
-    subscriptions: Subscriptions<C::Instant, T>,
+pub struct UdpReceiver<C, T, S, const MTU: usize> {
+    subscriptions: Subscriptions<T>,
     /// The ID of this node, or None if this node is anonymous
     node_id: Option<UdpNodeId>,
     /// The IP address of the local interface that the socket is bound to
     local_address: Ipv4Addr,
     _socket: PhantomData<S>,
     _session_tracker: PhantomData<T>,
+    _clock: PhantomData<C>,
 }
 
 impl<C, T, S, const MTU: usize> UdpReceiver<C, T, S, MTU>
 where
-    C: Clock,
-    T: SessionTracker<C::Instant, UdpNodeId, UdpTransferId, UdpSessionData> + Default,
+    T: SessionTracker<UdpNodeId, UdpTransferId, UdpSessionData> + Default,
     S: UdpSocket,
 {
     pub fn new(node_id: Option<UdpNodeId>, interface_address: Ipv4Addr) -> Self {
@@ -50,12 +47,13 @@ where
             local_address: interface_address,
             _socket: PhantomData,
             _session_tracker: PhantomData,
+            _clock: PhantomData,
         }
     }
 
-    fn clean_expired_sessions(&mut self, now: C::Instant)
+    fn clean_expired_sessions(&mut self, now: Microseconds32)
     where
-        T: SessionTracker<C::Instant, UdpNodeId, UdpTransferId, UdpSessionData> + Default,
+        T: SessionTracker<UdpNodeId, UdpTransferId, UdpSessionData> + Default,
     {
         for subscription in self.subscriptions.message_iter_mut() {
             subscription.clean_expired_sessions(now);
@@ -77,10 +75,9 @@ where
     /// * `Err(e)` if a socket or memory allocation error occurred
     fn accept_inner(
         &mut self,
-        now: C::Instant,
+        now: Microseconds32,
         socket: &mut S,
-    ) -> Result<Option<Transfer<Vec<u8>, C::Instant, UdpTransport>>, Error<nb::Error<S::Error>>>
-    {
+    ) -> Result<Option<Transfer<Vec<u8>, UdpTransport>>, Error<nb::Error<S::Error>>> {
         let mut buffer: [u8; MTU] = [0; MTU];
         let bytes_received = socket.recv(&mut buffer).map_err(Error::Socket)?;
         let buffer = &buffer[..bytes_received];
@@ -167,7 +164,7 @@ where
 impl<C, T, S, const MTU: usize> Receiver<C> for UdpReceiver<C, T, S, MTU>
 where
     C: Clock,
-    T: SessionTracker<C::Instant, UdpNodeId, UdpTransferId, UdpSessionData> + Default,
+    T: SessionTracker<UdpNodeId, UdpTransferId, UdpSessionData> + Default,
     S: UdpSocket,
 {
     type Transport = UdpTransport;
@@ -178,7 +175,7 @@ where
         &mut self,
         clock: &mut C,
         socket: &mut S,
-    ) -> Result<Option<Transfer<Vec<u8>, C::Instant, Self::Transport>>, Self::Error> {
+    ) -> Result<Option<Transfer<Vec<u8>, Self::Transport>>, Self::Error> {
         // Loop until all incoming packets have been read
         let result = loop {
             match self.accept_inner(clock.now(), socket) {
@@ -200,7 +197,7 @@ where
         &mut self,
         subject: SubjectId,
         payload_size_max: usize,
-        timeout: <C::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
         socket: &mut S,
     ) -> Result<(), Self::Error> {
         socket
@@ -220,7 +217,7 @@ where
         &mut self,
         service: ServiceId,
         payload_size_max: usize,
-        timeout: <C::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
         socket: &mut S,
     ) -> Result<(), ServiceSubscribeError<Self::Error>> {
         self.service_subscribe_check_multicast(socket)
@@ -243,7 +240,7 @@ where
         &mut self,
         service: ServiceId,
         payload_size_max: usize,
-        timeout: <C::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
         socket: &mut S,
     ) -> Result<(), ServiceSubscribeError<Self::Error>> {
         self.service_subscribe_check_multicast(socket)
@@ -263,22 +260,18 @@ where
     }
 }
 
-pub struct Subscription<I, T>
-where
-    I: Instant,
-{
+pub struct Subscription<T> {
     payload_size_max: usize,
-    timeout: <I as Instant>::Duration,
+    timeout: MicrosecondDuration32,
     sessions: T,
 }
 
-impl<I, T> Subscription<I, T>
+impl<T> Subscription<T>
 where
-    I: Instant,
-    T: SessionTracker<I, UdpNodeId, UdpTransferId, UdpSessionData> + Default,
+    T: SessionTracker<UdpNodeId, UdpTransferId, UdpSessionData> + Default,
 {
     /// Creates a subscription
-    fn new(payload_size_max: usize, timeout: <I as Instant>::Duration) -> Self {
+    fn new(payload_size_max: usize, timeout: MicrosecondDuration32) -> Self {
         Subscription {
             payload_size_max,
             timeout,
@@ -290,8 +283,8 @@ where
         &mut self,
         header: &UdpHeader,
         bytes_after_header: &[u8],
-        now: I,
-    ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, OutOfMemoryError> {
+        now: Microseconds32,
+    ) -> Result<Option<Transfer<Vec<u8>, UdpTransport>>, OutOfMemoryError> {
         let timeout = self.timeout;
         if let Some(source_node_id) = header.data_specifier.source_node_id() {
             let session = self.sessions.get_mut_or_insert_with(source_node_id, || {
@@ -330,8 +323,8 @@ where
         &self,
         result: Result<Option<Vec<u8>>, OutOfMemoryError>,
         header: &UdpHeader,
-        now: I,
-    ) -> Result<Option<Transfer<Vec<u8>, I, UdpTransport>>, OutOfMemoryError> {
+        now: Microseconds32,
+    ) -> Result<Option<Transfer<Vec<u8>, UdpTransport>>, OutOfMemoryError> {
         match result {
             Ok(Some(reassembled)) => {
                 // Add the transfer headers and record the completed transfer
@@ -377,7 +370,7 @@ where
         }
     }
 
-    fn clean_expired_sessions(&mut self, now: I) {
+    fn clean_expired_sessions(&mut self, now: Microseconds32) {
         self.sessions.remove_expired(now)
     }
 }
@@ -387,10 +380,7 @@ pub struct UdpSessionData {
     buildup: Option<Buildup>,
 }
 
-trait UdpSession<I>
-where
-    I: Instant,
-{
+trait UdpSession {
     fn handle_frame(
         &mut self,
         header: &UdpHeader,
@@ -399,10 +389,7 @@ where
     ) -> Result<Option<Vec<u8>>, OutOfMemoryError>;
 }
 
-impl<I> UdpSession<I> for Session<I, UdpTransferId, UdpSessionData>
-where
-    I: Instant,
-{
+impl UdpSession for Session<UdpTransferId, UdpSessionData> {
     /// Handles a frame
     ///
     /// If the frame successfully completed a transfer, this function returns the assembled transfer

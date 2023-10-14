@@ -34,11 +34,7 @@ where
     ///
     /// If this driver contains a queue, this function may add the frame to the queue and not
     /// immediately transmit until `flush()` is called.
-    fn transmit(
-        &mut self,
-        frame: Frame<C::Instant>,
-        clock: &mut C,
-    ) -> nb::Result<Option<Frame<C::Instant>>, Self::Error>;
+    fn transmit(&mut self, frame: Frame, clock: &mut C) -> nb::Result<Option<Frame>, Self::Error>;
     /// Attempts to flush all frames out of any in-memory queues that may exist and transmit
     /// them
     fn flush(&mut self, clock: &mut C) -> nb::Result<(), Self::Error>;
@@ -55,7 +51,7 @@ where
     /// The error type
     type Error: Debug;
     /// Attempts to receive a frame without blocking
-    fn receive(&mut self, clock: &mut C) -> nb::Result<Frame<C::Instant>, Self::Error>;
+    fn receive(&mut self, clock: &mut C) -> nb::Result<Frame, Self::Error>;
 
     /// Sets up frame reception filters to accept only frames matching the provided subscriptions
     ///

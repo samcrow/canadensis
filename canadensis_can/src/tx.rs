@@ -7,7 +7,7 @@ use core::iter;
 use core::marker::PhantomData;
 
 use canadensis_core::nb;
-use canadensis_core::time::Clock;
+use canadensis_core::time::{Clock, Microseconds32};
 use canadensis_core::transfer::{Header, ServiceHeader, Transfer};
 use canadensis_core::transport::Transmitter;
 
@@ -56,7 +56,7 @@ where
     /// the required frames.
     fn push<A>(
         &mut self,
-        transfer: Transfer<A, C::Instant, CanTransport>,
+        transfer: Transfer<A, CanTransport>,
         clock: &mut C,
         driver: &mut D,
     ) -> nb::Result<(), Self::Error>
@@ -119,7 +119,7 @@ where
 
     fn push_inner(
         &mut self,
-        transfer: Transfer<&[u8], C::Instant, CanTransport>,
+        transfer: Transfer<&[u8], CanTransport>,
         clock: &mut C,
         driver: &mut D,
     ) -> nb::Result<(), Error<D::Error>> {
@@ -197,7 +197,7 @@ where
     /// If the driver returns a removed lower-priority frame, this function discards it.
     fn push_frame(
         &mut self,
-        timestamp: C::Instant,
+        timestamp: Microseconds32,
         loopback: bool,
         id: CanId,
         data: &[u8],
@@ -228,7 +228,7 @@ where
     }
 }
 
-fn make_can_id<I>(header: &Header<I, CanTransport>, payload: &[u8]) -> CanId {
+fn make_can_id(header: &Header<CanTransport>, payload: &[u8]) -> CanId {
     let mut bits = 0u32;
 
     // Common fields for all transfer types
@@ -266,7 +266,7 @@ fn make_can_id<I>(header: &Header<I, CanTransport>, payload: &[u8]) -> CanId {
 
 /// Encodes the service ID, destination ID, and service flag into a 29-bit CAN ID, and returns
 /// it
-fn encode_common_service_fields<I>(header: &ServiceHeader<I, CanTransport>) -> u32 {
+fn encode_common_service_fields(header: &ServiceHeader<CanTransport>) -> u32 {
     // Service ID
     (u32::from(u16::from(header.service)) << 14)
         // Destination node ID

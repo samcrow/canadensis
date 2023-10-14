@@ -3,31 +3,28 @@ use crate::rx::TailByte;
 use crate::types::{CanTransferId, Header, Transfer};
 use crate::{Frame, TransferCrc};
 use alloc::vec::Vec;
-use canadensis_core::time::Instant;
+use canadensis_core::time::{MicrosecondDuration32, Microseconds32};
 use canadensis_core::OutOfMemoryError;
 use core::fmt::Debug;
 
 /// A receive session, associated with a particular port ID and source node
 #[derive(Debug)]
-pub struct Session<I> {
+pub struct Session {
     /// Timestamp of the first frame received in this transfer
-    transfer_timestamp: I,
+    transfer_timestamp: Microseconds32,
     /// Loopback flag of the first frame received in this transfer
     loopback: bool,
     /// Transfer reassembly
     buildup: Buildup,
 }
 
-impl<I> Session<I>
-where
-    I: Instant,
-{
+impl Session {
     /// Creates a new session
     ///
     /// This function attempts to allocate `max_payload_length` bytes of memory, which will be
     /// used to assemble the received frames.
     pub fn new(
-        transfer_timestamp: I,
+        transfer_timestamp: Microseconds32,
         transfer_id: CanTransferId,
         max_payload_length: usize,
         loopback: bool,
@@ -47,12 +44,12 @@ where
     /// that may be inserted, depending on the transport MTU and frame length constraints.
     pub(crate) fn accept(
         &mut self,
-        frame: Frame<I>,
-        frame_header: Header<I>,
+        frame: Frame,
+        frame_header: Header,
         tail: TailByte,
         max_payload_length: usize,
-        transfer_timeout: I::Duration,
-    ) -> Result<Option<Transfer<Vec<u8>, I>>, SessionError> {
+        transfer_timeout: MicrosecondDuration32,
+    ) -> Result<Option<Transfer<Vec<u8>>>, SessionError> {
         if tail.transfer_id != self.buildup.transfer_id() {
             // This is a frame from some other transfer. Ignore it, but keep this session to receive
             // possible later frames.
@@ -75,7 +72,7 @@ where
             return Err(SessionError::PayloadLength);
         }
         // Check if this frame is too late
-        let time_since_first_frame = frame.timestamp().duration_since(&self.transfer_timestamp);
+        let time_since_first_frame = frame.timestamp().duration_since(self.transfer_timestamp);
 
         if time_since_first_frame > transfer_timeout {
             // Frame arrived too late. Give up on this session.
@@ -95,8 +92,8 @@ where
     fn handle_transfer_data(
         &mut self,
         mut transfer_data: Vec<u8>,
-        frame_header: Header<I>,
-    ) -> Result<Option<Transfer<Vec<u8>, I>>, SessionError> {
+        frame_header: Header,
+    ) -> Result<Option<Transfer<Vec<u8>>>, SessionError> {
         // Check CRC, if this transfer used more than one frame
         if self.buildup.frames() > 1 {
             let mut crc = TransferCrc::new();
@@ -122,7 +119,7 @@ where
     }
 
     /// Returns the timestamp of this transfer, which is equal to the timestamp of the first frame
-    pub fn transfer_timestamp(&self) -> I {
+    pub fn transfer_timestamp(&self) -> Microseconds32 {
         self.transfer_timestamp
     }
 

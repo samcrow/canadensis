@@ -13,13 +13,13 @@ use canadensis_can::driver::ReceiveDriver;
 use canadensis_can::{CanId, CanNodeId, CanReceiver, Frame, Mtu};
 use canadensis_core::nb;
 use canadensis_core::subscription::Subscription;
-use canadensis_core::time::{Clock, Instant, MicrosecondDuration32, Microseconds32};
+use canadensis_core::time::{Clock, MicrosecondDuration32, Microseconds32};
 use canadensis_core::transfer::*;
 use canadensis_core::transport::Receiver;
 use canadensis_core::{Priority, ServiceId, SubjectId};
 
 type TestInstant = Microseconds32;
-type TestDuration = <TestInstant as Instant>::Duration;
+type TestDuration = MicrosecondDuration32;
 
 fn instant(ticks: u32) -> TestInstant {
     TestInstant::new(ticks)
@@ -461,11 +461,11 @@ fn test_ignore_request_to_other_node() {
 /// only one transfer at a time.
 #[derive(Default)]
 struct StubDriver {
-    frames: VecDeque<Frame<Microseconds32>>,
+    frames: VecDeque<Frame>,
 }
 
 impl StubDriver {
-    fn push(&mut self, frame: Frame<Microseconds32>) {
+    fn push(&mut self, frame: Frame) {
         self.frames.push_back(frame)
     }
 }
@@ -473,10 +473,7 @@ impl StubDriver {
 impl ReceiveDriver<StubClock<'_>> for StubDriver {
     type Error = ();
 
-    fn receive(
-        &mut self,
-        _clock: &mut StubClock<'_>,
-    ) -> nb::Result<Frame<Microseconds32>, Self::Error> {
+    fn receive(&mut self, _clock: &mut StubClock<'_>) -> nb::Result<Frame, Self::Error> {
         self.frames.pop_front().ok_or(nb::Error::WouldBlock)
     }
 
@@ -496,9 +493,7 @@ struct StubClock<'a> {
     count: &'a Cell<u32>,
 }
 impl Clock for StubClock<'_> {
-    type Instant = Microseconds32;
-
-    fn now(&mut self) -> Self::Instant {
+    fn now(&mut self) -> Microseconds32 {
         Microseconds32::new(self.count.get())
     }
 }

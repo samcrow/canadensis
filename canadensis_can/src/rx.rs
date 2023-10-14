@@ -19,7 +19,7 @@ use crate::rx::session::SessionError;
 use crate::rx::subscription::{Subscription, SubscriptionError};
 use crate::types::{CanNodeId, CanTransferId, CanTransport, Error};
 use crate::Mtu;
-use canadensis_core::time::{Clock, Instant};
+use canadensis_core::time::{Clock, MicrosecondDuration32, Microseconds32};
 use canadensis_core::transfer::{Header, MessageHeader, ServiceHeader, Transfer};
 use canadensis_core::transport::Receiver;
 use canadensis_core::{
@@ -28,13 +28,13 @@ use canadensis_core::{
 
 /// Handles subscriptions and assembles incoming frames into transfers
 #[derive(Debug)]
-pub struct CanReceiver<C: Clock, D> {
+pub struct CanReceiver<C, D> {
     /// Subscriptions for messages
-    subscriptions_message: Vec<Subscription<C::Instant>>,
+    subscriptions_message: Vec<Subscription>,
     /// Subscriptions for service responses
-    subscriptions_response: Vec<Subscription<C::Instant>>,
+    subscriptions_response: Vec<Subscription>,
     /// Subscriptions for service requests
-    subscriptions_request: Vec<Subscription<C::Instant>>,
+    subscriptions_request: Vec<Subscription>,
     /// The ID of this node, or None if this node is anonymous
     id: Option<CanNodeId>,
     /// MTU of the transport
@@ -48,6 +48,8 @@ pub struct CanReceiver<C: Clock, D> {
     error_count: u64,
     /// The driver that supplies incoming frames
     _driver: PhantomData<D>,
+    /// The clock used to get the current time
+    _clock: PhantomData<C>,
 }
 
 impl<C, D> Receiver<C> for CanReceiver<C, D>
@@ -63,7 +65,7 @@ where
         &mut self,
         clock: &mut C,
         driver: &mut Self::Driver,
-    ) -> Result<Option<Transfer<Vec<u8>, C::Instant, Self::Transport>>, Self::Error> {
+    ) -> Result<Option<Transfer<Vec<u8>, Self::Transport>>, Self::Error> {
         // The current time is equal to or greater than the frame timestamp. Use that timestamp
         // to clean up expired sessions.
         self.clean_expired_sessions(clock.now());
@@ -101,7 +103,7 @@ where
         &mut self,
         subject: SubjectId,
         payload_size_max: usize,
-        timeout: <<C as Clock>::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
         driver: &mut Self::Driver,
     ) -> Result<(), Self::Error> {
         self.subscribe(
@@ -142,7 +144,7 @@ where
         &mut self,
         service: ServiceId,
         payload_size_max: usize,
-        timeout: <<C as Clock>::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
         driver: &mut Self::Driver,
     ) -> Result<(), ServiceSubscribeError<Self::Error>> {
         if self.id.is_some() {
@@ -188,7 +190,7 @@ where
         &mut self,
         service: ServiceId,
         payload_size_max: usize,
-        timeout: <<C as Clock>::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
         driver: &mut Self::Driver,
     ) -> Result<(), ServiceSubscribeError<Self::Error>> {
         if self.id.is_some() {
@@ -242,6 +244,7 @@ where
             transfer_count: 0,
             error_count: 0,
             _driver: PhantomData,
+            _clock: PhantomData,
         }
     }
 
@@ -266,8 +269,8 @@ where
     /// not subscribed to will be silently ignored.
     fn accept_frame(
         &mut self,
-        frame: Frame<C::Instant>,
-    ) -> Result<Option<Transfer<Vec<u8>, C::Instant, CanTransport>>, OutOfMemoryError> {
+        frame: Frame,
+    ) -> Result<Option<Transfer<Vec<u8>, CanTransport>>, OutOfMemoryError> {
         // Part 1: basic frame checks
         let (frame_header, tail) = match Self::frame_sanity_check(&frame) {
             Some(data) => data,
@@ -290,7 +293,7 @@ where
 
     /// Returns true if this node is not anonymous and matches the destination node ID of the
     /// provided service header
-    fn can_accept_service(&self, service_header: &ServiceHeader<C::Instant, CanTransport>) -> bool {
+    fn can_accept_service(&self, service_header: &ServiceHeader<CanTransport>) -> bool {
         match self.id {
             Some(local_id) if local_id == service_header.destination => true,
             Some(_) | None => false,
@@ -300,10 +303,10 @@ where
     /// Handles an incoming frame that has passed sanity checks and has a parsed header and tail byte
     fn accept_sane_frame(
         &mut self,
-        frame: Frame<C::Instant>,
-        frame_header: Header<C::Instant, CanTransport>,
+        frame: Frame,
+        frame_header: Header<CanTransport>,
         tail: TailByte,
-    ) -> Result<Option<Transfer<Vec<u8>, C::Instant, CanTransport>>, OutOfMemoryError> {
+    ) -> Result<Option<Transfer<Vec<u8>, CanTransport>>, OutOfMemoryError> {
         let kind = TransferKind::from_header(&frame_header);
         let subscriptions = self.subscriptions_for_kind(kind);
         if let Some(subscription) = subscriptions
@@ -337,9 +340,7 @@ where
 
     /// Runs basic sanity checks on an incoming frame. Returns the header and tail byte if the frame
     /// is valid.
-    fn frame_sanity_check(
-        frame: &Frame<C::Instant>,
-    ) -> Option<(Header<C::Instant, CanTransport>, TailByte)> {
+    fn frame_sanity_check(frame: &Frame) -> Option<(Header<CanTransport>, TailByte)> {
         // Frame must have a tail byte to be valid
         let tail_byte = TailByte::parse(*frame.data().last()?);
 
@@ -365,7 +366,7 @@ where
         kind: TransferKind,
         port_id: PortId,
         payload_size_max: usize,
-        timeout: <<C as Clock>::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
     ) -> Result<(), OutOfMemoryError> {
         // Remove any existing subscription, ignore result
         self.unsubscribe(kind, port_id);
@@ -388,7 +389,7 @@ where
         subscriptions.retain(|sub| sub.port_id() != port_id);
     }
 
-    fn subscriptions_for_kind(&mut self, kind: TransferKind) -> &mut Vec<Subscription<C::Instant>> {
+    fn subscriptions_for_kind(&mut self, kind: TransferKind) -> &mut Vec<Subscription> {
         match kind {
             TransferKind::Message => &mut self.subscriptions_message,
             TransferKind::Response => &mut self.subscriptions_response,
@@ -416,10 +417,10 @@ where
     }
 
     /// Deletes all sessions that have expired
-    fn clean_expired_sessions(&mut self, now: C::Instant) {
-        clean_sessions_from_subscriptions(&mut self.subscriptions_message, &now);
-        clean_sessions_from_subscriptions(&mut self.subscriptions_request, &now);
-        clean_sessions_from_subscriptions(&mut self.subscriptions_response, &now);
+    fn clean_expired_sessions(&mut self, now: Microseconds32) {
+        clean_sessions_from_subscriptions(&mut self.subscriptions_message, now);
+        clean_sessions_from_subscriptions(&mut self.subscriptions_request, now);
+        clean_sessions_from_subscriptions(&mut self.subscriptions_response, now);
     }
 
     fn apply_frame_filters(&mut self, driver: &mut D) {
@@ -439,15 +440,12 @@ where
     }
 }
 
-fn clean_sessions_from_subscriptions<I: Instant>(
-    subscriptions: &mut Vec<Subscription<I>>,
-    now: &I,
-) {
+fn clean_sessions_from_subscriptions(subscriptions: &mut Vec<Subscription>, now: Microseconds32) {
     for subscription in subscriptions {
         let timeout = subscription.timeout();
         for slot in subscription.sessions_mut().iter_mut() {
             if let Some(session) = slot.as_deref_mut() {
-                let time_since_first_frame = now.duration_since(&session.transfer_timestamp());
+                let time_since_first_frame = now.duration_since(session.transfer_timestamp());
                 if time_since_first_frame > timeout {
                     // This session has timed out, delete it.
                     *slot = None;
@@ -466,11 +464,11 @@ pub enum CanIdParseError {
 }
 
 /// Parses a transfer header from a CAN ID, frame timestamp, and frame transfer ID
-fn parse_can_id<I>(
+fn parse_can_id(
     id: CanId,
-    timestamp: I,
+    timestamp: Microseconds32,
     transfer_id: CanTransferId,
-) -> core::result::Result<Header<I, CanTransport>, CanIdParseError> {
+) -> core::result::Result<Header<CanTransport>, CanIdParseError> {
     let bits = u32::from(id);
 
     if bits.bit_set(23) {
@@ -561,7 +559,6 @@ mod test {
     use super::*;
     use canadensis_core::transfer::Header;
     use canadensis_core::{ServiceId, SubjectId};
-    use core::fmt::Debug;
 
     #[test]
     fn test_parse_can_id() {
@@ -569,7 +566,7 @@ mod test {
         // Heartbeat
         check_can_id(
             Header::Message(MessageHeader {
-                timestamp: (),
+                timestamp: Microseconds32::default(),
                 transfer_id: CanTransferId::try_from(0).unwrap(),
                 priority: Priority::Nominal,
                 subject: SubjectId::try_from(7509).unwrap(),
@@ -580,7 +577,7 @@ mod test {
         // String primitive
         check_can_id(
             Header::Message(MessageHeader {
-                timestamp: (),
+                timestamp: Microseconds32::default(),
                 transfer_id: CanTransferId::try_from(0).unwrap(),
                 priority: Priority::Nominal,
                 subject: SubjectId::try_from(4919).unwrap(),
@@ -591,7 +588,7 @@ mod test {
         // Node info request
         check_can_id(
             Header::Request(ServiceHeader {
-                timestamp: (),
+                timestamp: Microseconds32::default(),
                 transfer_id: CanTransferId::try_from(0).unwrap(),
                 priority: Priority::Nominal,
                 service: ServiceId::try_from(430).unwrap(),
@@ -603,7 +600,7 @@ mod test {
         // Node info response
         check_can_id(
             Header::Response(ServiceHeader {
-                timestamp: (),
+                timestamp: Microseconds32::default(),
                 transfer_id: CanTransferId::try_from(0).unwrap(),
                 priority: Priority::Nominal,
                 service: ServiceId::try_from(430).unwrap(),
@@ -615,7 +612,7 @@ mod test {
         // Array message
         check_can_id(
             Header::Message(MessageHeader {
-                timestamp: (),
+                timestamp: Microseconds32::default(),
                 transfer_id: CanTransferId::try_from(0).unwrap(),
                 priority: Priority::Nominal,
                 subject: SubjectId::try_from(4919).unwrap(),
@@ -625,10 +622,7 @@ mod test {
         );
     }
 
-    fn check_can_id<I: Clone + PartialEq + Debug>(
-        expected_header: Header<I, CanTransport>,
-        bits: u32,
-    ) {
+    fn check_can_id(expected_header: Header<CanTransport>, bits: u32) {
         let id = CanId::try_from(bits).unwrap();
         let actual_header = parse_can_id(
             id,
@@ -667,7 +661,7 @@ enum TransferKind {
 }
 
 impl TransferKind {
-    pub fn from_header<I>(header: &Header<I, CanTransport>) -> Self {
+    pub fn from_header(header: &Header<CanTransport>) -> Self {
         match header {
             Header::Message(_) => TransferKind::Message,
             Header::Request(_) => TransferKind::Request,

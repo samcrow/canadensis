@@ -14,11 +14,11 @@ use crate::driver::{ReceiveDriver, TransmitDriver};
 use crate::types::CanNodeId;
 use crate::Frame;
 use canadensis_core::subscription::Subscription;
-use canadensis_core::time::{Clock, Instant};
+use canadensis_core::time::{Clock, Microseconds32};
 use canadensis_core::{nb, OutOfMemoryError};
 
 /// A queue of outgoing frames
-pub trait FrameQueue<I> {
+pub trait FrameQueue {
     /// Attempts to reserve memory for some number of additional frames
     ///
     /// After `try_reserve(n)` returns `Ok(())` for any n, the next n calls to `push_frame()` must
@@ -33,12 +33,12 @@ pub trait FrameQueue<I> {
     /// The frame must end up in front of all existing frames with a greater CAN ID, but behind all
     /// frames with an equal or lesser CAN ID. This keeps the frames in order by priority and then
     /// by first-in, first-out.
-    fn push_frame(&mut self, frame: Frame<I>) -> Result<(), OutOfMemoryError>;
+    fn push_frame(&mut self, frame: Frame) -> Result<(), OutOfMemoryError>;
 
     /// Returns a reference to the frame at the front of the queue
-    fn peek_frame(&self) -> Option<&Frame<I>>;
+    fn peek_frame(&self) -> Option<&Frame>;
     /// Removes and returns the frame at the front of the queue
-    fn pop_frame(&mut self) -> Option<Frame<I>>;
+    fn pop_frame(&mut self) -> Option<Frame>;
     /// Returns a not-yet-transmitted frame to the queue
     ///
     /// This function is used when a frame is displaced from a transmit mailbox and must be stored
@@ -46,7 +46,7 @@ pub trait FrameQueue<I> {
     ///
     /// The frame must end up behind all existing frames with a lesser CAN ID, but in front of all
     /// frames with a greater or equal CAN ID.
-    fn return_frame(&mut self, frame: Frame<I>) -> Result<(), OutOfMemoryError>;
+    fn return_frame(&mut self, frame: Frame) -> Result<(), OutOfMemoryError>;
 }
 
 /// A single transmit queue and a single driver
@@ -84,7 +84,7 @@ impl<C, Q, D> SingleQueueDriver<C, Q, D> {
 impl<C, Q, D> TransmitDriver<C> for SingleQueueDriver<C, Q, D>
 where
     C: Clock,
-    Q: FrameQueue<C::Instant>,
+    Q: FrameQueue,
     D: TransmitDriver<C>,
 {
     type Error = D::Error;
@@ -96,11 +96,7 @@ where
     /// Adds a frame to the back of the queue
     ///
     /// This function returns `Err(nb::Error::WouldBlock)` if the queue is full.
-    fn transmit(
-        &mut self,
-        frame: Frame<C::Instant>,
-        _clock: &mut C,
-    ) -> nb::Result<Option<Frame<C::Instant>>, Self::Error> {
+    fn transmit(&mut self, frame: Frame, _clock: &mut C) -> nb::Result<Option<Frame>, Self::Error> {
         self.queue
             .push_frame(frame)
             .map(|_oom| None)
@@ -120,7 +116,7 @@ where
 {
     type Error = D::Error;
 
-    fn receive(&mut self, clock: &mut C) -> nb::Result<Frame<C::Instant>, Self::Error> {
+    fn receive(&mut self, clock: &mut C) -> nb::Result<Frame, Self::Error> {
         self.driver.receive(clock)
     }
 
@@ -147,12 +143,12 @@ pub fn flush_single_queue<C, Q, D>(
 ) -> nb::Result<(), D::Error>
 where
     C: Clock,
-    Q: FrameQueue<C::Instant>,
+    Q: FrameQueue,
     D: TransmitDriver<C>,
 {
     while let Some(frame) = queue.pop_frame() {
         let now = clock.now();
-        if frame_is_expired(&frame, &now) {
+        if frame_is_expired(&frame, now) {
             // Frame deadline has passed
             drop(frame);
             continue;
@@ -162,7 +158,7 @@ where
             Ok(None) => { /* Transmitted, keep going and try the next frame */ }
             Ok(Some(removed_frame)) => {
                 // Removed a lower-priority frame
-                if !frame_is_expired(&removed_frame, &now) {
+                if !frame_is_expired(&removed_frame, now) {
                     // Because we just popped a frame from the queue, it must have space to
                     // return a frame.
                     queue
@@ -187,9 +183,6 @@ where
 }
 
 /// Returns true if this frame's deadline is in the past
-fn frame_is_expired<I>(frame: &Frame<I>, now: &I) -> bool
-where
-    I: Instant,
-{
+fn frame_is_expired(frame: &Frame, now: Microseconds32) -> bool {
     frame.timestamp().overflow_safe_compare(now) == Ordering::Less
 }

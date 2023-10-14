@@ -11,3 +11,5 @@ extern crate heapless;
 extern crate zerocopy;
 
 include!("generated.rs");
+
+pub mod optimized;

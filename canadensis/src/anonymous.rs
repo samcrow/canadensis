@@ -6,7 +6,7 @@ use core::marker::PhantomData;
 
 use crate::serialize::do_serialize;
 use crate::Clock;
-use canadensis_core::time::Instant;
+use canadensis_core::time::{MicrosecondDuration32, Microseconds32};
 use canadensis_core::transfer::{Header, MessageHeader, Transfer};
 use canadensis_core::transport::{TransferId, Transmitter, Transport};
 use canadensis_core::{nb, SubjectId};
@@ -25,7 +25,7 @@ pub struct AnonymousPublisher<C: Clock, M, T: Transmitter<C>> {
     /// The ID of the next transfer sent
     next_transfer_id: <T::Transport as Transport>::TransferId,
     /// Frame transmit timeout
-    timeout: <C::Instant as Instant>::Duration,
+    timeout: MicrosecondDuration32,
     /// Message type phantom data
     _message_phantom: PhantomData<M>,
 }
@@ -40,7 +40,7 @@ where
     pub fn new(
         subject: SubjectId,
         priority: <T::Transport as Transport>::Priority,
-        timeout: <C::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
     ) -> Self {
         AnonymousPublisher {
             priority,
@@ -113,7 +113,7 @@ where
     fn send_payload(
         &mut self,
         payload: &[u8],
-        deadline: C::Instant,
+        deadline: Microseconds32,
         loopback: bool,
         transmitter: &mut T,
         clock: &mut C,

@@ -4,7 +4,7 @@ use crate::types::{CanNodeId, Header, Transfer};
 use crate::{Frame, Mtu};
 use alloc::boxed::Box;
 use alloc::vec::Vec;
-use canadensis_core::time::Instant;
+use canadensis_core::time::MicrosecondDuration32;
 use canadensis_core::{OutOfMemoryError, PortId};
 use core::fmt;
 use core::fmt::Debug;
@@ -16,18 +16,18 @@ const RX_SESSIONS_PER_SUBSCRIPTION: usize = CanNodeId::MAX.to_u8() as usize + 1;
 /// Transfer subscription state. The application can register its interest in a particular kind of data exchanged
 /// over the bus by creating such subscription objects. Frames that carry data for which there is no active
 /// subscription will be silently dropped by the library.
-pub struct Subscription<I: Instant> {
+pub struct Subscription {
     /// A session for each node ID
-    sessions: [Option<Box<Session<I>>>; RX_SESSIONS_PER_SUBSCRIPTION],
+    sessions: [Option<Box<Session>>; RX_SESSIONS_PER_SUBSCRIPTION],
     /// Maximum time difference between the first and last frames in a transfer
-    timeout: I::Duration,
+    timeout: MicrosecondDuration32,
     /// Maximum number of payload bytes, space for the padding and CRC if necessary
     payload_size_max: usize,
     /// Subject or service ID that this subscription is about
     port_id: PortId,
 }
 
-impl<I: Instant> fmt::Debug for Subscription<I> {
+impl fmt::Debug for Subscription {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Subscription")
             .field("sessions", &DebugSessions(&self.sessions))
@@ -39,9 +39,9 @@ impl<I: Instant> fmt::Debug for Subscription<I> {
 }
 
 /// A debug adapter for the session list
-struct DebugSessions<'s, I>(&'s [Option<Box<Session<I>>>; RX_SESSIONS_PER_SUBSCRIPTION]);
+struct DebugSessions<'s>(&'s [Option<Box<Session>>; RX_SESSIONS_PER_SUBSCRIPTION]);
 
-impl<I: Instant> fmt::Debug for DebugSessions<'_, I> {
+impl fmt::Debug for DebugSessions<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Display as a set, showing only the non-empty entries
         f.debug_set()
@@ -50,12 +50,17 @@ impl<I: Instant> fmt::Debug for DebugSessions<'_, I> {
     }
 }
 
-impl<I: Instant> Subscription<I> {
+impl Subscription {
     /// Creates a subscription
     ///
     /// The `payload_size_max` value is the maximum number of payload bytes that can be received,
     /// not including space for the padding and transfer CRC.
-    pub fn new(timeout: I::Duration, payload_size_max: usize, port_id: PortId, mtu: Mtu) -> Self {
+    pub fn new(
+        timeout: MicrosecondDuration32,
+        payload_size_max: usize,
+        port_id: PortId,
+        mtu: Mtu,
+    ) -> Self {
         Subscription {
             sessions: init_rx_sessions(),
             timeout,
@@ -67,10 +72,10 @@ impl<I: Instant> Subscription<I> {
     /// Handles an incoming frame on this subscription's topic
     pub(crate) fn accept(
         &mut self,
-        frame: Frame<I>,
-        frame_header: Header<I>,
+        frame: Frame,
+        frame_header: Header,
         tail: TailByte,
-    ) -> Result<Option<Transfer<Vec<u8>, I>>, SubscriptionError> {
+    ) -> Result<Option<Transfer<Vec<u8>>>, SubscriptionError> {
         if let Some(source_node) = frame_header.source().cloned() {
             self.accept_non_anonymous(frame, frame_header, source_node, tail)
         } else {
@@ -80,11 +85,11 @@ impl<I: Instant> Subscription<I> {
 
     fn accept_non_anonymous(
         &mut self,
-        frame: Frame<I>,
-        frame_header: Header<I>,
+        frame: Frame,
+        frame_header: Header,
         source_node: CanNodeId,
         tail: TailByte,
-    ) -> Result<Option<Transfer<Vec<u8>, I>>, SubscriptionError> {
+    ) -> Result<Option<Transfer<Vec<u8>>>, SubscriptionError> {
         let max_payload_length = self.payload_size_max;
 
         if tail.start && tail.end {
@@ -109,11 +114,11 @@ impl<I: Instant> Subscription<I> {
 
     fn accept_with_session(
         &mut self,
-        frame: Frame<I>,
-        frame_header: Header<I>,
+        frame: Frame,
+        frame_header: Header,
         source_node: CanNodeId,
         tail: TailByte,
-    ) -> Result<Option<Transfer<Vec<u8>, I>>, SubscriptionError> {
+    ) -> Result<Option<Transfer<Vec<u8>>>, SubscriptionError> {
         let max_payload_length = self.payload_size_max;
         let transfer_timeout = self.timeout;
 
@@ -175,9 +180,9 @@ impl<I: Instant> Subscription<I> {
 
     fn accept_anonymous(
         &mut self,
-        frame: Frame<I>,
-        frame_header: Header<I>,
-    ) -> Result<Option<Transfer<Vec<u8>, I>>, SubscriptionError> {
+        frame: Frame,
+        frame_header: Header,
+    ) -> Result<Option<Transfer<Vec<u8>>>, SubscriptionError> {
         // An anonymous transfer is always a single frame and does not have a corresponding session.
         // Just convert it into a transfer.
         // Remove the tail byte
@@ -199,11 +204,11 @@ impl<I: Instant> Subscription<I> {
     }
 
     /// Returns a mutable reference to the array of sessions
-    pub fn sessions_mut(&mut self) -> &mut [Option<Box<Session<I>>>; RX_SESSIONS_PER_SUBSCRIPTION] {
+    pub fn sessions_mut(&mut self) -> &mut [Option<Box<Session>>; RX_SESSIONS_PER_SUBSCRIPTION] {
         &mut self.sessions
     }
     /// Returns the transfer ID timeout for this subscription
-    pub fn timeout(&self) -> I::Duration {
+    pub fn timeout(&self) -> MicrosecondDuration32 {
         self.timeout
     }
 }
@@ -236,7 +241,7 @@ impl From<TryReserveError> for SubscriptionError {
 }
 
 /// Returns 128 Nones
-fn init_rx_sessions<I>() -> [Option<Box<Session<I>>>; RX_SESSIONS_PER_SUBSCRIPTION] {
+fn init_rx_sessions() -> [Option<Box<Session>>; RX_SESSIONS_PER_SUBSCRIPTION] {
     [
         None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
         None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,

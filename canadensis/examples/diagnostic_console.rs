@@ -12,10 +12,10 @@ use std::env;
 use std::error::Error;
 use std::process;
 
-use canadensis::core::time::MicrosecondDuration64;
 use canadensis::core::transport::Receiver;
 use canadensis::encoding::{DataType, Deserialize, ReadCursor};
 use canadensis_can::{CanReceiver, Mtu};
+use canadensis_core::time::MicrosecondDuration32;
 use canadensis_data_types::uavcan::diagnostic::record_1_1::{self, Record};
 use canadensis_data_types::uavcan::diagnostic::severity_1_0::Severity;
 use canadensis_linux::{LinuxCan, SystemClock};
@@ -34,7 +34,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .subscribe_message(
             record_1_1::SUBJECT,
             Record::EXTENT_BYTES.unwrap() as usize,
-            MicrosecondDuration64::new(1_000_000),
+            MicrosecondDuration32::new(1_000_000),
             &mut can,
         )
         .unwrap();

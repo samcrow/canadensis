@@ -18,9 +18,9 @@ impl Transport for CanTransport {
 }
 
 /// Convenience type alias for a transfer header
-pub type Header<I> = canadensis_core::transfer::Header<I, CanTransport>;
+pub type Header = canadensis_core::transfer::Header<CanTransport>;
 /// Convenience type alias for a transfer
-pub type Transfer<A, I> = canadensis_core::transfer::Transfer<A, I, CanTransport>;
+pub type Transfer<A> = canadensis_core::transfer::Transfer<A, CanTransport>;
 
 const VALID_NODE_IDS: RangeInclusive<u8> = 0..=127;
 

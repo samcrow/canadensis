@@ -13,7 +13,7 @@ extern crate socketcan;
 use canadensis_can::driver::{optimize_filters, ReceiveDriver, TransmitDriver};
 use canadensis_can::{CanNodeId, Frame};
 use canadensis_core::subscription::Subscription;
-use canadensis_core::time::{Clock, Instant, Microseconds64};
+use canadensis_core::time::{Clock, Microseconds32};
 use canadensis_core::{nb, OutOfMemoryError};
 use socketcan::CANSocket;
 use std::cmp::Ordering;
@@ -43,12 +43,12 @@ impl TransmitDriver<SystemClock> for LinuxCan {
 
     fn transmit(
         &mut self,
-        frame: Frame<Microseconds64>,
+        frame: Frame,
         clock: &mut SystemClock,
-    ) -> nb::Result<Option<Frame<Microseconds64>>, Self::Error> {
+    ) -> nb::Result<Option<Frame>, Self::Error> {
         // Drop this frame if its deadline has passed
         let now = clock.now();
-        if frame.timestamp().overflow_safe_compare(&now) == Ordering::Less {
+        if frame.timestamp().overflow_safe_compare(now) == Ordering::Less {
             log::warn!("Dropping frame that has missed its deadline");
             return Ok(None);
         }
@@ -76,10 +76,7 @@ impl TransmitDriver<SystemClock> for LinuxCan {
 impl ReceiveDriver<SystemClock> for LinuxCan {
     type Error = io::Error;
 
-    fn receive(
-        &mut self,
-        clock: &mut SystemClock,
-    ) -> nb::Result<Frame<Microseconds64>, Self::Error> {
+    fn receive(&mut self, clock: &mut SystemClock) -> nb::Result<Frame, Self::Error> {
         loop {
             let socketcan_frame = self.socket.read_frame()?;
             if socketcan_frame.data().len() <= canadensis_can::FRAME_CAPACITY {
@@ -139,11 +136,10 @@ impl Default for SystemClock {
 }
 
 impl Clock for SystemClock {
-    type Instant = Microseconds64;
-
-    fn now(&mut self) -> Self::Instant {
+    fn now(&mut self) -> Microseconds32 {
         let since_start = std::time::Instant::now().duration_since(self.start_time);
         let microseconds = since_start.as_micros();
-        Microseconds64::new(microseconds as u64)
+        // Use only 32 least significant bits
+        Microseconds32::new(microseconds as u32)
     }
 }

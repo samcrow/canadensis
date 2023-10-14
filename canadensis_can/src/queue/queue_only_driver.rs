@@ -24,7 +24,6 @@ use heapless::Deque;
 /// remove frames and send them to a CAN peripheral.
 ///
 /// Type parameters:
-/// * `I`: A time instant
 /// * `TC`: The transmit queue capacity, in frames
 /// * `RC`: The receive queue capacity, in frames
 ///
@@ -34,13 +33,13 @@ use heapless::Deque;
 /// External code should get these subscriptions using the `subscriptions()` function and manually
 /// send them to the CAN driver.
 ///
-pub struct QueueOnlyDriver<I, const TC: usize, const RC: usize> {
-    tx_queue: ArrayQueue<I, TC>,
-    rx_queue: Deque<Frame<I>, RC>,
+pub struct QueueOnlyDriver<const TC: usize, const RC: usize> {
+    tx_queue: ArrayQueue<TC>,
+    rx_queue: Deque<Frame, RC>,
     subscriptions: Option<Vec<Subscription>>,
 }
 
-impl<I: Default + Clone, const TC: usize, const RC: usize> QueueOnlyDriver<I, TC, RC> {
+impl<const TC: usize, const RC: usize> QueueOnlyDriver<TC, RC> {
     /// Creates a driver
     pub fn new() -> Self {
         Default::default()
@@ -49,12 +48,12 @@ impl<I: Default + Clone, const TC: usize, const RC: usize> QueueOnlyDriver<I, TC
     /// Pushes a received frame onto the back of the receive queue
     ///
     /// The frame can be retrieved using the `receive()` function.
-    pub fn push_rx_frame(&mut self, frame: Frame<I>) -> Result<(), OutOfMemoryError> {
+    pub fn push_rx_frame(&mut self, frame: Frame) -> Result<(), OutOfMemoryError> {
         self.rx_queue.push_back(frame).map_err(|_| OutOfMemoryError)
     }
 
     /// Removes and returns a frame from the front of the transmit queue
-    pub fn pop_tx_frame(&mut self) -> Option<Frame<I>> {
+    pub fn pop_tx_frame(&mut self) -> Option<Frame> {
         self.tx_queue.pop_frame()
     }
 
@@ -62,7 +61,7 @@ impl<I: Default + Clone, const TC: usize, const RC: usize> QueueOnlyDriver<I, TC
     ///
     /// The frame will be moved back beyond any other frames already in the queue that have
     /// higher priority.
-    pub fn return_tx_frame(&mut self, frame: Frame<I>) -> Result<(), OutOfMemoryError> {
+    pub fn return_tx_frame(&mut self, frame: Frame) -> Result<(), OutOfMemoryError> {
         self.tx_queue.return_frame(frame)
     }
 
@@ -76,7 +75,7 @@ impl<I: Default + Clone, const TC: usize, const RC: usize> QueueOnlyDriver<I, TC
     }
 }
 
-impl<I: Default, const TC: usize, const RC: usize> Default for QueueOnlyDriver<I, TC, RC> {
+impl<const TC: usize, const RC: usize> Default for QueueOnlyDriver<TC, RC> {
     fn default() -> Self {
         QueueOnlyDriver {
             tx_queue: ArrayQueue::new(),
@@ -86,22 +85,14 @@ impl<I: Default, const TC: usize, const RC: usize> Default for QueueOnlyDriver<I
     }
 }
 
-impl<C: Clock, const TC: usize, const RC: usize> TransmitDriver<C>
-    for QueueOnlyDriver<C::Instant, TC, RC>
-where
-    C::Instant: Default,
-{
+impl<C: Clock, const TC: usize, const RC: usize> TransmitDriver<C> for QueueOnlyDriver<TC, RC> {
     type Error = Infallible;
 
     fn try_reserve(&mut self, frames: usize) -> Result<(), OutOfMemoryError> {
         self.tx_queue.try_reserve(frames)
     }
 
-    fn transmit(
-        &mut self,
-        frame: Frame<C::Instant>,
-        _clock: &mut C,
-    ) -> nb::Result<Option<Frame<C::Instant>>, Self::Error> {
+    fn transmit(&mut self, frame: Frame, _clock: &mut C) -> nb::Result<Option<Frame>, Self::Error> {
         self.tx_queue
             .push_frame(frame)
             .map(|_oom| None)
@@ -114,12 +105,10 @@ where
     }
 }
 
-impl<C: Clock, const TC: usize, const RC: usize> ReceiveDriver<C>
-    for QueueOnlyDriver<C::Instant, TC, RC>
-{
+impl<C: Clock, const TC: usize, const RC: usize> ReceiveDriver<C> for QueueOnlyDriver<TC, RC> {
     type Error = Infallible;
 
-    fn receive(&mut self, _clock: &mut C) -> nb::Result<Frame<C::Instant>, Self::Error> {
+    fn receive(&mut self, _clock: &mut C) -> nb::Result<Frame, Self::Error> {
         self.rx_queue.pop_front().ok_or(nb::Error::WouldBlock)
     }
 

@@ -28,7 +28,7 @@ fn round_trip_no_payload() {
     let mut driver = MockDriver::default();
     let subject = SubjectId::try_from(9u16).unwrap();
     let mut tx = SerialTransmitter::<_, 39>::new();
-    let transfer: Transfer<Vec<u8>, Microseconds32, SerialTransport> = Transfer {
+    let transfer: Transfer<Vec<u8>, SerialTransport> = Transfer {
         header: Header::Message(MessageHeader {
             timestamp: Microseconds32::new(0),
             transfer_id: 330.into(),
@@ -45,11 +45,8 @@ fn round_trip_no_payload() {
     let wire_bytes: Vec<u8> = driver.iter().copied().collect();
     println!("{:02x?}", wire_bytes);
 
-    let mut rx: SerialReceiver<
-        ZeroClock,
-        MockDriver,
-        DynamicSubscriptionManager<Subscription<Microseconds32>>,
-    > = SerialReceiver::new(SerialNodeId::try_from(360).unwrap());
+    let mut rx: SerialReceiver<ZeroClock, MockDriver, DynamicSubscriptionManager<Subscription>> =
+        SerialReceiver::new(SerialNodeId::try_from(360).unwrap());
     rx.subscribe_message(subject, 0, MicrosecondDuration32::new(0), &mut driver)
         .unwrap();
 
@@ -96,9 +93,7 @@ impl ReceiveDriver for MockDriver {
 pub struct ZeroClock;
 
 impl Clock for ZeroClock {
-    type Instant = Microseconds32;
-
-    fn now(&mut self) -> Self::Instant {
+    fn now(&mut self) -> Microseconds32 {
         Microseconds32::new(0)
     }
 }

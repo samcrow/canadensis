@@ -15,7 +15,7 @@ use simplelog::{ColorChoice, TermLogger};
 use zerocopy::AsBytes;
 
 use canadensis_core::session::SessionDynamicMap;
-use canadensis_core::time::{MicrosecondDuration64, Microseconds64};
+use canadensis_core::time::MicrosecondDuration32;
 use canadensis_core::transport::Receiver;
 use canadensis_linux::SystemClock;
 use canadensis_udp::driver::StdUdpSocket;
@@ -39,7 +39,7 @@ fn main() {
     const MTU: usize = 1472;
     let mut receiver = UdpReceiver::<
         SystemClock,
-        SessionDynamicMap<Microseconds64, UdpNodeId, UdpTransferId, UdpSessionData>,
+        SessionDynamicMap<UdpNodeId, UdpTransferId, UdpSessionData>,
         StdUdpSocket,
         MTU,
     >::new(Some(local_node_id), Ipv4Addr::localhost());
@@ -47,7 +47,7 @@ fn main() {
         .subscribe_message(
             73.try_into().unwrap(),
             4096,
-            MicrosecondDuration64::new(2_000_000),
+            MicrosecondDuration32::new(2_000_000),
             &mut socket,
         )
         .unwrap();

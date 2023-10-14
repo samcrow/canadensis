@@ -32,14 +32,12 @@ use std::convert::TryInto;
 use std::time::Duration;
 use std::{env, thread};
 
-use canadensis::core::time::Instant;
 use canadensis::core::transfer::{MessageTransfer, ServiceTransfer};
 use canadensis::core::transport::Transport;
 use canadensis::node::{BasicNode, CoreNode};
 use canadensis::requester::TransferIdFixedMap;
 use canadensis::{Node, ResponseToken, TransferHandler};
 use canadensis_core::session::SessionDynamicMap;
-use canadensis_core::time::Microseconds64;
 use canadensis_data_types::uavcan::node::get_info_1_0::GetInfoResponse;
 use canadensis_data_types::uavcan::node::version_1_0::Version;
 use canadensis_linux::SystemClock;
@@ -85,7 +83,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         UdpTransmitter<StdUdpSocket, MTU>,
         UdpReceiver<
             SystemClock,
-            SessionDynamicMap<Microseconds64, UdpNodeId, UdpTransferId, UdpSessionData>,
+            SessionDynamicMap<UdpNodeId, UdpTransferId, UdpSessionData>,
             StdUdpSocket,
             MTU,
         >,
@@ -119,14 +117,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 struct EmptyHandler;
 
-impl<I: Instant, T: Transport> TransferHandler<I, T> for EmptyHandler {
-    fn handle_message<N>(
-        &mut self,
-        _node: &mut N,
-        transfer: &MessageTransfer<Vec<u8>, I, T>,
-    ) -> bool
+impl<T: Transport> TransferHandler<T> for EmptyHandler {
+    fn handle_message<N>(&mut self, _node: &mut N, transfer: &MessageTransfer<Vec<u8>, T>) -> bool
     where
-        N: Node<Instant = I, Transport = T>,
+        N: Node<Transport = T>,
     {
         println!("Got message {:?}", transfer);
         false
@@ -136,22 +130,18 @@ impl<I: Instant, T: Transport> TransferHandler<I, T> for EmptyHandler {
         &mut self,
         _node: &mut N,
         _token: ResponseToken<T>,
-        transfer: &ServiceTransfer<Vec<u8>, I, T>,
+        transfer: &ServiceTransfer<Vec<u8>, T>,
     ) -> bool
     where
-        N: Node<Instant = I, Transport = T>,
+        N: Node<Transport = T>,
     {
         println!("Got request {:?}", transfer);
         false
     }
 
-    fn handle_response<N>(
-        &mut self,
-        _node: &mut N,
-        transfer: &ServiceTransfer<Vec<u8>, I, T>,
-    ) -> bool
+    fn handle_response<N>(&mut self, _node: &mut N, transfer: &ServiceTransfer<Vec<u8>, T>) -> bool
     where
-        N: Node<Instant = I, Transport = T>,
+        N: Node<Transport = T>,
     {
         println!("Got response {:?}", transfer);
         false

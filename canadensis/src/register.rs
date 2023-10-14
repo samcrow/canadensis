@@ -7,7 +7,7 @@ use alloc::vec::Vec;
 use core::str;
 
 use crate::{Node, ResponseToken, TransferHandler};
-use canadensis_core::time::{milliseconds, Instant};
+use canadensis_core::time::milliseconds;
 use canadensis_core::transfer::ServiceTransfer;
 use canadensis_core::transport::{Receiver, Transport};
 use canadensis_data_types::uavcan::register::access_1_0::{self, AccessRequest, AccessResponse};
@@ -244,17 +244,16 @@ fn register_handle_access(register: &mut dyn Register, request: &AccessRequest) 
     }
 }
 
-impl<I, B, T> TransferHandler<I, T> for RegisterHandler<B>
+impl<B, T> TransferHandler<T> for RegisterHandler<B>
 where
-    I: Instant,
     B: RegisterBlock,
     T: Transport,
 {
-    fn handle_request<N: Node<Instant = I, Transport = T>>(
+    fn handle_request<N: Node<Transport = T>>(
         &mut self,
         node: &mut N,
         token: ResponseToken<T>,
-        transfer: &ServiceTransfer<Vec<u8>, I, T>,
+        transfer: &ServiceTransfer<Vec<u8>, T>,
     ) -> bool {
         match transfer.header.service {
             access_1_0::SERVICE => {

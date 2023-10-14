@@ -56,11 +56,7 @@ where
     /// If a driver failed to allocate memory during the most recent call to
     /// [`try_reserve`](#method.try_reserve), this function does not attempt to push a frame onto
     /// that queue.
-    fn transmit(
-        &mut self,
-        frame: Frame<C::Instant>,
-        clock: &mut C,
-    ) -> nb::Result<Option<Frame<C::Instant>>, Self::Error> {
+    fn transmit(&mut self, frame: Frame, clock: &mut C) -> nb::Result<Option<Frame>, Self::Error> {
         // If a queue failed to reserve memory in the last call to try_reserve(),
         // don't try to push the frame there.
         let push_status_0 = if self.status0.is_ok() {

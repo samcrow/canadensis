@@ -6,6 +6,7 @@ extern crate hash32;
 extern crate hash32_derive;
 extern crate zerocopy;
 
+use canadensis_core::time::Microseconds32;
 use canadensis_core::transfer::{MessageHeader, ServiceHeader};
 use canadensis_core::transport::{TransferId, Transport};
 use canadensis_core::{InvalidValue, Priority, ServiceId, SubjectId};
@@ -198,7 +199,10 @@ impl Header {
     /// Creates a core transfer header that is a copy of this header
     ///
     /// timestamp: A timestamp to assign to the returned header
-    pub fn as_core_header<I, T>(&self, timestamp: I) -> canadensis_core::transfer::Header<I, T>
+    pub fn as_core_header<T>(
+        &self,
+        timestamp: Microseconds32,
+    ) -> canadensis_core::transfer::Header<T>
     where
         T: Transport<TransferId = TransferId64, NodeId = NodeId16>,
     {
@@ -236,14 +240,14 @@ impl Header {
     }
 }
 
-impl<'h, I, T> From<&'h canadensis_core::transfer::Header<I, T>> for Header
+impl<'h, T> From<&'h canadensis_core::transfer::Header<T>> for Header
 where
     T: Transport<NodeId = NodeId16, Priority = Priority, TransferId = TransferId64>,
 {
     /// Converts a transfer header into a transport header
     ///
     /// The returned header has its frame index set to 0 and last frame set to true.
-    fn from(header: &'h canadensis_core::transfer::Header<I, T>) -> Self {
+    fn from(header: &'h canadensis_core::transfer::Header<T>) -> Self {
         let data_specifier = match header {
             canadensis_core::transfer::Header::Message(message_header) => DataSpecifier::Subject {
                 from: message_header.source,
@@ -275,11 +279,11 @@ where
     }
 }
 
-impl<I, T> From<canadensis_core::transfer::Header<I, T>> for Header
+impl<T> From<canadensis_core::transfer::Header<T>> for Header
 where
     T: Transport<NodeId = NodeId16, Priority = Priority, TransferId = TransferId64>,
 {
-    fn from(header: canadensis_core::transfer::Header<I, T>) -> Self {
+    fn from(header: canadensis_core::transfer::Header<T>) -> Self {
         Header::from(&header)
     }
 }

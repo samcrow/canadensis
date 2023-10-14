@@ -43,7 +43,6 @@ use std::time::Duration;
 
 use socketcan::CANSocket;
 
-use canadensis::core::time::{Instant, Microseconds64};
 use canadensis::core::transfer::{MessageTransfer, ServiceTransfer};
 use canadensis::core::transport::Transport;
 use canadensis::node::{BasicNode, CoreNode};
@@ -97,8 +96,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     const QUEUE_CAPACITY: usize = 1210;
-    type Queue =
-        SingleQueueDriver<SystemClock, ArrayQueue<Microseconds64, QUEUE_CAPACITY>, LinuxCan>;
+    type Queue = SingleQueueDriver<SystemClock, ArrayQueue<QUEUE_CAPACITY>, LinuxCan>;
     let queue_driver: Queue = SingleQueueDriver::new(ArrayQueue::new(), can);
 
     // Create a node with capacity for 8 publishers and 8 requesters
@@ -148,14 +146,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 struct EmptyHandler;
 
-impl<I: Instant, T: Transport> TransferHandler<I, T> for EmptyHandler {
-    fn handle_message<N>(
-        &mut self,
-        _node: &mut N,
-        transfer: &MessageTransfer<Vec<u8>, I, T>,
-    ) -> bool
+impl<T: Transport> TransferHandler<T> for EmptyHandler {
+    fn handle_message<N>(&mut self, _node: &mut N, transfer: &MessageTransfer<Vec<u8>, T>) -> bool
     where
-        N: Node<Instant = I, Transport = T>,
+        N: Node<Transport = T>,
     {
         println!("Got message {:?}", transfer);
         false
@@ -165,22 +159,18 @@ impl<I: Instant, T: Transport> TransferHandler<I, T> for EmptyHandler {
         &mut self,
         _node: &mut N,
         _token: ResponseToken<T>,
-        transfer: &ServiceTransfer<Vec<u8>, I, T>,
+        transfer: &ServiceTransfer<Vec<u8>, T>,
     ) -> bool
     where
-        N: Node<Instant = I, Transport = T>,
+        N: Node<Transport = T>,
     {
         println!("Got request {:?}", transfer);
         false
     }
 
-    fn handle_response<N>(
-        &mut self,
-        _node: &mut N,
-        transfer: &ServiceTransfer<Vec<u8>, I, T>,
-    ) -> bool
+    fn handle_response<N>(&mut self, _node: &mut N, transfer: &ServiceTransfer<Vec<u8>, T>) -> bool
     where
-        N: Node<Instant = I, Transport = T>,
+        N: Node<Transport = T>,
     {
         println!("Got response {:?}", transfer);
         false

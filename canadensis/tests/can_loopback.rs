@@ -13,7 +13,7 @@ use canadensis::{Node, PublishToken, ResponseToken, TransferHandler};
 use canadensis_can::driver::{ReceiveDriver, TransmitDriver};
 use canadensis_can::{CanNodeId, CanReceiver, CanTransmitter, CanTransport, Frame, Mtu};
 use canadensis_core::subscription::Subscription;
-use canadensis_core::time::{milliseconds, Clock, Microseconds64};
+use canadensis_core::time::{milliseconds, Clock, Microseconds32};
 use canadensis_core::transfer::{MessageTransfer, ServiceTransfer, Transfer};
 use canadensis_core::{OutOfMemoryError, Priority};
 use canadensis_data_types::uavcan::time::synchronization_1_0::{self, Synchronization};
@@ -102,7 +102,7 @@ fn can_loopback_time_sync() {
     assert_eq!(received_loopback.header.source(), Some(&node_id));
     assert_eq!(
         received_loopback.header.timestamp(),
-        Microseconds64::new(30)
+        Microseconds32::new(30)
     );
     let loopback_deserialized_payload =
         Synchronization::deserialize_from_bytes(&received_loopback.payload).unwrap();
@@ -118,7 +118,7 @@ fn can_loopback_time_sync() {
 /// frames.
 #[derive(Default)]
 struct LoopbackOnlyDriver {
-    loopback_frames: VecDeque<Frame<Microseconds64>>,
+    loopback_frames: VecDeque<Frame>,
 }
 
 impl TransmitDriver<StubClock<'_>> for LoopbackOnlyDriver {
@@ -131,9 +131,9 @@ impl TransmitDriver<StubClock<'_>> for LoopbackOnlyDriver {
 
     fn transmit(
         &mut self,
-        frame: Frame<Microseconds64>,
+        frame: Frame,
         clock: &mut StubClock<'_>,
-    ) -> canadensis::nb::Result<Option<Frame<Microseconds64>>, Self::Error> {
+    ) -> canadensis::nb::Result<Option<Frame>, Self::Error> {
         log::trace!("LoopbackOnlyDriver::transmit");
         let now = clock.now();
         if frame.timestamp() < now {
@@ -161,7 +161,7 @@ impl ReceiveDriver<StubClock<'_>> for LoopbackOnlyDriver {
     fn receive(
         &mut self,
         _clock: &mut StubClock<'_>,
-    ) -> canadensis::nb::Result<Frame<Microseconds64>, Self::Error> {
+    ) -> canadensis::nb::Result<Frame, Self::Error> {
         self.loopback_frames
             .pop_front()
             .map(|frame| {
@@ -186,39 +186,39 @@ impl ReceiveDriver<StubClock<'_>> for LoopbackOnlyDriver {
 /// A transfer that collects all loopback transfers and panics if given any non-loopback transfer
 #[derive(Default)]
 struct LoopbackCollector {
-    transfers: Vec<Transfer<Vec<u8>, Microseconds64, CanTransport>>,
+    transfers: Vec<Transfer<Vec<u8>, CanTransport>>,
 }
 
-impl TransferHandler<Microseconds64, CanTransport> for LoopbackCollector {
-    fn handle_message<N: Node<Instant = Microseconds64, Transport = CanTransport>>(
+impl TransferHandler<CanTransport> for LoopbackCollector {
+    fn handle_message<N: Node<Transport = CanTransport>>(
         &mut self,
         _node: &mut N,
-        _transfer: &MessageTransfer<Vec<u8>, Microseconds64, CanTransport>,
+        _transfer: &MessageTransfer<Vec<u8>, CanTransport>,
     ) -> bool {
         panic!("handle_message() called (not loopback)");
     }
 
-    fn handle_request<N: Node<Instant = Microseconds64, Transport = CanTransport>>(
+    fn handle_request<N: Node<Transport = CanTransport>>(
         &mut self,
         _node: &mut N,
         _token: ResponseToken<CanTransport>,
-        _transfer: &ServiceTransfer<Vec<u8>, Microseconds64, CanTransport>,
+        _transfer: &ServiceTransfer<Vec<u8>, CanTransport>,
     ) -> bool {
         panic!("handle_request() called (not loopback)");
     }
 
-    fn handle_response<N: Node<Instant = Microseconds64, Transport = CanTransport>>(
+    fn handle_response<N: Node<Transport = CanTransport>>(
         &mut self,
         _node: &mut N,
-        _transfer: &ServiceTransfer<Vec<u8>, Microseconds64, CanTransport>,
+        _transfer: &ServiceTransfer<Vec<u8>, CanTransport>,
     ) -> bool {
         panic!("handle_response() called (not loopback)");
     }
 
-    fn handle_loopback<N: Node<Instant = Microseconds64, Transport = CanTransport>>(
+    fn handle_loopback<N: Node<Transport = CanTransport>>(
         &mut self,
         _node: &mut N,
-        transfer: &Transfer<Vec<u8>, Microseconds64, CanTransport>,
+        transfer: &Transfer<Vec<u8>, CanTransport>,
     ) -> bool {
         self.transfers.push(transfer.clone());
         true
@@ -226,19 +226,17 @@ impl TransferHandler<Microseconds64, CanTransport> for LoopbackCollector {
 }
 
 struct StubClock<'t> {
-    time: &'t Cell<u64>,
+    time: &'t Cell<u32>,
 }
 
 impl Clock for StubClock<'_> {
-    type Instant = Microseconds64;
-
-    fn now(&mut self) -> Self::Instant {
-        Microseconds64::new(self.time.get())
+    fn now(&mut self) -> Microseconds32 {
+        Microseconds32::new(self.time.get())
     }
 }
 
 struct StubClockHandle {
-    time: Cell<u64>,
+    time: Cell<u32>,
 }
 
 impl StubClockHandle {
@@ -246,7 +244,7 @@ impl StubClockHandle {
         StubClockHandle { time: Cell::new(0) }
     }
     /// Sets the time that all associated stub clocks will return
-    pub fn set_time(&self, time: u64) {
+    pub fn set_time(&self, time: u32) {
         self.time.set(time);
     }
     /// Creates and returns a stub clock that always returns the same time as this handle

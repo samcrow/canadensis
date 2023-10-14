@@ -2,7 +2,7 @@ use crate::core::transport::Transmitter;
 use crate::node::{MinimalNode, NodeError};
 use crate::{Node, PublishToken, ResponseToken, ServiceToken, StartSendError, TransferHandler};
 use alloc::vec::Vec;
-use canadensis_core::time::{milliseconds, Clock, Instant};
+use canadensis_core::time::{milliseconds, MicrosecondDuration32};
 use canadensis_core::transfer::{MessageTransfer, ServiceTransfer};
 use canadensis_core::transport::{Receiver, Transport};
 use canadensis_core::{nb, Priority, ServiceId, SubjectId};
@@ -160,7 +160,6 @@ where
     N: Node,
 {
     type Clock = N::Clock;
-    type Instant = N::Instant;
     type Transport = N::Transport;
     type Transmitter = N::Transmitter;
     type Receiver = N::Receiver;
@@ -170,7 +169,7 @@ where
         handler: &mut H,
     ) -> Result<(), <N::Receiver as Receiver<N::Clock>>::Error>
     where
-        H: TransferHandler<Self::Instant, Self::Transport>,
+        H: TransferHandler<Self::Transport>,
     {
         let mut chained_handler = NodeInfoHandler {
             response: &self.node_info,
@@ -182,7 +181,7 @@ where
     fn start_publishing<T>(
         &mut self,
         subject: SubjectId,
-        timeout: <<N::Clock as Clock>::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
         priority: <Self::Transport as Transport>::Priority,
     ) -> Result<PublishToken<T>, StartSendError<<N::Transmitter as Transmitter<N::Clock>>::Error>>
     where
@@ -231,7 +230,7 @@ where
     fn start_sending_requests<T>(
         &mut self,
         service: ServiceId,
-        receive_timeout: <<N::Clock as Clock>::Instant as Instant>::Duration,
+        receive_timeout: MicrosecondDuration32,
         response_payload_size_max: usize,
         priority: <Self::Transport as Transport>::Priority,
     ) -> Result<ServiceToken<T>, StartSendError<<N::Receiver as Receiver<N::Clock>>::Error>>
@@ -297,7 +296,7 @@ where
         &mut self,
         subject: SubjectId,
         payload_size_max: usize,
-        timeout: <<N::Clock as Clock>::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
     ) -> Result<(), <N::Receiver as Receiver<N::Clock>>::Error> {
         self.node
             .node_mut()
@@ -313,7 +312,7 @@ where
         &mut self,
         service: ServiceId,
         payload_size_max: usize,
-        timeout: <<N::Clock as Clock>::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
     ) -> Result<(), <N::Receiver as Receiver<N::Clock>>::Error> {
         self.node
             .node_mut()
@@ -328,7 +327,7 @@ where
     fn send_response<T>(
         &mut self,
         token: ResponseToken<Self::Transport>,
-        timeout: <<N::Clock as Clock>::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
         payload: &T,
     ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Clock>>::Error>
     where
@@ -380,15 +379,14 @@ struct NodeInfoResponder<'r, 'h, H> {
     inner: &'h mut H,
 }
 
-impl<'r, 'h, I, H, T> TransferHandler<I, T> for NodeInfoResponder<'r, 'h, H>
+impl<'r, 'h, H, T> TransferHandler<T> for NodeInfoResponder<'r, 'h, H>
 where
-    I: Instant,
-    H: TransferHandler<I, T>,
+    H: TransferHandler<T>,
     T: Transport,
 {
-    fn handle_message<N>(&mut self, node: &mut N, transfer: &MessageTransfer<Vec<u8>, I, T>) -> bool
+    fn handle_message<N>(&mut self, node: &mut N, transfer: &MessageTransfer<Vec<u8>, T>) -> bool
     where
-        N: Node<Instant = I, Transport = T>,
+        N: Node<Transport = T>,
     {
         // Forward to inner handler
         self.inner.handle_message(node, transfer)
@@ -398,10 +396,10 @@ where
         &mut self,
         node: &mut N,
         token: ResponseToken<T>,
-        transfer: &ServiceTransfer<Vec<u8>, I, T>,
+        transfer: &ServiceTransfer<Vec<u8>, T>,
     ) -> bool
     where
-        N: Node<Instant = I, Transport = T>,
+        N: Node<Transport = T>,
     {
         if transfer.header.service == get_info_1_0::SERVICE {
             // Ignore out-of-memory errors
@@ -414,13 +412,9 @@ where
         }
     }
 
-    fn handle_response<N>(
-        &mut self,
-        node: &mut N,
-        transfer: &ServiceTransfer<Vec<u8>, I, T>,
-    ) -> bool
+    fn handle_response<N>(&mut self, node: &mut N, transfer: &ServiceTransfer<Vec<u8>, T>) -> bool
     where
-        N: Node<Instant = I, Transport = T>,
+        N: Node<Transport = T>,
     {
         // Forward to inner handler
         self.inner.handle_response(node, transfer)
@@ -484,16 +478,15 @@ struct NodeInfoHandler<'r> {
     response: &'r GetInfoResponse,
 }
 
-impl<'r, I, T> TransferHandler<I, T> for NodeInfoHandler<'r>
+impl<'r, T> TransferHandler<T> for NodeInfoHandler<'r>
 where
-    I: Instant,
     T: Transport,
 {
-    fn handle_request<N: Node<Instant = I, Transport = T>>(
+    fn handle_request<N: Node<Transport = T>>(
         &mut self,
         node: &mut N,
         token: ResponseToken<T>,
-        transfer: &ServiceTransfer<Vec<u8>, I, T>,
+        transfer: &ServiceTransfer<Vec<u8>, T>,
     ) -> bool {
         if transfer.header.service == get_info_1_0::SERVICE {
             let _ = node.send_response(token, milliseconds(1000), self.response);

@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 use core::marker::PhantomData;
 use heapless::FnvIndexMap;
 
-use canadensis_core::time::{Clock, Instant};
+use canadensis_core::time::{Clock, MicrosecondDuration32, Microseconds32};
 use canadensis_core::transfer::{
     Header, MessageTransfer, ServiceHeader, ServiceTransfer, Transfer,
 };
@@ -92,10 +92,10 @@ where
     /// and calls the corresponding method of the handler
     fn handle_incoming_transfer<H>(
         &mut self,
-        transfer: Transfer<Vec<u8>, C::Instant, U::Transport>,
+        transfer: Transfer<Vec<u8>, U::Transport>,
         handler: &mut H,
     ) where
-        H: TransferHandler<<Self as Node>::Instant, U::Transport>,
+        H: TransferHandler<U::Transport>,
     {
         if transfer.loopback {
             handler.handle_loopback(self, &transfer);
@@ -138,7 +138,7 @@ where
     fn send_response_payload(
         &mut self,
         token: ResponseToken<T::Transport>,
-        deadline: C::Instant,
+        deadline: Microseconds32,
         payload: &[u8],
     ) -> nb::Result<(), T::Error> {
         let transfer_out = Transfer {
@@ -167,14 +167,13 @@ where
     TR: TransferIdTracker<N>,
 {
     type Clock = C;
-    type Instant = <C as Clock>::Instant;
     type Transport = N;
     type Transmitter = T;
     type Receiver = U;
 
     fn receive<H>(&mut self, handler: &mut H) -> Result<(), U::Error>
     where
-        H: TransferHandler<Self::Instant, Self::Transport>,
+        H: TransferHandler<Self::Transport>,
     {
         if let Some(transfer) = self.receiver.receive(&mut self.clock, &mut self.driver)? {
             self.handle_incoming_transfer(transfer, handler)
@@ -185,7 +184,7 @@ where
     fn start_publishing<M>(
         &mut self,
         subject: SubjectId,
-        timeout: <C::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
         priority: N::Priority,
     ) -> Result<PublishToken<M>, StartSendError<T::Error>>
     where
@@ -256,7 +255,7 @@ where
     fn start_sending_requests<M>(
         &mut self,
         service: ServiceId,
-        receive_timeout: <C::Instant as Instant>::Duration,
+        receive_timeout: MicrosecondDuration32,
         response_payload_size_max: usize,
         priority: N::Priority,
     ) -> Result<ServiceToken<M>, StartSendError<U::Error>>
@@ -355,7 +354,7 @@ where
         &mut self,
         subject: SubjectId,
         payload_size_max: usize,
-        timeout: <C::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
     ) -> Result<(), U::Error> {
         self.receiver
             .subscribe_message(subject, payload_size_max, timeout, &mut self.driver)
@@ -365,7 +364,7 @@ where
         &mut self,
         service: ServiceId,
         payload_size_max: usize,
-        timeout: <C::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
     ) -> Result<(), U::Error> {
         let status =
             self.receiver
@@ -380,7 +379,7 @@ where
     fn send_response<M>(
         &mut self,
         token: ResponseToken<Self::Transport>,
-        timeout: <C::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
         payload: &M,
     ) -> nb::Result<(), T::Error>
     where

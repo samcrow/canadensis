@@ -1,7 +1,7 @@
 //! Transport layer traits
 
 use crate::error::{OutOfMemoryError, ServiceSubscribeError};
-use crate::time::{Clock, Instant};
+use crate::time::{Clock, MicrosecondDuration32};
 use crate::transfer::Transfer;
 use crate::{ServiceId, SubjectId};
 use alloc::vec::Vec;
@@ -41,7 +41,7 @@ where
     /// a queue to be sent separately.
     fn push<A>(
         &mut self,
-        transfer: Transfer<A, C::Instant, Self::Transport>,
+        transfer: Transfer<A, Self::Transport>,
         clock: &mut C,
         driver: &mut Self::Driver,
     ) -> nb::Result<(), Self::Error>
@@ -105,7 +105,7 @@ where
         &mut self,
         clock: &mut C,
         driver: &mut Self::Driver,
-    ) -> Result<Option<Transfer<Vec<u8>, C::Instant, Self::Transport>>, Self::Error>;
+    ) -> Result<Option<Transfer<Vec<u8>, Self::Transport>>, Self::Error>;
 
     /// Subscribes to messages on a subject
     ///
@@ -125,7 +125,7 @@ where
         &mut self,
         subject: SubjectId,
         payload_size_max: usize,
-        timeout: <<C as Clock>::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
         driver: &mut Self::Driver,
     ) -> Result<(), Self::Error>;
 
@@ -154,7 +154,7 @@ where
         &mut self,
         service: ServiceId,
         payload_size_max: usize,
-        timeout: <<C as Clock>::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
         driver: &mut Self::Driver,
     ) -> Result<(), ServiceSubscribeError<Self::Error>>;
 
@@ -183,7 +183,7 @@ where
         &mut self,
         service: ServiceId,
         payload_size_max: usize,
-        timeout: <<C as Clock>::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
         driver: &mut Self::Driver,
     ) -> Result<(), ServiceSubscribeError<Self::Error>>;
 

@@ -5,7 +5,7 @@ extern crate embedded_nal;
 extern crate simplelog;
 
 use canadensis_core::session::SessionDynamicMap;
-use canadensis_core::time::{milliseconds, Clock, MicrosecondDuration64, Microseconds64};
+use canadensis_core::time::{milliseconds, Clock, MicrosecondDuration32};
 use canadensis_core::transfer::{Header, MessageHeader, ServiceHeader, Transfer};
 use canadensis_core::transport::{Receiver, TransferId, Transmitter};
 use canadensis_core::{Priority, SubjectId};
@@ -45,7 +45,7 @@ fn transmit_receive_message_two_frames() {
     };
     let transfer = Transfer {
         header: Header::Message(MessageHeader {
-            timestamp: milliseconds::<MicrosecondDuration64>(5000) + clock.now(),
+            timestamp: milliseconds(5000) + clock.now(),
             transfer_id: UdpTransferId::default(),
             priority: Priority::Nominal,
             subject: SubjectId::try_from(73u16).unwrap(),
@@ -61,7 +61,7 @@ fn transmit_receive_message_two_frames() {
             rx.subscribe_message(
                 73.try_into().unwrap(),
                 4096,
-                MicrosecondDuration64::new(2_000_000),
+                MicrosecondDuration32::new(2_000_000),
                 socket,
             )
             .unwrap()
@@ -77,7 +77,7 @@ fn transmit_receive_message_one_byte_one_frame() {
     let subject = 1030.try_into().unwrap();
     let transfer = Transfer {
         header: Header::Message(MessageHeader {
-            timestamp: milliseconds::<MicrosecondDuration64>(5000) + clock.now(),
+            timestamp: milliseconds(5000) + clock.now(),
             transfer_id: 1.try_into().unwrap(),
             priority: Priority::Low,
             subject,
@@ -104,7 +104,7 @@ fn transmit_receive_request_one_byte_one_frame() {
     let service = 82.try_into().unwrap();
     let transfer = Transfer {
         header: Header::Request(ServiceHeader {
-            timestamp: milliseconds::<MicrosecondDuration64>(5000) + clock.now(),
+            timestamp: milliseconds(5000) + clock.now(),
             transfer_id: 1.try_into().unwrap(),
             priority: Priority::Low,
             service,
@@ -132,7 +132,7 @@ fn transmit_receive_response_one_byte_one_frame() {
     let service = 82.try_into().unwrap();
     let transfer = Transfer {
         header: Header::Response(ServiceHeader {
-            timestamp: milliseconds::<MicrosecondDuration64>(5000) + clock.now(),
+            timestamp: milliseconds(5000) + clock.now(),
             transfer_id: 1.try_into().unwrap(),
             priority: Priority::Low,
             service,
@@ -155,13 +155,13 @@ fn transmit_receive_response_one_byte_one_frame() {
 
 type TestUdpReceiver<const MTU: usize> = UdpReceiver<
     SystemClock,
-    SessionDynamicMap<Microseconds64, UdpNodeId, UdpTransferId, UdpSessionData>,
+    SessionDynamicMap<UdpNodeId, UdpTransferId, UdpSessionData>,
     StdUdpSocket,
     MTU,
 >;
 
 fn check_loopback<S, U, const MTU: usize>(
-    mut transfer: Transfer<Vec<u8>, Microseconds64, UdpTransport>,
+    mut transfer: Transfer<Vec<u8>, UdpTransport>,
     clock: &mut SystemClock,
     subscribe: S,
     unsubscribe: U,
@@ -248,7 +248,7 @@ fn send_and_expect_not_received<const MTU: usize>(
     transmit_socket: &mut StdUdpSocket,
     receive_socket: &mut StdUdpSocket,
     clock: &mut SystemClock,
-    transfer: &mut Transfer<Vec<u8>, Microseconds64, UdpTransport>,
+    transfer: &mut Transfer<Vec<u8>, UdpTransport>,
 ) {
     for _ in 0..10 {
         transmitter

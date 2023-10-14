@@ -10,7 +10,7 @@ use std::convert::{TryFrom, TryInto};
 use std::thread::sleep;
 use std::time::Duration;
 
-use canadensis_core::time::{Clock, MicrosecondDuration64};
+use canadensis_core::time::{Clock, MicrosecondDuration32};
 use canadensis_core::transfer::{Header, MessageHeader, Transfer};
 use canadensis_core::transport::{TransferId, Transmitter};
 use canadensis_core::{Priority, SubjectId};
@@ -51,7 +51,7 @@ fn main() {
     loop {
         let transfer = Transfer {
             header: Header::Message(MessageHeader {
-                timestamp: MicrosecondDuration64::new(1_000_000) + clock.now(),
+                timestamp: MicrosecondDuration32::new(1_000_000) + clock.now(),
                 transfer_id: transfer_id.clone(),
                 priority: Priority::Nominal,
                 subject: SubjectId::try_from(73u16).unwrap(),

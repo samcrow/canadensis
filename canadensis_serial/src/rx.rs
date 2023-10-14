@@ -7,7 +7,7 @@ use core::mem;
 use fallible_collections::{FallibleVec, TryHashMap};
 
 use canadensis_core::subscription::SubscriptionManager;
-use canadensis_core::time::{Clock, Instant};
+use canadensis_core::time::{Clock, MicrosecondDuration32, Microseconds32};
 use canadensis_core::transfer::{Header, Transfer};
 use canadensis_core::transport::Receiver;
 use canadensis_core::{nb, OutOfMemoryError, ServiceId, ServiceSubscribeError, SubjectId};
@@ -21,21 +21,19 @@ use crate::{make_payload_crc, Error, SerialNodeId, SerialTransferId, SerialTrans
 /// A serial transport receiver
 ///
 /// This implementation does not support multi-frame transfers or timestamps.
-pub struct SerialReceiver<C, D, S>
-where
-    C: Clock,
-{
-    state: State<C::Instant>,
+pub struct SerialReceiver<C, D, S> {
+    state: State,
     node_id: Option<SerialNodeId>,
     subscriptions: S,
     _driver: PhantomData<D>,
+    _clock: PhantomData<C>,
 }
 
 impl<C, D, S> SerialReceiver<C, D, S>
 where
     C: Clock,
     D: ReceiveDriver,
-    S: SubscriptionManager<Subscription<C::Instant>> + Default,
+    S: SubscriptionManager<Subscription> + Default,
 {
     pub fn new(node_id: SerialNodeId) -> Self {
         SerialReceiver {
@@ -43,6 +41,7 @@ where
             node_id: Some(node_id),
             subscriptions: S::default(),
             _driver: PhantomData,
+            _clock: PhantomData,
         }
     }
     pub fn new_anonymous() -> Self {
@@ -51,10 +50,11 @@ where
             node_id: None,
             subscriptions: S::default(),
             _driver: PhantomData,
+            _clock: PhantomData,
         }
     }
 
-    fn clean_expired_sessions(&mut self, now: C::Instant) {
+    fn clean_expired_sessions(&mut self, now: Microseconds32) {
         self.subscriptions
             .for_each_message_subscription_mut(|sub| sub.clean_expired_sessions(now));
         self.subscriptions
@@ -66,8 +66,8 @@ where
     fn handle_byte(
         &mut self,
         byte: u8,
-        now: C::Instant,
-    ) -> Result<Option<Transfer<Vec<u8>, C::Instant, SerialTransport>>, Error<D::Error>> {
+        now: Microseconds32,
+    ) -> Result<Option<Transfer<Vec<u8>, SerialTransport>>, Error<D::Error>> {
         let state = mem::replace(&mut self.state, State::Idle);
         self.state = match state {
             State::Idle => {
@@ -202,7 +202,7 @@ impl<C, D, S> Receiver<C> for SerialReceiver<C, D, S>
 where
     C: Clock,
     D: ReceiveDriver,
-    S: SubscriptionManager<Subscription<C::Instant>> + Default,
+    S: SubscriptionManager<Subscription> + Default,
 {
     type Transport = SerialTransport;
     type Driver = D;
@@ -212,7 +212,7 @@ where
         &mut self,
         clock: &mut C,
         driver: &mut D,
-    ) -> Result<Option<Transfer<Vec<u8>, C::Instant, Self::Transport>>, Self::Error> {
+    ) -> Result<Option<Transfer<Vec<u8>, Self::Transport>>, Self::Error> {
         self.clean_expired_sessions(clock.now());
         loop {
             match driver.receive_byte() {
@@ -231,7 +231,7 @@ where
         &mut self,
         subject: SubjectId,
         payload_size_max: usize,
-        timeout: <C::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
         _driver: &mut D,
     ) -> Result<(), Self::Error> {
         self.subscriptions
@@ -247,7 +247,7 @@ where
         &mut self,
         service: ServiceId,
         payload_size_max: usize,
-        timeout: <C::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
         _driver: &mut D,
     ) -> Result<(), ServiceSubscribeError<Self::Error>> {
         if self.node_id.is_some() {
@@ -267,7 +267,7 @@ where
         &mut self,
         service: ServiceId,
         payload_size_max: usize,
-        timeout: <C::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
         _driver: &mut D,
     ) -> Result<(), ServiceSubscribeError<Self::Error>> {
         if self.node_id.is_some() {
@@ -287,14 +287,14 @@ where
 impl<C, D, S> SerialReceiver<C, D, S>
 where
     C: Clock,
-    S: SubscriptionManager<Subscription<C::Instant>>,
+    S: SubscriptionManager<Subscription>,
 {
     /// Finds and returns a subscription that matches the provided header (and, for service
     /// transfers, has this node as its destination) if any exists
     fn find_subscription_mut(
         &mut self,
-        header: &Header<C::Instant, SerialTransport>,
-    ) -> Option<&mut Subscription<C::Instant>> {
+        header: &Header<SerialTransport>,
+    ) -> Option<&mut Subscription> {
         match header {
             Header::Message(header) => self
                 .subscriptions
@@ -321,10 +321,7 @@ where
     /// Returns true if this receiver has a matching subscription, its last transfer ID is less
     /// than the provided header's transfer ID, and (for service transfers) this node is the
     /// destination
-    fn is_interested(
-        &self,
-        header: &Header<C::Instant, SerialTransport>,
-    ) -> Option<&Subscription<C::Instant>> {
+    fn is_interested(&self, header: &Header<SerialTransport>) -> Option<&Subscription> {
         self.subscriptions
             .find_subscription(header)
             .and_then(|subscription| {
@@ -355,9 +352,9 @@ where
 
     fn complete_transfer(
         &mut self,
-        header: Header<C::Instant, SerialTransport>,
+        header: Header<SerialTransport>,
         mut payload_and_crc: Vec<u8>,
-    ) -> Option<Transfer<Vec<u8>, C::Instant, SerialTransport>> {
+    ) -> Option<Transfer<Vec<u8>, SerialTransport>> {
         if payload_and_crc.len() >= 4 {
             let mut crc_bytes = [0u8; 4];
             crc_bytes.copy_from_slice(&payload_and_crc[payload_and_crc.len() - 4..]);
@@ -399,25 +396,19 @@ where
     }
 }
 
-pub struct Subscription<I>
-where
-    I: Instant,
-{
+pub struct Subscription {
     /// The maximum payload size, in bytes
     payload_size_max: usize,
     /// Transfer ID timeout
-    timeout: <I as Instant>::Duration,
+    timeout: MicrosecondDuration32,
     /// A session for each node (and an associated last transfer ID)
     ///
     /// This is used to remove duplicates
-    sessions: TryHashMap<SerialNodeId, Session<I>>,
+    sessions: TryHashMap<SerialNodeId, Session>,
 }
 
-impl<I> Subscription<I>
-where
-    I: Instant,
-{
-    fn new(payload_size_max: usize, timeout: <I as Instant>::Duration) -> Self {
+impl Subscription {
+    fn new(payload_size_max: usize, timeout: MicrosecondDuration32) -> Self {
         Subscription {
             payload_size_max,
             timeout,
@@ -426,11 +417,11 @@ where
     }
 
     /// Removes all sessions that have expired
-    fn clean_expired_sessions(&mut self, now: I) {
+    fn clean_expired_sessions(&mut self, now: Microseconds32) {
         loop {
             let mut id_to_remove: Option<SerialNodeId> = None;
             for (id, session) in self.sessions.iter() {
-                if session.expiration_time.overflow_safe_compare(&now) == Ordering::Less {
+                if session.expiration_time.overflow_safe_compare(now) == Ordering::Less {
                     id_to_remove = Some(*id);
                 }
             }
@@ -444,13 +435,13 @@ where
     }
 }
 
-struct Session<I> {
-    expiration_time: I,
+struct Session {
+    expiration_time: Microseconds32,
     last_transfer_id: SerialTransferId,
 }
 
 /// Receiver states
-enum State<I> {
+enum State {
     /// Waiting for the first zero byte
     Idle,
     /// Got a zero byte, waiting for the first non-zero byte to begin a transfer
@@ -469,7 +460,7 @@ enum State<I> {
     /// The capacity of the payload is set to the maximum payload length plus 4 bytes.
     Payload {
         unescaper: Unescaper,
-        header: Header<I, SerialTransport>,
+        header: Header<SerialTransport>,
         payload: Vec<u8>,
     },
 }

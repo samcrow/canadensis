@@ -28,7 +28,7 @@ pub use bxcan::OverrunError;
 use bxcan::filter::Mask32;
 use bxcan::{Can, ExtendedId, Fifo, FilterOwner, Instance, Mailbox};
 use canadensis::core::subscription::Subscription;
-use canadensis::core::time::{Clock, Instant};
+use canadensis::core::time::{Clock, Microseconds32};
 use canadensis::core::OutOfMemoryError;
 use canadensis_can::driver::{optimize_filters, ReceiveDriver, TransmitDriver};
 use canadensis_can::{CanNodeId, Frame};
@@ -40,20 +40,18 @@ use heapless::Deque;
 const LOOPBACK_CAPACITY: usize = 2;
 
 /// A CAN driver that wraps a bxCAN device and keeps track of deadlines for queued frames
-pub struct BxCanDriver<C, N>
+pub struct BxCanDriver<N>
 where
-    C: Clock,
     N: Instance,
 {
     can: Can<N>,
-    deadlines: DeadlineTracker<C::Instant>,
+    deadlines: DeadlineTracker,
     /// Copies of transmitted loopback frames that have not yet been received
-    loopback_frames: Deque<Frame<C::Instant>, LOOPBACK_CAPACITY>,
+    loopback_frames: Deque<Frame, LOOPBACK_CAPACITY>,
 }
 
-impl<C, N> BxCanDriver<C, N>
+impl<N> BxCanDriver<N>
 where
-    C: Clock,
     N: Instance,
 {
     /// Creates a CAN driver
@@ -85,11 +83,11 @@ where
     }
 
     /// Tries to transmit a frame, and assumes that the frame's deadline has not passed
-    fn transmit_inner(
+    fn transmit_inner<C: Clock>(
         &mut self,
-        frame: &Frame<C::Instant>,
-        deadline: C::Instant,
-    ) -> nb::Result<Option<Frame<C::Instant>>, <Self as TransmitDriver<C>>::Error> {
+        frame: &Frame,
+        deadline: Microseconds32,
+    ) -> nb::Result<Option<Frame>, <Self as TransmitDriver<C>>::Error> {
         let frame = cyphal_frame_to_bxcan(frame);
         match self.can.transmit(&frame) {
             Ok(status) => {
@@ -116,16 +114,15 @@ where
         }
     }
 }
-impl<C, N> BxCanDriver<C, N>
+impl<N> BxCanDriver<N>
 where
-    C: Clock,
     N: Instance + FilterOwner,
 {
     /// Tries to receive a frame from the CAN bus
-    fn receive_from_bus(
+    fn receive_from_bus<C: Clock>(
         &mut self,
         clock: &mut C,
-    ) -> nb::Result<Frame<C::Instant>, <Self as ReceiveDriver<C>>::Error> {
+    ) -> nb::Result<Frame, <Self as ReceiveDriver<C>>::Error> {
         loop {
             match self.can.receive() {
                 Ok(frame) => {
@@ -141,9 +138,9 @@ where
         }
     }
     /// Tries to receive a frame from the loopback queue
-    fn receive_loopback(
+    fn receive_loopback<C: Clock>(
         &mut self,
-    ) -> nb::Result<Frame<C::Instant>, <Self as ReceiveDriver<C>>::Error> {
+    ) -> nb::Result<Frame, <Self as ReceiveDriver<C>>::Error> {
         match self.loopback_frames.pop_front() {
             Some(frame) => Ok(frame),
             None => Err(nb::Error::WouldBlock),
@@ -151,7 +148,7 @@ where
     }
 }
 
-impl<C, N> TransmitDriver<C> for BxCanDriver<C, N>
+impl<C, N> TransmitDriver<C> for BxCanDriver<N>
 where
     C: Clock,
     N: Instance,
@@ -168,19 +165,15 @@ where
         }
     }
 
-    fn transmit(
-        &mut self,
-        frame: Frame<C::Instant>,
-        clock: &mut C,
-    ) -> nb::Result<Option<Frame<C::Instant>>, Self::Error> {
+    fn transmit(&mut self, frame: Frame, clock: &mut C) -> nb::Result<Option<Frame>, Self::Error> {
         let now = clock.now();
         clean_expired_frames(&mut self.deadlines, &mut self.can, now);
         // Check that the frame's deadline has not passed
         let deadline = frame.timestamp();
-        match deadline.overflow_safe_compare(&now) {
+        match deadline.overflow_safe_compare(now) {
             Ordering::Greater | Ordering::Equal => {
                 // Deadline is now or in the future. Continue to transmit.
-                let transmit_status = self.transmit_inner(&frame, deadline);
+                let transmit_status = self.transmit_inner::<C>(&frame, deadline);
                 if transmit_status.is_ok() && frame.loopback() {
                     // Loopback frame successfully sent; store a copy with its timestamp set to
                     // the time just before it was sent
@@ -204,7 +197,7 @@ where
     }
 }
 
-impl<C, N> ReceiveDriver<C> for BxCanDriver<C, N>
+impl<C, N> ReceiveDriver<C> for BxCanDriver<N>
 where
     C: Clock,
     N: Instance + FilterOwner,
@@ -217,12 +210,12 @@ where
     /// If both loopback and non-loopback frames are waiting, this function returns a non-loopback
     /// frame.
     ///
-    fn receive(&mut self, clock: &mut C) -> nb::Result<Frame<C::Instant>, Self::Error> {
+    fn receive(&mut self, clock: &mut C) -> nb::Result<Frame, Self::Error> {
         match self.receive_from_bus(clock) {
             Ok(frame) => Ok(frame),
             Err(nb::Error::Other(e)) => Err(nb::Error::Other(e)),
             // No frames waiting from the bus. Try the loopback queue.
-            Err(nb::Error::WouldBlock) => self.receive_loopback(),
+            Err(nb::Error::WouldBlock) => self.receive_loopback::<C>(),
         }
     }
 
@@ -265,14 +258,13 @@ where
 /// transmit deadlines
 ///
 /// now: The current time
-fn clean_expired_frames<I, C>(deadlines: &mut DeadlineTracker<I>, can: &mut Can<C>, now: I)
+fn clean_expired_frames<C>(deadlines: &mut DeadlineTracker, can: &mut Can<C>, now: Microseconds32)
 where
-    I: Instant,
     C: Instance,
 {
     for mailbox in [Mailbox::Mailbox0, Mailbox::Mailbox1, Mailbox::Mailbox2].iter() {
         if let Some(deadline) = deadlines.get(*mailbox) {
-            if now.overflow_safe_compare(&deadline) == Ordering::Greater {
+            if now.overflow_safe_compare(deadline) == Ordering::Greater {
                 // Deadline has passed, abort transmission
                 // Ignore if the mailbox is really empty or the frame has been transmitted.
                 can.abort(*mailbox);
@@ -284,35 +276,29 @@ where
 /// Keeps track of the deadline for each frame in a CAN transmit mailbox
 ///
 /// This struct does not have any public associated functions except `new()`.
-pub struct DeadlineTracker<I> {
-    deadlines: [Option<I>; 3],
+#[derive(Default)]
+pub struct DeadlineTracker {
+    deadlines: [Option<Microseconds32>; 3],
 }
 
-impl<I> DeadlineTracker<I>
-where
-    I: Clone,
-{
+impl DeadlineTracker {
     /// Creates a deadline tracker with no deadlines
     pub fn new() -> Self {
         DeadlineTracker::default()
     }
     /// Returns the deadline for a mailbox
-    pub(crate) fn get(&self, mailbox: Mailbox) -> Option<I> {
-        self.deadlines[mailbox as usize].clone()
+    pub(crate) fn get(&self, mailbox: Mailbox) -> Option<Microseconds32> {
+        self.deadlines[mailbox as usize]
     }
     /// Stores the deadline for a mailbox and returns the deadline for the previous frame in that
     /// mailbox, if any
-    pub(crate) fn replace(&mut self, mailbox: Mailbox, new_deadline: I) -> Option<I> {
+    pub(crate) fn replace(
+        &mut self,
+        mailbox: Mailbox,
+        new_deadline: Microseconds32,
+    ) -> Option<Microseconds32> {
         let slot = &mut self.deadlines[mailbox as usize];
         slot.replace(new_deadline)
-    }
-}
-
-impl<I> Default for DeadlineTracker<I> {
-    fn default() -> Self {
-        DeadlineTracker {
-            deadlines: [None, None, None],
-        }
     }
 }
 
@@ -321,8 +307,8 @@ impl<I> Default for DeadlineTracker<I> {
 /// # Panics
 ///
 /// This function panics if the provided frame has more than 8 bytes of data.
-fn cyphal_frame_to_bxcan<I>(frame: &canadensis_can::Frame<I>) -> bxcan::Frame {
-    let bxcan_id = bxcan::ExtendedId::new(frame.id().into()).unwrap();
+fn cyphal_frame_to_bxcan(frame: &Frame) -> bxcan::Frame {
+    let bxcan_id = ExtendedId::new(frame.id().into()).unwrap();
     let bxcan_data = bxcan::Data::new(frame.data()).expect("Frame data more than 8 bytes");
     bxcan::Frame::new_data(bxcan_id, bxcan_data)
 }
@@ -331,10 +317,10 @@ fn cyphal_frame_to_bxcan<I>(frame: &canadensis_can::Frame<I>) -> bxcan::Frame {
 ///
 /// This function returns an error if the frame does not have an extended ID, has an ID with an
 /// invalid format, or does not have any data.
-fn bxcan_frame_to_cyphal<I>(
+fn bxcan_frame_to_cyphal(
     frame: &bxcan::Frame,
-    timestamp: I,
-) -> Result<canadensis_can::Frame<I>, InvalidFrameFormat> {
+    timestamp: Microseconds32,
+) -> Result<Frame, InvalidFrameFormat> {
     let id_bits = match frame.id() {
         bxcan::Id::Extended(extended_id) => extended_id.as_raw(),
         bxcan::Id::Standard(_) => return Err(InvalidFrameFormat),

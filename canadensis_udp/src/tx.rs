@@ -5,7 +5,7 @@ use core::marker::PhantomData;
 use embedded_nal::SocketAddrV4;
 
 use canadensis_core::nb;
-use canadensis_core::time::{Clock, Instant};
+use canadensis_core::time::{Clock, Microseconds32};
 use canadensis_core::transfer::{Header, Transfer};
 use canadensis_core::transport::Transmitter;
 use canadensis_header::DataSpecifier;
@@ -44,24 +44,23 @@ where
         }
     }
 
-    fn push_inner<I, C>(
+    fn push_inner<C>(
         &mut self,
         header_base: HeaderBase,
         dest: SocketAddrV4,
-        deadline: I,
+        deadline: Microseconds32,
         payload: &[u8],
         clock: &mut C,
         socket: &mut S,
     ) -> Result<(), S::Error>
     where
-        I: Instant,
-        C: Clock<Instant = I>,
+        C: Clock,
     {
         let breakdown = Breakdown::new(header_base, deadline, payload.iter().copied(), MTU);
         self.send_frames(breakdown, dest, clock, socket)
     }
 
-    fn send_frames<I, B, C>(
+    fn send_frames<B, C>(
         &mut self,
         breakdown: B,
         destination_address: SocketAddrV4,
@@ -69,12 +68,11 @@ where
         socket: &mut S,
     ) -> Result<(), S::Error>
     where
-        I: Instant,
-        B: IntoIterator<Item = UdpFrame<I>>,
-        C: Clock<Instant = I>,
+        B: IntoIterator<Item = UdpFrame>,
+        C: Clock,
     {
         for frame in breakdown {
-            if frame.deadline.overflow_safe_compare(&clock.now()) == Ordering::Greater {
+            if frame.deadline.overflow_safe_compare(clock.now()) == Ordering::Greater {
                 socket.send_to(&frame.data, destination_address)?;
             } else {
                 log::trace!("Discarding outgoing frame because its deadline has passed");
@@ -95,7 +93,7 @@ where
 
     fn push<A>(
         &mut self,
-        transfer: Transfer<A, C::Instant, Self::Transport>,
+        transfer: Transfer<A, Self::Transport>,
         clock: &mut C,
         socket: &mut S,
     ) -> nb::Result<(), Self::Error>
@@ -174,7 +172,7 @@ where
     }
 }
 
-pub(crate) struct UdpFrame<I> {
-    deadline: I,
+pub(crate) struct UdpFrame {
+    deadline: Microseconds32,
     data: Vec<u8>,
 }

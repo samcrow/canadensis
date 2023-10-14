@@ -3,24 +3,24 @@ use crate::Frame;
 use canadensis_core::OutOfMemoryError;
 
 /// An outgoing frame queue that can hold only one frame
-pub struct SingleFrameQueue<I> {
-    frame: Option<Frame<I>>,
+pub struct SingleFrameQueue {
+    frame: Option<Frame>,
 }
 
-impl<I> SingleFrameQueue<I> {
+impl SingleFrameQueue {
     /// Creates a new empty queue
     pub fn new() -> Self {
         SingleFrameQueue { frame: None }
     }
 }
 
-impl<I> Default for SingleFrameQueue<I> {
+impl Default for SingleFrameQueue {
     fn default() -> Self {
         SingleFrameQueue::new()
     }
 }
 
-impl<I> FrameQueue<I> for SingleFrameQueue<I> {
+impl FrameQueue for SingleFrameQueue {
     fn try_reserve(&mut self, additional: usize) -> Result<(), OutOfMemoryError> {
         if self.frame.is_none() && additional == 1 {
             Ok(())
@@ -33,7 +33,7 @@ impl<I> FrameQueue<I> for SingleFrameQueue<I> {
         // Nothing to do
     }
 
-    fn push_frame(&mut self, frame: Frame<I>) -> Result<(), OutOfMemoryError> {
+    fn push_frame(&mut self, frame: Frame) -> Result<(), OutOfMemoryError> {
         if self.frame.is_none() {
             self.frame = Some(frame);
             Ok(())
@@ -42,15 +42,15 @@ impl<I> FrameQueue<I> for SingleFrameQueue<I> {
         }
     }
 
-    fn peek_frame(&self) -> Option<&Frame<I>> {
+    fn peek_frame(&self) -> Option<&Frame> {
         self.frame.as_ref()
     }
 
-    fn pop_frame(&mut self) -> Option<Frame<I>> {
+    fn pop_frame(&mut self) -> Option<Frame> {
         self.frame.take()
     }
 
-    fn return_frame(&mut self, frame: Frame<I>) -> Result<(), OutOfMemoryError> {
+    fn return_frame(&mut self, frame: Frame) -> Result<(), OutOfMemoryError> {
         if self.frame.is_some() {
             Err(OutOfMemoryError)
         } else {

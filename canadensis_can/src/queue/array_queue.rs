@@ -9,34 +9,31 @@ use core::ptr;
 /// `N` is the maximum number of frames that the queue can hold. This should be at least as large
 /// as the number of frames required for the largest outgoing transfer that will be sent.
 #[derive(Debug)]
-pub struct ArrayQueue<I, const N: usize> {
+pub struct ArrayQueue<const N: usize> {
     /// The frames in this queue
     ///
     /// The head of the queue is at index `self.head`. Other items are at increasing indices,
     /// potentially wrapping around up to and including `self.head - 1`.
-    items: [Frame<I>; N],
+    items: [Frame; N],
     /// The index in self.items of the front of the queue
     head: usize,
     /// The number of valid frames in the queue
     length: usize,
 }
 
-impl<I, const N: usize> ArrayQueue<I, N>
-where
-    I: Default,
-{
+impl<const N: usize> ArrayQueue<N> {
     /// Returns a new emtpy queue
     pub fn new() -> Self {
         // Need to use unsafe code to initialize the array of items.
-        let items: [Frame<I>; N] = unsafe {
-            let mut items: MaybeUninit<[Frame<I>; N]> = MaybeUninit::uninit();
+        let items: [Frame; N] = unsafe {
+            let mut items: MaybeUninit<[Frame; N]> = MaybeUninit::uninit();
 
             for i in 0..N {
                 // Get a pointer to the frame in the array
                 // Is this really safe? The rules about creating references from pointers are complicated.
                 let slot_ptr = (*items.as_mut_ptr()).as_mut_ptr().add(i);
                 // Use ptr::write to avoid dropping the uninitialized value
-                // If Frame::default() panics and unwinds, the drop of MaybeUninit<[Frame<I>; N]>
+                // If Frame::default() panics and unwinds, the drop of MaybeUninit<[Frame; N]>
                 // will do nothing. This may leak memory if the frame owns dynamically allocated
                 // memory, but that is not considered unsafe.
                 ptr::write(slot_ptr, Frame::default());
@@ -79,10 +76,7 @@ where
     }
 }
 
-impl<I, const N: usize> FrameQueue<I> for ArrayQueue<I, N>
-where
-    I: Clone + Default,
-{
+impl<const N: usize> FrameQueue for ArrayQueue<N> {
     fn try_reserve(&mut self, additional: usize) -> Result<(), OutOfMemoryError> {
         let free_capacity = N - self.length;
         if free_capacity >= additional {
@@ -97,7 +91,7 @@ where
         // Doesn't dynamically allocate memory, nothing to do
     }
 
-    fn push_frame(&mut self, frame: Frame<I>) -> Result<(), OutOfMemoryError> {
+    fn push_frame(&mut self, frame: Frame) -> Result<(), OutOfMemoryError> {
         if self.length == N {
             Err(OutOfMemoryError)
         } else {
@@ -128,7 +122,7 @@ where
         }
     }
 
-    fn peek_frame(&self) -> Option<&Frame<I>> {
+    fn peek_frame(&self) -> Option<&Frame> {
         if self.length != 0 {
             Some(&self.items[self.head])
         } else {
@@ -136,7 +130,7 @@ where
         }
     }
 
-    fn pop_frame(&mut self) -> Option<Frame<I>> {
+    fn pop_frame(&mut self) -> Option<Frame> {
         if self.length != 0 {
             let frame = mem::take(&mut self.items[self.head]);
             self.increment_head();
@@ -147,7 +141,7 @@ where
         }
     }
 
-    fn return_frame(&mut self, frame: Frame<I>) -> Result<(), OutOfMemoryError> {
+    fn return_frame(&mut self, frame: Frame) -> Result<(), OutOfMemoryError> {
         if self.length == N {
             Err(OutOfMemoryError)
         } else {
@@ -180,10 +174,7 @@ where
     }
 }
 
-impl<I, const N: usize> Default for ArrayQueue<I, N>
-where
-    I: Default,
-{
+impl<const N: usize> Default for ArrayQueue<N> {
     fn default() -> Self {
         Self::new()
     }
@@ -194,16 +185,17 @@ mod test {
     use super::ArrayQueue;
     use crate::queue::FrameQueue;
     use crate::{CanId, Frame};
+    use canadensis_core::time::Microseconds32;
     use core::convert::TryFrom;
 
-    fn frame_with_id(id: u32, data: u8) -> Frame<()> {
+    fn frame_with_id(id: u32, data: u8) -> Frame {
         let id = CanId::try_from(id).unwrap();
-        Frame::new((), id, &[data])
+        Frame::new(Microseconds32::default(), id, &[data])
     }
 
     #[test]
     fn basic_insert_same_id() {
-        let mut queue = ArrayQueue::<(), 4>::new();
+        let mut queue = ArrayQueue::<4>::new();
         {
             let frame = frame_with_id(1, 0);
             queue.push_frame(frame.clone()).unwrap();
@@ -224,7 +216,7 @@ mod test {
 
     #[test]
     fn basic_insert_different_ids() {
-        let mut queue = ArrayQueue::<(), 4>::new();
+        let mut queue = ArrayQueue::<4>::new();
         queue.push_frame(frame_with_id(10, 0)).unwrap();
         queue.push_frame(frame_with_id(10, 1)).unwrap();
         queue.push_frame(frame_with_id(10, 2)).unwrap();
@@ -241,7 +233,7 @@ mod test {
 
     #[test]
     fn insert_blocks_different_ids() {
-        let mut queue = ArrayQueue::<(), 8>::new();
+        let mut queue = ArrayQueue::<8>::new();
 
         queue.push_frame(frame_with_id(10, 0)).unwrap();
         queue.push_frame(frame_with_id(10, 1)).unwrap();
@@ -262,7 +254,7 @@ mod test {
 
     #[test]
     fn insert_and_remove_capacity_1() {
-        let mut queue = ArrayQueue::<(), 1>::new();
+        let mut queue = ArrayQueue::<1>::new();
         assert_eq!(queue.len(), 0);
         let frame = frame_with_id(37, 2);
         queue.push_frame(frame.clone()).unwrap();
@@ -284,7 +276,7 @@ mod test {
 
     #[test]
     fn insert_and_remove_capacity_8() {
-        let mut queue = ArrayQueue::<(), 8>::new();
+        let mut queue = ArrayQueue::<8>::new();
 
         // Send a low-priority transfer that fills up the queue
         queue.try_reserve(8).unwrap();

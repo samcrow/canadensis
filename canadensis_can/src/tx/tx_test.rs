@@ -16,7 +16,7 @@ fn test_make_can_id() {
     // Heartbeat
     check_can_id(
         Header::Message(MessageHeader {
-            timestamp: (),
+            timestamp: Microseconds32::default(),
             transfer_id: CanTransferId::try_from(0).unwrap(),
             priority: Priority::Nominal,
             subject: SubjectId::try_from(7509).unwrap(),
@@ -28,7 +28,7 @@ fn test_make_can_id() {
     // String primitive
     check_can_id(
         Header::Message(MessageHeader {
-            timestamp: (),
+            timestamp: Microseconds32::default(),
             transfer_id: CanTransferId::try_from(0).unwrap(),
             priority: Priority::Nominal,
             subject: SubjectId::try_from(4919).unwrap(),
@@ -42,7 +42,7 @@ fn test_make_can_id() {
     // Node info request
     check_can_id(
         Header::Request(ServiceHeader {
-            timestamp: (),
+            timestamp: Microseconds32::default(),
             transfer_id: Default::default(),
             priority: Priority::Nominal,
             service: ServiceId::try_from(430).unwrap(),
@@ -55,7 +55,7 @@ fn test_make_can_id() {
     // Node info response
     check_can_id(
         Header::Response(ServiceHeader {
-            timestamp: (),
+            timestamp: Microseconds32::default(),
             transfer_id: Default::default(),
             priority: Priority::Nominal,
             service: ServiceId::try_from(430).unwrap(),
@@ -68,7 +68,7 @@ fn test_make_can_id() {
     // Array message
     check_can_id(
         Header::Message(MessageHeader {
-            timestamp: (),
+            timestamp: Microseconds32::default(),
             transfer_id: Default::default(),
             priority: Priority::Nominal,
             subject: SubjectId::try_from(4919).unwrap(),
@@ -79,7 +79,7 @@ fn test_make_can_id() {
     );
 }
 
-fn check_can_id<I>(header: Header<I>, payload: &[u8], expected_bits: u32) {
+fn check_can_id(header: Header, payload: &[u8], expected_bits: u32) {
     let actual_id = make_can_id(&header, payload);
     let expected_id = CanId::try_from(expected_bits).unwrap();
     assert_eq!(actual_id, expected_id)

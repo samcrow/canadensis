@@ -31,7 +31,7 @@ use std::time::Duration;
 
 use socketcan::CANSocket;
 
-use canadensis::core::time::{milliseconds, Clock, Microseconds64};
+use canadensis::core::time::milliseconds;
 use canadensis::core::transfer::ServiceTransfer;
 use canadensis::core::Priority;
 use canadensis::encoding::Deserialize;
@@ -95,7 +95,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // Create a node with capacity for 2 publishers and 2 requesters
-    type Queue = SingleQueueDriver<SystemClock, ArrayQueue<Microseconds64, 64>, LinuxCan>;
+    type Queue = SingleQueueDriver<SystemClock, ArrayQueue<64>, LinuxCan>;
     // TRANSFER_IDS must be a power of two and greater than one
     const TRANSFER_IDS: usize = 2;
     const PUBLISHERS: usize = 2;
@@ -210,14 +210,14 @@ struct RegisterHandler {
     delay_time: Duration,
 }
 
-impl TransferHandler<<SystemClock as Clock>::Instant, CanTransport> for RegisterHandler {
+impl TransferHandler<CanTransport> for RegisterHandler {
     fn handle_response<N>(
         &mut self,
         node: &mut N,
-        transfer: &ServiceTransfer<Vec<u8>, <SystemClock as Clock>::Instant, CanTransport>,
+        transfer: &ServiceTransfer<Vec<u8>, CanTransport>,
     ) -> bool
     where
-        N: Node<Instant = <SystemClock as Clock>::Instant, Transport = CanTransport>,
+        N: Node<Transport = CanTransport>,
     {
         self.timeout = std::time::Instant::now() + self.timeout_duration;
         match transfer.header.service {

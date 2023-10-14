@@ -52,7 +52,6 @@ use std::time::Duration;
 
 use socketcan::CANSocket;
 
-use canadensis::core::time::{Clock, Microseconds64};
 use canadensis::core::transfer::{MessageTransfer, ServiceTransfer};
 use canadensis::node::{BasicNode, CoreNode};
 use canadensis::register::basic::{RegisterString, SimpleRegister};
@@ -95,7 +94,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // Create a node with capacity for 82 publishers and 2 requesters
-    type Queue = SingleQueueDriver<SystemClock, ArrayQueue<Microseconds64, 64>, LinuxCan>;
+    type Queue = SingleQueueDriver<SystemClock, ArrayQueue<64>, LinuxCan>;
     const TRANSFER_IDS: usize = 1;
     const PUBLISHERS: usize = 2;
     const REQUESTERS: usize = 2;
@@ -152,14 +151,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 struct EmptyHandler;
 
-impl TransferHandler<<SystemClock as Clock>::Instant, CanTransport> for EmptyHandler {
+impl TransferHandler<CanTransport> for EmptyHandler {
     fn handle_message<N>(
         &mut self,
         _node: &mut N,
-        transfer: &MessageTransfer<Vec<u8>, <SystemClock as Clock>::Instant, CanTransport>,
+        transfer: &MessageTransfer<Vec<u8>, CanTransport>,
     ) -> bool
     where
-        N: Node<Instant = <SystemClock as Clock>::Instant, Transport = CanTransport>,
+        N: Node<Transport = CanTransport>,
     {
         println!("Got message {:?}", transfer);
         false
@@ -169,10 +168,10 @@ impl TransferHandler<<SystemClock as Clock>::Instant, CanTransport> for EmptyHan
         &mut self,
         _node: &mut N,
         _token: ResponseToken<CanTransport>,
-        transfer: &ServiceTransfer<Vec<u8>, <SystemClock as Clock>::Instant, CanTransport>,
+        transfer: &ServiceTransfer<Vec<u8>, CanTransport>,
     ) -> bool
     where
-        N: Node<Instant = <SystemClock as Clock>::Instant, Transport = CanTransport>,
+        N: Node<Transport = CanTransport>,
     {
         println!("Got request {:?}", transfer);
         false
@@ -181,10 +180,10 @@ impl TransferHandler<<SystemClock as Clock>::Instant, CanTransport> for EmptyHan
     fn handle_response<N>(
         &mut self,
         _node: &mut N,
-        transfer: &ServiceTransfer<Vec<u8>, <SystemClock as Clock>::Instant, CanTransport>,
+        transfer: &ServiceTransfer<Vec<u8>, CanTransport>,
     ) -> bool
     where
-        N: Node<Instant = <SystemClock as Clock>::Instant, Transport = CanTransport>,
+        N: Node<Transport = CanTransport>,
     {
         println!("Got response {:?}", transfer);
         false

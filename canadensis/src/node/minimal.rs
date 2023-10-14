@@ -1,5 +1,5 @@
 use crate::{Node, PublishToken, StartSendError};
-use canadensis_core::time::{Clock, Duration, Instant};
+use canadensis_core::time::MicrosecondDuration32;
 use canadensis_core::transport::Transmitter;
 use canadensis_core::{nb, Priority};
 use canadensis_data_types::uavcan::node::health_1_0::Health;
@@ -48,9 +48,8 @@ where
             },
             vendor_specific_status_code: 0,
         };
-        let heartbeat_timeout =
-            <<N::Clock as Clock>::Instant as Instant>::Duration::from_millis(500)
-                .expect("Duration type can't represent 500 milliseconds");
+        let heartbeat_timeout = MicrosecondDuration32::from_millis(500)
+            .expect("Duration type can't represent 500 milliseconds");
 
         let heartbeat_token = node.start_publishing(
             heartbeat_1_0::SUBJECT,

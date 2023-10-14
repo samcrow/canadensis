@@ -57,7 +57,7 @@ where
 
     fn push<A>(
         &mut self,
-        transfer: Transfer<A, L::Instant, Self::Transport>,
+        transfer: Transfer<A, Self::Transport>,
         _clock: &mut L,
         _driver: &mut D,
     ) -> nb::Result<(), Self::Error>

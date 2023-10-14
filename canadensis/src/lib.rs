@@ -40,7 +40,7 @@ use alloc::vec::Vec;
 use canadensis_core::OutOfMemoryError;
 
 use crate::core::transport::Transport;
-use canadensis_core::time::{Clock, Instant};
+use canadensis_core::time::{Clock, MicrosecondDuration32};
 use canadensis_core::transfer::*;
 use canadensis_core::transport::{Receiver, Transmitter};
 use canadensis_core::{ServiceId, SubjectId};
@@ -90,7 +90,7 @@ where
 }
 
 /// Something that may be able to handle incoming transfers
-pub trait TransferHandler<I: Instant, T: Transport> {
+pub trait TransferHandler<T: Transport> {
     /// Potentially handles an incoming message transfer
     ///
     /// This function does not handle any loopback transfers.
@@ -99,10 +99,10 @@ pub trait TransferHandler<I: Instant, T: Transport> {
     /// handlers.
     ///
     /// The default implementation does nothing and returns false.
-    fn handle_message<N: Node<Instant = I, Transport = T>>(
+    fn handle_message<N: Node<Transport = T>>(
         &mut self,
         _node: &mut N,
-        _transfer: &MessageTransfer<Vec<u8>, I, T>,
+        _transfer: &MessageTransfer<Vec<u8>, T>,
     ) -> bool {
         false
     }
@@ -115,11 +115,11 @@ pub trait TransferHandler<I: Instant, T: Transport> {
     /// handlers.
     ///
     /// The default implementation does nothing and returns false.
-    fn handle_request<N: Node<Instant = I, Transport = T>>(
+    fn handle_request<N: Node<Transport = T>>(
         &mut self,
         _node: &mut N,
         _token: ResponseToken<T>,
-        _transfer: &ServiceTransfer<Vec<u8>, I, T>,
+        _transfer: &ServiceTransfer<Vec<u8>, T>,
     ) -> bool {
         false
     }
@@ -132,10 +132,10 @@ pub trait TransferHandler<I: Instant, T: Transport> {
     /// handlers.
     ///
     /// The default implementation does nothing and returns false.
-    fn handle_response<N: Node<Instant = I, Transport = T>>(
+    fn handle_response<N: Node<Transport = T>>(
         &mut self,
         _node: &mut N,
-        _transfer: &ServiceTransfer<Vec<u8>, I, T>,
+        _transfer: &ServiceTransfer<Vec<u8>, T>,
     ) -> bool {
         false
     }
@@ -148,10 +148,10 @@ pub trait TransferHandler<I: Instant, T: Transport> {
     /// handlers.
     ///
     /// The default implementation does nothing and returns false.
-    fn handle_loopback<N: Node<Instant = I, Transport = T>>(
+    fn handle_loopback<N: Node<Transport = T>>(
         &mut self,
         _node: &mut N,
-        _transfer: &Transfer<Vec<u8>, I, T>,
+        _transfer: &Transfer<Vec<u8>, T>,
     ) -> bool {
         false
     }
@@ -162,55 +162,54 @@ pub trait TransferHandler<I: Instant, T: Transport> {
     fn chain<H>(self, next: H) -> TransferHandlerChain<Self, H>
     where
         Self: Sized,
-        H: TransferHandler<I, T>,
+        H: TransferHandler<T>,
     {
         TransferHandlerChain::new(self, next)
     }
 }
 
-impl<'h, I, T, H> TransferHandler<I, T> for &'h mut H
+impl<'h, T, H> TransferHandler<T> for &'h mut H
 where
-    I: Instant,
     T: Transport,
-    H: TransferHandler<I, T>,
+    H: TransferHandler<T>,
 {
-    fn handle_message<N: Node<Instant = I, Transport = T>>(
+    fn handle_message<N: Node<Transport = T>>(
         &mut self,
         node: &mut N,
-        transfer: &MessageTransfer<Vec<u8>, I, T>,
+        transfer: &MessageTransfer<Vec<u8>, T>,
     ) -> bool {
-        <H as TransferHandler<I, T>>::handle_message(self, node, transfer)
+        <H as TransferHandler<T>>::handle_message(self, node, transfer)
     }
 
-    fn handle_request<N: Node<Instant = I, Transport = T>>(
+    fn handle_request<N: Node<Transport = T>>(
         &mut self,
         node: &mut N,
         token: ResponseToken<T>,
-        transfer: &ServiceTransfer<Vec<u8>, I, T>,
+        transfer: &ServiceTransfer<Vec<u8>, T>,
     ) -> bool {
-        <H as TransferHandler<I, T>>::handle_request(self, node, token, transfer)
+        <H as TransferHandler<T>>::handle_request(self, node, token, transfer)
     }
 
-    fn handle_response<N: Node<Instant = I, Transport = T>>(
+    fn handle_response<N: Node<Transport = T>>(
         &mut self,
         node: &mut N,
-        transfer: &ServiceTransfer<Vec<u8>, I, T>,
+        transfer: &ServiceTransfer<Vec<u8>, T>,
     ) -> bool {
-        <H as TransferHandler<I, T>>::handle_response(self, node, transfer)
+        <H as TransferHandler<T>>::handle_response(self, node, transfer)
     }
 
-    fn handle_loopback<N: Node<Instant = I, Transport = T>>(
+    fn handle_loopback<N: Node<Transport = T>>(
         &mut self,
         node: &mut N,
-        transfer: &Transfer<Vec<u8>, I, T>,
+        transfer: &Transfer<Vec<u8>, T>,
     ) -> bool {
-        <H as TransferHandler<I, T>>::handle_loopback(self, node, transfer)
+        <H as TransferHandler<T>>::handle_loopback(self, node, transfer)
     }
 
     fn chain<H1>(self, next: H1) -> TransferHandlerChain<Self, H1>
     where
         Self: Sized,
-        H1: TransferHandler<I, T>,
+        H1: TransferHandler<T>,
     {
         TransferHandlerChain::new(self, next)
     }
@@ -254,17 +253,16 @@ impl<H0, H1> TransferHandlerChain<H0, H1> {
     }
 }
 
-impl<I, T, H0, H1> TransferHandler<I, T> for TransferHandlerChain<H0, H1>
+impl<T, H0, H1> TransferHandler<T> for TransferHandlerChain<H0, H1>
 where
-    I: Instant,
     T: Transport,
-    H0: TransferHandler<I, T>,
-    H1: TransferHandler<I, T>,
+    H0: TransferHandler<T>,
+    H1: TransferHandler<T>,
 {
-    fn handle_message<N: Node<Instant = I, Transport = T>>(
+    fn handle_message<N: Node<Transport = T>>(
         &mut self,
         node: &mut N,
-        transfer: &MessageTransfer<Vec<u8>, I, T>,
+        transfer: &MessageTransfer<Vec<u8>, T>,
     ) -> bool {
         let handled = self.handler0.handle_message(node, transfer);
         if handled {
@@ -274,11 +272,11 @@ where
         }
     }
 
-    fn handle_request<N: Node<Instant = I, Transport = T>>(
+    fn handle_request<N: Node<Transport = T>>(
         &mut self,
         node: &mut N,
         token: ResponseToken<T>,
-        transfer: &ServiceTransfer<Vec<u8>, I, T>,
+        transfer: &ServiceTransfer<Vec<u8>, T>,
     ) -> bool {
         let handled = self.handler0.handle_request(node, token.clone(), transfer);
         if handled {
@@ -288,10 +286,10 @@ where
         }
     }
 
-    fn handle_response<N: Node<Instant = I, Transport = T>>(
+    fn handle_response<N: Node<Transport = T>>(
         &mut self,
         node: &mut N,
-        transfer: &ServiceTransfer<Vec<u8>, I, T>,
+        transfer: &ServiceTransfer<Vec<u8>, T>,
     ) -> bool {
         let handled = self.handler0.handle_response(node, transfer);
         if handled {
@@ -301,10 +299,10 @@ where
         }
     }
 
-    fn handle_loopback<N: Node<Instant = I, Transport = T>>(
+    fn handle_loopback<N: Node<Transport = T>>(
         &mut self,
         node: &mut N,
-        transfer: &Transfer<Vec<u8>, I, T>,
+        transfer: &Transfer<Vec<u8>, T>,
     ) -> bool {
         let handled = self.handler0.handle_loopback(node, transfer);
         if handled {
@@ -321,9 +319,7 @@ where
 /// sent, and information about the subjects and services it is using.
 pub trait Node {
     /// The clock that this node uses
-    type Clock: Clock<Instant = Self::Instant>;
-    /// The instant that this node's clock produces
-    type Instant: Instant;
+    type Clock: Clock;
     /// The transport that this node uses
     type Transport: Transport;
     /// The transmitter that this node uses
@@ -343,7 +339,7 @@ pub trait Node {
         handler: &mut H,
     ) -> Result<(), <Self::Receiver as Receiver<Self::Clock>>::Error>
     where
-        H: TransferHandler<Self::Instant, Self::Transport>;
+        H: TransferHandler<Self::Transport>;
 
     /// Starts publishing messages on subject
     ///
@@ -355,7 +351,7 @@ pub trait Node {
     fn start_publishing<T>(
         &mut self,
         subject: SubjectId,
-        timeout: <<<Self as Node>::Clock as Clock>::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
         priority: <Self::Transport as Transport>::Priority,
     ) -> Result<
         PublishToken<T>,
@@ -400,7 +396,7 @@ pub trait Node {
     fn start_sending_requests<T>(
         &mut self,
         service: ServiceId,
-        receive_timeout: <<<Self as Node>::Clock as Clock>::Instant as Instant>::Duration,
+        receive_timeout: MicrosecondDuration32,
         response_payload_size_max: usize,
         priority: <Self::Transport as Transport>::Priority,
     ) -> Result<ServiceToken<T>, StartSendError<<Self::Receiver as Receiver<Self::Clock>>::Error>>
@@ -447,7 +443,7 @@ pub trait Node {
         &mut self,
         subject: SubjectId,
         payload_size_max: usize,
-        timeout: <<<Self as Node>::Clock as Clock>::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
     ) -> Result<(), <Self::Receiver as Receiver<Self::Clock>>::Error>;
 
     /// Subscribes to requests for a service
@@ -455,7 +451,7 @@ pub trait Node {
         &mut self,
         service: ServiceId,
         payload_size_max: usize,
-        timeout: <<<Self as Node>::Clock as Clock>::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
     ) -> Result<(), <Self::Receiver as Receiver<Self::Clock>>::Error>;
 
     /// Responds to a service request
@@ -468,7 +464,7 @@ pub trait Node {
     fn send_response<T>(
         &mut self,
         token: ResponseToken<Self::Transport>,
-        timeout: <<<Self as Node>::Clock as Clock>::Instant as Instant>::Duration,
+        timeout: MicrosecondDuration32,
         payload: &T,
     ) -> nb::Result<(), <Self::Transmitter as Transmitter<Self::Clock>>::Error>
     where

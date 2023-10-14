@@ -263,23 +263,17 @@ fn test_array() {
 /// This does not keep the frames in order by priority, but it is correct as long as it is used for
 /// only one transfer at a time.
 #[derive(Default)]
-struct MockDriver<C>
-where
-    C: Clock,
-{
-    queue: VecDeque<Frame<C::Instant>>,
+struct MockDriver {
+    queue: VecDeque<Frame>,
 }
 
-impl<C> MockDriver<C>
-where
-    C: Clock,
-{
-    fn pop_frame(&mut self) -> Option<Frame<C::Instant>> {
+impl MockDriver {
+    fn pop_frame(&mut self) -> Option<Frame> {
         self.queue.pop_front()
     }
 }
 
-impl<C> TransmitDriver<C> for MockDriver<C>
+impl<C> TransmitDriver<C> for MockDriver
 where
     C: Clock,
 {
@@ -292,9 +286,9 @@ where
 
     fn transmit(
         &mut self,
-        frame: Frame<C::Instant>,
+        frame: Frame,
         _clock: &mut C,
-    ) -> canadensis_core::nb::Result<Option<Frame<C::Instant>>, Self::Error> {
+    ) -> canadensis_core::nb::Result<Option<Frame>, Self::Error> {
         self.queue.push_back(frame);
         Ok(None)
     }
@@ -309,9 +303,7 @@ where
 struct ZeroClock;
 
 impl Clock for ZeroClock {
-    type Instant = Microseconds32;
-
-    fn now(&mut self) -> Self::Instant {
+    fn now(&mut self) -> Microseconds32 {
         Microseconds32::new(0)
     }
 }

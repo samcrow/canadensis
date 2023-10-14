@@ -5,6 +5,7 @@
 use core::convert::TryFrom;
 use core::fmt;
 
+use canadensis_core::time::Microseconds32;
 use canadensis_core::InvalidValue;
 
 /// Bit mask for a 29-bit CAN ID
@@ -82,11 +83,11 @@ pub const FRAME_CAPACITY: usize = 8;
 /// This is useful for time synchronization.
 ///
 #[derive(Debug, Clone, PartialEq, Default)]
-pub struct Frame<I> {
+pub struct Frame {
     /// For RX frames: reception timestamp.
     /// For TX frames: transmission deadline.
     /// The time system may be arbitrary as long as the clock is monotonic (steady).
-    timestamp: I,
+    timestamp: Microseconds32,
     /// 29-bit extended ID
     id: CanId,
     /// See "Loopback" in the struct documentation
@@ -95,14 +96,14 @@ pub struct Frame<I> {
     data: heapless::Vec<u8, FRAME_CAPACITY>,
 }
 
-impl<I> Frame<I> {
+impl Frame {
     /// Creates a frame
     ///
     /// The loopback flag is set to false.
     ///
     /// # Panics
     /// This function will panic if the length of data is greater than FRAME_CAPACITY.
-    pub fn new(timestamp: I, id: CanId, data: &[u8]) -> Self {
+    pub fn new(timestamp: Microseconds32, id: CanId, data: &[u8]) -> Self {
         Frame {
             timestamp,
             id,
@@ -113,7 +114,7 @@ impl<I> Frame<I> {
 
     /// Sets the timestamp
     #[inline]
-    pub fn set_timestamp(&mut self, timestamp: I) {
+    pub fn set_timestamp(&mut self, timestamp: Microseconds32) {
         self.timestamp = timestamp;
     }
 
@@ -139,13 +140,10 @@ impl<I> Frame<I> {
     pub fn data(&self) -> &[u8] {
         &self.data
     }
-}
-
-impl<I: Clone> Frame<I> {
     /// Returns the timestamp when this frame was received (for incoming frames)
     /// or the transmission deadline (for outgoing frames)
     #[inline]
-    pub fn timestamp(&self) -> I {
-        self.timestamp.clone()
+    pub fn timestamp(&self) -> Microseconds32 {
+        self.timestamp
     }
 }

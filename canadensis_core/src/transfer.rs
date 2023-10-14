@@ -2,15 +2,16 @@
 //! Transfer data definitions
 //!
 
+use crate::time::Microseconds32;
 use crate::transport::Transport;
 use crate::{PortId, ServiceId, SubjectId};
 use core::fmt::{Debug, Formatter};
 
 /// The header of a message transfer
-pub struct MessageHeader<I, T: Transport + ?Sized> {
+pub struct MessageHeader<T: Transport + ?Sized> {
     /// For RX transfers: the time when the first frame was received
     /// For TX transfers: the transmission deadline for all frames
-    pub timestamp: I,
+    pub timestamp: Microseconds32,
     /// The identifier of this transfer
     pub transfer_id: T::TransferId,
     /// The priority of this transfer
@@ -22,10 +23,7 @@ pub struct MessageHeader<I, T: Transport + ?Sized> {
     pub source: Option<T::NodeId>,
 }
 
-impl<I, T: Transport + ?Sized> Debug for MessageHeader<I, T>
-where
-    I: Debug,
-{
+impl<T: Transport + ?Sized> Debug for MessageHeader<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("MessageHeader")
             .field("timestamp", &self.timestamp)
@@ -37,16 +35,15 @@ where
     }
 }
 
-impl<I, T: Transport + ?Sized> Clone for MessageHeader<I, T>
+impl<T: Transport + ?Sized> Clone for MessageHeader<T>
 where
-    I: Clone,
     T::TransferId: Clone,
     T::Priority: Clone,
     T::NodeId: Clone,
 {
     fn clone(&self) -> Self {
         MessageHeader {
-            timestamp: self.timestamp.clone(),
+            timestamp: self.timestamp,
             transfer_id: self.transfer_id.clone(),
             priority: self.priority.clone(),
             subject: self.subject,
@@ -55,9 +52,8 @@ where
     }
 }
 
-impl<I, T: Transport + ?Sized> PartialEq for MessageHeader<I, T>
+impl<T: Transport + ?Sized> PartialEq for MessageHeader<T>
 where
-    I: PartialEq,
     T::TransferId: PartialEq,
     T::Priority: PartialEq,
     T::NodeId: PartialEq,
@@ -72,10 +68,10 @@ where
 }
 
 /// The header of a service transfer
-pub struct ServiceHeader<I, T: Transport + ?Sized> {
+pub struct ServiceHeader<T: Transport + ?Sized> {
     /// For RX transfers: the time when the first frame was received
     /// For TX transfers: the transmission deadline for all frames
-    pub timestamp: I,
+    pub timestamp: Microseconds32,
     /// The identifier of this transfer
     pub transfer_id: T::TransferId,
     /// The priority of this transfer
@@ -89,10 +85,7 @@ pub struct ServiceHeader<I, T: Transport + ?Sized> {
     pub destination: T::NodeId,
 }
 
-impl<I, T: Transport + ?Sized> Debug for ServiceHeader<I, T>
-where
-    I: Debug,
-{
+impl<T: Transport + ?Sized> Debug for ServiceHeader<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("MessageHeader")
             .field("timestamp", &self.timestamp)
@@ -105,16 +98,15 @@ where
     }
 }
 
-impl<I, T: Transport + ?Sized> Clone for ServiceHeader<I, T>
+impl<T: Transport + ?Sized> Clone for ServiceHeader<T>
 where
-    I: Clone,
     T::TransferId: Clone,
     T::Priority: Clone,
     T::NodeId: Clone,
 {
     fn clone(&self) -> Self {
         ServiceHeader {
-            timestamp: self.timestamp.clone(),
+            timestamp: self.timestamp,
             transfer_id: self.transfer_id.clone(),
             priority: self.priority.clone(),
             service: self.service,
@@ -124,9 +116,8 @@ where
     }
 }
 
-impl<I, T: Transport + ?Sized> PartialEq for ServiceHeader<I, T>
+impl<T: Transport + ?Sized> PartialEq for ServiceHeader<T>
 where
-    I: PartialEq,
     T::TransferId: PartialEq,
     T::Priority: PartialEq,
     T::NodeId: PartialEq,
@@ -142,18 +133,15 @@ where
 }
 
 /// Header fields for a message, request, or response
-pub enum Header<I, T: Transport + ?Sized> {
+pub enum Header<T: Transport + ?Sized> {
     /// A message header
-    Message(MessageHeader<I, T>),
+    Message(MessageHeader<T>),
     /// A service request header
-    Request(ServiceHeader<I, T>),
+    Request(ServiceHeader<T>),
     /// A service response header
-    Response(ServiceHeader<I, T>),
+    Response(ServiceHeader<T>),
 }
-impl<I, T: Transport + ?Sized> Debug for Header<I, T>
-where
-    I: Debug,
-{
+impl<T: Transport + ?Sized> Debug for Header<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
             Header::Message(inner) => f.debug_tuple("Message").field(inner).finish(),
@@ -162,9 +150,8 @@ where
         }
     }
 }
-impl<I, T: Transport + ?Sized> Clone for Header<I, T>
+impl<T: Transport + ?Sized> Clone for Header<T>
 where
-    I: Clone,
     T::TransferId: Clone,
     T::Priority: Clone,
     T::NodeId: Clone,
@@ -178,9 +165,8 @@ where
     }
 }
 
-impl<I, T: Transport + ?Sized> PartialEq for Header<I, T>
+impl<T: Transport + ?Sized> PartialEq for Header<T>
 where
-    I: PartialEq,
     T::TransferId: PartialEq,
     T::Priority: PartialEq,
     T::NodeId: PartialEq,
@@ -195,21 +181,18 @@ where
     }
 }
 
-impl<I, T: Transport + ?Sized> Header<I, T> {
+impl<T: Transport + ?Sized> Header<T> {
     /// Returns the timestamp of this header
-    pub fn timestamp(&self) -> I
-    where
-        I: Clone,
-    {
+    pub fn timestamp(&self) -> Microseconds32 {
         match self {
-            Header::Message(ref message_header) => message_header.timestamp.clone(),
+            Header::Message(ref message_header) => message_header.timestamp,
             Header::Request(ref service_header) | Header::Response(ref service_header) => {
-                service_header.timestamp.clone()
+                service_header.timestamp
             }
         }
     }
     /// Sets the timestamp of this header
-    pub fn set_timestamp(&mut self, timestamp: I) {
+    pub fn set_timestamp(&mut self, timestamp: Microseconds32) {
         match self {
             Header::Message(ref mut message_header) => {
                 message_header.timestamp = timestamp;
@@ -273,9 +256,9 @@ impl<I, T: Transport + ?Sized> Header<I, T> {
 }
 
 /// A Cyphal transfer (either incoming or outgoing)
-pub struct Transfer<A, I, T: Transport + ?Sized> {
+pub struct Transfer<A, T: Transport + ?Sized> {
     /// The transfer header
-    pub header: Header<I, T>,
+    pub header: Header<T>,
     /// The loopback flag
     ///
     /// The exact meaning of this flag depends on the transport. Generally, when a transport
@@ -291,10 +274,9 @@ pub struct Transfer<A, I, T: Transport + ?Sized> {
     pub payload: A,
 }
 
-impl<A, I, T: Transport + ?Sized> Debug for Transfer<A, I, T>
+impl<A, T: Transport + ?Sized> Debug for Transfer<A, T>
 where
     A: Debug,
-    I: Debug,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Transfer")
@@ -305,10 +287,9 @@ where
     }
 }
 
-impl<A, I, T: Transport + ?Sized> PartialEq for Transfer<A, I, T>
+impl<A, T: Transport + ?Sized> PartialEq for Transfer<A, T>
 where
     A: PartialEq,
-    I: PartialEq,
     T::TransferId: PartialEq,
     T::Priority: PartialEq,
     T::NodeId: PartialEq,
@@ -319,10 +300,9 @@ where
             && self.payload == other.payload
     }
 }
-impl<A, I, T: Transport + ?Sized> Clone for Transfer<A, I, T>
+impl<A, T: Transport + ?Sized> Clone for Transfer<A, T>
 where
     A: Clone,
-    I: Clone,
     T::TransferId: Clone,
     T::Priority: Clone,
     T::NodeId: Clone,
@@ -338,9 +318,9 @@ where
 
 /// A type of transfer that is always a message transfer
 #[derive(Clone)]
-pub struct MessageTransfer<A, I, T: Transport + ?Sized> {
+pub struct MessageTransfer<A, T: Transport + ?Sized> {
     /// The transfer header
-    pub header: MessageHeader<I, T>,
+    pub header: MessageHeader<T>,
     /// The loopback flag
     ///
     /// The exact meaning of this flag depends on the transport. Generally, when a transport
@@ -356,10 +336,9 @@ pub struct MessageTransfer<A, I, T: Transport + ?Sized> {
     pub payload: A,
 }
 
-impl<A, I, T: Transport + ?Sized> Debug for MessageTransfer<A, I, T>
+impl<A, T: Transport + ?Sized> Debug for MessageTransfer<A, T>
 where
     A: Debug,
-    I: Debug,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Transfer")
@@ -370,10 +349,9 @@ where
     }
 }
 
-impl<A, I, T: Transport + ?Sized> PartialEq for MessageTransfer<A, I, T>
+impl<A, T: Transport + ?Sized> PartialEq for MessageTransfer<A, T>
 where
     A: PartialEq,
-    I: PartialEq,
     T::TransferId: PartialEq,
     T::Priority: PartialEq,
     T::NodeId: PartialEq,
@@ -387,9 +365,9 @@ where
 
 /// A type of transfer that is always a service request or response
 #[derive(Clone)]
-pub struct ServiceTransfer<A, I, T: Transport + ?Sized> {
+pub struct ServiceTransfer<A, T: Transport + ?Sized> {
     /// The transfer header
-    pub header: ServiceHeader<I, T>,
+    pub header: ServiceHeader<T>,
     /// The loopback flag
     ///
     /// The exact meaning of this flag depends on the transport. Generally, when a transport
@@ -405,10 +383,9 @@ pub struct ServiceTransfer<A, I, T: Transport + ?Sized> {
     pub payload: A,
 }
 
-impl<A, I, T: Transport + ?Sized> Debug for ServiceTransfer<A, I, T>
+impl<A, T: Transport + ?Sized> Debug for ServiceTransfer<A, T>
 where
     A: Debug,
-    I: Debug,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Transfer")
@@ -419,10 +396,9 @@ where
     }
 }
 
-impl<A, I, T: Transport + ?Sized> PartialEq for ServiceTransfer<A, I, T>
+impl<A, T: Transport + ?Sized> PartialEq for ServiceTransfer<A, T>
 where
     A: PartialEq,
-    I: PartialEq,
     T::TransferId: PartialEq,
     T::Priority: PartialEq,
     T::NodeId: PartialEq,

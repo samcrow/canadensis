@@ -1,5 +1,5 @@
 use crate::Frame;
-use canadensis_core::time::Instant;
+use canadensis_core::time::{MicrosecondDuration32, Microseconds32};
 
 /// Deduplicates incoming frames from multiple transports
 ///
@@ -21,26 +21,23 @@ use canadensis_core::time::Instant;
 /// For more explanation, see [the comments in pycyphal](https://github.com/OpenCyphal/pycyphal/blob/87c27a978119d24ac77c9a7f2d6f289846ac96fd/pyuavcan/transport/redundant/__init__.py).
 ///
 #[derive(Debug)]
-pub struct Deduplicator<I: Instant, const N: usize> {
+pub struct Deduplicator<const N: usize> {
     /// The state for each transport
-    states: [TransportState<I>; N],
+    states: [TransportState; N],
     /// The index of the transport that is currently active
     active_index: usize,
     /// The time to wait to switch to another transport if the active transport has not received
     /// any frames
-    timeout: I::Duration,
+    timeout: MicrosecondDuration32,
 }
 
-impl<I, const N: usize> Deduplicator<I, N>
-where
-    I: Instant,
-{
+impl<const N: usize> Deduplicator<N> {
     /// Creates a deduplicator
     ///
     /// # Panics
     ///
     /// This function panics if `N` is zero.
-    pub fn new(timeout: I::Duration) -> Self {
+    pub fn new(timeout: MicrosecondDuration32) -> Self {
         assert_ne!(N, 0, "Can't deduplicate from zero transports");
 
         Deduplicator {
@@ -56,7 +53,7 @@ where
     ///
     /// This function returns true if the frame should be processed, or false if it should be
     /// discarded.
-    pub fn accept(&mut self, frame: &Frame<I>, index: usize) -> bool {
+    pub fn accept(&mut self, frame: &Frame, index: usize) -> bool {
         // Update frame time
         self.states[index].last_frame_time = Some(frame.timestamp());
 
@@ -71,10 +68,10 @@ where
 
     /// Returns true if the currently active transfer has not received a frame within the last
     /// self.timeout duration
-    fn active_transport_timed_out(&self, now: I) -> bool {
+    fn active_transport_timed_out(&self, now: Microseconds32) -> bool {
         let active_last_frame = &self.states[self.active_index].last_frame_time;
         match active_last_frame {
-            Some(active_last_frame) => now.duration_since(active_last_frame) > self.timeout,
+            Some(active_last_frame) => now.duration_since(*active_last_frame) > self.timeout,
             None => {
                 // The active transport has never received a frame, so it's timed out.
                 true
@@ -84,17 +81,9 @@ where
 }
 
 /// Information about a transport
-#[derive(Debug, Copy, Clone)]
-struct TransportState<I> {
-    last_frame_time: Option<I>,
-}
-
-impl<I> Default for TransportState<I> {
-    fn default() -> Self {
-        TransportState {
-            last_frame_time: None,
-        }
-    }
+#[derive(Debug, Default, Copy, Clone)]
+struct TransportState {
+    last_frame_time: Option<Microseconds32>,
 }
 
 #[cfg(test)]
@@ -103,21 +92,19 @@ mod test {
     use crate::{CanId, Frame};
     use canadensis_core::time::{milliseconds, Microseconds32};
 
-    type TestInstant = Microseconds32;
-
-    fn make_frame(microseconds: u32) -> Frame<TestInstant> {
-        Frame::new(TestInstant::new(microseconds), CanId::default(), &[])
+    fn make_frame(microseconds: u32) -> Frame {
+        Frame::new(Microseconds32::new(microseconds), CanId::default(), &[])
     }
 
     #[test]
     #[should_panic]
     fn zero_transports() {
-        Deduplicator::<TestInstant, 0>::new(milliseconds(1));
+        Deduplicator::<0>::new(milliseconds(1));
     }
 
     #[test]
     fn one_transport() {
-        let mut deduplicator = Deduplicator::<TestInstant, 1>::new(milliseconds(1));
+        let mut deduplicator = Deduplicator::<1>::new(milliseconds(1));
         assert!(deduplicator.accept(&make_frame(0), 0));
         assert!(deduplicator.accept(&make_frame(1), 0));
         assert!(deduplicator.accept(&make_frame(2), 0));
@@ -128,7 +115,7 @@ mod test {
 
     #[test]
     fn two_transports() {
-        let mut deduplicator = Deduplicator::<TestInstant, 2>::new(milliseconds(1));
+        let mut deduplicator = Deduplicator::<2>::new(milliseconds(1));
         // The transport with the first frame becomes active
         assert!(deduplicator.accept(&make_frame(0), 1));
         assert!(!deduplicator.accept(&make_frame(3), 0));
