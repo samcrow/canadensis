@@ -379,6 +379,7 @@ where
         // Logical safety: If a subscription previously existed and was removed, this Vec must have
         // space for it. Therefore, this function cannot remove a subscription and fail to add
         // its replacement.
+        subscriptions.try_reserve_exact(1)?;
         FallibleVec::try_push(subscriptions, new_subscription)?;
         Ok(())
     }
