@@ -6,6 +6,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [canadensis-v0.3.2](https://github.com/samcrow/canadensis/releases/tag/canadensis-v0.3.2) - 2024-11-07
+
+### Changed
+
+- Updated `fallible_collections` to v0.5.1 [#32]
+
+### Fixed
+
+- Avoid allocated space for more than one subscription [#32]
+
+## [canadensis_bxcan-v0.3.1](https://github.com/samcrow/canadensis/releases/tag/canadensis_bxcan-v0.3.1) - 2024-11-07
+
+### Changed
+
+- Updated `fallible_collections` to v0.5.1 [#32]
+
+## [canadensis_can-v0.3.1](https://github.com/samcrow/canadensis/releases/tag/canadensis_can-v0.3.1) - 2024-11-07
+
+### Changed
+
+- Updated `fallible_collections` to v0.5.1 [#32]
+
+## [canadensis_core-v0.3.1](https://github.com/samcrow/canadensis/releases/tag/canadensis_core-v0.3.1) - 2024-11-07
+
+### Changed
+
+- Updated `fallible_collections` to v0.5.1 [#32]
+
+## [canadensis_serial-v0.3.1](https://github.com/samcrow/canadensis/releases/tag/canadensis_serial-v0.3.1) - 2024-11-07
+
+### Changed
+
+- Updated `fallible_collections` to v0.5.1 [#32]
+
+## [canadensis_udp-v0.4.1](https://github.com/samcrow/canadensis/releases/tag/canadensis_udp-v0.4.1) - 2024-11-07
+
+### Changed
+
+- Updated `fallible_collections` to v0.5.1 [#32]
+
+[#32]: https://github.com/samcrow/canadensis/pull/32
+
 ## [canadensis-v0.3.1](https://github.com/samcrow/canadensis/releases/tag/canadensis-v0.3.1) - 2023-10-05
 
 ### Fixed
