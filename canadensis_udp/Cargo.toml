@@ -21,7 +21,7 @@ nb = "1.0.0"
 embedded-nal = "0.6.0"
 
 [dependencies.canadensis_core]
-version = "0.3.0"
+version = "0.3.1"
 path = "../canadensis_core"
 [dependencies.canadensis_header]
 version = "0.1.0"
