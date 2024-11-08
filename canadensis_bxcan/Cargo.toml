@@ -23,7 +23,7 @@ cortex-m = "0.7.3"
 version = "0.3.2"
 path = "../canadensis"
 [dependencies.canadensis_can]
-version = "0.3.0"
+version = "0.3.1"
 path = "../canadensis_can"
 [dependencies.canadensis_filter_config]
 version = "0.2.0"
