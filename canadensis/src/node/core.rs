@@ -360,6 +360,10 @@ where
             .subscribe_message(subject, payload_size_max, timeout, &mut self.driver)
     }
 
+    fn unsubscribe_message(&mut self, subject: SubjectId) {
+        self.receiver.unsubscribe_message(subject, &mut self.driver);
+    }
+
     fn subscribe_request(
         &mut self,
         service: ServiceId,
@@ -374,6 +378,10 @@ where
             ServiceSubscribeError::Transport(e) => e,
             ServiceSubscribeError::Anonymous => unreachable!("CoreNode is never anonymous"),
         })
+    }
+
+    fn unsubscribe_request(&mut self, service: ServiceId) {
+        self.receiver.unsubscribe_request(service, &mut self.driver);
     }
 
     fn send_response<M>(

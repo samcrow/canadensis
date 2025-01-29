@@ -445,6 +445,9 @@ pub trait Node {
         timeout: MicrosecondDuration32,
     ) -> Result<(), <Self::Receiver as Receiver<Self::Clock>>::Error>;
 
+    /// Unsubscribes from messages on a topic
+    fn unsubscribe_message(&mut self, subject: SubjectId);
+
     /// Subscribes to requests for a service
     fn subscribe_request(
         &mut self,
@@ -452,6 +455,9 @@ pub trait Node {
         payload_size_max: usize,
         timeout: MicrosecondDuration32,
     ) -> Result<(), <Self::Receiver as Receiver<Self::Clock>>::Error>;
+
+    /// Unsubscribes from requests for a service
+    fn unsubscribe_request(&mut self, service: ServiceId);
 
     /// Responds to a service request
     ///
