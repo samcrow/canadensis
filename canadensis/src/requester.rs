@@ -12,8 +12,6 @@ use crate::serialize::do_serialize;
 
 /// Assembles transfers and manages transfer IDs to send service requests
 pub struct Requester<C: Clock, T: Transmitter<C>, R> {
-    /// The ID of this node
-    this_node: <T::Transport as Transport>::NodeId,
     /// The priority of transfers from this transmitter
     priority: <T::Transport as Transport>::Priority,
     /// The timeout for sending transfers
@@ -25,18 +23,14 @@ pub struct Requester<C: Clock, T: Transmitter<C>, R> {
 impl<C: Clock, T: Transmitter<C>, R: TransferIdTracker<T::Transport>> Requester<C, T, R> {
     /// Creates a service request transmitter
     ///
-    /// this_node: The ID of this node
-    ///
     /// priority: The priority to use for messages
     ///
     /// service: The service ID to request
     pub fn new(
-        this_node: <T::Transport as Transport>::NodeId,
         timeout: MicrosecondDuration32,
         priority: <T::Transport as Transport>::Priority,
     ) -> Self {
         Requester {
-            this_node,
             priority,
             timeout,
             transfer_ids: R::default(),
@@ -47,6 +41,7 @@ impl<C: Clock, T: Transmitter<C>, R: TransferIdTracker<T::Transport>> Requester<
     pub fn send<Q>(
         &mut self,
         clock: &mut C,
+        source: <T::Transport as Transport>::NodeId,
         service: ServiceId,
         payload: &Q,
         destination: <T::Transport as Transport>::NodeId,
@@ -62,6 +57,7 @@ impl<C: Clock, T: Transmitter<C>, R: TransferIdTracker<T::Transport>> Requester<
             // Part 2: Split into frames and send
             self.send_payload(
                 payload_bytes,
+                source,
                 service,
                 destination,
                 deadline,
@@ -77,6 +73,7 @@ impl<C: Clock, T: Transmitter<C>, R: TransferIdTracker<T::Transport>> Requester<
     pub fn send_loopback<Q>(
         &mut self,
         clock: &mut C,
+        source: <T::Transport as Transport>::NodeId,
         service: ServiceId,
         payload: &Q,
         destination: <T::Transport as Transport>::NodeId,
@@ -92,6 +89,7 @@ impl<C: Clock, T: Transmitter<C>, R: TransferIdTracker<T::Transport>> Requester<
             // Part 2: Split into frames and send
             self.send_payload(
                 payload_bytes,
+                source,
                 service,
                 destination,
                 deadline,
@@ -106,6 +104,7 @@ impl<C: Clock, T: Transmitter<C>, R: TransferIdTracker<T::Transport>> Requester<
     fn send_payload(
         &mut self,
         payload: &[u8],
+        source: <T::Transport as Transport>::NodeId,
         service: ServiceId,
         destination: <T::Transport as Transport>::NodeId,
         deadline: Microseconds32,
@@ -125,7 +124,7 @@ impl<C: Clock, T: Transmitter<C>, R: TransferIdTracker<T::Transport>> Requester<
                 transfer_id: transfer_id.clone(),
                 priority: self.priority.clone(),
                 service,
-                source: self.this_node.clone(),
+                source,
                 destination,
             }),
             loopback,
@@ -207,7 +206,6 @@ mod fmt_impl {
     {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
             f.debug_struct("Requester")
-                .field("this_node", &self.this_node)
                 .field("priority", &self.priority)
                 .field("timeout", &self.timeout)
                 .field("transfer_ids", &self.transfer_ids)

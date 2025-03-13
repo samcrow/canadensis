@@ -466,6 +466,11 @@ pub trait Node {
     /// can send a response.
     ///
     /// The response has its loopback flag set to false.
+    ///
+    /// # Panics
+    ///
+    /// Some implementations may panic if this function is called on an anonymous node though this
+    /// situation should never occur in practice as anonymous nodes will not produce response tokens.
     fn send_response<T>(
         &mut self,
         token: ResponseToken<Self::Transport>,
@@ -496,7 +501,12 @@ pub trait Node {
     fn receiver_mut(&mut self) -> &mut Self::Receiver;
 
     /// Returns the identifier of this node
-    fn node_id(&self) -> <Self::Transport as Transport>::NodeId;
+    ///
+    /// If the node is anonymous, this function returns `None`.
+    fn node_id(&self) -> Option<<Self::Transport as Transport>::NodeId>;
+
+    /// Sets the identifier of this node
+    fn set_node_id(&mut self, node_id: <Self::Transport as Transport>::NodeId);
 }
 
 /// A token returned from [`Node::start_publishing`](Node#tymethod.start_publishing) that can be
@@ -545,6 +555,8 @@ pub enum StartSendError<E> {
     Transport(E),
     /// The provided subject ID or service ID is already in use
     Duplicate,
+    /// The node or transmitter is anonymous and cannot send requests
+    AnonymousRequest,
 }
 
 impl<E> From<E> for StartSendError<E> {
