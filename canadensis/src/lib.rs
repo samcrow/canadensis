@@ -497,7 +497,12 @@ pub trait Node {
     fn receiver_mut(&mut self) -> &mut Self::Receiver;
 
     /// Returns the identifier of this node
-    fn node_id(&self) -> <Self::Transport as Transport>::NodeId;
+    ///
+    /// If the node is anonymous, this function returns `None`.
+    fn node_id(&self) -> Option<<Self::Transport as Transport>::NodeId>;
+
+    /// Sets the identifier of this node
+    fn set_node_id(&mut self, node_id: <Self::Transport as Transport>::NodeId);
 }
 
 /// A token returned from [`Node::start_publishing`](Node#tymethod.start_publishing) that can be

@@ -376,8 +376,12 @@ where
         self.node.node_mut().receiver_mut()
     }
 
-    fn node_id(&self) -> <Self::Transport as Transport>::NodeId {
+    fn node_id(&self) -> Option<<Self::Transport as Transport>::NodeId> {
         self.node.node().node_id()
+    }
+
+    fn set_node_id(&mut self, node_id: <Self::Transport as Transport>::NodeId) {
+        self.node.node_mut().set_node_id(node_id)
     }
 }
 
