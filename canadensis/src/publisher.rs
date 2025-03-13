@@ -15,18 +15,13 @@ pub struct Publisher<C: Clock, T: Transmitter<C>> {
     timeout: MicrosecondDuration32,
     /// Priority for transfers
     priority: <T::Transport as Transport>::Priority,
-    /// ID of this node
-    source: <T::Transport as Transport>::NodeId,
 }
 
 impl<C: Clock, T: Transmitter<C>> Publisher<C, T> {
     /// Creates a message transmitter
     ///
-    /// node: The ID of this node
-    ///
     /// priority: The priority to use for messages
     pub fn new(
-        node_id: <T::Transport as Transport>::NodeId,
         timeout: MicrosecondDuration32,
         priority: <T::Transport as Transport>::Priority,
     ) -> Self {
@@ -34,7 +29,6 @@ impl<C: Clock, T: Transmitter<C>> Publisher<C, T> {
             next_transfer_id: <T::Transport as Transport>::TransferId::default(),
             timeout,
             priority,
-            source: node_id,
         }
     }
 
@@ -44,6 +38,7 @@ impl<C: Clock, T: Transmitter<C>> Publisher<C, T> {
     pub fn publish<M>(
         &mut self,
         clock: &mut C,
+        source: Option<<T::Transport as Transport>::NodeId>,
         subject: SubjectId,
         payload: &M,
         transmitter: &mut T,
@@ -57,6 +52,7 @@ impl<C: Clock, T: Transmitter<C>> Publisher<C, T> {
         do_serialize(payload, |payload_bytes| {
             // Part 2: Split into frames and put frames in the queue
             self.send_payload(
+                source,
                 subject,
                 payload_bytes,
                 deadline,
@@ -71,6 +67,7 @@ impl<C: Clock, T: Transmitter<C>> Publisher<C, T> {
     pub fn publish_loopback<M>(
         &mut self,
         clock: &mut C,
+        source: Option<<T::Transport as Transport>::NodeId>,
         subject: SubjectId,
         payload: &M,
         transmitter: &mut T,
@@ -84,6 +81,7 @@ impl<C: Clock, T: Transmitter<C>> Publisher<C, T> {
         do_serialize(payload, |payload_bytes| {
             // Part 2: Split into frames and put frames in the queue
             self.send_payload(
+                source,
                 subject,
                 payload_bytes,
                 deadline,
@@ -97,6 +95,7 @@ impl<C: Clock, T: Transmitter<C>> Publisher<C, T> {
 
     fn send_payload(
         &mut self,
+        source: Option<<T::Transport as Transport>::NodeId>,
         subject: SubjectId,
         payload: &[u8],
         deadline: Microseconds32,
@@ -112,7 +111,7 @@ impl<C: Clock, T: Transmitter<C>> Publisher<C, T> {
                 transfer_id: self.next_transfer_id.clone(),
                 priority: self.priority.clone(),
                 subject,
-                source: Some(self.source.clone()),
+                source,
             }),
             loopback,
             payload,
@@ -142,7 +141,6 @@ mod fmt_impl {
                 .field("next_transfer_id", &self.next_transfer_id)
                 .field("timeout", &self.timeout)
                 .field("priority", &self.priority)
-                .field("source", &self.source)
                 .finish()
         }
     }

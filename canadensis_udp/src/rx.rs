@@ -258,6 +258,10 @@ where
         self.subscriptions.unsubscribe_response(service);
         let _ = self.service_unsubscribe_check_multicast(socket);
     }
+
+    fn set_id(&mut self, id: Option<UdpNodeId>) {
+        self.node_id = id;
+    }
 }
 
 pub struct Subscription<T> {
