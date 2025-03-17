@@ -4,3 +4,4 @@ target
 .idea/usage.statistics.xml
 .idea/tasks.xml
 .idea/shelf
+.DS_Store
