@@ -4,7 +4,7 @@ use crate::error::Error;
 use crate::type_key::{TypeFullName, TypeKey};
 use crate::types::keywords::{is_reserved_keyword, is_valid_identifier};
 use crate::warning::Warnings;
-use canadensis_dsdl_parser::TypeVersion;
+use canadensis_dsdl_parser::{Config, TypeVersion};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::collections::btree_map::Entry;
@@ -162,8 +162,9 @@ impl Package {
     /// invalid content, or an `@assert` directive fails.
     ///
     /// If this function returns an error, it cannot return any warnings.
-    pub fn compile(self) -> Result<CompiledPackage, Error> {
-        self.compile_with_warnings().map_err(|(e, _warnings)| e)
+    pub fn compile(self, config: &Config) -> Result<CompiledPackage, Error> {
+        self.compile_with_warnings(config)
+            .map_err(|(e, _warnings)| e)
     }
     /// Compiles all input files that were previously added
     ///
@@ -174,8 +175,11 @@ impl Package {
     ///
     /// If an error occurs, this function returns the error and any warnings reported before
     /// encountering the error.
-    pub fn compile_with_warnings(self) -> Result<CompiledPackage, (Error, Warnings)> {
-        match crate::compile::compile(self.files) {
+    pub fn compile_with_warnings(
+        self,
+        config: &Config,
+    ) -> Result<CompiledPackage, (Error, Warnings)> {
+        match crate::compile::compile(self.files, config) {
             CompileOutput {
                 dsdl: Ok(types),
                 warnings,

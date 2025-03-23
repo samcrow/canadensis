@@ -1,0 +1,1 @@
+Composite type attribute definition not allowed in union after use of _offset_

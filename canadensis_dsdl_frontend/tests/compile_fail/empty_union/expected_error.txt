@@ -1,0 +1,1 @@
+Need at least two union variants

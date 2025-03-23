@@ -11,7 +11,7 @@ use crate::types::expression::convert_type;
 use crate::types::{array_length_bits, PrimitiveType, ResolvedScalarType, ResolvedType};
 use crate::warning::Warnings;
 use canadensis_bit_length_set::BitLengthSet;
-use canadensis_dsdl_parser::{Identifier, Span, Statement};
+use canadensis_dsdl_parser::{Config, Identifier, Span, Statement};
 use once_cell::sync::Lazy;
 use std::collections::btree_map::Entry;
 use std::collections::BTreeMap;
@@ -32,8 +32,9 @@ static BIT_LENGTH_ZERO: Lazy<BitLengthSet> = Lazy::new(|| BitLengthSet::single(0
 ///
 /// This function returns the compiled DSDL or an error. In either case, it also returns
 /// a set of warnings.
-pub(crate) fn compile(files: BTreeMap<TypeKey, DsdlFile>) -> CompileOutput {
+pub(crate) fn compile(files: BTreeMap<TypeKey, DsdlFile>, config: &Config) -> CompileOutput {
     let context = PersistentContext {
+        config,
         pending: files,
         done: BTreeMap::new(),
         warnings: Warnings::new(),
@@ -53,14 +54,14 @@ pub(crate) struct CompileOutput {
 ///
 /// They use its functions to collect information about the type currently being compiled, and
 /// about other types.
-pub(crate) struct CompileContext<'p> {
+pub(crate) struct CompileContext<'p, 'c: 'p> {
     /// Persistent context and information about other types
-    persistent: &'p mut PersistentContext,
+    persistent: &'p mut PersistentContext<'c>,
     /// Information about the type currently being compiled
     current_file: &'p mut FileState,
 }
 
-impl<'p> CompileContext<'p> {
+impl<'p, 'c: 'p> CompileContext<'p, 'c> {
     /// Returns the constants that have been declared in the current file
     ///
     /// If the current file defines a service type, constants declared in the request section
@@ -220,7 +221,10 @@ impl<'p> CompileContext<'p> {
 }
 
 /// A convenience function to make a `CompileContext`
-fn ctx<'p>(p: &'p mut PersistentContext, c: &'p mut FileState) -> CompileContext<'p> {
+fn ctx<'p, 'c: 'p>(
+    p: &'p mut PersistentContext<'c>,
+    c: &'p mut FileState,
+) -> CompileContext<'p, 'c> {
     CompileContext {
         persistent: p,
         current_file: c,
@@ -228,7 +232,8 @@ fn ctx<'p>(p: &'p mut PersistentContext, c: &'p mut FileState) -> CompileContext
 }
 
 /// A context used during the compilation process
-struct PersistentContext {
+struct PersistentContext<'c> {
+    config: &'c Config,
     /// Files that have not been compiled
     pending: BTreeMap<TypeKey, DsdlFile>,
     /// Files that have been compiled
@@ -237,7 +242,7 @@ struct PersistentContext {
     warnings: Warnings,
 }
 
-impl PersistentContext {
+impl<'c> PersistentContext<'c> {
     fn compile(mut self) -> CompileOutput {
         while let Some(key) = self.pending.keys().next().cloned() {
             let input = self.pending.remove(&key).unwrap();
@@ -277,7 +282,7 @@ impl PersistentContext {
         let mut state = FileState::new(key.name().path());
 
         let text = input.read()?;
-        let ast = canadensis_dsdl_parser::parse(&text)?;
+        let ast = canadensis_dsdl_parser::parse(&text, &self.config)?;
 
         for statement in ast.statements {
             match statement {

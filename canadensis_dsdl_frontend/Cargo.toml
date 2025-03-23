@@ -26,3 +26,8 @@ path = "../canadensis_dsdl_parser"
 [dependencies.canadensis_bit_length_set]
 version = "0.3.0"
 path = "../canadensis_bit_length_set"
+
+[dev-dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+regex = "1.10.5"

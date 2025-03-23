@@ -1,0 +1,1 @@
+`saturated bool` is not a valid type

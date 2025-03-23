@@ -4,8 +4,8 @@ extern crate proc_macro;
 
 mod input;
 
-use crate::input::{Input, ParsedString, Statement};
-use canadensis_dsdl_frontend::{Package, TypeKey};
+use crate::input::{parse_generate_config, Input, ParsedString, Statement};
+use canadensis_dsdl_frontend::{Config, Package, TypeKey};
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span, TokenTree};
 use std::collections::btree_map::Entry;
@@ -41,26 +41,10 @@ fn types_from_dsdl_inner(
                 "make_external" => eval_make_external_function(&mut external_packages, arguments)?,
                 "generate" => {
                     // Generate and break
-                    let compiled = package.compile().map_err(|e| {
-                        make_error(
-                            name.span(),
-                            format!("Failed to compile DSDL: {}", ErrorChain(e)),
-                        )
-                    })?;
-                    let code =
-                        canadensis_codegen_rust::generate_code(&compiled, &external_packages)
-                            .map_err(|e| {
-                                make_error(
-                                    name.span(),
-                                    format!("Failed to generate code from DSDL: {}", ErrorChain(e)),
-                                )
-                            })?;
-                    let code_string = code.to_string();
-                    let parsed_code: proc_macro2::TokenStream = code_string
-                        .parse()
-                        .expect("Internal error: Generated invalid code");
+                    let config = parse_generate_config(arguments)?;
+                    let parsed_code = eval_generate_function(package, &external_packages, &config)
+                        .map_err(|e| make_error(name.span(), e))?;
                     output.extend(parsed_code);
-
                     break;
                 }
                 _ => return Err(make_error(name.span(), "Unrecognized function")),
@@ -84,6 +68,23 @@ fn types_from_dsdl_inner(
     }
 
     Ok(output)
+}
+
+fn eval_generate_function(
+    package: Package,
+    external_packages: &BTreeMap<Vec<String>, Vec<String>>,
+    config: &Config,
+) -> Result<proc_macro2::TokenStream, String> {
+    let compiled = package
+        .compile(config)
+        .map_err(|e| format!("Failed to compile DSDL: {}", ErrorChain(e)))?;
+    let code = canadensis_codegen_rust::generate_code(&compiled, external_packages)
+        .map_err(|e| format!("Failed to generate code from DSDL: {}", ErrorChain(e)))?;
+    let code_string = code.to_string();
+    let parsed_code: proc_macro2::TokenStream = code_string
+        .parse()
+        .expect("Internal error: Generated invalid code");
+    Ok(parsed_code)
 }
 
 fn eval_package_function(

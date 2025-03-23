@@ -39,9 +39,9 @@ pub struct Error(Box<pest::error::Error<Rule>>);
 /// # Errors
 ///
 /// This function returns an error if the DSDL has invalid syntax.
-pub fn parse(dsdl: &str) -> Result<Definition<'_>, Error> {
+pub fn parse<'i>(dsdl: &'i str, config: &Config) -> Result<Definition<'i>, Error> {
     let parse_tree = DsdlParser::parse(Rule::definition, dsdl).map_err(|e| Error(Box::new(e)))?;
-    ast::parse_to_ast(parse_tree)
+    ast::parse_to_ast(parse_tree, config)
 }
 
 /// Convenience function to make an error value with a custom message
@@ -70,6 +70,35 @@ mod error_impl {
     impl std::error::Error for Error {
         fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
             self.0.source()
+        }
+    }
+}
+
+/// Parser configuration
+#[derive(Debug, Clone)]
+pub struct Config {
+    /// Allow `utf8` and `byte` types in DSDL
+    ///
+    /// Based on <https://github.com/OpenCyphal/specification/issues/51>
+    ///
+    /// Warning: The specification does not have details for this, so the behavior may change.
+    ///
+    /// Default false
+    pub allow_utf8_and_byte: bool,
+    /// Allow the `saturated bool` type in DSDL
+    ///
+    /// v1.0 of the specification allows this, but pydsdl plans to remove it:
+    /// <https://github.com/OpenCyphal/pydsdl/pull/97>
+    ///
+    /// Default true
+    pub allow_saturated_bool: bool,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Config {
+            allow_utf8_and_byte: false,
+            allow_saturated_bool: true,
         }
     }
 }

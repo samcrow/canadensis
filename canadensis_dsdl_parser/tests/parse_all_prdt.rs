@@ -7,6 +7,7 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
+use canadensis_dsdl_parser::Config;
 use walkdir::{DirEntry, WalkDir};
 
 #[test]
@@ -38,7 +39,8 @@ fn is_dsdl_file(entry: &DirEntry) -> bool {
 fn try_parse_file(path: &Path) -> io::Result<()> {
     println!("Parsing {}", path.display());
     let content = fs::read_to_string(path)?;
-    match canadensis_dsdl_parser::parse(&content) {
+    let config = Config::default();
+    match canadensis_dsdl_parser::parse(&content, &config) {
         Ok(_ast) => {}
         Err(e) => {
             println!("Error parsing {}", path.display());

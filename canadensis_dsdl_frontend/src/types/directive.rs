@@ -6,7 +6,7 @@ use canadensis_dsdl_parser::{Expression, Identifier};
 use num_traits::{Signed, ToPrimitive};
 
 pub(crate) fn evaluate_directive(
-    cx: &mut CompileContext<'_>,
+    cx: &mut CompileContext<'_, '_>,
     name: Identifier<'_>,
     expression: Option<Expression<'_>>,
 ) -> Result<(), Error> {

@@ -5,6 +5,7 @@
 
 extern crate canadensis_dsdl_parser;
 
+use canadensis_dsdl_parser::Config;
 use std::error::Error;
 use std::io;
 use std::io::Read;
@@ -26,7 +27,8 @@ fn run() -> Result<(), Box<dyn Error>> {
     let mut dsdl = String::new();
     stdin.read_to_string(&mut dsdl)?;
 
-    let ast = canadensis_dsdl_parser::parse(&dsdl)?;
+    let config = Config::default();
+    let ast = canadensis_dsdl_parser::parse(&dsdl, &config)?;
 
     println!("{:#?}", ast);
 
