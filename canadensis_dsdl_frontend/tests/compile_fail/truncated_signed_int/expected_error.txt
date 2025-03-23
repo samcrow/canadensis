@@ -1,0 +1,1 @@
+Signed integers cannot use truncated mode

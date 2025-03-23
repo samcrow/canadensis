@@ -1,6 +1,7 @@
 //! Parses input to the types_from_dsdl macro
 
 use crate::make_error;
+use canadensis_dsdl_frontend::Config;
 use proc_macro2::{Delimiter, Group, Ident, Literal, Span, TokenStream, TokenTree};
 use syn::Lit;
 
@@ -157,4 +158,86 @@ impl ParsedString {
             _ => Err(make_error(literal.span(), "Expected a string literal")),
         }
     }
+}
+
+pub fn parse_generate_config(arguments: TokenStream) -> Result<Config, TokenStream> {
+    let mut trees = arguments.into_iter();
+    let config = match trees.next() {
+        Some(TokenTree::Group(group)) if group.delimiter() == Delimiter::Brace => {
+            parse_generate_config_inner(group)?
+        }
+        Some(other) => return Err(make_error(other.span(), "Expected options inside {}")),
+        None => Config::default(),
+    };
+    if let Some(next) = trees.next() {
+        return Err(make_error(next.span(), "Unexpected value after options"));
+    }
+    Ok(config)
+}
+
+fn parse_generate_config_inner(group: Group) -> Result<Config, TokenStream> {
+    // Expected sequence: one or more of
+    // Ident Punct(:) Ident(true|false) Punct(,)
+    //
+    // This currently requires trailing commas.
+    let mut trees = group.stream().into_iter();
+    let mut config = Config::default();
+    while let Some((option_name, option_value)) = parse_one_option(&mut trees)? {
+        let option_value = match option_value.to_string().as_str() {
+            "true" => true,
+            "false" => false,
+            _ => {
+                return Err(make_error(
+                    option_value.span(),
+                    "Unexpected value, expected true or false",
+                ))
+            }
+        };
+        match option_name.to_string().as_str() {
+            "allow_utf8_and_byte" => config.allow_utf8_and_byte = option_value,
+            "allow_saturated_bool" => config.allow_saturated_bool = option_value,
+            _ => {
+                return Err(make_error(
+                    option_name.span(),
+                    format!("Unrecognized option {}", option_name),
+                ))
+            }
+        }
+    }
+    Ok(config)
+}
+
+fn parse_one_option(
+    trees: &mut proc_macro2::token_stream::IntoIter,
+) -> Result<Option<(Ident, Ident)>, TokenStream> {
+    // Start of an option, expect identifier
+    let option_name = match trees.next() {
+        Some(TokenTree::Ident(ident)) => ident,
+        Some(other) => return Err(make_error(other.span(), "Expected identifier")),
+        None => return Ok(None),
+    };
+    // Expect :
+    let colon = match trees.next() {
+        Some(TokenTree::Punct(p)) if p.as_char() == ':' => p,
+        Some(other) => return Err(make_error(other.span(), "Expected :")),
+        None => {
+            return Err(make_error(
+                option_name.span(),
+                "Expected : after option name",
+            ))
+        }
+    };
+    // Value, expect identifier true or false
+    let option_value = match trees.next() {
+        Some(TokenTree::Ident(ident)) => ident,
+        Some(other) => return Err(make_error(other.span(), "Expected true or false")),
+        None => return Err(make_error(colon.span(), "Expected true or false after :")),
+    };
+    // Expect comma after value
+    match trees.next() {
+        Some(TokenTree::Punct(p)) if p.as_char() == ',' => {}
+        Some(other) => return Err(make_error(other.span(), "Expected , after value")),
+        None => return Err(make_error(option_value.span(), "Expected , after value")),
+    }
+    Ok(Some((option_name, option_value)))
 }

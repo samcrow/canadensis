@@ -25,7 +25,10 @@ uint64 d
 @sealed
     "# }
     // Generates code for all loaded DSDL types
-    generate()
+    generate({
+        allow_utf8_and_byte: true,
+        allow_saturated_bool: false,
+    })
 }
 
 #[test]

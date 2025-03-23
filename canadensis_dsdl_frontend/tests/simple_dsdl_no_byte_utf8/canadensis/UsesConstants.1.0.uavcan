@@ -1,0 +1,8 @@
+
+uint16 INDEPENDENT = 10 * 10 + 92
+
+uint16 DEPENDENT = canadensis.Constants.1.0.C
+
+bool[DEPENDENT] things
+
+@sealed

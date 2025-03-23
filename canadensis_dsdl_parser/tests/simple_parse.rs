@@ -1,11 +1,12 @@
 extern crate canadensis_dsdl_parser;
 
-use canadensis_dsdl_parser::parse;
+use canadensis_dsdl_parser::{parse, Config};
 
 #[test]
 fn comments() {
     fn try_parse_comment(text: &str) {
-        match parse(text) {
+        let config = Config::default();
+        match parse(text, &config) {
             Ok(_pairs) => {}
             Err(e) => panic!("{}", e),
         }
@@ -50,7 +51,8 @@ Value.1.0 value
 ",
     );
     fn try_parse(text: &str) {
-        match parse(text) {
+        let config = Config::default();
+        match parse(text, &config) {
             Ok(_pairs) => {}
             Err(e) => panic!("{}", e),
         }

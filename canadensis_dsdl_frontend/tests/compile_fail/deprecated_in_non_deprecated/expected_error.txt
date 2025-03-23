@@ -1,0 +1,1 @@
+Non-deprecated type \S+ uses deprecated type

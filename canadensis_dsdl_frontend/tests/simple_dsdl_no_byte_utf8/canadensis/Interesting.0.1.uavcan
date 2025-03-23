@@ -1,0 +1,10 @@
+# This is a type with some fields
+
+uint1 a  # Documentation for a
+@print _offset_ * 3
+uint32[(_offset_ * 3).min] offset_dependent
+
+uint32[<= {_offset_, {92, "'"}}.max.min] others
+@print _offset_
+
+@sealed

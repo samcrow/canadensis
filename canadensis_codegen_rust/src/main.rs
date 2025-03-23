@@ -2,7 +2,7 @@ extern crate canadensis_codegen_rust;
 extern crate canadensis_dsdl_frontend;
 extern crate clap;
 
-use canadensis_dsdl_frontend::Package;
+use canadensis_dsdl_frontend::{Config, Package};
 use clap::{value_parser, Arg, Command};
 use std::collections::BTreeMap;
 use std::fs::File;
@@ -28,12 +28,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             output_file: output_path,
             external_packages,
             rustfmt,
+            config,
         } => {
             let mut package = Package::new();
             for path in input_folders {
                 package.add_files(path)?;
             }
-            let package = match package.compile_with_warnings() {
+            let package = match package.compile_with_warnings(&config) {
                 Ok(package) => package,
                 Err((e, warnings)) => {
                     for warning in warnings {
@@ -103,6 +104,8 @@ enum Args {
         external_packages: BTreeMap<Vec<String>, Vec<String>>,
         /// Run rustfmt on the generated code
         rustfmt: bool,
+        /// Parser configuration
+        config: Config,
     },
     PrintDependencies,
 }
@@ -142,6 +145,15 @@ fn get_args() -> Args {
                 .long("rustfmt")
                 .num_args(0)
                 .help("Run rustfmt to format the generated code")
+        )
+            .arg(Arg::new("allow_utf8_and_byte")
+                .long("unstable-allow-utf8-and-byte")
+                .num_args(0)
+                .help("Allow utf8 and byte DSDL types (this option is unstable)")
+            ).arg(Arg::new("forbid_saturated_bool")
+            .long("unstable-forbid-saturated-bool")
+            .num_args(0)
+            .help("Forbid the saturated bool DSDL type (this option is unstable and may become the default)")
         ))
         .subcommand(Command::new("print-dependencies")
             .about("Prints the packages that the generated code depends on (for use in Cargo.toml)"));
@@ -165,6 +177,10 @@ fn get_args() -> Args {
                 })
                 .unwrap_or_else(BTreeMap::new),
             rustfmt: matches.contains_id("rustfmt"),
+            config: Config {
+                allow_utf8_and_byte: matches.contains_id("allow_utf8_and_byte"),
+                allow_saturated_bool: !matches.contains_id("forbid_saturated_bool"),
+            },
         },
         Some(("print-dependencies", _)) => Args::PrintDependencies,
         _ => panic!("Unrecognized Subcommand"),

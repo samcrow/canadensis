@@ -6,12 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-- `canadensis_dsdl_parser`: Breaking change: Removed `saturated bool` type
+- `canadensis_dsdl_parser`: Breaking change: Added Config, with options for `byte`, `utf8`, and `saturated bool`
 - `canadensis_dsdl_parser`: Added support for `byte` and `utf8` types (this is a breaking change for code that uses
   this library, but it does not break compatibility with any existing DSDL file)
-- `canadensis_dsdl_frontend`: Added support for `byte` and `utf8` types (this is a breaking change for code that uses
-  this library, but it does not break compatibility with any existing DSDL file)
-- `canadensis_codegen_rust`: Added support for `byte` and `utf8` (code generation is the same as for uint8)
+- `canadensis_dsdl_frontend`: Breaking change: Added Config, with options for `byte`, `utf8`, and `saturated bool`
+- `canadensis_macro`: Added options for `byte`, `utf8`, and `saturated bool` (not a breaking change)
+- `canadensis_codegen_rust`: Added unstable optional support for `byte` and `utf8` (code generation is the same as for uint8)
+- `canadensis_codegen_rust`: Added unstable option to forbid `saturated bool`
 
 ## [canadensis-v0.3.3](https://github.com/samcrow/canadensis/releases/tag/canadensis-v0.3.3) - 2025-03-23
 

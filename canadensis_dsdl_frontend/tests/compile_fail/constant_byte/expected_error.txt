@@ -1,0 +1,1 @@
+Declared type byte of constant is not compatible with value of type "y"
