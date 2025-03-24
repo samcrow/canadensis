@@ -32,6 +32,7 @@ mod publisher;
 pub mod register;
 pub mod requester;
 mod serialize;
+pub mod service;
 
 use ::core::fmt::{Debug, Formatter};
 use ::core::marker::PhantomData;
