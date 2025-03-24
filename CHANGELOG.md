@@ -6,6 +6,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [canadensis-v0.3.3](https://github.com/samcrow/canadensis/releases/tag/canadensis-v0.3.3) - 2025-03-23
+
+### Fixed
+
+- `canadensis`: Fixed `half` dependency version to avoid a breaking change
+
+## [canadensis_codegen_rust-v0.4.3](https://github.com/samcrow/canadensis/releases/tag/canadensis_codegen_rust-v0.4.3) - 2025-03-23
+
+### Fixed
+
+- `canadensis_codegen_rust`: Fixed `half` dependency version for generated code to avoid a breaking change
+
+## [canadensis_data_types-v0.3.2](https://github.com/samcrow/canadensis/releases/tag/canadensis_data_types-v0.3.2) - 2025-03-23
+
+### Fixed
+
+- `canadensis_data_types`: Fixed `half` dependency version to avoid a breaking change
+
+## [canadensis_dsdl_frontend-v0.4.2](https://github.com/samcrow/canadensis/releases/tag/canadensis_dsdl_frontend-v0.4.2) - 2025-03-23
+
+### Fixed
+
+- `canadensis_dsdl_frontend`: Fixed `half` dependency version to avoid a breaking change
+
+## [canadensis_encoding-v0.3.2](https://github.com/samcrow/canadensis/releases/tag/canadensis_encoding-v0.3.2) - 2025-03-23
+
+### Fixed
+
+- `canadensis_encoding`: Fixed `half` dependency version to avoid a breaking change
+
+## [canadensis_macro-v0.3.2](https://github.com/samcrow/canadensis/releases/tag/canadensis_macro-v0.3.2) - 2025-03-23
+
+### Fixed
+
+- `canadensis_macro`: Fixed `half` dependency version to avoid a breaking change
+
 ## [canadensis-v0.3.2](https://github.com/samcrow/canadensis/releases/tag/canadensis-v0.3.2) - 2024-11-07
 
 ### Changed
