@@ -30,7 +30,7 @@ path = "../canadensis_encoding"
 # canadensis_data_types is likely to change more frequently. Because of the Heartbeat and NodeInfo types, this is still
 # a public dependency.
 [dependencies.canadensis_data_types]
-version = "0.3.0"
+version = "0.3.2"
 path = "../canadensis_data_types"
 
 [dev-dependencies]

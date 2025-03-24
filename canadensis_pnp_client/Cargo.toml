@@ -22,7 +22,7 @@ default-features = false
 version = "0.3.2"
 path = "../canadensis"
 [dependencies.canadensis_data_types]
-version = "0.3.0"
+version = "0.3.2"
 path = "../canadensis_data_types"
 [dependencies.canadensis_filter_config]
 version = "0.2.0"
