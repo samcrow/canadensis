@@ -7,7 +7,6 @@ mod single_frame_queue;
 pub use self::array_queue::ArrayQueue;
 pub use self::queue_only_driver::QueueOnlyDriver;
 pub use self::single_frame_queue::SingleFrameQueue;
-use core::cmp::Ordering;
 use core::marker::PhantomData;
 
 use crate::driver::{ReceiveDriver, TransmitDriver};
@@ -184,5 +183,5 @@ where
 
 /// Returns true if this frame's deadline is in the past
 fn frame_is_expired(frame: &Frame, now: Microseconds32) -> bool {
-    frame.timestamp().overflow_safe_compare(now) == Ordering::Less
+    now > frame.timestamp()
 }

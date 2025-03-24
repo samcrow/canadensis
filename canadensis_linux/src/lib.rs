@@ -16,7 +16,6 @@ use canadensis_core::subscription::Subscription;
 use canadensis_core::time::{Clock, Microseconds32};
 use canadensis_core::{nb, OutOfMemoryError};
 use socketcan::CANSocket;
-use std::cmp::Ordering;
 use std::convert::TryInto;
 use std::io;
 use std::io::ErrorKind;
@@ -48,7 +47,7 @@ impl TransmitDriver<SystemClock> for LinuxCan {
     ) -> nb::Result<Option<Frame>, Self::Error> {
         // Drop this frame if its deadline has passed
         let now = clock.now();
-        if frame.timestamp().overflow_safe_compare(now) == Ordering::Less {
+        if frame.timestamp() > now {
             log::warn!("Dropping frame that has missed its deadline");
             return Ok(None);
         }
@@ -140,6 +139,6 @@ impl Clock for SystemClock {
         let since_start = std::time::Instant::now().duration_since(self.start_time);
         let microseconds = since_start.as_micros();
         // Use only 32 least significant bits
-        Microseconds32::new(microseconds as u32)
+        Microseconds32::from_ticks(microseconds as u32)
     }
 }

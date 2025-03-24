@@ -95,7 +95,7 @@ where
             return Err(nb::Error::Other(AnonymousPublishError::Length));
         }
         // Part 1: Serialize
-        let deadline = self.timeout + clock.now();
+        let deadline = clock.now() + self.timeout;
         do_serialize(payload, |payload_bytes| {
             self.send_payload(
                 payload_bytes,

@@ -51,7 +51,7 @@ fn main() {
     loop {
         let transfer = Transfer {
             header: Header::Message(MessageHeader {
-                timestamp: MicrosecondDuration32::new(1_000_000) + clock.now(),
+                timestamp: clock.now() + MicrosecondDuration32::from_ticks(1_000_000),
                 transfer_id: transfer_id.clone(),
                 priority: Priority::Nominal,
                 subject: SubjectId::try_from(73u16).unwrap(),

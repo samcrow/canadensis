@@ -386,7 +386,7 @@ where
         M: Response + Serialize,
     {
         let now = self.clock.now();
-        let deadline = timeout + now;
+        let deadline = now + timeout;
         do_serialize(payload, |payload| {
             self.send_response_payload(token, deadline, payload)
         })

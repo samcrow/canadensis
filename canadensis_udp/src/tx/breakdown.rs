@@ -183,8 +183,12 @@ mod tests {
             data: 0x39fe,
         };
         // No payload, should produce no frame
-        let mut breakdown =
-            Breakdown::new(header_base, Microseconds32::new(0), iter::empty(), 1472);
+        let mut breakdown = Breakdown::new(
+            header_base,
+            Microseconds32::from_ticks(0),
+            iter::empty(),
+            1472,
+        );
         assert!(breakdown.next().is_none(), "Unexpected frame");
     }
 
@@ -202,7 +206,7 @@ mod tests {
         let payload: [u8; 1] = [0xf2];
         let mut breakdown = Breakdown::new(
             header_base,
-            Microseconds32::new(0),
+            Microseconds32::from_ticks(0),
             IntoIterator::into_iter(payload),
             1472,
         );
@@ -253,7 +257,7 @@ mod tests {
         let mtu = 32;
         let mut breakdown = Breakdown::new(
             header_base,
-            Microseconds32::new(0),
+            Microseconds32::from_ticks(0),
             IntoIterator::into_iter(payload),
             mtu,
         );
@@ -305,7 +309,7 @@ mod tests {
         let mtu = 32;
         let mut breakdown = Breakdown::new(
             header_base,
-            Microseconds32::new(0),
+            Microseconds32::from_ticks(0),
             IntoIterator::into_iter(payload),
             mtu,
         );

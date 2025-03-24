@@ -48,8 +48,7 @@ where
             },
             vendor_specific_status_code: 0,
         };
-        let heartbeat_timeout = MicrosecondDuration32::from_millis(500)
-            .expect("Duration type can't represent 500 milliseconds");
+        let heartbeat_timeout = MicrosecondDuration32::from_ticks(500_000);
 
         let heartbeat_token = node.start_publishing(
             heartbeat_1_0::SUBJECT,

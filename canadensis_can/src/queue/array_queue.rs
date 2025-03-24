@@ -190,7 +190,7 @@ mod test {
 
     fn frame_with_id(id: u32, data: u8) -> Frame {
         let id = CanId::try_from(id).unwrap();
-        Frame::new(Microseconds32::default(), id, &[data])
+        Frame::new(Microseconds32::from_ticks(0), id, &[data])
     }
 
     #[test]

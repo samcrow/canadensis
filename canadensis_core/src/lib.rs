@@ -7,6 +7,7 @@
 
 extern crate alloc;
 extern crate fallible_collections;
+extern crate fugit;
 extern crate hash32;
 extern crate hash32_derive;
 extern crate heapless;

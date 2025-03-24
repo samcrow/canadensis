@@ -47,7 +47,7 @@ fn main() {
         .subscribe_message(
             73.try_into().unwrap(),
             4096,
-            MicrosecondDuration32::new(2_000_000),
+            MicrosecondDuration32::from_ticks(2_000_000),
             &mut socket,
         )
         .unwrap();

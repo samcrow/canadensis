@@ -45,7 +45,7 @@ fn transmit_receive_message_two_frames() {
     };
     let transfer = Transfer {
         header: Header::Message(MessageHeader {
-            timestamp: milliseconds(5000) + clock.now(),
+            timestamp: clock.now() + milliseconds(5000),
             transfer_id: UdpTransferId::default(),
             priority: Priority::Nominal,
             subject: SubjectId::try_from(73u16).unwrap(),
@@ -61,7 +61,7 @@ fn transmit_receive_message_two_frames() {
             rx.subscribe_message(
                 73.try_into().unwrap(),
                 4096,
-                MicrosecondDuration32::new(2_000_000),
+                MicrosecondDuration32::from_ticks(2_000_000),
                 socket,
             )
             .unwrap()
@@ -77,7 +77,7 @@ fn transmit_receive_message_one_byte_one_frame() {
     let subject = 1030.try_into().unwrap();
     let transfer = Transfer {
         header: Header::Message(MessageHeader {
-            timestamp: milliseconds(5000) + clock.now(),
+            timestamp: clock.now() + milliseconds(5000),
             transfer_id: 1.try_into().unwrap(),
             priority: Priority::Low,
             subject,
@@ -104,7 +104,7 @@ fn transmit_receive_request_one_byte_one_frame() {
     let service = 82.try_into().unwrap();
     let transfer = Transfer {
         header: Header::Request(ServiceHeader {
-            timestamp: milliseconds(5000) + clock.now(),
+            timestamp: clock.now() + milliseconds(5000),
             transfer_id: 1.try_into().unwrap(),
             priority: Priority::Low,
             service,
@@ -132,7 +132,7 @@ fn transmit_receive_response_one_byte_one_frame() {
     let service = 82.try_into().unwrap();
     let transfer = Transfer {
         header: Header::Response(ServiceHeader {
-            timestamp: milliseconds(5000) + clock.now(),
+            timestamp: clock.now() + milliseconds(5000),
             transfer_id: 1.try_into().unwrap(),
             priority: Priority::Low,
             service,

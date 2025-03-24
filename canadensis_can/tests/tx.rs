@@ -17,7 +17,7 @@ use canadensis_core::transport::Transmitter;
 use canadensis_core::{OutOfMemoryError, Priority, ServiceId, SubjectId};
 
 fn instant(ticks: u32) -> Microseconds32 {
-    Microseconds32::new(ticks)
+    Microseconds32::from_ticks(ticks)
 }
 
 #[test]
@@ -304,6 +304,6 @@ struct ZeroClock;
 
 impl Clock for ZeroClock {
     fn now(&mut self) -> Microseconds32 {
-        Microseconds32::new(0)
+        Microseconds32::from_ticks(0)
     }
 }

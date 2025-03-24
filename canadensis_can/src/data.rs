@@ -82,7 +82,7 @@ pub const FRAME_CAPACITY: usize = 8;
 ///
 /// This is useful for time synchronization.
 ///
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Frame {
     /// For RX frames: reception timestamp.
     /// For TX frames: transmission deadline.
@@ -94,6 +94,17 @@ pub struct Frame {
     loopback: bool,
     /// The frame data
     data: heapless::Vec<u8, FRAME_CAPACITY>,
+}
+
+impl Default for Frame {
+    fn default() -> Self {
+        Frame {
+            timestamp: Microseconds32::from_ticks(0),
+            id: Default::default(),
+            loopback: Default::default(),
+            data: Default::default(),
+        }
+    }
 }
 
 impl Frame {

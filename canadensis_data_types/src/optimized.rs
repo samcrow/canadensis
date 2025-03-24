@@ -1,6 +1,6 @@
-use heapless::Vec;
 use canadensis_core::SubjectId;
 use canadensis_encoding::{DeserializeError, ReadCursor, WriteCursor};
+use heapless::Vec;
 
 const SUBJECT_ID_SPARSE_LIST_DISCRIMINANT: u8 = 1;
 
@@ -19,7 +19,8 @@ impl<const N: usize> SubjectIdList<N> {
 }
 
 impl<const N: usize> canadensis_encoding::DataType for SubjectIdList<N> {
-    const EXTENT_BYTES: Option<u32> = crate::uavcan::node::port::subject_id_list_1_0::SubjectIDList::EXTENT_BYTES;
+    const EXTENT_BYTES: Option<u32> =
+        crate::uavcan::node::port::subject_id_list_1_0::SubjectIDList::EXTENT_BYTES;
 }
 impl<const N: usize> canadensis_encoding::Message for SubjectIdList<N> {}
 impl<const N: usize> canadensis_encoding::Serialize for SubjectIdList<N> {
@@ -39,15 +40,18 @@ impl<const N: usize> canadensis_encoding::Serialize for SubjectIdList<N> {
     }
 }
 impl<const N: usize> canadensis_encoding::Deserialize for SubjectIdList<N> {
-    fn deserialize(cursor: &mut ReadCursor<'_>) -> Result<Self, DeserializeError> where Self: Sized {
+    fn deserialize(cursor: &mut ReadCursor<'_>) -> Result<Self, DeserializeError>
+    where
+        Self: Sized,
+    {
         let discriminant = cursor.read_aligned_u8();
         if discriminant != SUBJECT_ID_SPARSE_LIST_DISCRIMINANT {
             // Not a sparse list
-            return Err(DeserializeError::UnionTag)
+            return Err(DeserializeError::UnionTag);
         }
         let length = cursor.read_aligned_u8();
         if usize::from(length) > N {
-            return Err(DeserializeError::ArrayLength)
+            return Err(DeserializeError::ArrayLength);
         }
         let mut ids = Vec::new();
         for _ in 0..length {

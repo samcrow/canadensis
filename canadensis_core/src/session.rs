@@ -85,7 +85,8 @@ impl<T, D> Session<T, D> {
 
     /// Returns true if this session has expired and should be removed
     pub fn is_expired(&self, now: Microseconds32) -> bool {
-        now.duration_since(self.last_activity) > self.timeout
+        let deadline = self.last_activity + self.timeout;
+        now > deadline
     }
 
     /// Returns the time when this session was last active
@@ -115,6 +116,42 @@ impl<T, D> Session<T, D> {
     /// Returns a mutable reference to the transport-specific data
     pub fn data_mut(&mut self) -> &mut D {
         &mut self.data
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::Session;
+    use crate::time::{MicrosecondDuration32, Microseconds32};
+
+    #[test]
+    fn test_session_expiration_basic() {
+        let session = Session::new(
+            Microseconds32::from_ticks(300),
+            MicrosecondDuration32::from_ticks(100),
+            None::<()>,
+            (),
+        );
+        assert!(!session.is_expired(Microseconds32::from_ticks(300)));
+        assert!(!session.is_expired(Microseconds32::from_ticks(301)));
+        assert!(!session.is_expired(Microseconds32::from_ticks(399)));
+        assert!(!session.is_expired(Microseconds32::from_ticks(400)));
+        assert!(session.is_expired(Microseconds32::from_ticks(401)));
+    }
+
+    #[test]
+    fn test_session_expiration_wraparound() {
+        let session = Session::new(
+            Microseconds32::from_ticks(u32::MAX - 1),
+            MicrosecondDuration32::from_ticks(100),
+            None::<()>,
+            (),
+        );
+        assert!(!session.is_expired(Microseconds32::from_ticks(u32::MAX - 1)));
+        assert!(!session.is_expired(Microseconds32::from_ticks(u32::MAX)));
+        assert!(!session.is_expired(Microseconds32::from_ticks(98)));
+        assert!(session.is_expired(Microseconds32::from_ticks(99)));
+        assert!(session.is_expired(Microseconds32::from_ticks(100)));
     }
 }
 

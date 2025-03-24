@@ -16,7 +16,7 @@ fn transmit_capacity_1() {
     let mut tx = SerialTransmitter::<_, 1>::new();
     let transfer: Transfer<[u8; 0], SerialTransport> = Transfer {
         header: Header::Message(MessageHeader {
-            timestamp: Microseconds32::new(0),
+            timestamp: Microseconds32::from_ticks(0),
             transfer_id: 0.into(),
             priority: Priority::Low,
             subject: 9u16.try_into().unwrap(),
@@ -37,7 +37,7 @@ fn transmit_minimum_capacity() {
     let mut tx = SerialTransmitter::<_, QUEUE_CAPACITY>::new();
     let transfer: Transfer<[u8; 0], SerialTransport> = Transfer {
         header: Header::Message(MessageHeader {
-            timestamp: Microseconds32::new(0),
+            timestamp: Microseconds32::from_ticks(0),
             transfer_id: 330.into(),
             priority: Priority::Low,
             subject: 9u16.try_into().unwrap(),
@@ -87,6 +87,6 @@ pub struct ZeroClock;
 
 impl Clock for ZeroClock {
     fn now(&mut self) -> Microseconds32 {
-        Microseconds32::new(0)
+        Microseconds32::from_ticks(0)
     }
 }

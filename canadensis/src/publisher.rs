@@ -52,7 +52,7 @@ impl<C: Clock, T: Transmitter<C>> Publisher<C, T> {
     where
         M: Message + Serialize,
     {
-        let deadline = self.timeout + clock.now();
+        let deadline = clock.now() + self.timeout;
         // Part 1: Serialize
         do_serialize(payload, |payload_bytes| {
             // Part 2: Split into frames and put frames in the queue
@@ -79,7 +79,7 @@ impl<C: Clock, T: Transmitter<C>> Publisher<C, T> {
     where
         M: Message + Serialize,
     {
-        let deadline = self.timeout + clock.now();
+        let deadline = clock.now() + self.timeout;
         // Part 1: Serialize
         do_serialize(payload, |payload_bytes| {
             // Part 2: Split into frames and put frames in the queue

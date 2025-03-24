@@ -71,7 +71,10 @@ impl<const N: usize> Deduplicator<N> {
     fn active_transport_timed_out(&self, now: Microseconds32) -> bool {
         let active_last_frame = &self.states[self.active_index].last_frame_time;
         match active_last_frame {
-            Some(active_last_frame) => now.duration_since(*active_last_frame) > self.timeout,
+            Some(active_last_frame) => {
+                let deadline = *active_last_frame + self.timeout;
+                now > deadline
+            }
             None => {
                 // The active transport has never received a frame, so it's timed out.
                 true
@@ -93,7 +96,11 @@ mod test {
     use canadensis_core::time::{milliseconds, Microseconds32};
 
     fn make_frame(microseconds: u32) -> Frame {
-        Frame::new(Microseconds32::new(microseconds), CanId::default(), &[])
+        Frame::new(
+            Microseconds32::from_ticks(microseconds),
+            CanId::default(),
+            &[],
+        )
     }
 
     #[test]

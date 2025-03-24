@@ -72,7 +72,7 @@ impl Session {
             return Err(SessionError::PayloadLength);
         }
         // Check if this frame is too late
-        let time_since_first_frame = frame.timestamp().duration_since(self.transfer_timestamp);
+        let time_since_first_frame = frame.timestamp() - self.transfer_timestamp;
 
         if time_since_first_frame > transfer_timeout {
             // Frame arrived too late. Give up on this session.

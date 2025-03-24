@@ -34,7 +34,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .subscribe_message(
             record_1_1::SUBJECT,
             Record::EXTENT_BYTES.unwrap() as usize,
-            MicrosecondDuration32::new(1_000_000),
+            MicrosecondDuration32::from_ticks(1_000_000),
             &mut can,
         )
         .unwrap();

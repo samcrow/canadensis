@@ -1,5 +1,4 @@
 use alloc::vec::Vec;
-use core::cmp::Ordering;
 use core::marker::PhantomData;
 
 use embedded_nal::SocketAddrV4;
@@ -72,7 +71,7 @@ where
         C: Clock,
     {
         for frame in breakdown {
-            if frame.deadline.overflow_safe_compare(clock.now()) == Ordering::Greater {
+            if frame.deadline > clock.now() {
                 socket.send_to(&frame.data, destination_address)?;
             } else {
                 log::trace!("Discarding outgoing frame because its deadline has passed");

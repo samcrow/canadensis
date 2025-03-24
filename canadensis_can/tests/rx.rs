@@ -22,10 +22,10 @@ type TestInstant = Microseconds32;
 type TestDuration = MicrosecondDuration32;
 
 fn instant(ticks: u32) -> TestInstant {
-    TestInstant::new(ticks)
+    TestInstant::from_ticks(ticks)
 }
 fn duration(ticks: u32) -> TestDuration {
-    TestDuration::new(ticks)
+    TestDuration::from_ticks(ticks)
 }
 
 #[test]
@@ -325,7 +325,12 @@ fn test_multi_frame_anonymous() {
     let mut receiver = CanReceiver::new(CanNodeId::try_from(3u8).unwrap(), Mtu::Can8);
     let subject_id = SubjectId::try_from(10).unwrap();
     receiver
-        .subscribe_message(subject_id, 8, MicrosecondDuration32::new(100), &mut driver)
+        .subscribe_message(
+            subject_id,
+            8,
+            MicrosecondDuration32::from_ticks(100),
+            &mut driver,
+        )
         .unwrap();
     // A non-anonymous 2-frame transfer works
     let non_anonymous_id: CanId = 0b100_0_0_011_0000000001010_0_1000000_u32
@@ -359,13 +364,21 @@ fn test_multi_frame_anonymous() {
 
     let clock = ClockOwner::default();
     clock.set_ticks(1);
-    driver.push(Frame::new(TestInstant::new(1), non_anonymous_id, frames[0]));
+    driver.push(Frame::new(
+        TestInstant::from_ticks(1),
+        non_anonymous_id,
+        frames[0],
+    ));
     assert_eq!(
         Ok(None),
         receiver.receive(&mut clock.make_clock(), &mut driver)
     );
     clock.set_ticks(2);
-    driver.push(Frame::new(TestInstant::new(2), non_anonymous_id, frames[1]));
+    driver.push(Frame::new(
+        TestInstant::from_ticks(2),
+        non_anonymous_id,
+        frames[1],
+    ));
     assert_eq!(
         Ok(Some(non_anonymous_transfer)),
         receiver.receive(&mut clock.make_clock(), &mut driver)
@@ -375,13 +388,21 @@ fn test_multi_frame_anonymous() {
         .try_into()
         .unwrap();
     clock.set_ticks(1);
-    driver.push(Frame::new(TestInstant::new(1), anonymous_id, frames[0]));
+    driver.push(Frame::new(
+        TestInstant::from_ticks(1),
+        anonymous_id,
+        frames[0],
+    ));
     assert_eq!(
         Ok(None),
         receiver.receive(&mut clock.make_clock(), &mut driver)
     );
     clock.set_ticks(2);
-    driver.push(Frame::new(TestInstant::new(2), anonymous_id, frames[1]));
+    driver.push(Frame::new(
+        TestInstant::from_ticks(2),
+        anonymous_id,
+        frames[1],
+    ));
     assert_eq!(
         Ok(None),
         receiver.receive(&mut clock.make_clock(), &mut driver)
@@ -423,10 +444,10 @@ fn test_anonymous_receive_multi_frame() {
     };
 
     let clock = ClockOwner::default();
-    clock.set_ticks(frames[0].timestamp().as_microseconds());
+    clock.set_ticks(frames[0].timestamp().ticks());
     driver.push(frames[0].clone());
     assert_eq!(Ok(None), rx.receive(&mut clock.make_clock(), &mut driver));
-    clock.set_ticks(frames[1].timestamp().as_microseconds());
+    clock.set_ticks(frames[1].timestamp().ticks());
     driver.push(frames[1].clone());
     assert_eq!(
         Ok(Some(expected_transfer)),
@@ -494,7 +515,7 @@ struct StubClock<'a> {
 }
 impl Clock for StubClock<'_> {
     fn now(&mut self) -> Microseconds32 {
-        Microseconds32::new(self.count.get())
+        Microseconds32::from_ticks(self.count.get())
     }
 }
 #[derive(Default)]

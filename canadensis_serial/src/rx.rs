@@ -1,5 +1,4 @@
 use alloc::vec::Vec;
-use core::cmp::Ordering;
 use core::convert::TryFrom;
 use core::marker::PhantomData;
 use core::mem;
@@ -375,7 +374,7 @@ where
                     let _ = subscription.sessions.insert(
                         *source_node,
                         Session {
-                            expiration_time: subscription.timeout + header.timestamp(),
+                            expiration_time: header.timestamp() + subscription.timeout,
                             last_transfer_id: *header.transfer_id(),
                         },
                     );
@@ -421,7 +420,7 @@ impl Subscription {
         loop {
             let mut id_to_remove: Option<SerialNodeId> = None;
             for (id, session) in self.sessions.iter() {
-                if session.expiration_time.overflow_safe_compare(now) == Ordering::Less {
+                if session.expiration_time < now {
                     id_to_remove = Some(*id);
                 }
             }

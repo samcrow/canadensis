@@ -445,8 +445,8 @@ fn clean_sessions_from_subscriptions(subscriptions: &mut Vec<Subscription>, now:
         let timeout = subscription.timeout();
         for slot in subscription.sessions_mut().iter_mut() {
             if let Some(session) = slot.as_deref_mut() {
-                let time_since_first_frame = now.duration_since(session.transfer_timestamp());
-                if time_since_first_frame > timeout {
+                let deadline = session.transfer_timestamp() + timeout;
+                if now > deadline {
                     // This session has timed out, delete it.
                     *slot = None;
                 }
@@ -566,7 +566,7 @@ mod test {
         // Heartbeat
         check_can_id(
             Header::Message(MessageHeader {
-                timestamp: Microseconds32::default(),
+                timestamp: Microseconds32::from_ticks(0),
                 transfer_id: CanTransferId::try_from(0).unwrap(),
                 priority: Priority::Nominal,
                 subject: SubjectId::try_from(7509).unwrap(),
@@ -577,7 +577,7 @@ mod test {
         // String primitive
         check_can_id(
             Header::Message(MessageHeader {
-                timestamp: Microseconds32::default(),
+                timestamp: Microseconds32::from_ticks(0),
                 transfer_id: CanTransferId::try_from(0).unwrap(),
                 priority: Priority::Nominal,
                 subject: SubjectId::try_from(4919).unwrap(),
@@ -588,7 +588,7 @@ mod test {
         // Node info request
         check_can_id(
             Header::Request(ServiceHeader {
-                timestamp: Microseconds32::default(),
+                timestamp: Microseconds32::from_ticks(0),
                 transfer_id: CanTransferId::try_from(0).unwrap(),
                 priority: Priority::Nominal,
                 service: ServiceId::try_from(430).unwrap(),
@@ -600,7 +600,7 @@ mod test {
         // Node info response
         check_can_id(
             Header::Response(ServiceHeader {
-                timestamp: Microseconds32::default(),
+                timestamp: Microseconds32::from_ticks(0),
                 transfer_id: CanTransferId::try_from(0).unwrap(),
                 priority: Priority::Nominal,
                 service: ServiceId::try_from(430).unwrap(),
@@ -612,7 +612,7 @@ mod test {
         // Array message
         check_can_id(
             Header::Message(MessageHeader {
-                timestamp: Microseconds32::default(),
+                timestamp: Microseconds32::from_ticks(0),
                 transfer_id: CanTransferId::try_from(0).unwrap(),
                 priority: Priority::Nominal,
                 subject: SubjectId::try_from(4919).unwrap(),

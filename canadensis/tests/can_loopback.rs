@@ -102,7 +102,7 @@ fn can_loopback_time_sync() {
     assert_eq!(received_loopback.header.source(), Some(&node_id));
     assert_eq!(
         received_loopback.header.timestamp(),
-        Microseconds32::new(30)
+        Microseconds32::from_ticks(30)
     );
     let loopback_deserialized_payload =
         Synchronization::deserialize_from_bytes(&received_loopback.payload).unwrap();
@@ -231,7 +231,7 @@ struct StubClock<'t> {
 
 impl Clock for StubClock<'_> {
     fn now(&mut self) -> Microseconds32 {
-        Microseconds32::new(self.time.get())
+        Microseconds32::from_ticks(self.time.get())
     }
 }
 

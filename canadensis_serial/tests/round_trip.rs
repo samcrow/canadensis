@@ -30,7 +30,7 @@ fn round_trip_no_payload() {
     let mut tx = SerialTransmitter::<_, 39>::new();
     let transfer: Transfer<Vec<u8>, SerialTransport> = Transfer {
         header: Header::Message(MessageHeader {
-            timestamp: Microseconds32::new(0),
+            timestamp: Microseconds32::from_ticks(0),
             transfer_id: 330.into(),
             priority: Priority::Low,
             subject,
@@ -47,8 +47,13 @@ fn round_trip_no_payload() {
 
     let mut rx: SerialReceiver<ZeroClock, MockDriver, DynamicSubscriptionManager<Subscription>> =
         SerialReceiver::new(SerialNodeId::try_from(360).unwrap());
-    rx.subscribe_message(subject, 0, MicrosecondDuration32::new(0), &mut driver)
-        .unwrap();
+    rx.subscribe_message(
+        subject,
+        0,
+        MicrosecondDuration32::from_ticks(0),
+        &mut driver,
+    )
+    .unwrap();
 
     // Only need to call receive once. It will read all the available frames.
     let received = rx
@@ -94,6 +99,6 @@ pub struct ZeroClock;
 
 impl Clock for ZeroClock {
     fn now(&mut self) -> Microseconds32 {
-        Microseconds32::new(0)
+        Microseconds32::from_ticks(0)
     }
 }

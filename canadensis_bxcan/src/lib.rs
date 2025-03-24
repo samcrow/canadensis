@@ -32,7 +32,6 @@ use canadensis::core::time::{Clock, Microseconds32};
 use canadensis::core::OutOfMemoryError;
 use canadensis_can::driver::{optimize_filters, ReceiveDriver, TransmitDriver};
 use canadensis_can::{CanNodeId, Frame};
-use core::cmp::Ordering;
 use core::convert::{Infallible, TryFrom};
 use heapless::Deque;
 
@@ -170,24 +169,21 @@ where
         clean_expired_frames(&mut self.deadlines, &mut self.can, now);
         // Check that the frame's deadline has not passed
         let deadline = frame.timestamp();
-        match deadline.overflow_safe_compare(now) {
-            Ordering::Greater | Ordering::Equal => {
-                // Deadline is now or in the future. Continue to transmit.
-                let transmit_status = self.transmit_inner::<C>(&frame, deadline);
-                if transmit_status.is_ok() && frame.loopback() {
-                    // Loopback frame successfully sent; store a copy with its timestamp set to
-                    // the time just before it was sent
-                    let mut loopback_frame = frame;
-                    loopback_frame.set_timestamp(now);
-                    // If the loopback queue is full, drop this frame
-                    let _ = self.loopback_frames.push_back(loopback_frame);
-                }
-                transmit_status
+        if deadline >= now {
+            // Deadline is now or in the future. Continue to transmit.
+            let transmit_status = self.transmit_inner::<C>(&frame, deadline);
+            if transmit_status.is_ok() && frame.loopback() {
+                // Loopback frame successfully sent; store a copy with its timestamp set to
+                // the time just before it was sent
+                let mut loopback_frame = frame;
+                loopback_frame.set_timestamp(now);
+                // If the loopback queue is full, drop this frame
+                let _ = self.loopback_frames.push_back(loopback_frame);
             }
-            Ordering::Less => {
-                // Deadline passed, ignore frame
-                Ok(None)
-            }
+            transmit_status
+        } else {
+            // Deadline passed, ignore frame
+            Ok(None)
         }
     }
 
@@ -264,7 +260,7 @@ where
 {
     for mailbox in [Mailbox::Mailbox0, Mailbox::Mailbox1, Mailbox::Mailbox2].iter() {
         if let Some(deadline) = deadlines.get(*mailbox) {
-            if now.overflow_safe_compare(deadline) == Ordering::Greater {
+            if now > deadline {
                 // Deadline has passed, abort transmission
                 // Ignore if the mailbox is really empty or the frame has been transmitted.
                 can.abort(*mailbox);
