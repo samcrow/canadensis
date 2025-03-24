@@ -13,7 +13,7 @@ description = "A Cyphal implementation: Node types and re-exports from some othe
 fallible_collections = "0.5.1"
 hash32 = "0.2.1"
 heapless = "0.7.0"
-half = { version = "2.2", default-features = false }
+half = { version = ">=2.2, <2.5", default-features = false }
 log = "0.4"
 
 # Depends on most other canadensis crates that are not transport-specific

@@ -4,7 +4,7 @@
 
 The generated code depends on these libraries:
 ```toml
-half = "2.2"
+half = ">=2.2, <2.5"
 heapless = "0.7.7"
 zerocopy = "0.6.0"
 canadensis_encoding = "0.3.0" # (version may be incorrect)
