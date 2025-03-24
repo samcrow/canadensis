@@ -21,7 +21,7 @@ version = "2.0"
 default-features = false
 
 [dependencies.canadensis_dsdl_frontend]
-version = "0.4.0"
+version = "0.4.2"
 path = "../canadensis_dsdl_frontend"
 [dependencies.canadensis_codegen_rust]
 version = "0.4.0"
