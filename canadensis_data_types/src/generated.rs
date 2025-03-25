@@ -2,7 +2,6 @@
 compile_error!("Zero-copy serialization requires a little-endian target");
 #[allow(unused_variables, unused_braces, unused_parens)]
 #[allow(clippy::identity_op)]
-#[deny(unaligned_references)]
 pub mod reg {
     pub mod udral {
         pub mod physics {
@@ -4489,7 +4488,6 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
 }
 #[allow(unused_variables, unused_braces, unused_parens)]
 #[allow(clippy::identity_op)]
-#[deny(unaligned_references)]
 pub mod uavcan {
     pub mod diagnostic {
         #[allow(deprecated)]

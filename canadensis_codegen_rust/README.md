@@ -70,7 +70,6 @@ That command will produce this code:
 #[cfg(not(target_endian = "little"))]
 compile_error!("Zero-copy serialization requires a little-endian target");
 #[allow(unused_variables, unused_braces, unused_parens)]
-#[deny(unaligned_references)]
 pub mod canadensis {
     pub mod test {
         pub mod contains_health_0_1 {

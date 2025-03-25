@@ -1,5 +1,5 @@
 #![no_std]
-#![deny(missing_docs, unaligned_references)]
+#![deny(missing_docs)]
 
 //!
 //! # Canadensis: An implementation of Cyphal

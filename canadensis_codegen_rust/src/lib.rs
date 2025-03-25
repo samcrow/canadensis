@@ -944,7 +944,6 @@ mod fmt_impl {
                     "#[allow(unused_variables, unused_braces, unused_parens)]"
                 )?;
                 writeln!(f, "#[allow(clippy::identity_op)]")?;
-                writeln!(f, "#[deny(unaligned_references)]")?;
 
                 writeln!(f, "pub mod {} {{", sub_name)?;
                 Display::fmt(submodule, f)?;

@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis`: Breaking change: Made instant non-generic, now using `fugit` time types
 - `canadensis_bxcan`: Breaking change: Made instant non-generic, now using `fugit` time types
 - `canadensis_can`: Breaking change: Made instant non-generic, now using `fugit` time types
+- `canadensis_codegen_rust`: Generated code no longer denies the `unaligned_references` lint, which is now a hard error
 - `canadensis_core`: Breaking change: Made instant non-generic, now using `fugit` time types
 - `canadensis_header`: Breaking change: Made instant non-generic, now using `fugit` time types
 - `canadensis_udp`: Breaking change: Made instant non-generic, now using `fugit` time types
