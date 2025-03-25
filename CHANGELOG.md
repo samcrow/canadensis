@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_core`: Breaking change: Made instant non-generic, now using `fugit` time types
 - `canadensis_header`: Breaking change: Made instant non-generic, now using `fugit` time types
 - `canadensis_udp`: Breaking change: Made instant non-generic, now using `fugit` time types
+- `canadensis_udp`: Breaking change: Removed `embedded-nal` dependency, switched to using IP address types from
+  `core::net` (requires rustc 1.77.0 or later)
+- `canadensis_data_types`: Updated to the latest public_regulated_data types from revision 
+  f9f67906cc0ca5d7c1b429924852f6b28f313cbf
 
 ## [canadensis-v0.3.3](https://github.com/samcrow/canadensis/releases/tag/canadensis-v0.3.3) - 2025-03-23
 

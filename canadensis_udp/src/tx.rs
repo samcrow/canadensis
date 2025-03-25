@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 use core::marker::PhantomData;
 
-use embedded_nal::SocketAddrV4;
+use core::net::SocketAddrV4;
 
 use canadensis_core::nb;
 use canadensis_core::time::{Clock, Microseconds32};

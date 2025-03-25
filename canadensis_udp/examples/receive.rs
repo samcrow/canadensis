@@ -1,7 +1,6 @@
 extern crate canadensis_core;
 extern crate canadensis_linux;
 extern crate canadensis_udp;
-extern crate embedded_nal;
 extern crate simplelog;
 
 use std::convert::{TryFrom, TryInto};
@@ -9,7 +8,7 @@ use std::io::Write;
 use std::thread;
 use std::time::Duration;
 
-use embedded_nal::Ipv4Addr;
+use core::net::Ipv4Addr;
 use log::LevelFilter;
 use simplelog::{ColorChoice, TermLogger};
 use zerocopy::AsBytes;
@@ -33,7 +32,7 @@ fn main() {
     let local_node_id = UdpNodeId::try_from(121).unwrap();
     let mut clock = SystemClock::new();
     // For loopback multicast to work, the receive socket needs to bind to the unspecified address
-    let mut socket = StdUdpSocket::bind(Ipv4Addr::unspecified(), DEFAULT_PORT).unwrap();
+    let mut socket = StdUdpSocket::bind(Ipv4Addr::UNSPECIFIED, DEFAULT_PORT).unwrap();
 
     // Note: This MTU includes space for the header
     const MTU: usize = 1472;
@@ -42,7 +41,7 @@ fn main() {
         SessionDynamicMap<UdpNodeId, UdpTransferId, UdpSessionData>,
         StdUdpSocket,
         MTU,
-    >::new(Some(local_node_id), Ipv4Addr::localhost());
+    >::new(Some(local_node_id), Ipv4Addr::LOCALHOST);
     receiver
         .subscribe_message(
             73.try_into().unwrap(),

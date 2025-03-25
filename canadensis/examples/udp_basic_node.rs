@@ -27,7 +27,7 @@ extern crate canadensis_udp;
 extern crate rand;
 extern crate socketcan;
 
-use canadensis_udp::embedded_nal::Ipv4Addr;
+use core::net::Ipv4Addr;
 use std::convert::TryInto;
 use std::time::Duration;
 use std::{env, thread};
@@ -75,9 +75,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     const REQUESTERS: usize = 8;
     const MTU: usize = 1200;
 
-    let socket = StdUdpSocket::bind(Ipv4Addr::localhost(), DEFAULT_PORT).unwrap();
+    let socket = StdUdpSocket::bind(Ipv4Addr::LOCALHOST, DEFAULT_PORT).unwrap();
     let transmitter = UdpTransmitter::<StdUdpSocket, MTU>::new(DEFAULT_PORT);
-    let receiver = UdpReceiver::new(Some(node_id), Ipv4Addr::localhost());
+    let receiver = UdpReceiver::new(Some(node_id), Ipv4Addr::LOCALHOST);
     let core_node: CoreNode<
         SystemClock,
         UdpTransmitter<StdUdpSocket, MTU>,

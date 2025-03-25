@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 use core::convert::TryFrom;
 use core::marker::PhantomData;
-use embedded_nal::Ipv4Addr;
+use core::net::Ipv4Addr;
 
 use fallible_collections::FallibleVec;
 use zerocopy::FromBytes;
