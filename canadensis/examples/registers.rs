@@ -50,7 +50,7 @@ use std::convert::TryFrom;
 use std::env;
 use std::time::Duration;
 
-use socketcan::CANSocket;
+use socketcan::{CanSocket, Socket};
 
 use canadensis::core::transfer::{MessageTransfer, ServiceTransfer};
 use canadensis::node::{BasicNode, CoreNode};
@@ -76,7 +76,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )
     .expect("Node ID too large");
 
-    let can = CANSocket::open(&can_interface).expect("Failed to open CAN interface");
+    let can = CanSocket::open(&can_interface).expect("Failed to open CAN interface");
     can.set_read_timeout(Duration::from_millis(500))?;
     can.set_write_timeout(Duration::from_millis(500))?;
     let can = LinuxCan::new(can);

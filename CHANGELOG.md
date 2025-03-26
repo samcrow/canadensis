@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_data_types`: Breaking change: Updated `heapless` dependency to 0.8
 - `canadensis_header`: Breaking change: Replaced hash32 with core::hash
 - `canadensis_macro`: Breaking change: Updated `heapless` dependency of generated code to 0.8
+- `canadensis_can`: Breaking change: Updated `socketcan` dependency to 3.5.0
+- `canadensis`: Updated examples to use `socketcan` 3.5.0
 
 ### Fixed
 

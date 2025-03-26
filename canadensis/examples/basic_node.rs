@@ -41,7 +41,7 @@ use std::env;
 use std::io::ErrorKind;
 use std::time::Duration;
 
-use socketcan::CANSocket;
+use socketcan::{CanSocket, Socket};
 
 use canadensis::core::transfer::{MessageTransfer, ServiceTransfer};
 use canadensis::core::transport::Transport;
@@ -78,7 +78,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::mem::size_of::<canadensis_data_types::uavcan::node::port::list_1_0::List>()
     );
 
-    let can = CANSocket::open(&can_interface).expect("Failed to open CAN interface");
+    let can = CanSocket::open(&can_interface).expect("Failed to open CAN interface");
     can.set_read_timeout(Duration::from_millis(100))?;
     can.set_write_timeout(Duration::from_millis(100))?;
     let can = LinuxCan::new(can);

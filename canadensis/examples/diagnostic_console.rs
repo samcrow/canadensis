@@ -8,6 +8,7 @@ extern crate canadensis;
 extern crate canadensis_data_types;
 extern crate socketcan;
 
+use socketcan::Socket;
 use std::env;
 use std::error::Error;
 use std::process;
@@ -25,7 +26,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         eprintln!("Expected a SocketCAN interface name");
         process::exit(-1);
     });
-    let can = socketcan::CANSocket::open(&interface)?;
+    let can = socketcan::CanSocket::open(&interface)?;
     let mut can = LinuxCan::new(can);
 
     let mut clock = SystemClock::new();

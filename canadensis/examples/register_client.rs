@@ -29,7 +29,7 @@ use std::env;
 use std::str;
 use std::time::Duration;
 
-use socketcan::CANSocket;
+use socketcan::{CanSocket, Socket};
 
 use canadensis::core::time::milliseconds;
 use canadensis::core::transfer::ServiceTransfer;
@@ -77,7 +77,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         (delay_time_seconds.fract() * 1e9) as u32,
     );
 
-    let can = CANSocket::open(&can_interface).expect("Failed to open CAN interface");
+    let can = CanSocket::open(&can_interface).expect("Failed to open CAN interface");
     can.set_read_timeout(Duration::from_millis(5))?;
     can.set_write_timeout(Duration::from_millis(500))?;
     let can = LinuxCan::new(can);
