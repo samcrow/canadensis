@@ -39,7 +39,7 @@ pub fn generated_code_dependencies() -> String {
     String::from(
         r#"[dependencies]
 half = { version = ">=2.2, <2.5", default-features = false, features = ["zerocopy"] }
-heapless = "0.7.7"
+heapless = "0.8.0"
 zerocopy = "0.6.0"
 canadensis_core = "0.3.0"
 canadensis_encoding = "0.3.0"

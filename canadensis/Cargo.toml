@@ -11,8 +11,7 @@ description = "A Cyphal implementation: Node types and re-exports from some othe
 
 [dependencies]
 fallible_collections = "0.5.1"
-hash32 = "0.2.1"
-heapless = "0.7.0"
+heapless = "0.8.0"
 half = { version = ">=2.2, <2.5", default-features = false }
 log = "0.4"
 

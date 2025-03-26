@@ -10,7 +10,6 @@
 
 extern crate alloc;
 extern crate fallible_collections;
-extern crate hash32;
 extern crate heapless;
 
 extern crate canadensis_core;

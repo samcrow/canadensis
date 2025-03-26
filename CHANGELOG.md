@@ -24,6 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `core::net` (requires rustc 1.77.0 or later)
 - `canadensis_data_types`: Updated to the latest public_regulated_data types from revision 
   f9f67906cc0ca5d7c1b429924852f6b28f313cbf
+- `canadensis`: Breaking change: Updated `heapless` dependency to 0.8
+- `canadensis_can`: Breaking change: Replaced hash32 with core::hash
+- `canadensis_codegen_rust`: Breaking change: Updated `heapless` dependency of generated code to 0.8
+- `canadensis_core`: Breaking change: Replaced hash32 with core::hash
+- `canadensis_data_types`: Breaking change: Updated `heapless` dependency to 0.8
+- `canadensis_header`: Breaking change: Replaced hash32 with core::hash
+- `canadensis_macro`: Breaking change: Updated `heapless` dependency of generated code to 0.8
 
 ### Fixed
 

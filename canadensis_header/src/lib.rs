@@ -2,8 +2,6 @@
 
 extern crate canadensis_core;
 extern crate crc_any;
-extern crate hash32;
-extern crate hash32_derive;
 extern crate zerocopy;
 
 use canadensis_core::time::Microseconds32;
@@ -13,7 +11,6 @@ use canadensis_core::{InvalidValue, Priority, ServiceId, SubjectId};
 use core::convert::TryFrom;
 use core::mem;
 use crc_any::CRCu16;
-use hash32_derive::Hash32;
 use zerocopy::byteorder::{U16, U32, U64};
 use zerocopy::{AsBytes, BigEndian, FromBytes, LittleEndian};
 
@@ -340,7 +337,7 @@ pub fn header_crc() -> CRCu16 {
 /// A 16-bit node ID
 ///
 /// This allows all u16 values except 65535, which is reserved for anonymous transfers
-#[derive(Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash, Hash32)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash)]
 pub struct NodeId16(u16);
 
 const NODE_ID_RESERVED_ANONYMOUS_OR_BROADCAST: u16 = 0xffff;

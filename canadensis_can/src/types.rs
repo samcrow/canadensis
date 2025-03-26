@@ -6,7 +6,6 @@ use core::convert::TryFrom;
 use core::fmt;
 use core::fmt::Debug;
 use core::ops::RangeInclusive;
-use hash32_derive::Hash32;
 
 /// The Cyphal/CAN transport
 pub struct CanTransport(());
@@ -28,7 +27,7 @@ const VALID_NODE_IDS: RangeInclusive<u8> = 0..=127;
 ///
 /// Valid node IDs are in the range 0..=127 (7 bits). IDs 126 and 127 are reserved for diagnostic
 /// and debugging tools.
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash32)]
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub struct CanNodeId(u8);
 
 impl CanNodeId {

@@ -8,8 +8,6 @@
 extern crate alloc;
 extern crate fallible_collections;
 extern crate fugit;
-extern crate hash32;
-extern crate hash32_derive;
 extern crate heapless;
 extern crate log;
 pub extern crate nb;
@@ -24,7 +22,6 @@ pub mod transport;
 use core::convert::TryFrom;
 use core::ops::RangeInclusive;
 use core::str::FromStr;
-use hash32_derive::Hash32;
 
 /// An error indicating that an unacceptable integer was provided to a TryFrom implementation
 #[derive(Debug)]
@@ -35,7 +32,7 @@ pub use crate::error::{OutOfMemoryError, ServiceSubscribeError};
 const VALID_SUBJECT_IDS: RangeInclusive<u16> = 0..=8191;
 
 /// Subject ID, in range 0..=8191
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Hash32)]
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub struct SubjectId(u16);
 
 impl SubjectId {
@@ -88,7 +85,7 @@ impl FromStr for SubjectId {
 const VALID_SERVICE_IDS: RangeInclusive<u16> = 0..=511;
 
 /// Service ID, in range 0..=511
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Hash32)]
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub struct ServiceId(u16);
 
 impl ServiceId {
@@ -130,7 +127,7 @@ impl From<ServiceId> for usize {
 }
 
 /// A value that can represent a service ID (0..=511) or a subject ID (0..=8192)
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Hash32)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct PortId(u16);
 
 impl From<SubjectId> for PortId {

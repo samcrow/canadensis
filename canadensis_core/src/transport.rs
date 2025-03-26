@@ -7,7 +7,7 @@ use crate::{ServiceId, SubjectId};
 use alloc::vec::Vec;
 use core::convert::TryFrom;
 use core::fmt::Debug;
-use hash32::Hash;
+use core::hash::Hash;
 
 /// Basic requirements for a transport that can be used to send and receive transfers
 ///
