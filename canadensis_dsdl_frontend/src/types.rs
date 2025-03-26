@@ -94,7 +94,7 @@ impl Type {
         self,
         cx: &mut CompileContext<'_, '_>,
         span: Span<'_>,
-    ) -> Result<ResolvedType, Error> {
+    ) -> Result<ResolvedType, Box<Error>> {
         match self {
             Type::Scalar(scalar) => Ok(ResolvedType::Scalar(scalar.resolve(cx, span)?)),
             Type::FixedArray { inner, len } => Ok(ResolvedType::FixedArray {
@@ -113,7 +113,7 @@ impl Type {
         &self,
         cx: &mut CompileContext<'_, '_>,
         span: Span<'_>,
-    ) -> Result<BitLengthSet, Error> {
+    ) -> Result<BitLengthSet, Box<Error>> {
         match self {
             Type::Scalar(scalar) => scalar.bit_length_set(cx, span),
             Type::FixedArray { inner, len } => {
@@ -241,7 +241,7 @@ impl ScalarType {
         self,
         cx: &mut CompileContext<'_, '_>,
         span: Span<'_>,
-    ) -> Result<ResolvedScalarType, Error> {
+    ) -> Result<ResolvedScalarType, Box<Error>> {
         match self {
             ScalarType::Versioned(key) => {
                 let (canonical_key, referenced_type) = cx.type_by_key(key)?;
@@ -266,7 +266,7 @@ impl ScalarType {
         &self,
         cx: &mut CompileContext<'_, '_>,
         span: Span<'_>,
-    ) -> Result<BitLengthSet, Error> {
+    ) -> Result<BitLengthSet, Box<Error>> {
         match self {
             ScalarType::Versioned(key) => {
                 let (_, referenced_type) = cx.type_by_key(key.clone())?;

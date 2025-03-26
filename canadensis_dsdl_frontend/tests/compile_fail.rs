@@ -35,7 +35,7 @@ fn compile_fail() -> io::Result<()> {
         match try_compile_package(&entry.path()) {
             Ok(_) => failed_tests.push(case_name),
             Err(e) => {
-                if !check_error_message(&entry.path(), e) {
+                if !check_error_message(&entry.path(), &e) {
                     failed_tests.push(case_name)
                 }
             }
@@ -49,7 +49,7 @@ fn compile_fail() -> io::Result<()> {
     }
 }
 
-fn try_compile_package(path: &Path) -> Result<CompiledPackage, Error> {
+fn try_compile_package(path: &Path) -> Result<CompiledPackage, Box<Error>> {
     let config = test_config::read_config(path).expect("Failed to read test case configuration");
     let mut package = Package::new();
     package.add_files(path)?;
@@ -91,7 +91,7 @@ fn compile_fail_long_name() -> io::Result<()> {
             panic!("Failed long name compile-fail case");
         }
         Err(e) => {
-            assert!(matches!(e, Error::TypeNameLength { .. }));
+            assert!(matches!(&*e, Error::TypeNameLength { .. }));
             Ok(())
         }
     }
@@ -113,16 +113,16 @@ fn write_long_name_file(path: &Path) -> io::Result<()> {
 ///
 /// If the regular expression does not match, this function prints information about the mismatch
 /// and returns false.
-fn check_error_message(path: &Path, error: Error) -> bool {
+fn check_error_message(path: &Path, error: &Error) -> bool {
     let file_path = path.join("expected_error.txt");
     match fs::read_to_string(&file_path) {
         Ok(pattern) => {
             let pattern =
                 Regex::new(&pattern).expect("Invalid regular expression in expected error file");
 
-            let error_text = format!("{}", PrintCause(&error));
+            let error_text = format!("{}", PrintCause(error));
             if pattern.is_match(&error_text) {
-                println!("Failed to compile, as expected: {}", PrintCause(&error));
+                println!("Failed to compile, as expected: {}", PrintCause(error));
                 true
             } else {
                 println!("Incorrect error message");

@@ -101,14 +101,14 @@ impl Buildup {
 
 #[derive(Debug)]
 pub enum BuildupError {
-    OutOfMemory(TryReserveError),
+    OutOfMemory,
     InvalidStart,
     InvalidToggle,
 }
 
 impl From<TryReserveError> for BuildupError {
-    fn from(inner: TryReserveError) -> Self {
-        BuildupError::OutOfMemory(inner)
+    fn from(_inner: TryReserveError) -> Self {
+        BuildupError::OutOfMemory
     }
 }
 

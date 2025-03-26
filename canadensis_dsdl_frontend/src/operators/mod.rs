@@ -37,9 +37,9 @@ pub(crate) fn calculate_elementwise_binary<F>(
     span: Span,
     symbol: &str,
     mut rational_op: F,
-) -> Result<Value, Error>
+) -> Result<Value, Box<Error>>
 where
-    F: FnMut(BigRational, BigRational, Span<'_>) -> Result<Value, Error>,
+    F: FnMut(BigRational, BigRational, Span<'_>) -> Result<Value, Box<Error>>,
 {
     match (lhs, rhs) {
         // rational op set<rational>
@@ -117,9 +117,9 @@ pub(crate) fn calculate_rational_or_set_binary<F, G, H>(
     rational_op: F,
     mut set_op: G,
     mut bit_length_set_op: H,
-) -> Result<Value, Error>
+) -> Result<Value, Box<Error>>
 where
-    F: FnMut(BigRational, BigRational, Span<'_>) -> Result<Value, Error>,
+    F: FnMut(BigRational, BigRational, Span<'_>) -> Result<Value, Box<Error>>,
     G: FnMut(Set, Set) -> Set,
     H: FnMut(BitLengthSet, BitLengthSet) -> Value,
 {
@@ -154,7 +154,7 @@ pub(crate) fn calculate_rational_or_set_comparison<F, G>(
     symbol: &str,
     mut rational_op: F,
     mut set_op: G,
-) -> Result<bool, Error>
+) -> Result<bool, Box<Error>>
 where
     F: FnMut(BigRational, BigRational) -> bool,
     G: FnMut(Set, Set) -> bool,
@@ -199,9 +199,9 @@ fn calculate_rational_binary<F>(
     span: Span<'_>,
     symbol: &str,
     mut rational_op: F,
-) -> Result<Value, Error>
+) -> Result<Value, Box<Error>>
 where
-    F: FnMut(BigRational, BigRational, Span<'_>) -> Result<Value, Error>,
+    F: FnMut(BigRational, BigRational, Span<'_>) -> Result<Value, Box<Error>>,
 {
     match (lhs, rhs) {
         // rational op rational -> rational
@@ -240,6 +240,6 @@ where
     }
 }
 
-pub(crate) fn make_set_error(e: TypeError, span: Span<'_>) -> Error {
+pub(crate) fn make_set_error(e: TypeError, span: Span<'_>) -> Box<Error> {
     span_error!(span, "Invalid type in set: {}", e)
 }

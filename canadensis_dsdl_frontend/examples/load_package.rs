@@ -21,7 +21,7 @@ where
     }
 }
 
-fn run() -> Result<(), Error> {
+fn run() -> Result<(), Box<Error>> {
     let paths = env::args_os().skip(1);
 
     let mut package = Package::new();

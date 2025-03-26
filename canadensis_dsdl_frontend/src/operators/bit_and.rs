@@ -7,7 +7,7 @@ use num_rational::BigRational;
 use std::collections::BTreeSet;
 
 /// Evaluates the bitwise and operator `expr & expr`
-pub(crate) fn evaluate(lhs: Value, rhs: Value, span: Span<'_>) -> Result<Value, Error> {
+pub(crate) fn evaluate(lhs: Value, rhs: Value, span: Span<'_>) -> Result<Value, Box<Error>> {
     // a & b: Bitwise and on integers, or intersection of sets of the same type
     calculate_rational_or_set_binary(
         lhs,
@@ -31,7 +31,7 @@ fn rational_bitwise_and(
     lhs: BigRational,
     rhs: BigRational,
     span: Span<'_>,
-) -> Result<Value, Error> {
+) -> Result<Value, Box<Error>> {
     if lhs.is_integer() && rhs.is_integer() {
         let result = lhs.numer() & rhs.numer();
         Ok(Value::Rational(BigRational::from_integer(result)))

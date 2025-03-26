@@ -262,7 +262,7 @@ impl Operator {
 
 /// Rounds the value up to a multiple of alignment
 fn align_up(value: u64, alignment: u64) -> u64 {
-    (value + (alignment - 1)) / alignment * alignment
+    value.div_ceil(alignment) * alignment
 }
 
 #[cfg(test)]

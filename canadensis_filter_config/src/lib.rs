@@ -13,9 +13,9 @@
 //! ## Basic operation
 //!
 //! 1. Find the set of message IDs the application is interested in, based on the topics, requests,
-//! and responses it wants to receive
+//!    and responses it wants to receive
 //! 2. For each interesting message ID, create a filter that matches exactly that ID. Optimize those
-//! filters down to the number of filters the hardware supports:
+//!    filters down to the number of filters the hardware supports:
 //!
 //! ```
 //! use canadensis_filter_config::{optimize, Filter};

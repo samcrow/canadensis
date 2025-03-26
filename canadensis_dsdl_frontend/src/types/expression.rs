@@ -26,7 +26,7 @@ use crate::types::{ScalarType, Type, Value};
 pub(crate) fn evaluate_expression(
     cx: &mut CompileContext<'_, '_>,
     expression: Expression<'_>,
-) -> Result<Value, Error> {
+) -> Result<Value, Box<Error>> {
     let span = expression.span;
     match expression.expression {
         ExpressionType::Atom(atom) => evaluate_atom(cx, *atom, span),
@@ -234,13 +234,13 @@ fn evaluate_atom(
     cx: &mut CompileContext<'_, '_>,
     atom: ExpressionAtom,
     span: Span<'_>,
-) -> Result<Value, Error> {
+) -> Result<Value, Box<Error>> {
     match atom {
         ExpressionAtom::Parenthesized(inner) => evaluate_expression(cx, inner),
         ExpressionAtom::Type(ty) => Ok(Value::Type(convert_type(cx, ty)?)),
         ExpressionAtom::Literal(Literal { literal, span }) => match literal {
             LiteralType::Set(expressions) => {
-                let set: Result<Result<Set, TypeError>, Error> = expressions
+                let set: Result<Result<Set, TypeError>, Box<Error>> = expressions
                     .into_iter()
                     .map(|expr| evaluate_expression(cx, expr))
                     .collect();
@@ -277,7 +277,7 @@ fn evaluate_atom(
 fn evaluate_array_length(
     cx: &mut CompileContext<'_, '_>,
     length: Expression<'_>,
-) -> Result<u64, Error> {
+) -> Result<u64, Box<Error>> {
     let length_span = length.span;
     match evaluate_expression(cx, length)? {
         Value::Rational(rational) => {
@@ -320,7 +320,7 @@ fn rational_bitwise_xor(
     lhs: BigRational,
     rhs: BigRational,
     span: Span<'_>,
-) -> Result<Value, Error> {
+) -> Result<Value, Box<Error>> {
     if lhs.is_integer() && rhs.is_integer() {
         let result = lhs.numer() ^ rhs.numer();
         Ok(Value::Rational(BigRational::from_integer(result)))
@@ -338,7 +338,7 @@ fn rational_bitwise_xor(
 pub(crate) fn convert_type(
     cx: &mut CompileContext<'_, '_>,
     ty: canadensis_dsdl_parser::Type<'_>,
-) -> Result<Type, Error> {
+) -> Result<Type, Box<Error>> {
     match ty {
         canadensis_dsdl_parser::Type::Scalar(scalar) => Ok(Type::Scalar(scalar.into())),
         canadensis_dsdl_parser::Type::Array(array) => {

@@ -119,7 +119,7 @@ fn make_filter(subscription: Subscription, local_node: Option<CanNodeId>) -> Opt
 /// * Subject ID: matching the provided subject ID
 /// * Source node ID: any
 fn subject_filter(subject: SubjectId) -> Filter {
-    let m_id: u32 = 0b0_0000_0110_0000_0000_0000_0000_0000 | u32::from(subject) << 8;
+    let m_id: u32 = 0b0_0000_0110_0000_0000_0000_0000_0000 | (u32::from(subject) << 8);
     let mask: u32 = 0b0_0010_1001_1111_1111_1111_1000_0000;
     Filter::new(mask, m_id)
 }
@@ -133,7 +133,7 @@ fn subject_filter(subject: SubjectId) -> Filter {
 /// * Destination: matching the provided node ID
 /// * Source: any
 fn request_filter(service: ServiceId, destination: CanNodeId) -> Filter {
-    let dynamic_id_bits = u32::from(service) << 14 | u32::from(destination) << 7;
+    let dynamic_id_bits = (u32::from(service) << 14) | (u32::from(destination) << 7);
     let m_id: u32 = 0b0_0011_0000_0000_0000_0000_0000_0000 | dynamic_id_bits;
     let mask: u32 = 0b0_0011_1111_1111_1111_1111_1000_0000;
     Filter::new(mask, m_id)
@@ -149,7 +149,7 @@ fn request_filter(service: ServiceId, destination: CanNodeId) -> Filter {
 /// * Source: any
 fn response_filter(service: ServiceId, destination: CanNodeId) -> Filter {
     let dynamic_id_bits =
-        u32::from(u16::from(service)) << 14 | u32::from(u8::from(destination)) << 7;
+        (u32::from(u16::from(service)) << 14) | (u32::from(u8::from(destination)) << 7);
     let m_id: u32 = 0b0_0010_0000_0000_0000_0000_0000_0000 | dynamic_id_bits;
     let mask: u32 = 0b0_0011_1111_1111_1111_1111_1000_0000;
     Filter::new(mask, m_id)

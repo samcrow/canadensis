@@ -79,10 +79,7 @@ impl TransmitDriver<SystemClock> for LinuxCan {
 impl ReceiveDriver<SystemClock> for LinuxCan {
     type Error = io::Error;
 
-    fn receive(
-        &mut self,
-        clock: &mut SystemClock,
-    ) -> nb::Result<Frame, Self::Error> {
+    fn receive(&mut self, clock: &mut SystemClock) -> nb::Result<Frame, Self::Error> {
         loop {
             let socketcan_frame = self.socket.read_frame()?;
             if socketcan_frame.data().len() <= canadensis_can::FRAME_CAPACITY {

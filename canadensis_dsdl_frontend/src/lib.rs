@@ -15,7 +15,7 @@ extern crate walkdir;
 /// The first argument is a span expression. The others are forwarded to `::std::format!`.
 macro_rules! span_error {
     ($span:expr, $($arg:tt)*) => {
-        $crate::error::Error::Compile(::canadensis_dsdl_parser::make_error(::std::format!($($arg)*), $span))
+        Box::new($crate::error::Error::Compile(::canadensis_dsdl_parser::make_error(::std::format!($($arg)*), $span)))
     };
 }
 

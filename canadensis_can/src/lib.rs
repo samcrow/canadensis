@@ -52,13 +52,10 @@ fn calculate_frame_stats(payload_length: usize, mtu: usize) -> FrameStats {
     };
     // Total length of all tail bytes
     // Divide and round up (minimum 1 tail byte)
-    let tail_bytes = cmp::max(
-        1,
-        (payload_length + crc_length + (mtu_without_tail - 1)) / mtu_without_tail,
-    );
+    let tail_bytes = cmp::max(1, (payload_length + crc_length).div_ceil(mtu_without_tail));
     // Total length of the payloads of all frames, including CRC and tail bytes
     let total_length = payload_length + crc_length + tail_bytes;
-    let frames = (total_length + mtu - 1) / mtu;
+    let frames = total_length.div_ceil(mtu);
 
     // Get the number of bytes in the last frame (may be 0)
     let last_frame_length = total_length % mtu;

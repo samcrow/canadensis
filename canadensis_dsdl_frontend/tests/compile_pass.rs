@@ -12,7 +12,7 @@ use std::str::FromStr;
 use std::{fs, io};
 
 #[test]
-fn compile_simple_types_only() -> Result<(), Error> {
+fn compile_simple_types_only() -> Result<(), Box<Error>> {
     let config = Config {
         allow_utf8_and_byte: true,
         allow_saturated_bool: false,
@@ -21,7 +21,7 @@ fn compile_simple_types_only() -> Result<(), Error> {
     Ok(())
 }
 #[test]
-fn compile_simple_types_only_no_byte_utf8() -> Result<(), Error> {
+fn compile_simple_types_only_no_byte_utf8() -> Result<(), Box<Error>> {
     let config = Config {
         allow_utf8_and_byte: false,
         allow_saturated_bool: true,
@@ -30,14 +30,14 @@ fn compile_simple_types_only_no_byte_utf8() -> Result<(), Error> {
     Ok(())
 }
 #[test]
-fn compile_regulated_types_only() -> Result<(), Error> {
-    check_public_regulated_data_types_submodule()?;
+fn compile_regulated_types_only() -> Result<(), Box<Error>> {
+    check_public_regulated_data_types_submodule().map_err(Error::Io)?;
     test_compile_subdirs(&["tests/public_regulated_data_types"], &Config::default())?;
     Ok(())
 }
 #[test]
-fn compile_all() -> Result<(), Error> {
-    check_public_regulated_data_types_submodule()?;
+fn compile_all() -> Result<(), Box<Error>> {
+    check_public_regulated_data_types_submodule().map_err(Error::Io)?;
     let config = Config {
         allow_utf8_and_byte: true,
         allow_saturated_bool: false,
@@ -54,7 +54,7 @@ fn compile_all() -> Result<(), Error> {
 }
 
 #[test]
-fn compile_split_namespace() -> Result<(), Error> {
+fn compile_split_namespace() -> Result<(), Box<Error>> {
     test_compile_subdirs(
         &["tests/split_namespace/part1", "tests/split_namespace/part2"],
         &Config::default(),
@@ -74,7 +74,7 @@ fn test_cycle() {
             // Failed to compile one of the two files
             // |- Failed to compile the other one of the two files
             //    |- Couldn't find the type in the outermost file
-            match &e {
+            match &*e {
                 Error::CompileFile { inner, .. } => match inner.deref() {
                     Error::CompileFile { inner, .. } => match inner.deref() {
                         Error::UnknownType(_) => { /* OK */ }
@@ -91,8 +91,8 @@ fn test_cycle() {
 /// Checks that when compiling a deprecated service type, both the request and response are marked
 /// as deprecated
 #[test]
-fn compile_service_response_deprecated() -> Result<(), Error> {
-    check_public_regulated_data_types_submodule()?;
+fn compile_service_response_deprecated() -> Result<(), Box<Error>> {
+    check_public_regulated_data_types_submodule().map_err(Error::Io)?;
     let package = test_compile_subdirs(
         &[
             "tests/public_regulated_data_types",
@@ -116,14 +116,17 @@ fn compile_service_response_deprecated() -> Result<(), Error> {
     Ok(())
 }
 
-fn test_compile_subdirs(subdirs: &[&str], config: &Config) -> Result<CompiledPackage, Error> {
+fn test_compile_subdirs(subdirs: &[&str], config: &Config) -> Result<CompiledPackage, Box<Error>> {
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let manifest_subdirectories = subdirs.iter().map(|subdir| manifest_dir.join(subdir));
     test_compile_directories(manifest_subdirectories, config)
 }
 
 /// Checks that the provided set of directories gets compiled successfully with no warnings
-fn test_compile_directories<I, P>(directories: I, config: &Config) -> Result<CompiledPackage, Error>
+fn test_compile_directories<I, P>(
+    directories: I,
+    config: &Config,
+) -> Result<CompiledPackage, Box<Error>>
 where
     I: IntoIterator<Item = P>,
     P: AsRef<Path>,

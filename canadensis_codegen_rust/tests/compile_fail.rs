@@ -46,7 +46,9 @@ fn compile_fail() -> io::Result<()> {
     }
 }
 
-fn try_compile_package(path: &Path) -> Result<CompiledPackage, canadensis_dsdl_frontend::Error> {
+fn try_compile_package(
+    path: &Path,
+) -> Result<CompiledPackage, Box<canadensis_dsdl_frontend::Error>> {
     let mut package = Package::new();
     package.add_files(path)?;
     let config = Config::default();

@@ -38,7 +38,7 @@ fn compile_namespace_from_multiple_folders() -> Result<(), Box<dyn std::error::E
 
 fn try_compile_package(
     paths: &[PathBuf],
-) -> Result<CompiledPackage, canadensis_dsdl_frontend::Error> {
+) -> Result<CompiledPackage, Box<canadensis_dsdl_frontend::Error>> {
     let mut package = Package::new();
     for path in paths {
         package.add_files(path)?;

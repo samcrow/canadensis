@@ -148,7 +148,7 @@ impl<'b> ReadCursor<'b> {
         // Least significant byte first
         let lsb = self.read_aligned_u8();
         let msb = self.read_aligned_u8();
-        u16::from(msb) << 8 | u16::from(lsb)
+        (u16::from(msb) << 8) | u16::from(lsb)
     }
 
     /// Reads a 32-bit integer
@@ -160,7 +160,7 @@ impl<'b> ReadCursor<'b> {
         // Least significant byte first
         let lsbs = self.read_aligned_u16();
         let msbs = self.read_aligned_u16();
-        u32::from(msbs) << 16 | u32::from(lsbs)
+        (u32::from(msbs) << 16) | u32::from(lsbs)
     }
 
     /// Reads a 64-bit integer
@@ -172,7 +172,7 @@ impl<'b> ReadCursor<'b> {
         // Least significant byte first
         let lsbs = self.read_aligned_u32();
         let msbs = self.read_aligned_u32();
-        u64::from(msbs) << 32 | u64::from(lsbs)
+        (u64::from(msbs) << 32) | u64::from(lsbs)
     }
 
     /// Returns the value of the current byte being read, or 0 if the cursor is past the end

@@ -3,7 +3,7 @@ use crate::types::Value;
 use canadensis_dsdl_parser::Span;
 
 /// Evaluates the unary minus operator `-expr`
-pub(crate) fn evaluate(inner: Value, span: Span<'_>) -> Result<Value, Error> {
+pub(crate) fn evaluate(inner: Value, span: Span<'_>) -> Result<Value, Box<Error>> {
     match inner {
         // Unary - on a number negates it
         Value::Rational(n) => Ok(Value::Rational(-n)),

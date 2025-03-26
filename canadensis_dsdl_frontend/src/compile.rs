@@ -45,7 +45,7 @@ pub(crate) fn compile(files: BTreeMap<TypeKey, DsdlFile>, config: &Config) -> Co
 /// The output of a compile operation
 pub(crate) struct CompileOutput {
     /// The compiled DSDL, or an error that prevented compilation
-    pub dsdl: Result<BTreeMap<TypeKey, CompiledDsdl>, Error>,
+    pub dsdl: Result<BTreeMap<TypeKey, CompiledDsdl>, Box<Error>>,
     /// Any warnings reported while compiling
     pub warnings: Warnings,
 }
@@ -127,7 +127,7 @@ impl<'p, 'c: 'p> CompileContext<'p, 'c> {
     ///
     /// The return value is the canonical version of the provided key and the corresponding compiled
     /// type.
-    pub fn type_by_key(&mut self, key: TypeKey) -> Result<(TypeKey, &CompiledDsdl), Error> {
+    pub fn type_by_key(&mut self, key: TypeKey) -> Result<(TypeKey, &CompiledDsdl), Box<Error>> {
         // Look in the current package if the package is not specified
         if key.name().path().is_empty() {
             let canonical_key = TypeKey::new(
@@ -143,7 +143,7 @@ impl<'p, 'c: 'p> CompileContext<'p, 'c> {
     }
 
     /// Handles a @union directive
-    pub fn handle_union(&mut self, span: Span<'_>) -> Result<(), Error> {
+    pub fn handle_union(&mut self, span: Span<'_>) -> Result<(), Box<Error>> {
         // @union may only be before the first field in a message (or request or response)
         let state = &mut self.current_file.state;
         match state.take().expect("No state") {
@@ -162,7 +162,7 @@ impl<'p, 'c: 'p> CompileContext<'p, 'c> {
         }
     }
     /// Handles an @extent directive
-    pub fn handle_extent(&mut self, span: Span<'_>, extent_bits: u64) -> Result<(), Error> {
+    pub fn handle_extent(&mut self, span: Span<'_>, extent_bits: u64) -> Result<(), Box<Error>> {
         // @extent is after all fields/variants
         apply_sealed_or_extent(
             &mut self.current_file.state,
@@ -171,12 +171,12 @@ impl<'p, 'c: 'p> CompileContext<'p, 'c> {
         )
     }
     /// Handles a @sealed directive
-    pub fn handle_sealed(&mut self, span: Span<'_>) -> Result<(), Error> {
+    pub fn handle_sealed(&mut self, span: Span<'_>) -> Result<(), Box<Error>> {
         // @sealed is after all fields/variants
         apply_sealed_or_extent(&mut self.current_file.state, Extent::Sealed, span)
     }
     /// Handles a @deprecated directive
-    pub fn handle_deprecated(&mut self, span: Span<'_>) -> Result<(), Error> {
+    pub fn handle_deprecated(&mut self, span: Span<'_>) -> Result<(), Box<Error>> {
         // Limitations:
         // * Can only appear once per file
         // * Can't appear in the response section
@@ -242,7 +242,7 @@ struct PersistentContext<'c> {
     warnings: Warnings,
 }
 
-impl<'c> PersistentContext<'c> {
+impl PersistentContext<'_> {
     fn compile(mut self) -> CompileOutput {
         while let Some(key) = self.pending.keys().next().cloned() {
             let input = self.pending.remove(&key).unwrap();
@@ -265,24 +265,29 @@ impl<'c> PersistentContext<'c> {
         }
     }
 
-    fn compile_one(&mut self, key: &TypeKey, input: DsdlFile) -> Result<CompiledDsdl, Error> {
+    fn compile_one(&mut self, key: &TypeKey, input: DsdlFile) -> Result<CompiledDsdl, Box<Error>> {
         let input_path = input.path().map(PathBuf::from);
-        self.compile_one_inner(key, input)
-            .map_err(|e| Error::CompileFile {
+        self.compile_one_inner(key, input).map_err(|e| {
+            Box::new(Error::CompileFile {
                 key: key.clone(),
                 path: input_path,
-                inner: Box::new(e),
+                inner: e,
             })
+        })
     }
 
-    fn compile_one_inner(&mut self, key: &TypeKey, input: DsdlFile) -> Result<CompiledDsdl, Error> {
+    fn compile_one_inner(
+        &mut self,
+        key: &TypeKey,
+        input: DsdlFile,
+    ) -> Result<CompiledDsdl, Box<Error>> {
         self.warnings.check_pre_compile(key);
 
         // Create a new state for this file
         let mut state = FileState::new(key.name().path());
 
         let text = input.read()?;
-        let ast = canadensis_dsdl_parser::parse(&text, &self.config)?;
+        let ast = canadensis_dsdl_parser::parse(&text, self.config).map_err(Error::Compile)?;
 
         for statement in ast.statements {
             match statement {
@@ -348,7 +353,7 @@ impl<'c> PersistentContext<'c> {
     ///
     /// If the type has already been compiled, this function returns it. Otherwise, this function
     /// attempts to compile it and then returns it.
-    pub fn type_by_key(&mut self, key: &TypeKey) -> Result<&CompiledDsdl, Error> {
+    pub fn type_by_key(&mut self, key: &TypeKey) -> Result<&CompiledDsdl, Box<Error>> {
         // Although types that differ only in case are prohibited, the names must match exactly
         // when looking them up.
         if self.done.contains_key_case_sensitive(key) {
@@ -368,7 +373,7 @@ impl<'c> PersistentContext<'c> {
                         ),
                     }
                 }
-                None => Err(Error::UnknownType(key.clone())),
+                None => Err(Box::new(Error::UnknownType(key.clone()))),
             }
         }
     }
@@ -380,15 +385,15 @@ fn check_deprecated_in_non_deprecated(
     outer_key: &TypeKey,
     state: &FileState,
     inner_type: &ResolvedType,
-) -> Result<(), Error> {
+) -> Result<(), Box<Error>> {
     // Check if type is deprecated
     match inner_type.scalar() {
         ResolvedScalarType::Composite { key, inner } => {
             if !state.deprecated && inner.deprecated {
-                Err(Error::DeprecatedInNonDeprecated {
+                Err(Box::new(Error::DeprecatedInNonDeprecated {
                     outer: outer_key.clone(),
                     inner: key.clone(),
-                })
+                }))
             } else {
                 Ok(())
             }
@@ -456,7 +461,7 @@ impl FileState {
         }
     }
 
-    fn handle_service_response_marker(&mut self, span: Span<'_>) -> Result<(), Error> {
+    fn handle_service_response_marker(&mut self, span: Span<'_>) -> Result<(), Box<Error>> {
         match self.state.take().expect("No state") {
             // Struct message completed
             State::MessageStruct(StructState::End(fields, extent), length) => {
@@ -509,7 +514,7 @@ impl FileState {
         }
     }
 
-    fn add_padding_field(&mut self, bits: u8, span: Span<'_>) -> Result<(), Error> {
+    fn add_padding_field(&mut self, bits: u8, span: Span<'_>) -> Result<(), Box<Error>> {
         let bits_added = BitLengthSet::single(bits.into());
         match self.state.take().expect("No state") {
             State::Message => {
@@ -562,7 +567,7 @@ impl FileState {
         total_length: BitLengthSet,
         total_alignment: u32,
         span: Span<'_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Box<Error>> {
         let name = name.name.to_owned();
         let update_struct_length = |length: BitLengthSet| {
             length
@@ -652,7 +657,7 @@ impl FileState {
         }
     }
 
-    fn handle_comment(&mut self, comment: &str) -> Result<(), Error> {
+    fn handle_comment(&mut self, comment: &str) -> Result<(), Box<Error>> {
         // If state is not State::Message, the comment applies to the most recent field, variant,
         // or constant.
         // Find the most recent constant for comparison.
@@ -709,7 +714,11 @@ impl FileState {
     /// Handles an end of file and checks that the complete file is well-formed
     ///
     /// On success, this function returnes a compiled DSDL object.
-    fn finish(self, eof_span: Span<'_>, fixed_port_id: Option<u32>) -> Result<CompiledDsdl, Error> {
+    fn finish(
+        self,
+        eof_span: Span<'_>,
+        fixed_port_id: Option<u32>,
+    ) -> Result<CompiledDsdl, Box<Error>> {
         match self.state.expect("No state") {
             State::MessageStruct(StructState::End(fields, extent), length) => {
                 let message = Message {
@@ -835,9 +844,10 @@ fn apply_comment_to_constant_or_variant(
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 enum State {
     /// Initial state, expecting @union or the first field
+    #[default]
     Message,
     /// Assembling a sequence of non-union fields
     MessageStruct(StructState, BitLengthSet),
@@ -849,12 +859,6 @@ enum State {
     ResponseStruct(Message, StructState, BitLengthSet),
     /// Assembling a sequence of union fields
     ResponseUnion(Message, UnionState),
-}
-
-impl Default for State {
-    fn default() -> Self {
-        State::Message
-    }
 }
 
 /// The state of collecting fields of a struct
@@ -884,7 +888,7 @@ fn apply_sealed_or_extent(
     state: &mut Option<State>,
     extent: Extent,
     span: Span,
-) -> Result<(), Error> {
+) -> Result<(), Box<Error>> {
     match state.take().expect("No state") {
         // Already got @extent or @sealed
         State::MessageStruct(StructState::End(_, _), _)

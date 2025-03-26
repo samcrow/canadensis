@@ -12,7 +12,7 @@ pub(crate) fn evaluate(
     lhs: Value,
     rhs: &str,
     span: Span<'_>,
-) -> Result<Value, Error> {
+) -> Result<Value, Box<Error>> {
     match lhs {
         Value::Set(lhs) => evaluate_set_attr(lhs, rhs, span),
         Value::BitLengthSet(lhs) => evaluate_bit_length_set_attr(lhs, rhs, span),
@@ -24,7 +24,7 @@ pub(crate) fn evaluate(
 }
 
 /// Evaluates an attribute of a set
-fn evaluate_set_attr(lhs: Set, rhs: &str, span: Span<'_>) -> Result<Value, Error> {
+fn evaluate_set_attr(lhs: Set, rhs: &str, span: Span<'_>) -> Result<Value, Box<Error>> {
     // Sets have min, max, and count attributes
     match rhs {
         "min" => evaluate_set_min(lhs, span),
@@ -39,7 +39,7 @@ fn evaluate_bit_length_set_attr(
     lhs: BitLengthSet,
     rhs: &str,
     span: Span<'_>,
-) -> Result<Value, Error> {
+) -> Result<Value, Box<Error>> {
     // Sets have min, max, and count attributes
     match rhs {
         "min" => Ok(lhs.min_value().into()),
@@ -49,7 +49,7 @@ fn evaluate_bit_length_set_attr(
     }
 }
 
-fn evaluate_set_min(lhs: Set, span: Span<'_>) -> Result<Value, Error> {
+fn evaluate_set_min(lhs: Set, span: Span<'_>) -> Result<Value, Box<Error>> {
     match lhs.min_value() {
         Some(value) => Ok(value),
         None => match lhs.ty() {
@@ -62,7 +62,7 @@ fn evaluate_set_min(lhs: Set, span: Span<'_>) -> Result<Value, Error> {
     }
 }
 
-fn evaluate_set_max(lhs: Set, span: Span<'_>) -> Result<Value, Error> {
+fn evaluate_set_max(lhs: Set, span: Span<'_>) -> Result<Value, Box<Error>> {
     match lhs.max_value() {
         Some(value) => Ok(value),
         None => match lhs.ty() {
@@ -79,7 +79,7 @@ fn make_set_min_max_gt_undefined_error(
     attribute: &str,
     element_ty: ExprType,
     span: Span<'_>,
-) -> Error {
+) -> Box<Error> {
     span_error!(span,
             "Set does not have a {} attribute because the < operator is not defined for its element type ({})",
             attribute,
@@ -91,7 +91,7 @@ fn evaluate_type_attr(
     ty: Type,
     rhs: &str,
     span: Span<'_>,
-) -> Result<Value, Error> {
+) -> Result<Value, Box<Error>> {
     // The _bit_length_ special attribute is not part of the specification (v1.0-beta),
     // but pydsdl implements it and some of the public regulated data types use it.
     match rhs {

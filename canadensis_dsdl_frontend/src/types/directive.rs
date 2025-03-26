@@ -9,7 +9,7 @@ pub(crate) fn evaluate_directive(
     cx: &mut CompileContext<'_, '_>,
     name: Identifier<'_>,
     expression: Option<Expression<'_>>,
-) -> Result<(), Error> {
+) -> Result<(), Box<Error>> {
     match name.name {
         "union" => {
             if expression.is_none() {

@@ -49,14 +49,14 @@ impl Package {
     /// * A data type version is 0.0
     /// * A file represents a data type that is already in this package
     ///
-    pub fn add_files<P>(&mut self, root: P) -> Result<(), Error>
+    pub fn add_files<P>(&mut self, root: P) -> Result<(), Box<Error>>
     where
         P: AsRef<Path>,
     {
         let root = root.as_ref();
-        let metadata = fs::metadata(root)?;
+        let metadata = fs::metadata(root).map_err(Error::Io)?;
         if !metadata.is_dir() {
-            return Err(Error::NotDirectory(root.to_owned()));
+            return Err(Box::new(Error::NotDirectory(root.to_owned())));
         }
         for entry in WalkDir::new(root) {
             let entry = entry.map_err(walk_dir_error(root))?;
@@ -86,7 +86,7 @@ impl Package {
         fixed_port_id: Option<u32>,
         key: TypeKey,
         path: P,
-    ) -> Result<(), Error>
+    ) -> Result<(), Box<Error>>
     where
         P: AsRef<Path>,
     {
@@ -117,7 +117,7 @@ impl Package {
         fixed_port_id: Option<u32>,
         key: TypeKey,
         dsdl: String,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Box<Error>> {
         self.try_insert(
             key,
             DsdlFile {
@@ -127,7 +127,7 @@ impl Package {
         )
     }
 
-    fn add_file_from_path(&mut self, root: &Path, file: DirEntry) -> Result<(), Error> {
+    fn add_file_from_path(&mut self, root: &Path, file: DirEntry) -> Result<(), Box<Error>> {
         let (key, fixed_port_id) = info_from_path(root, file.path())?;
 
         let dsdl = DsdlFile {
@@ -140,17 +140,17 @@ impl Package {
     /// Inserts a DSDL file, or returns an error if a type with the same key is already present,
     /// the type key does not have a package, any part of the type key is a reserved keyword,
     /// the namespace and name are too long, or the version is 0.0
-    fn try_insert(&mut self, key: TypeKey, dsdl: DsdlFile) -> Result<(), Error> {
+    fn try_insert(&mut self, key: TypeKey, dsdl: DsdlFile) -> Result<(), Box<Error>> {
         validate_full_key(&key)?;
         match self.files.entry(key.clone()) {
             Entry::Vacant(entry) => {
                 entry.insert(dsdl);
                 Ok(())
             }
-            Entry::Occupied(entry) => Err(Error::DuplicateKey {
+            Entry::Occupied(entry) => Err(Box::new(Error::DuplicateKey {
                 old: entry.key().clone(),
                 new: key,
-            }),
+            })),
         }
     }
 
@@ -162,7 +162,7 @@ impl Package {
     /// invalid content, or an `@assert` directive fails.
     ///
     /// If this function returns an error, it cannot return any warnings.
-    pub fn compile(self, config: &Config) -> Result<CompiledPackage, Error> {
+    pub fn compile(self, config: &Config) -> Result<CompiledPackage, Box<Error>> {
         self.compile_with_warnings(config)
             .map_err(|(e, _warnings)| e)
     }
@@ -178,7 +178,7 @@ impl Package {
     pub fn compile_with_warnings(
         self,
         config: &Config,
-    ) -> Result<CompiledPackage, (Error, Warnings)> {
+    ) -> Result<CompiledPackage, (Box<Error>, Warnings)> {
         match crate::compile::compile(self.files, config) {
             CompileOutput {
                 dsdl: Ok(types),
@@ -194,15 +194,15 @@ impl Package {
 
 /// Checks that the provided key has a package and does not contain any reserved keywords,
 /// the path and name (not including the version) is not too long, and the version is not 0.0
-fn validate_full_key(key: &TypeKey) -> Result<(), Error> {
+fn validate_full_key(key: &TypeKey) -> Result<(), Box<Error>> {
     if key.name().path().is_empty() {
-        return Err(Error::TypeNotInNamespace(key.clone()));
+        return Err(Box::new(Error::TypeNotInNamespace(key.clone())));
     }
     if key.name().len() > TYPE_NAME_LENGTH_MAX {
-        return Err(Error::TypeNameLength {
+        return Err(Box::new(Error::TypeNameLength {
             name: key.name().to_string(),
             key: key.clone(),
-        });
+        }));
     }
     for segment in key
         .name()
@@ -212,21 +212,21 @@ fn validate_full_key(key: &TypeKey) -> Result<(), Error> {
         .chain(iter::once(key.name().name()))
     {
         if !is_valid_identifier(segment) {
-            return Err(Error::NameInvalidIdentifier {
+            return Err(Box::new(Error::NameInvalidIdentifier {
                 component: segment.into(),
                 key: key.clone(),
-            });
+            }));
         }
         if is_reserved_keyword(segment) {
-            return Err(Error::NameKeyword {
+            return Err(Box::new(Error::NameKeyword {
                 keyword: segment.into(),
                 key: key.clone(),
-            });
+            }));
         }
     }
     let version = key.version();
     if version.major == 0 && version.minor == 0 {
-        return Err(Error::VersionZero(key.clone()));
+        return Err(Box::new(Error::VersionZero(key.clone())));
     }
     Ok(())
 }
@@ -234,9 +234,10 @@ fn validate_full_key(key: &TypeKey) -> Result<(), Error> {
 /// Returns true if the provided entry is a DSDL file
 fn is_dsdl(entry: &DirEntry) -> bool {
     if entry.file_type().is_file() {
-        entry.path().extension().map_or(false, |extension| {
-            extension == "uavcan" || extension == "dsdl"
-        })
+        entry
+            .path()
+            .extension()
+            .is_some_and(|extension| extension == "uavcan" || extension == "dsdl")
     } else {
         false
     }
@@ -271,11 +272,13 @@ enum FileSource {
 
 impl DsdlFile {
     /// Reads a DSDL file and returns its content
-    pub(crate) fn read(&self) -> Result<String, Error> {
+    pub(crate) fn read(&self) -> Result<String, Box<Error>> {
         match &self.source {
-            FileSource::File(path) => std::fs::read_to_string(path).map_err(|e| Error::FileRead {
-                path: path.clone(),
-                inner: e,
+            FileSource::File(path) => std::fs::read_to_string(path).map_err(|e| {
+                Box::new(Error::FileRead {
+                    path: path.clone(),
+                    inner: e,
+                })
             }),
             FileSource::String(content) => Ok(content.clone()),
         }
@@ -301,7 +304,7 @@ impl DsdlFile {
 /// # Panics
 ///
 /// This function may panic if root is not an ancestor of `file_path`.
-fn info_from_path(root: &Path, file_path: &Path) -> Result<(TypeKey, Option<u32>), Error> {
+fn info_from_path(root: &Path, file_path: &Path) -> Result<(TypeKey, Option<u32>), Box<Error>> {
     let mut file_components = file_path.iter();
     // Consume all components of the file path that are the same as the root
     for (root_component, file_component) in root.iter().zip(file_components.by_ref()) {

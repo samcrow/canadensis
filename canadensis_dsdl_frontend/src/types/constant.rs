@@ -35,7 +35,7 @@ impl Constant {
         ty: canadensis_dsdl_parser::PrimitiveType,
         name: Identifier,
         value: Expression,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, Box<Error>> {
         let ty: PrimitiveType = ty.into();
         let value_span = value.span;
         let end_offset = value_span.end();
@@ -102,7 +102,7 @@ fn check_type_compatibility(
     declared: &PrimitiveType,
     value: &Value,
     value_span: Span<'_>,
-) -> Result<ConstantValue, Error> {
+) -> Result<ConstantValue, Box<Error>> {
     match (declared, value) {
         // bool = bool
         (PrimitiveType::Boolean, Value::Boolean(value)) => Ok(ConstantValue::Boolean(*value)),

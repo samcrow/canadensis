@@ -6,7 +6,7 @@ use num_rational::BigRational;
 use num_traits::{FromPrimitive, Pow, ToPrimitive};
 
 /// Evaluates the exponentiation operator `expr ** expr`
-pub(crate) fn evaluate(base: Value, exponent: Value, span: Span<'_>) -> Result<Value, Error> {
+pub(crate) fn evaluate(base: Value, exponent: Value, span: Span<'_>) -> Result<Value, Box<Error>> {
     calculate_elementwise_binary(base, exponent, span, "**", rational_exponent)
 }
 
@@ -15,7 +15,7 @@ fn rational_exponent(
     base: BigRational,
     exponent: BigRational,
     span: Span<'_>,
-) -> Result<Value, Error> {
+) -> Result<Value, Box<Error>> {
     if exponent.is_integer() {
         // Exact power
         let power = exponent.numer();
@@ -35,7 +35,7 @@ fn approx_exponent(
     base: BigRational,
     exponent: BigRational,
     span: Span<'_>,
-) -> Result<Value, Error> {
+) -> Result<Value, Box<Error>> {
     let base = base.to_f64().ok_or_else(|| {
         span_error!(
             span,

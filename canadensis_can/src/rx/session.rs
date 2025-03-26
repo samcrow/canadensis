@@ -139,7 +139,7 @@ pub enum SessionError {
     /// The session timed out because a frame arrived too lage
     Timeout,
     /// Reassembly failed because of an unexpected frame
-    Buildup(BuildupError),
+    Buildup,
     /// Memory allocation failed
     Memory(OutOfMemoryError),
 }
@@ -150,7 +150,7 @@ impl From<OutOfMemoryError> for SessionError {
     }
 }
 impl From<BuildupError> for SessionError {
-    fn from(inner: BuildupError) -> Self {
-        SessionError::Buildup(inner)
+    fn from(_inner: BuildupError) -> Self {
+        SessionError::Buildup
     }
 }

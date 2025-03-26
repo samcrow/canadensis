@@ -262,7 +262,7 @@ enum GeneratedItem<'c> {
     },
 }
 
-impl<'c> GeneratedItem<'c> {
+impl GeneratedItem<'_> {
     pub fn name(&self) -> &RustTypeName {
         match self {
             GeneratedItem::Type(ty) => &ty.name,

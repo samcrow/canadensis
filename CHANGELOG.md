@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## Added
+
 - `canadensis_dsdl_parser`: Breaking change: Added Config, with options for `byte`, `utf8`, and `saturated bool`
 - `canadensis_dsdl_parser`: Added support for `byte` and `utf8` types (this is a breaking change for code that uses
   this library, but it does not break compatibility with any existing DSDL file)
@@ -13,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_macro`: Added options for `byte`, `utf8`, and `saturated bool` (not a breaking change)
 - `canadensis_codegen_rust`: Added unstable optional support for `byte` and `utf8` (code generation is the same as for uint8)
 - `canadensis_codegen_rust`: Added unstable option to forbid `saturated bool`
+
+## Changed
+
 - `canadensis`: Breaking change: Made instant non-generic, now using `fugit` time types
 - `canadensis_bxcan`: Breaking change: Made instant non-generic, now using `fugit` time types
 - `canadensis_can`: Breaking change: Made instant non-generic, now using `fugit` time types
@@ -33,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_macro`: Breaking change: Updated `heapless` dependency of generated code to 0.8
 - `canadensis_can`: Breaking change: Updated `socketcan` dependency to 3.5.0
 - `canadensis`: Updated examples to use `socketcan` 3.5.0
+- `canadensis_dsdl_frontend`: Breaking change: Changed error types to `Box<Error>`
 
 ### Fixed
 

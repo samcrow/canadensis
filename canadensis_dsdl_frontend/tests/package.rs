@@ -23,7 +23,7 @@ fn package_add_not_directory() -> io::Result<()> {
 
     match status {
         Ok(()) => panic!("No error when adding a non-directory path"),
-        Err(Error::NotDirectory(_)) => Ok(()),
+        Err(e) if matches!(*e, Error::NotDirectory(_)) => Ok(()),
         Err(other) => panic!("Unexpected error {:?}", other),
     }
 }
