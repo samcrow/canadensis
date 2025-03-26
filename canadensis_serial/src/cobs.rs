@@ -4,18 +4,6 @@
 
 use canadensis_core::OutOfMemoryError;
 
-/// Encodes a sequence of bytes and writes the encoded form to a destination
-///
-/// This function returns the number of bytes that were written to the destination.
-///
-/// This function returns an error if the destination is not long enough to hold the complete
-/// encoded form.
-///
-#[cfg(test)]
-pub fn escape(source: &[u8], destination: &mut [u8]) -> Result<usize, OutOfMemoryError> {
-    escape_from_iter(source.iter().copied(), destination)
-}
-
 /// Encodes a sequence of bytes from an iterator and writes the encoded form to a destination
 ///
 /// This function returns the number of bytes that were written to the destination.
@@ -64,66 +52,6 @@ where
     // Return the index of the last byte written in the destination
     Ok(dest_current)
 }
-
-/// Decodes a sequence of bytes and writes the decoded form to a destination
-///
-/// The minimum length of the destination is one byte less than the length of the source.
-///
-/// This function returns the number of bytes that were written to the destination.
-#[cfg(test)]
-pub fn unescape(source: &[u8], destination: &mut [u8]) -> Result<usize, DecodeError> {
-    println!("Decode {:?}", source);
-    let dest_len = destination.len();
-    let mut src_iter = source.iter();
-    let mut dest_iter = destination.iter_mut();
-    while let Some(&code) = src_iter.next() {
-        if code == 0 {
-            // Not allowed
-            return Err(DecodeError);
-        }
-        // Copy code bytes
-        let copy_count = usize::from(code - 1);
-        let src_sub = src_iter.as_slice();
-        if src_sub.len() < copy_count {
-            println!(
-                "src_sub.len() {} < copy_count {}",
-                src_sub.len(),
-                copy_count
-            );
-            // Not enough source bytes to copy
-            return Err(DecodeError);
-        }
-        let (src_read, src_others) = src_sub.split_at(copy_count);
-        // Advance src_iter beyond the bytes we're about to copy
-        src_iter = src_others.iter();
-        let dst_sub = dest_iter.into_slice();
-        if dst_sub.len() < copy_count {
-            println!(
-                "dst_sub.len() {} < copy_count {}",
-                dst_sub.len(),
-                copy_count
-            );
-            // Not enough destination space to copy
-            return Err(DecodeError);
-        }
-        let (dst_write, dst_others) = dst_sub.split_at_mut(copy_count);
-        dest_iter = dst_others.iter_mut();
-        // Actually do the copy
-        dst_write.copy_from_slice(src_read);
-
-        if code < 0xff {
-            // That was a segment that ended with a zero
-            // If this is just the implicit zero at the end, don't add it
-            if let Some(entry) = dest_iter.next() {
-                *entry = 0x0;
-            }
-        }
-    }
-
-    // Number of bytes written = destination length - (remaining part of destination) length
-    Ok(dest_len - dest_iter.as_slice().len())
-}
-
 /// A streaming unescaper that accepts one character at a time
 pub struct Unescaper {
     /// The number of bytes to copy directly from the input to the output,
@@ -169,17 +97,87 @@ pub fn escaped_size(raw_size: usize) -> usize {
     }
 }
 
-#[derive(Debug)]
-pub struct DecodeError;
-
 /// An error that occurs if the unescaper encounters a zero byte
 #[derive(Debug)]
 pub struct DecodeZeroError;
 
 #[cfg(test)]
 mod tests {
-    use super::{escape, unescape};
-    use crate::cobs::Unescaper;
+    use crate::cobs::{escape_from_iter, Unescaper};
+    use canadensis_core::OutOfMemoryError;
+
+    /// Encodes a sequence of bytes and writes the encoded form to a destination
+    ///
+    /// This function returns the number of bytes that were written to the destination.
+    ///
+    /// This function returns an error if the destination is not long enough to hold the complete
+    /// encoded form.
+    ///
+    fn escape(source: &[u8], destination: &mut [u8]) -> Result<usize, OutOfMemoryError> {
+        escape_from_iter(source.iter().copied(), destination)
+    }
+
+    #[derive(Debug)]
+    struct DecodeError;
+
+    /// Decodes a sequence of bytes and writes the decoded form to a destination
+    ///
+    /// The minimum length of the destination is one byte less than the length of the source.
+    ///
+    /// This function returns the number of bytes that were written to the destination.
+    #[cfg(test)]
+    fn unescape(source: &[u8], destination: &mut [u8]) -> Result<usize, DecodeError> {
+        println!("Decode {:?}", source);
+        let dest_len = destination.len();
+        let mut src_iter = source.iter();
+        let mut dest_iter = destination.iter_mut();
+        while let Some(&code) = src_iter.next() {
+            if code == 0 {
+                // Not allowed
+                return Err(DecodeError);
+            }
+            // Copy code bytes
+            let copy_count = usize::from(code - 1);
+            let src_sub = src_iter.as_slice();
+            if src_sub.len() < copy_count {
+                println!(
+                    "src_sub.len() {} < copy_count {}",
+                    src_sub.len(),
+                    copy_count
+                );
+                // Not enough source bytes to copy
+                return Err(DecodeError);
+            }
+            let (src_read, src_others) = src_sub.split_at(copy_count);
+            // Advance src_iter beyond the bytes we're about to copy
+            src_iter = src_others.iter();
+            let dst_sub = dest_iter.into_slice();
+            if dst_sub.len() < copy_count {
+                println!(
+                    "dst_sub.len() {} < copy_count {}",
+                    dst_sub.len(),
+                    copy_count
+                );
+                // Not enough destination space to copy
+                return Err(DecodeError);
+            }
+            let (dst_write, dst_others) = dst_sub.split_at_mut(copy_count);
+            dest_iter = dst_others.iter_mut();
+            // Actually do the copy
+            dst_write.copy_from_slice(src_read);
+
+            if code < 0xff {
+                // That was a segment that ended with a zero
+                // If this is just the implicit zero at the end, don't add it
+                if let Some(entry) = dest_iter.next() {
+                    *entry = 0x0;
+                }
+            }
+        }
+
+        // Number of bytes written = destination length - (remaining part of destination) length
+        Ok(dest_len - dest_iter.as_slice().len())
+    }
 
     /// Test cases: (original, escaped)
     const TEST_CASES: &[(&[u8], &[u8])] = &[
