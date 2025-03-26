@@ -65,7 +65,7 @@ where
     /// If the hardware does not support filtering, this function may be empty and the
     /// hardware should receive all available frames.
     ///
-    /// The [`optimize_filters`](crate::driver::optimize_filters) function may be helpful when
+    /// The [`optimize_filters`] function may be helpful when
     /// implementing this function.
     fn apply_filters<S>(&mut self, local_node: Option<CanNodeId>, subscriptions: S)
     where
