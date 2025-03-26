@@ -2290,7 +2290,7 @@ pub acceleration_error_variance: ::half::f16,
                         }
                     }
                     #[allow(deprecated)]
-                    #[deprecated]
+                    #[cfg_attr(not(test), deprecated)]
                     pub mod velocity3_var_0_1 {
                         /// `reg.udral.physics.kinematics.translation.Velocity3Var.0.1`
                         ///
@@ -4491,7 +4491,7 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
 pub mod uavcan {
     pub mod diagnostic {
         #[allow(deprecated)]
-        #[deprecated]
+        #[cfg_attr(not(test), deprecated)]
         pub mod record_1_0 {
             #[cfg_attr(not(doctest), doc = "The fixed subject ID for this message type")]
             #[deprecated]
@@ -4821,7 +4821,7 @@ pub mod uavcan {
             }
         }
         #[allow(deprecated)]
-        #[deprecated]
+        #[cfg_attr(not(test), deprecated)]
         pub mod get_info_0_1 {
             #[cfg_attr(not(doctest), doc = "The fixed ID of this service")]
             #[deprecated]
@@ -5144,7 +5144,7 @@ pub mod uavcan {
             }
         }
         #[allow(deprecated)]
-        #[deprecated]
+        #[cfg_attr(not(test), deprecated)]
         pub mod list_0_1 {
             #[cfg_attr(not(doctest), doc = "The fixed ID of this service")]
             #[deprecated]
@@ -5367,7 +5367,7 @@ pub mod uavcan {
             }
         }
         #[allow(deprecated)]
-        #[deprecated]
+        #[cfg_attr(not(test), deprecated)]
         pub mod modify_1_0 {
             #[cfg_attr(not(doctest), doc = "The fixed ID of this service")]
             #[deprecated]
@@ -5630,7 +5630,7 @@ pub mod uavcan {
             }
         }
         #[allow(deprecated)]
-        #[deprecated]
+        #[cfg_attr(not(test), deprecated)]
         pub mod path_1_0 {
             /// `uavcan.file.Path.1.0`
             ///
@@ -5751,7 +5751,7 @@ pub mod uavcan {
             }
         }
         #[allow(deprecated)]
-        #[deprecated]
+        #[cfg_attr(not(test), deprecated)]
         pub mod read_1_0 {
             #[cfg_attr(not(doctest), doc = "The fixed ID of this service")]
             #[deprecated]
@@ -5974,7 +5974,7 @@ pub mod uavcan {
             }
         }
         #[allow(deprecated)]
-        #[deprecated]
+        #[cfg_attr(not(test), deprecated)]
         pub mod write_1_0 {
             #[cfg_attr(not(doctest), doc = "The fixed ID of this service")]
             #[deprecated]
@@ -6214,7 +6214,7 @@ pub mod uavcan {
     pub mod internet {
         pub mod udp {
             #[allow(deprecated)]
-            #[deprecated]
+            #[cfg_attr(not(test), deprecated)]
             pub mod handle_incoming_packet_0_1 {
                 #[cfg_attr(not(doctest), doc = "The fixed ID of this service")]
                 #[deprecated]
@@ -6453,7 +6453,7 @@ pub mod uavcan {
                 }
             }
             #[allow(deprecated)]
-            #[deprecated]
+            #[cfg_attr(not(test), deprecated)]
             pub mod outgoing_packet_0_1 {
                 #[cfg_attr(not(doctest), doc = "The fixed subject ID for this message type")]
                 #[deprecated]
@@ -7074,7 +7074,7 @@ Extended
                 }
             }
             #[allow(deprecated)]
-            #[deprecated]
+            #[cfg_attr(not(test), deprecated)]
             pub mod frame_0_1 {
                 /// `uavcan.metatransport.can.Frame.0.1`
                 ///
@@ -7216,7 +7216,7 @@ Extended
                 }
             }
             #[allow(deprecated)]
-            #[deprecated]
+            #[cfg_attr(not(test), deprecated)]
             pub mod manifestation_0_1 {
                 /// `uavcan.metatransport.can.Manifestation.0.1`
                 ///
@@ -7513,7 +7513,7 @@ Extended
         }
         pub mod serial {
             #[allow(deprecated)]
-            #[deprecated]
+            #[cfg_attr(not(test), deprecated)]
             pub mod fragment_0_1 {
                 /// `uavcan.metatransport.serial.Fragment.0.1`
                 ///
@@ -7647,7 +7647,7 @@ Extended
         }
         pub mod udp {
             #[allow(deprecated)]
-            #[deprecated]
+            #[cfg_attr(not(test), deprecated)]
             pub mod endpoint_0_1 {
                 /// `uavcan.metatransport.udp.Endpoint.0.1`
                 ///
@@ -7749,7 +7749,7 @@ Extended
                 }
             }
             #[allow(deprecated)]
-            #[deprecated]
+            #[cfg_attr(not(test), deprecated)]
             pub mod frame_0_1 {
                 /// `uavcan.metatransport.udp.Frame.0.1`
                 ///
@@ -7849,7 +7849,7 @@ Extended
     }
     pub mod node {
         #[allow(deprecated)]
-        #[deprecated]
+        #[cfg_attr(not(test), deprecated)]
         pub mod execute_command_1_0 {
             #[cfg_attr(not(doctest), doc = "The fixed ID of this service")]
             #[deprecated]
@@ -8038,6 +8038,8 @@ Extended
                 );
             }
         }
+        #[allow(deprecated)]
+        #[cfg_attr(not(test), deprecated)]
         pub mod execute_command_1_1 {
             #[cfg_attr(not(doctest), doc = "The fixed ID of this service")]
             pub const SERVICE: ::canadensis_core::ServiceId =
@@ -8151,6 +8153,202 @@ Extended
             ///
             #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
             #[repr(C, packed)]
+            #[deprecated]
+            pub struct ExecuteCommandResponse {
+                #[cfg_attr(not(doctest), doc = " The result of the request.")]
+                ///
+                /// `saturated uint8`
+                ///
+                /// Always aligned,
+                /// size 8 bits
+                pub status: u8,
+            }
+            impl ::canadensis_encoding::DataType for ExecuteCommandResponse {
+                /// This type is delimited with an extent of 48 bytes.
+                const EXTENT_BYTES: Option<u32> = Some(48);
+            }
+            impl ::canadensis_encoding::Response for ExecuteCommandResponse {}
+            impl ExecuteCommandResponse {
+                #[cfg_attr(not(doctest), doc = " Started or executed successfully")]
+                pub const STATUS_SUCCESS: u8 = 0;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Could not start or the desired outcome could not be reached"
+                )]
+                pub const STATUS_FAILURE: u8 = 1;
+                #[cfg_attr(not(doctest), doc = " Denied due to lack of authorization")]
+                pub const STATUS_NOT_AUTHORIZED: u8 = 2;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " The requested command is not known or not supported"
+                )]
+                pub const STATUS_BAD_COMMAND: u8 = 3;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " The supplied parameter cannot be used with the selected command"
+                )]
+                pub const STATUS_BAD_PARAMETER: u8 = 4;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " The current state of the node does not permit execution of this command"
+                )]
+                pub const STATUS_BAD_STATE: u8 = 5;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " The operation should have succeeded but an unexpected failure occurred"
+                )]
+                pub const STATUS_INTERNAL_ERROR: u8 = 6;
+            }
+            impl ::canadensis_encoding::Serialize for ExecuteCommandResponse {
+                fn size_bits(&self) -> usize {
+                    8
+                }
+                fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                }
+            }
+            impl ::canadensis_encoding::Deserialize for ExecuteCommandResponse {
+                fn deserialize(
+                    cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                where
+                    Self: Sized,
+                {
+                    Ok(Self::deserialize_zero_copy(cursor))
+                }
+            }
+            #[test]
+            fn test_layout() {
+                assert_eq!(::core::mem::size_of::<ExecuteCommandResponse>() * 8, 8);
+                assert_eq!(
+                    ::memoffset::offset_of!(ExecuteCommandResponse, status) * 8,
+                    0
+                );
+            }
+        }
+        #[allow(deprecated)]
+        #[cfg_attr(not(test), deprecated)]
+        pub mod execute_command_1_2 {
+            #[cfg_attr(not(doctest), doc = "The fixed ID of this service")]
+            #[deprecated]
+            pub const SERVICE: ::canadensis_core::ServiceId =
+                ::canadensis_core::ServiceId::from_truncating(435);
+
+            /// `uavcan.node.ExecuteCommand.1.2`
+            ///
+            /// Size ranges from 3 to 258 bytes
+            ///
+            #[cfg_attr(
+                not(doctest),
+                doc = " Instructs the server node to execute or commence execution of a simple predefined command.\n All standard commands are optional; i.e., not guaranteed to be supported by all nodes."
+            )]
+            #[deprecated]
+            pub struct ExecuteCommandRequest {
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Standard pre-defined commands are at the top of the range (defined below).\n Vendors can define arbitrary, vendor-specific commands in the bottom part of the range (starting from zero).\n Vendor-specific commands shall not use identifiers above 32767."
+                )]
+                ///
+                /// `saturated uint16`
+                ///
+                /// Always aligned,
+                /// size 16 bits
+                pub command: u16,
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " A string parameter supplied to the command. The format and interpretation is command-specific.\n The standard commands do not use this field (ignore it), excepting the following:\n   - COMMAND_BEGIN_SOFTWARE_UPDATE"
+                )]
+                ///
+                /// `saturated uint8[<=255]`
+                ///
+                /// Always aligned,
+                /// size ranges from 0 to 2040 bits
+                pub parameter: ::heapless::Vec<u8, 255>,
+            }
+            impl ::canadensis_encoding::DataType for ExecuteCommandRequest {
+                /// This type is delimited with an extent of 300 bytes.
+                const EXTENT_BYTES: Option<u32> = Some(300);
+            }
+            impl ::canadensis_encoding::Request for ExecuteCommandRequest {}
+            impl ExecuteCommandRequest {
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Reboot the node.\n Note that some standard commands may or may not require a restart in order to take effect; e.g., factory reset."
+                )]
+                pub const COMMAND_RESTART: u16 = 65535;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Shut down the node; further access will not be possible until the power is turned back on."
+                )]
+                pub const COMMAND_POWER_OFF: u16 = 65534;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Begin the software update process using uavcan.file.Read. This command makes use of the \"parameter\" field below.\n The parameter contains the path to the new software image file to be downloaded by the server from the client\n using the standard service uavcan.file.Read. Observe that this operation swaps the roles of the client and\n the server.\n\n Upon reception of this command, the server (updatee) will evaluate whether it is possible to begin the\n software update process. If that is deemed impossible, the command will be rejected with one of the\n error codes defined in the response section of this definition (e.g., BAD_STATE if the node is currently\n on-duty and a sudden interruption of its activities is considered unsafe, and so on).\n If an update process is already underway, the updatee should abort the process and restart with the new file,\n unless the updatee can determine that the specified file is the same file that is already being downloaded,\n in which case it is allowed to respond SUCCESS and continue the old update process.\n If there are no other conditions precluding the requested update, the updatee will return a SUCCESS and\n initiate the file transfer process by invoking the standard service uavcan.file.Read repeatedly until the file\n is transferred fully (please refer to the documentation for that data type for more information about its usage).\n\n While the software is being updated, the updatee should set its mode (the field \"mode\" in uavcan.node.Heartbeat)\n to MODE_SOFTWARE_UPDATE. Please refer to the documentation for uavcan.node.Heartbeat for more information.\n\n It is recognized that most systems will have to interrupt their normal services to perform the software update\n (unless some form of software hot swapping is implemented, as is the case in some high-availability systems).\n\n Microcontrollers that are requested to update their firmware may need to stop execution of their current firmware\n and start the embedded bootloader (although other approaches are possible as well). In that case,\n while the embedded bootloader is running, the mode reported via the message uavcan.node.Heartbeat should be\n MODE_SOFTWARE_UPDATE as long as the bootloader is runing, even if no update-related activities\n are currently underway. For example, if the update process failed and the bootloader cannot load the software,\n the same mode MODE_SOFTWARE_UPDATE will be reported.\n It is also recognized that in a microcontroller setting, the application that served the update request will have\n to pass the update-related metadata (such as the node-ID of the server and the firmware image file path) to\n the embedded bootloader. The tactics of that transaction lie outside of the scope of this specification."
+                )]
+                pub const COMMAND_BEGIN_SOFTWARE_UPDATE: u16 = 65533;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Return the node's configuration back to the factory default settings (may require restart).\n Due to the uncertainty whether a restart is required, generic interfaces should always force a restart."
+                )]
+                pub const COMMAND_FACTORY_RESET: u16 = 65532;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Cease activities immediately, enter a safe state until restarted.\n Further operation may no longer be possible until a restart command is executed."
+                )]
+                pub const COMMAND_EMERGENCY_STOP: u16 = 65531;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " This command instructs the node to store the current configuration parameter values and other persistent states\n to the non-volatile storage. Nodes are allowed to manage persistent states automatically, obviating the need for\n this command by committing all such data to the non-volatile memory automatically as necessary. However, some\n nodes may lack this functionality, in which case this parameter should be used. Generic interfaces should always\n invoke this command in order to ensure that the data is stored even if the node doesn't implement automatic\n persistence management."
+                )]
+                pub const COMMAND_STORE_PERSISTENT_STATES: u16 = 65530;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " This command instructs the node to physically identify itself in some way--e.g., by flashing a light or\n emitting a sound. The duration and the nature of the identification process is implementation-defined.\n This command can be useful for human operators to match assigned node-ID values to physical nodes during setup."
+                )]
+                pub const COMMAND_IDENTIFY: u16 = 65529;
+            }
+            impl ::canadensis_encoding::Serialize for ExecuteCommandRequest {
+                fn size_bits(&self) -> usize {
+                    16 + 8 + (self.parameter).len() * 8 + 0
+                }
+                fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                    cursor.write_aligned_u16(self.command);
+                    cursor.write_aligned_u8((self.parameter).len() as u8);
+                    cursor.write_bytes(&(self.parameter)[..]);
+                }
+            }
+            impl ::canadensis_encoding::Deserialize for ExecuteCommandRequest {
+                fn deserialize(
+                    cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                where
+                    Self: Sized,
+                {
+                    Ok(ExecuteCommandRequest {
+                        command: { cursor.read_u16() as _ },
+                        parameter: {
+                            let length = cursor.read_u8() as _;
+                            if length <= 255 {
+                                let mut elements = ::heapless::Vec::new();
+                                for _ in 0..length {
+                                    let _ = elements.push(cursor.read_u8() as _);
+                                }
+                                elements
+                            } else {
+                                return Err(::canadensis_encoding::DeserializeError::ArrayLength);
+                            }
+                        },
+                    })
+                }
+            }
+
+            /// `uavcan.node.ExecuteCommand.1.2`
+            ///
+            /// Fixed size 1 bytes
+            ///
+            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[repr(C, packed)]
+            #[deprecated]
             pub struct ExecuteCommandResponse {
                 #[cfg_attr(not(doctest), doc = " The result of the request.")]
                 ///
@@ -8974,7 +9172,7 @@ Extended
                 }
             }
             #[allow(deprecated)]
-            #[deprecated]
+            #[cfg_attr(not(test), deprecated)]
             pub mod list_0_1 {
                 #[cfg_attr(not(doctest), doc = "The fixed subject ID for this message type")]
                 #[deprecated]
@@ -9194,7 +9392,7 @@ Extended
                 }
             }
             #[allow(deprecated)]
-            #[deprecated]
+            #[cfg_attr(not(test), deprecated)]
             pub mod service_id_list_0_1 {
                 /// `uavcan.node.port.ServiceIDList.0.1`
                 ///
@@ -9351,7 +9549,7 @@ Extended
                 }
             }
             #[allow(deprecated)]
-            #[deprecated]
+            #[cfg_attr(not(test), deprecated)]
             pub mod subject_id_list_0_1 {
                 /// `uavcan.node.port.SubjectIDList.0.1`
                 ///
@@ -13181,7 +13379,7 @@ Extended
             }
             pub mod magnetic_field_strength {
                 #[allow(deprecated)]
-                #[deprecated]
+                #[cfg_attr(not(test), deprecated)]
                 pub mod scalar_1_0 {
                     /// `uavcan.si.sample.magnetic_field_strength.Scalar.1.0`
                     ///
@@ -13286,7 +13484,7 @@ Extended
                     }
                 }
                 #[allow(deprecated)]
-                #[deprecated]
+                #[cfg_attr(not(test), deprecated)]
                 pub mod vector3_1_0 {
                     /// `uavcan.si.sample.magnetic_field_strength.Vector3.1.0`
                     ///
@@ -15056,7 +15254,7 @@ Extended
             }
             pub mod magnetic_field_strength {
                 #[allow(deprecated)]
-                #[deprecated]
+                #[cfg_attr(not(test), deprecated)]
                 pub mod scalar_1_0 {
                     /// `uavcan.si.unit.magnetic_field_strength.Scalar.1.0`
                     ///
@@ -15153,7 +15351,7 @@ Extended
                     }
                 }
                 #[allow(deprecated)]
-                #[deprecated]
+                #[cfg_attr(not(test), deprecated)]
                 pub mod vector3_1_0 {
                     /// `uavcan.si.unit.magnetic_field_strength.Vector3.1.0`
                     ///

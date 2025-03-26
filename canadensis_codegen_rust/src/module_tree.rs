@@ -59,7 +59,7 @@ mod fmt_impl {
                 if deprecated {
                     // Allow use of the deprecated type in this module only
                     writeln!(f, "#[allow(deprecated)]")?;
-                    writeln!(f, "#[deprecated]")?;
+                    writeln!(f, "#[cfg_attr(not(test), deprecated)]")?;
                 }
                 writeln!(f, "pub mod {} {{", sub_name)?;
                 Display::fmt(submodule, f)?;
