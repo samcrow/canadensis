@@ -213,6 +213,14 @@ where
         self.unsubscribe(TransferKind::Response, PortId::from(service));
         self.apply_frame_filters(driver);
     }
+
+    /// Updates the identifier of this node
+    ///
+    /// This can be used after a node ID is identified to make this receiver capable of handling
+    /// service transfers.
+    fn set_id(&mut self, id: Option<CanNodeId>) {
+        self.id = id;
+    }
 }
 
 impl<C, D> CanReceiver<C, D>
@@ -246,14 +254,6 @@ where
             _driver: PhantomData,
             _clock: PhantomData,
         }
-    }
-
-    /// Updates the identifier of this node
-    ///
-    /// This can be used after a node ID is identified to make this receiver capable of handling
-    /// service transfers.
-    pub fn set_id(&mut self, id: Option<CanNodeId>) {
-        self.id = id;
     }
 
     /// Handles an incoming CAN or CAN FD frame

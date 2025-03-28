@@ -32,6 +32,7 @@ mod publisher;
 pub mod register;
 pub mod requester;
 mod serialize;
+pub mod service;
 
 use ::core::fmt::{Debug, Formatter};
 use ::core::marker::PhantomData;
@@ -445,6 +446,9 @@ pub trait Node {
         timeout: MicrosecondDuration32,
     ) -> Result<(), <Self::Receiver as Receiver<Self::Clock>>::Error>;
 
+    /// Unsubscribes from messages on a topic
+    fn unsubscribe_message(&mut self, subject: SubjectId);
+
     /// Subscribes to requests for a service
     fn subscribe_request(
         &mut self,
@@ -452,6 +456,9 @@ pub trait Node {
         payload_size_max: usize,
         timeout: MicrosecondDuration32,
     ) -> Result<(), <Self::Receiver as Receiver<Self::Clock>>::Error>;
+
+    /// Unsubscribes from requests for a service
+    fn unsubscribe_request(&mut self, service: ServiceId);
 
     /// Responds to a service request
     ///
@@ -490,7 +497,12 @@ pub trait Node {
     fn receiver_mut(&mut self) -> &mut Self::Receiver;
 
     /// Returns the identifier of this node
-    fn node_id(&self) -> <Self::Transport as Transport>::NodeId;
+    ///
+    /// If the node is anonymous, this function returns `None`.
+    fn node_id(&self) -> Option<<Self::Transport as Transport>::NodeId>;
+
+    /// Sets the identifier of this node
+    fn set_node_id(&mut self, node_id: <Self::Transport as Transport>::NodeId);
 }
 
 /// A token returned from [`Node::start_publishing`](Node#tymethod.start_publishing) that can be

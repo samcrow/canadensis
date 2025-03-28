@@ -189,6 +189,12 @@ where
 
     /// Unsubscribes from responses for a service
     fn unsubscribe_response(&mut self, service: ServiceId, driver: &mut Self::Driver);
+
+    /// Updates the identifier of this node
+    ///
+    /// This can be used after a node ID is identified to make this receiver capable of handling
+    /// service transfers.
+    fn set_id(&mut self, id: Option<<Self::Transport as Transport>::NodeId>);
 }
 
 /// Required operations for a transfer ID

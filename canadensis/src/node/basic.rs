@@ -308,6 +308,11 @@ where
         Ok(())
     }
 
+    fn unsubscribe_message(&mut self, subject: SubjectId) {
+        self.node.node_mut().unsubscribe_message(subject);
+        remove_from_list(&mut self.port_list.subscribers, subject);
+    }
+
     fn subscribe_request(
         &mut self,
         service: ServiceId,
@@ -322,6 +327,11 @@ where
         self.port_list.servers.mask.set(service.into(), true);
 
         Ok(())
+    }
+
+    fn unsubscribe_request(&mut self, service: ServiceId) {
+        self.node.node_mut().unsubscribe_request(service);
+        self.port_list.servers.mask.set(service.into(), false);
     }
 
     fn send_response<T>(
@@ -366,8 +376,12 @@ where
         self.node.node_mut().receiver_mut()
     }
 
-    fn node_id(&self) -> <Self::Transport as Transport>::NodeId {
+    fn node_id(&self) -> Option<<Self::Transport as Transport>::NodeId> {
         self.node.node().node_id()
+    }
+
+    fn set_node_id(&mut self, node_id: <Self::Transport as Transport>::NodeId) {
+        self.node.node_mut().set_node_id(node_id)
     }
 }
 
