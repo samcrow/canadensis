@@ -281,6 +281,10 @@ where
     fn unsubscribe_response(&mut self, service: ServiceId, _driver: &mut D) {
         self.subscriptions.unsubscribe_response(service);
     }
+
+    fn set_id(&mut self, id: Option<SerialNodeId>) {
+        self.node_id = id;
+    }
 }
 
 impl<C, D, S> SerialReceiver<C, D, S>
