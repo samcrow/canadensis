@@ -285,6 +285,14 @@ where
     fn set_id(&mut self, id: Option<SerialNodeId>) {
         self.node_id = id;
     }
+
+    fn subscribers(&self) -> impl Iterator<Item = SubjectId> {
+        self.subscriptions.subscribers()
+    }
+
+    fn servers(&self) -> impl Iterator<Item = ServiceId> {
+        self.subscriptions.servers()
+    }
 }
 
 impl<C, D, S> SerialReceiver<C, D, S>

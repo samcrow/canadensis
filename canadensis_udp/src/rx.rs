@@ -262,6 +262,14 @@ where
     fn set_id(&mut self, id: Option<UdpNodeId>) {
         self.node_id = id;
     }
+
+    fn subscribers(&self) -> impl Iterator<Item = SubjectId> {
+        self.subscriptions.subscribers()
+    }
+
+    fn servers(&self) -> impl Iterator<Item = ServiceId> {
+        self.subscriptions.servers()
+    }
 }
 
 pub struct Subscription<T> {

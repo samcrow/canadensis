@@ -383,6 +383,22 @@ where
     fn set_node_id(&mut self, node_id: <Self::Transport as Transport>::NodeId) {
         self.node.node_mut().set_node_id(node_id)
     }
+
+    fn publishers(&self) -> impl Iterator<Item = SubjectId> {
+        self.node.node().publishers()
+    }
+
+    fn subscribers(&self) -> impl Iterator<Item = SubjectId> {
+        self.node.node().subscribers()
+    }
+
+    fn clients(&self) -> impl Iterator<Item = ServiceId> {
+        self.node.node().clients()
+    }
+
+    fn servers(&self) -> impl Iterator<Item = ServiceId> {
+        self.node.node().servers()
+    }
 }
 
 /// A transfer handler that responds to node information requests

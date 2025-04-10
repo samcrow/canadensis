@@ -85,6 +85,14 @@ impl<T> Subscriptions<T> {
     pub fn any_service_subscriptions(&self) -> bool {
         !(self.request.is_empty() && self.response.is_empty())
     }
+
+    pub fn subscribers(&self) -> impl Iterator<Item = SubjectId> + use<'_, T> {
+        self.message.iter().map(|x| *x.0)
+    }
+
+    pub fn servers(&self) -> impl Iterator<Item = ServiceId> + use<'_, T> {
+        self.request.iter().map(|x| *x.0)
+    }
 }
 
 /// An iterator over mutable references to message subscriptions
