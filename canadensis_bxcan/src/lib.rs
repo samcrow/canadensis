@@ -18,7 +18,6 @@ extern crate canadensis_pnp_client;
 extern crate cortex_m;
 extern crate fallible_collections;
 extern crate heapless;
-extern crate log;
 extern crate nb;
 
 pub mod pnp;

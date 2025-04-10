@@ -8,7 +8,9 @@ use canadensis_core::time::MicrosecondDuration32;
 use canadensis_core::{OutOfMemoryError, PortId};
 use core::fmt;
 use core::fmt::Debug;
+use defmt::Format;
 use fallible_collections::{FallibleBox, FallibleVec, TryReserveError};
+use l0g::debug;
 
 /// One session per node ID
 const RX_SESSIONS_PER_SUBSCRIPTION: usize = CanNodeId::MAX.to_u8() as usize + 1;
@@ -125,7 +127,7 @@ impl Subscription {
         let slot = &mut self.sessions[usize::from(source_node)];
         let session = match slot {
             Some(session) => {
-                log::debug!(
+                debug!(
                     "Using existing session with transfer ID {:?} for port {:?} (frame transfer ID {:?})",
                     session.transfer_id(),
                     self.port_id,
@@ -146,10 +148,9 @@ impl Subscription {
                     self.payload_size_max,
                     frame.loopback(),
                 )?)?);
-                log::debug!(
+                debug!(
                     "Created new session for transfer ID {:?} on port {:?}",
-                    tail.transfer_id,
-                    self.port_id
+                    tail.transfer_id, self.port_id
                 );
                 slot.as_deref_mut().unwrap()
             }
@@ -214,7 +215,7 @@ impl Subscription {
 }
 
 /// Errors that a subscription may encounter
-#[derive(Debug)]
+#[derive(Debug, Format)]
 pub enum SubscriptionError {
     /// Received a frame with no corresponding session, but its start bit was not set
     NotStart,

@@ -14,7 +14,7 @@ use canadensis_data_types::uavcan::time::synchronized_timestamp_1_0::Synchronize
 use canadensis_encoding::Deserialize;
 use core::marker::PhantomData;
 use core::str;
-use log::{debug, warn};
+use l0g::{debug, warn};
 
 /// A service that responds to `uavcan.register.List` and `uavcan.register.Access`
 pub struct RegisterServerService<N: Node, B: RegisterBlock> {

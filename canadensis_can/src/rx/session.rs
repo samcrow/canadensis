@@ -6,6 +6,8 @@ use alloc::vec::Vec;
 use canadensis_core::time::{MicrosecondDuration32, Microseconds32};
 use canadensis_core::OutOfMemoryError;
 use core::fmt::Debug;
+use defmt::Format;
+use l0g::{info, warn};
 
 /// A receive session, associated with a particular port ID and source node
 #[derive(Debug)]
@@ -53,17 +55,17 @@ impl Session {
         if tail.transfer_id != self.buildup.transfer_id() {
             // This is a frame from some other transfer. Ignore it, but keep this session to receive
             // possible later frames.
-            log::info!("Frame transfer ID does not match, ignoring");
+            info!("Frame transfer ID does not match, ignoring");
             return Ok(None);
         }
         if frame.loopback() != self.loopback {
-            log::info!("Frame loopback flag does not match, ignoring");
+            info!("Frame loopback flag does not match, ignoring");
             return Ok(None);
         }
         // Check if this frame will make the transfer exceed the maximum length
         let new_payload_length = self.buildup.payload_length() + (frame.data().len() - 1);
         if new_payload_length > max_payload_length {
-            log::warn!(
+            warn!(
                 "Payload too large ({} + {} > {}), ending session",
                 self.buildup.payload_length(),
                 frame.data().len() - 1,
@@ -76,7 +78,7 @@ impl Session {
 
         if time_since_first_frame > transfer_timeout {
             // Frame arrived too late. Give up on this session.
-            log::info!("Frame timeout expired, ending session");
+            info!("Frame timeout expired, ending session");
             return Err(SessionError::Timeout);
         }
         // This frame looks OK. Do the reassembly.
@@ -130,7 +132,7 @@ impl Session {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Format)]
 pub enum SessionError {
     /// A transfer CRC was invalid
     Crc,

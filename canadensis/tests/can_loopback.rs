@@ -4,7 +4,6 @@ extern crate canadensis;
 extern crate canadensis_can;
 extern crate canadensis_data_types;
 extern crate canadensis_encoding;
-extern crate log;
 extern crate simplelog;
 
 use canadensis::node::CoreNode;

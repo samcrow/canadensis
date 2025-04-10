@@ -13,5 +13,6 @@ description = "A Cyphal implementation: Common definitions"
 fugit = "0.3.7"
 fallible_collections = "0.5.1"
 heapless = "0.8.0"
-log = "0.4.14"
-nb = "1.0.0"
+nb = { version = "1.0.0", features = ["defmt-0-3"] }
+defmt.workspace = true
+l0g.workspace = true

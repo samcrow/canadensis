@@ -17,6 +17,7 @@ use canadensis_data_types::uavcan::register::name_1_0::Name;
 use canadensis_data_types::uavcan::register::value_1_0::Value;
 use canadensis_data_types::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp;
 use canadensis_encoding::Deserialize;
+use l0g::{debug, warn};
 
 pub use canadensis_derive_register_block::RegisterBlock;
 
@@ -165,7 +166,7 @@ where
     fn handle_access_request(&mut self, request: &AccessRequest) -> AccessResponse {
         match str::from_utf8(&request.name.name) {
             Ok(register_name) => {
-                log::debug!("Handling access request for {}", register_name);
+                debug!("Handling access request for {}", register_name);
                 if let Some(register) = self.block.register_by_name_mut(register_name) {
                     register_handle_access(register, request)
                 } else {
@@ -195,7 +196,7 @@ where
     }
 
     fn handle_list_request(&mut self, request: &ListRequest) -> ListResponse {
-        log::debug!("Handling register list request, index {}", {
+        debug!("Handling register list request, index {}", {
             request.index
         });
         match self.block.register_by_index(request.index.into()) {
@@ -262,7 +263,7 @@ where
                     let response = self.handle_access_request(&request);
                     let status = node.send_response(token, milliseconds(1000), &response);
                     if status.is_err() {
-                        log::warn!("Out of memory when sending register access response");
+                        warn!("Out of memory when sending register access response");
                     }
                     true
                 } else {
@@ -274,7 +275,7 @@ where
                     let response = self.handle_list_request(&request);
                     let status = node.send_response(token, milliseconds(1000), &response);
                     if status.is_err() {
-                        log::warn!("Out of memory when sending register list response");
+                        warn!("Out of memory when sending register list response");
                     }
                     true
                 } else {

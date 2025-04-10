@@ -12,7 +12,8 @@ description = "A Cyphal implementation: Cyphal/CAN (CAN and CAN FD) transport la
 [dependencies]
 fallible_collections = "0.5.1"
 heapless = "0.8.0"
-log = "0.4"
+defmt.workspace = true
+l0g.workspace = true
 
 [dependencies.canadensis_core]
 version = "0.3.1"
