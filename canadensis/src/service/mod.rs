@@ -9,3 +9,6 @@ pub mod heartbeat;
 
 /// Cyphal plug-and-play client
 pub mod pnp_client;
+
+/// Port list service
+pub mod port_list;
