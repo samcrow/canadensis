@@ -454,4 +454,20 @@ where
         self.node_id = Some(node_id.clone());
         self.receiver.set_id(Some(node_id));
     }
+
+    fn publishers(&self) -> impl Iterator<Item = SubjectId> {
+        self.publishers.iter().map(|x| *x.0)
+    }
+
+    fn subscribers(&self) -> impl Iterator<Item = SubjectId> {
+        self.receiver.subscribers()
+    }
+
+    fn clients(&self) -> impl Iterator<Item = ServiceId> {
+        self.requesters.iter().map(|x| *x.0)
+    }
+
+    fn servers(&self) -> impl Iterator<Item = ServiceId> {
+        self.receiver.servers()
+    }
 }

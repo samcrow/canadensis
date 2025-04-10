@@ -88,6 +88,12 @@ pub trait SubscriptionManager<S> {
     fn for_each_response_subscription_mut<F>(&mut self, operation: F)
     where
         F: FnMut(&mut S);
+
+    /// Returns an iterator over all message subscriptions
+    fn subscribers(&self) -> impl Iterator<Item = SubjectId>;
+
+    /// Returns an iterator over all request subscriptions
+    fn servers(&self) -> impl Iterator<Item = ServiceId>;
 }
 
 /// A subscription manager that dynamically allocates memory
@@ -234,6 +240,14 @@ impl<S> SubscriptionManager<S> for DynamicSubscriptionManager<S> {
         for (_, subscription) in &mut self.response_subscriptions {
             operation(subscription);
         }
+    }
+
+    fn subscribers(&self) -> impl Iterator<Item = SubjectId> {
+        self.message_subscriptions.iter().map(|x| x.0)
+    }
+
+    fn servers(&self) -> impl Iterator<Item = ServiceId> {
+        self.request_subscriptions.iter().map(|x| x.0)
     }
 }
 

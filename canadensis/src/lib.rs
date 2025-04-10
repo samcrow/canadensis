@@ -508,6 +508,18 @@ pub trait Node {
 
     /// Sets the identifier of this node
     fn set_node_id(&mut self, node_id: <Self::Transport as Transport>::NodeId);
+
+    /// Returns an iterator over the subjects published by this node
+    fn publishers(&self) -> impl Iterator<Item = SubjectId>;
+
+    /// Returns an iterator over the subjects subscribed to by this node
+    fn subscribers(&self) -> impl Iterator<Item = SubjectId>;
+
+    /// Returns an iterator over the services called by this node
+    fn clients(&self) -> impl Iterator<Item = ServiceId>;
+
+    /// Returns an iterator over the services provided by this node
+    fn servers(&self) -> impl Iterator<Item = ServiceId>;
 }
 
 /// A token returned from [`Node::start_publishing`](Node#tymethod.start_publishing) that can be
