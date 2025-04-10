@@ -18,6 +18,7 @@ use canadensis_data_types::uavcan::primitive::unstructured_1_0;
 use canadensis_data_types::uavcan::register::value_1_0::Value;
 use canadensis_encoding::bits::BitArray;
 use core::convert::TryFrom;
+use defmt_or_log::{expect, unimplemented, unwrap};
 use half::f16;
 
 /// A register containing its name, value, and mutable/persistent flags
@@ -263,7 +264,7 @@ macro_rules! register_primitive {
         impl RegisterType for $type {
             fn read(&self) -> Value {
                 Value::$variant($variant {
-                    value: heapless::Vec::from_slice(&[*self]).unwrap(),
+                    value: unwrap!(heapless::Vec::from_slice(&[*self])),
                 })
             }
 
@@ -305,14 +306,16 @@ macro_rules! register_primitive_array {
             fn read(&self) -> Value {
                 let mut value_vec = heapless::Vec::new();
                 if N <= value_vec.capacity() {
-                    value_vec
-                        .extend_from_slice(&*self)
-                        .expect("Incorrect length calculation");
+                    expect!(
+                        value_vec.extend_from_slice(&*self),
+                        "Incorrect length calculation"
+                    );
                 } else {
                     // Truncate to the maximum allowed size
-                    value_vec
-                        .extend_from_slice(&self[..value_vec.capacity()])
-                        .expect("Incorrect length calculation");
+                    expect!(
+                        value_vec.extend_from_slice(&self[..value_vec.capacity()]),
+                        "Incorrect length calculation"
+                    );
                 }
                 Value::$variant($variant { value: value_vec })
             }
@@ -516,8 +519,10 @@ impl Register for FixedStringRegister {
 
     fn read(&self) -> Value {
         Value::String(string_1_0::String {
-            value: heapless::Vec::from_slice(self.value.as_bytes())
-                .expect("Register value too long"),
+            value: expect!(
+                heapless::Vec::from_slice(self.value.as_bytes()),
+                "Register value too long"
+            ),
         })
     }
 

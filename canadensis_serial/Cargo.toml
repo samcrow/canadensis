@@ -14,7 +14,9 @@ zerocopy = "0.6.0"
 heapless = "0.8.0"
 crc-any = "2.4.0"
 fallible_collections = "0.5.1"
-log = "0.4.14"
+log = { version = "0.4.14", optional = true }
+defmt = { version = "1.0.1", optional = true }
+defmt-or-log = { git = "https://github.com/t-moe/defmt-or-log.git", rev = "a16380e8737b18846c45195328fa0b469ccf43f2" }
 
 [dependencies.canadensis_core]
 version = "0.3.1"
@@ -25,3 +27,7 @@ path = "../canadensis_header"
 
 [dev-dependencies]
 simplelog = "0.12.0"
+
+[features]
+defmt = ["dep:defmt", "defmt-or-log/defmt", "canadensis_core/defmt", "canadensis_header/defmt"]
+log = ["dep:log", "defmt-or-log/log", "canadensis_core/log", "canadensis_header/log"]

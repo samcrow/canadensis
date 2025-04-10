@@ -9,6 +9,7 @@ use canadensis_core::transfer::{
 use canadensis_core::transport::{Receiver, Transmitter, Transport};
 use canadensis_core::{nb, OutOfMemoryError, ServiceId, ServiceSubscribeError, SubjectId};
 use canadensis_encoding::{Message, Request, Response, Serialize};
+use defmt_or_log::{expect, unreachable, unwrap};
 
 use crate::publisher::Publisher;
 use crate::requester::{Requester, TransferIdTracker};
@@ -167,7 +168,7 @@ where
                 transfer_id: token.transfer,
                 priority: token.priority,
                 service: token.service,
-                source: self.node_id.clone().unwrap(),
+                source: unwrap!(self.node_id.clone()),
                 destination: token.client,
             }),
             loopback: false,
@@ -232,10 +233,10 @@ where
     where
         M: Message + Serialize,
     {
-        let publisher = self
-            .publishers
-            .get_mut(&token.0)
-            .expect("Bug: Token exists but no publisher");
+        let publisher = expect!(
+            self.publishers.get_mut(&token.0),
+            "Bug: Token exists but no publisher"
+        );
         publisher.publish(
             &mut self.clock,
             self.node_id.clone(),
@@ -254,10 +255,10 @@ where
     where
         M: Message + Serialize,
     {
-        let publisher = self
-            .publishers
-            .get_mut(&token.0)
-            .expect("Bug: Token exists but no publisher");
+        let publisher = expect!(
+            self.publishers.get_mut(&token.0),
+            "Bug: Token exists but no publisher"
+        );
         publisher.publish_loopback(
             &mut self.clock,
             self.node_id.clone(),
@@ -326,10 +327,10 @@ where
     where
         M: Request + Serialize,
     {
-        let requester = self
-            .requesters
-            .get_mut(&token.0)
-            .expect("Bug: No requester for token");
+        let requester = expect!(
+            self.requesters.get_mut(&token.0),
+            "Bug: No requester for token"
+        );
         requester.send(
             &mut self.clock,
             self.node_id.clone().unwrap(),
@@ -353,13 +354,13 @@ where
     where
         M: Request + Serialize,
     {
-        let requester = self
-            .requesters
-            .get_mut(&token.0)
-            .expect("Bug: No requester for token");
+        let requester = expect!(
+            self.requesters.get_mut(&token.0),
+            "Bug: No requester for token"
+        );
         requester.send_loopback(
             &mut self.clock,
-            self.node_id.clone().unwrap(),
+            unwrap!(self.node_id.clone()),
             token.0,
             payload,
             destination,

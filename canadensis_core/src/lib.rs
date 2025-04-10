@@ -9,7 +9,6 @@ extern crate alloc;
 extern crate fallible_collections;
 extern crate fugit;
 extern crate heapless;
-extern crate log;
 pub extern crate nb;
 
 mod error;
@@ -25,6 +24,7 @@ use core::str::FromStr;
 
 /// An error indicating that an unacceptable integer was provided to a TryFrom implementation
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct InvalidValue;
 pub use crate::error::{OutOfMemoryError, ServiceSubscribeError};
 
@@ -128,6 +128,7 @@ impl From<ServiceId> for usize {
 
 /// A value that can represent a service ID (0..=511) or a subject ID (0..=8192)
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct PortId(u16);
 
 impl From<SubjectId> for PortId {

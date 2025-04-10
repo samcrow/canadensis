@@ -11,6 +11,7 @@
 //! the calculated duration will be too short.
 //!
 
+use defmt_or_log::expect;
 use fugit::{Instant, MicrosDurationU32, MillisDurationU32};
 
 /// A duration represented as a 32-bit number of microseconds
@@ -35,9 +36,10 @@ pub trait Clock {
 ///
 /// This function panics if the provided number of milliseconds, converted into microseconds,
 /// is too large for a u32
-pub const fn milliseconds(milliseconds: u32) -> MicrosecondDuration32 {
+pub fn milliseconds(milliseconds: u32) -> MicrosecondDuration32 {
     let milliseconds = MillisDurationU32::from_ticks(milliseconds);
-    milliseconds
-        .const_try_into()
-        .expect("Number of milliseconds out of range")
+    expect!(
+        milliseconds.const_try_into(),
+        "Number of milliseconds out of range"
+    )
 }

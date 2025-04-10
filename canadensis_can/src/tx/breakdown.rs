@@ -1,5 +1,6 @@
 use crate::types::CanTransferId;
 use core::mem;
+use defmt_or_log::expect;
 
 /// Toggle is set to 1 for the first frame in a transfer
 const TOGGLE_INIT: bool = true;
@@ -46,14 +47,15 @@ impl Breakdown {
         // Add a tail byte to the current frame in preparation for returning it
         let ret_frame: Option<heapless::Vec<u8, 64>> = if self.frame.len() == self.mtu - 1 {
             // The current frame is full. Add a tail byte and prepare to return the frame.
-            self.frame
-                .push(make_tail_byte(
+            expect!(
+                self.frame.push(make_tail_byte(
                     self.start,
                     false,
                     self.toggle,
                     self.transfer_id,
-                ))
-                .expect("MTU > frame capacity");
+                )),
+                "MTU > frame capacity"
+            );
             self.start = false;
             self.toggle = !self.toggle;
 
@@ -64,7 +66,7 @@ impl Breakdown {
         };
         // Now we have either a new frame that's 0 bytes long, or a frame with one or more
         // bytes added but space for at least one byte before the tail byte.
-        self.frame.push(byte).expect("MTU > frame capacity");
+        expect!(self.frame.push(byte), "MTU > frame capacity");
 
         ret_frame
     }
@@ -72,14 +74,15 @@ impl Breakdown {
     /// Finishes this breakdown and returns the last frame
     pub fn finish(mut self) -> heapless::Vec<u8, 64> {
         // Add a tail byte to whatever bytes are in the current frame
-        self.frame
-            .push(make_tail_byte(
+        expect!(
+            self.frame.push(make_tail_byte(
                 self.start,
                 true,
                 self.toggle,
                 self.transfer_id,
-            ))
-            .expect("MTU > frame capacity");
+            )),
+            "MTU > frame capacity"
+        );
         self.frame
     }
 }

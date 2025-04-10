@@ -2,6 +2,7 @@ use alloc::vec::Vec;
 use core::mem;
 
 use crate::types::CanTransferId;
+use defmt_or_log::{assert, assert_eq, unwrap};
 use fallible_collections::{FallibleVec, TryReserveError};
 
 use super::TailByte;
@@ -55,7 +56,7 @@ impl Buildup {
             "Can't reassemble with an empty frame"
         );
         // Check tail byte
-        let tail = TailByte::parse(*frame_data.last().unwrap());
+        let tail = TailByte::parse(*unwrap!(frame_data.last()));
         if tail.start != self.expect_start {
             return Err(BuildupError::InvalidStart);
         }

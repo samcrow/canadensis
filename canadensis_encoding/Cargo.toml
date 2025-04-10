@@ -12,6 +12,13 @@ description = "A Cyphal implementation: Transfer encoding and decoding"
 [dependencies]
 half = { version = ">=2.2, <2.5", default-features = false }
 zerocopy = "0.6.0"
+log = { version = "0.4.27", optional = true }
+defmt = { version = "1.0.1", optional = true }
+defmt-or-log = { git = "https://github.com/t-moe/defmt-or-log.git", rev = "a16380e8737b18846c45195328fa0b469ccf43f2" }
 
 [dev-dependencies]
 heapless = "0.8.0"
+
+[features]
+defmt = ["dep:defmt", "defmt-or-log/defmt"]
+log = ["dep:log", "defmt-or-log/log"]

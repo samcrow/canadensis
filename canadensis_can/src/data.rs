@@ -7,6 +7,7 @@ use core::fmt;
 
 use canadensis_core::time::Microseconds32;
 use canadensis_core::InvalidValue;
+use defmt_or_log::expect;
 
 /// Bit mask for a 29-bit CAN ID
 const CAN_ID_MASK: u32 = 0x1f_ff_ff_ff;
@@ -119,7 +120,7 @@ impl Frame {
             timestamp,
             id,
             loopback: false,
-            data: heapless::Vec::from_slice(data).expect("Data to large for a frame"),
+            data: expect!(heapless::Vec::from_slice(data), "Data to large for a frame"),
         }
     }
 
