@@ -16,6 +16,7 @@ use canadensis_data_types::uavcan::node::port::subject_id_1_0;
 use canadensis_data_types::uavcan::node::port::subject_id_list_1_0::SubjectIDList;
 use canadensis_encoding::bits::BitArray;
 use canadensis_encoding::{Message, Request, Response, Serialize};
+use defmt_or_log::unwrap;
 
 /// A node that provides all basic application-layer functionality
 ///
@@ -76,18 +77,16 @@ where
         let port_list = List {
             publishers: SubjectIDList::SparseList({
                 let mut published_topics = heapless::Vec::new();
-                published_topics
+                unwrap!(published_topics
                     .push(subject_id_1_0::SubjectID {
                         value: heartbeat_1_0::SUBJECT.into(),
                     })
-                    .ok()
-                    .unwrap();
-                published_topics
+                    .ok());
+                unwrap!(published_topics
                     .push(subject_id_1_0::SubjectID {
                         value: list_1_0::SUBJECT.into(),
                     })
-                    .ok()
-                    .unwrap();
+                    .ok());
                 published_topics
             }),
             subscribers: SubjectIDList::SparseList(heapless::Vec::new()),

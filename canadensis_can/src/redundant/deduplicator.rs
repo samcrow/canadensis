@@ -1,5 +1,6 @@
 use crate::Frame;
 use canadensis_core::time::{MicrosecondDuration32, Microseconds32};
+use defmt_or_log::assert_ne;
 
 /// Deduplicates incoming frames from multiple transports
 ///

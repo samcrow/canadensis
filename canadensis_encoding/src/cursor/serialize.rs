@@ -1,3 +1,4 @@
+use defmt_or_log::{assert, debug_assert, expect};
 use half::f16;
 
 use crate::Serialize;
@@ -241,9 +242,10 @@ impl<'b> WriteCursor<'b> {
             // Add delimiter header
             let composite_size_bits = value.size_bits();
             // Convert bits to bytes, round up
-            let composite_size_bytes: u32 = ((composite_size_bits + 7) / 8)
-                .try_into()
-                .expect("Composite too large for u32");
+            let composite_size_bytes: u32 = expect!(
+                ((composite_size_bits + 7) / 8).try_into(),
+                "Composite too large for u32"
+            );
             self.write_u32(composite_size_bytes);
         }
         // Now serialize the components

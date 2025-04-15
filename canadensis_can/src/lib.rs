@@ -13,7 +13,6 @@ extern crate canadensis_core;
 extern crate canadensis_filter_config;
 extern crate fallible_collections;
 extern crate heapless;
-extern crate log;
 
 pub use crate::crc::TransferCrc;
 pub use crate::data::*;
@@ -31,6 +30,7 @@ mod tx;
 mod types;
 
 use core::cmp;
+use defmt_or_log::{assert, panic};
 
 /// Calculates the number of frames required and the number of padding bytes to add to a payload so
 /// that all frames will have valid length values for CAN FD

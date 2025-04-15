@@ -9,6 +9,8 @@ pub use self::queue_only_driver::QueueOnlyDriver;
 pub use self::single_frame_queue::SingleFrameQueue;
 use core::marker::PhantomData;
 
+use defmt_or_log::expect;
+
 use crate::driver::{ReceiveDriver, TransmitDriver};
 use crate::types::CanNodeId;
 use crate::Frame;
@@ -160,9 +162,10 @@ where
                 if !frame_is_expired(&removed_frame, now) {
                     // Because we just popped a frame from the queue, it must have space to
                     // return a frame.
-                    queue
-                        .return_frame(removed_frame)
-                        .expect("return_frame out of memory");
+                    expect!(
+                        queue.return_frame(removed_frame),
+                        "return_frame out of memory"
+                    );
                 }
                 // Keep going and try the next frame
             }
@@ -170,9 +173,7 @@ where
                 // The frame couldn't be transmitted, so put it back in the queue
                 // Because we just popped a frame from the queue, it must have space to
                 // return a frame.
-                queue
-                    .return_frame(frame)
-                    .expect("return_frame out of memory");
+                expect!(queue.return_frame(frame), "return_frame out of memory");
                 return Err(nb::Error::WouldBlock);
             }
             Err(nb::Error::Other(e)) => return Err(nb::Error::Other(e)),

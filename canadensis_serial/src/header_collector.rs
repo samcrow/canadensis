@@ -1,4 +1,5 @@
 use canadensis_header::RawHeader;
+use defmt_or_log::expect;
 use zerocopy::FromBytes;
 
 const HEADER_BYTES: usize = canadensis_header::SIZE;
@@ -35,6 +36,9 @@ impl HeaderCollector {
 
     /// Interprets the bytes as a header
     pub fn as_header(&self) -> RawHeader {
-        RawHeader::read_from(&self.bytes[..]).expect("Incorrect byte length or alignment")
+        expect!(
+            RawHeader::read_from(&self.bytes[..]),
+            "Incorrect byte length or alignment"
+        )
     }
 }

@@ -6,6 +6,7 @@ use fallible_collections::TryReserveError;
 
 /// An error indicating that memory could not be allocated
 #[derive(Debug, Eq, PartialEq, Clone)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct OutOfMemoryError;
 
 impl From<TryReserveError> for OutOfMemoryError {

@@ -11,3 +11,10 @@ description = "The frame header format used by Cyphal/Serial and Cyphal/UDP"
 canadensis_core = { version = "0.3.1", path = "../canadensis_core" }
 zerocopy = "0.6.1"
 crc-any = "2.4.0"
+log = { version = "0.4.27", optional = true }
+defmt = { version = "1.0.1", optional = true }
+defmt-or-log = { git = "https://github.com/t-moe/defmt-or-log.git", rev = "a16380e8737b18846c45195328fa0b469ccf43f2" }
+
+[features]
+defmt = ["dep:defmt", "defmt-or-log/defmt", "canadensis_core/defmt"]
+log = ["dep:log", "defmt-or-log/log", "canadensis_core/log"]

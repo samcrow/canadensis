@@ -10,6 +10,7 @@ use canadensis_data_types::uavcan::node::port::service_id_list_1_0::ServiceIDLis
 use canadensis_data_types::uavcan::node::port::subject_id_1_0::SubjectID;
 use canadensis_data_types::uavcan::node::port::subject_id_list_1_0::SubjectIDList;
 use canadensis_encoding::bits::BitArray;
+use defmt_or_log::unreachable;
 
 /// Publishes `uavcan.node.port.List` messages
 pub struct PortListService<N> {

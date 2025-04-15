@@ -12,7 +12,9 @@ description = "A Cyphal implementation: Cyphal/CAN (CAN and CAN FD) transport la
 [dependencies]
 fallible_collections = "0.5.1"
 heapless = "0.8.0"
-log = "0.4"
+log = { version = "0.4", optional = true }
+defmt = { version = "1.0.1", optional = true }
+defmt-or-log = { git = "https://github.com/t-moe/defmt-or-log.git", rev = "a16380e8737b18846c45195328fa0b469ccf43f2" }
 
 [dependencies.canadensis_core]
 version = "0.3.1"
@@ -25,3 +27,5 @@ path = "../canadensis_filter_config"
 [features]
 # The can-fd feature increases the maximum frame capacity and maximum MTU from 8 to 64 bytes
 can-fd = []
+defmt = ["dep:defmt", "defmt-or-log/defmt", "canadensis_core/defmt"]
+log = ["dep:log", "defmt-or-log/log", "canadensis_core/log"]

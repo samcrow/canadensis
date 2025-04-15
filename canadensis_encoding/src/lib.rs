@@ -14,6 +14,7 @@ mod cursor;
 pub use crate::cursor::deserialize::ReadCursor;
 pub use crate::cursor::serialize::WriteCursor;
 use core::cmp;
+use defmt_or_log::expect;
 use zerocopy::{AsBytes, FromBytes};
 
 /// Trait for types that can be encoded into Cyphal transfers, or decoded from transfers
@@ -63,7 +64,7 @@ pub trait Deserialize: DataType {
     {
         // This isn't quite zero-copy. It's one-copy, but it eliminates handling each field
         // individually.
-        let cursor_bytes = cursor.as_bytes().expect("Cursor not aligned");
+        let cursor_bytes = expect!(cursor.as_bytes(), "Cursor not aligned");
         let mut value = Self::new_zeroed();
 
         let value_bytes = value.as_bytes_mut();

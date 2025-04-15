@@ -6,6 +6,8 @@ use core::convert::TryFrom;
 use core::iter;
 use core::marker::PhantomData;
 
+use defmt_or_log::expect;
+
 use canadensis_core::nb;
 use canadensis_core::time::{Clock, Microseconds32};
 use canadensis_core::transfer::{Header, ServiceHeader, Transfer};
@@ -261,7 +263,10 @@ fn make_can_id(header: &Header<CanTransport>, payload: &[u8]) -> CanId {
         }
     }
 
-    CanId::try_from(bits).expect("Generated CAN ID does not fit into 29 bits")
+    expect!(
+        CanId::try_from(bits),
+        "Generated CAN ID does not fit into 29 bits"
+    )
 }
 
 /// Encodes the service ID, destination ID, and service flag into a 29-bit CAN ID, and returns

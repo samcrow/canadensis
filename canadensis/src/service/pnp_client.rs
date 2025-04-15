@@ -17,6 +17,7 @@ use canadensis_data_types::uavcan::pnp::{
 use core::convert::TryFrom;
 use core::marker::PhantomData;
 use crc_any::CRCu64;
+use defmt_or_log::{debug_assert, unreachable, unwrap};
 
 /// A plug-and-play allocation client that can be used to find a node ID
 pub struct PnpClientService<N, M> {
@@ -129,7 +130,7 @@ where
                     if let Some(node_id) = message.node_id() {
                         node.set_node_id(node_id);
                         node.unsubscribe_message(M::SUBJECT);
-                        node.stop_publishing(self.client.publish_token.take().unwrap());
+                        node.stop_publishing(unwrap!(self.client.publish_token.take()));
                         return true;
                     }
                 }

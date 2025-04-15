@@ -4,6 +4,7 @@
 
 use core::cmp;
 
+use defmt_or_log::{assert, assert_eq, debug_assert};
 use half::f16;
 
 use crate::{Deserialize, DeserializeError};

@@ -14,7 +14,9 @@ crc-any = { version = "2.4.0", default-features = false  }
 fallible_collections = "0.5.1"
 heapless = "0.8.0"
 half = { version = ">=2.2, <2.5", default-features = false }
-log = "0.4"
+log = { version = "0.4", optional = true }
+defmt = { version = "1.0.1", optional = true }
+defmt-or-log = { git = "https://github.com/t-moe/defmt-or-log.git", rev = "a16380e8737b18846c45195328fa0b469ccf43f2" }
 
 # Depends on most other canadensis crates that are not transport-specific
 [dependencies.canadensis_core]
@@ -51,3 +53,6 @@ path = "../canadensis_serial"
 version = "0.4.1"
 path = "../canadensis_udp"
 
+[features]
+defmt = ["dep:defmt", "defmt-or-log/defmt", "canadensis_core/defmt", "canadensis_encoding/defmt"]
+log = ["dep:log", "defmt-or-log/log", "canadensis_core/log", "canadensis_encoding/log"]

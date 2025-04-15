@@ -11,6 +11,7 @@ use canadensis_core::{InvalidValue, Priority, ServiceId, SubjectId};
 use core::convert::TryFrom;
 use core::mem;
 use crc_any::CRCu16;
+use defmt_or_log::debug_assert;
 use zerocopy::byteorder::{U16, U32, U64};
 use zerocopy::{AsBytes, BigEndian, FromBytes, LittleEndian};
 

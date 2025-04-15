@@ -1,6 +1,7 @@
 use alloc::vec::Vec;
 use core::marker::PhantomData;
 
+use defmt_or_log::{expect, unwrap};
 use fallible_collections::FallibleVec;
 use heapless::Deque;
 use zerocopy::AsBytes;
@@ -85,8 +86,10 @@ where
             .copied()
             .chain(transfer.payload.as_ref().iter().copied())
             .chain(payload_crc.as_bytes().iter().copied());
-        let escaped_length = cobs::escape_from_iter(data_to_escape, &mut escape_buffer)
-            .expect("Incorrect escaped length");
+        let escaped_length = expect!(
+            cobs::escape_from_iter(data_to_escape, &mut escape_buffer),
+            "Incorrect escaped length"
+        );
         // Calculate the required queue capacity based on the real escaped length
         let length_on_wire = escaped_length + PER_FRAME_UNESCAPED_OVERHEAD;
         if length_on_wire > (self.queue.capacity() - self.queue.len()) {
@@ -94,11 +97,11 @@ where
         }
 
         // Put in the queue: delimiter, escaped data, delimiter
-        self.queue.push_back(DELIMITER).unwrap();
+        unwrap!(self.queue.push_back(DELIMITER));
         for &byte in &escape_buffer[..escaped_length] {
-            self.queue.push_back(byte).unwrap();
+            unwrap!(self.queue.push_back(byte));
         }
-        self.queue.push_back(DELIMITER).unwrap();
+        unwrap!(self.queue.push_back(DELIMITER));
 
         Ok(())
     }
@@ -110,9 +113,10 @@ where
                 Err(e) => {
                     // Put the byte back to send later
                     // Because we just removed this byte, there must be space to put it back.
-                    self.queue
-                        .push_front(byte)
-                        .expect("No space to return byte to queue");
+                    expect!(
+                        self.queue.push_front(byte),
+                        "No space to return byte to queue"
+                    );
                     return match e {
                         nb::Error::WouldBlock => Err(nb::Error::WouldBlock),
                         nb::Error::Other(e) => Err(nb::Error::Other(Error::Driver(e))),

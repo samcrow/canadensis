@@ -13,5 +13,11 @@ description = "A Cyphal implementation: Common definitions"
 fugit = "0.3.7"
 fallible_collections = "0.5.1"
 heapless = "0.8.0"
-log = "0.4.14"
+log = { version = "0.4.14", optional = true }
 nb = "1.0.0"
+defmt = { version = "1.0.1", optional = true }
+defmt-or-log = { git = "https://github.com/t-moe/defmt-or-log.git", rev = "a16380e8737b18846c45195328fa0b469ccf43f2" }
+
+[features]
+defmt = ["dep:defmt", "defmt-or-log/defmt"]
+log = ["dep:log", "defmt-or-log/log"]

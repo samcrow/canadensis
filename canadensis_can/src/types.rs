@@ -126,6 +126,7 @@ const VALID_TRANSFER_IDS: RangeInclusive<u8> = 0..=31;
 
 /// Transfer ID, 5 bits, in range 0..=31
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct CanTransferId(u8);
 
 impl CanTransferId {
