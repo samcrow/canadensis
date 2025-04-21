@@ -5,7 +5,7 @@ use alloc::vec::Vec;
 use canadensis_core::time::{milliseconds, MicrosecondDuration32};
 use canadensis_core::transfer::{MessageTransfer, ServiceTransfer};
 use canadensis_core::transport::{Receiver, Transport};
-use canadensis_core::{nb, Priority, ServiceId, SubjectId};
+use canadensis_core::{nb, Priority, ServiceId, ServiceSubscribeError, SubjectId};
 use canadensis_data_types::uavcan::node::get_info_1_0::{self, GetInfoResponse};
 use canadensis_data_types::uavcan::node::health_1_0::Health;
 use canadensis_data_types::uavcan::node::heartbeat_1_0;
@@ -54,7 +54,7 @@ where
         Self,
         NodeError<
             StartSendError<<N::Transmitter as Transmitter<N::Clock>>::Error>,
-            <N::Receiver as Receiver<N::Clock>>::Error,
+            ServiceSubscribeError<<N::Receiver as Receiver<N::Clock>>::Error>,
         >,
     > {
         // The MinimalNode takes care of heartbeats.
@@ -318,7 +318,7 @@ where
         service: ServiceId,
         payload_size_max: usize,
         timeout: MicrosecondDuration32,
-    ) -> Result<(), <N::Receiver as Receiver<N::Clock>>::Error> {
+    ) -> Result<(), ServiceSubscribeError<<N::Receiver as Receiver<N::Clock>>::Error>> {
         self.node
             .node_mut()
             .subscribe_request(service, payload_size_max, timeout)?;

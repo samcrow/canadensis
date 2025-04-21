@@ -4,6 +4,7 @@
 pub mod basic;
 
 use alloc::vec::Vec;
+use canadensis_core::ServiceSubscribeError;
 use core::str;
 
 use crate::{Node, ResponseToken, TransferHandler};
@@ -139,7 +140,7 @@ where
     /// for requests.
     pub fn subscribe_requests<N>(
         node: &mut N,
-    ) -> Result<(), <N::Receiver as Receiver<N::Clock>>::Error>
+    ) -> Result<(), ServiceSubscribeError<<N::Receiver as Receiver<N::Clock>>::Error>>
     where
         N: Node,
     {

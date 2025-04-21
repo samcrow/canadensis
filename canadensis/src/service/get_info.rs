@@ -1,6 +1,8 @@
 use crate::{Node, ResponseToken, ServiceTransfer, TransferHandler};
 use alloc::vec::Vec;
-use canadensis_core::{time::milliseconds, transport::Receiver};
+use canadensis_core::time::milliseconds;
+use canadensis_core::transport::Receiver;
+use canadensis_core::ServiceSubscribeError;
 use canadensis_data_types::uavcan::node::get_info_1_0::{GetInfoResponse, SERVICE};
 use core::marker::PhantomData;
 
@@ -23,7 +25,7 @@ where
     pub fn new(
         node: &mut N,
         node_info: GetInfoResponse,
-    ) -> Result<Self, <N::Receiver as Receiver<N::Clock>>::Error> {
+    ) -> Result<Self, ServiceSubscribeError<<N::Receiver as Receiver<N::Clock>>::Error>> {
         node.subscribe_request(SERVICE, 0, milliseconds(1000))?;
 
         Ok(Self {
