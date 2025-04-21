@@ -387,15 +387,9 @@ where
         service: ServiceId,
         payload_size_max: usize,
         timeout: MicrosecondDuration32,
-    ) -> Result<(), U::Error> {
-        let status =
-            self.receiver
-                .subscribe_request(service, payload_size_max, timeout, &mut self.driver);
-        // Because a CoreNode can't be anonymous, the above function can't return an Anonymous error.
-        status.map_err(|e| match e {
-            ServiceSubscribeError::Transport(e) => e,
-            ServiceSubscribeError::Anonymous => unreachable!("CoreNode is never anonymous"),
-        })
+    ) -> Result<(), ServiceSubscribeError<U::Error>> {
+        self.receiver
+            .subscribe_request(service, payload_size_max, timeout, &mut self.driver)
     }
 
     fn unsubscribe_request(&mut self, service: ServiceId) {

@@ -37,7 +37,7 @@ pub mod service;
 use ::core::fmt::{Debug, Formatter};
 use ::core::marker::PhantomData;
 use alloc::vec::Vec;
-use canadensis_core::OutOfMemoryError;
+use canadensis_core::{OutOfMemoryError, ServiceSubscribeError};
 
 use crate::core::transport::Transport;
 use canadensis_core::time::{Clock, MicrosecondDuration32};
@@ -455,7 +455,7 @@ pub trait Node {
         service: ServiceId,
         payload_size_max: usize,
         timeout: MicrosecondDuration32,
-    ) -> Result<(), <Self::Receiver as Receiver<Self::Clock>>::Error>;
+    ) -> Result<(), ServiceSubscribeError<<Self::Receiver as Receiver<Self::Clock>>::Error>>;
 
     /// Unsubscribes from requests for a service
     fn unsubscribe_request(&mut self, service: ServiceId);
