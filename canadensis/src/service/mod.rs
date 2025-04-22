@@ -12,3 +12,6 @@ pub mod pnp_client;
 
 /// Port list service
 pub mod port_list;
+
+/// Register server
+pub mod register_server;
