@@ -6,7 +6,6 @@ extern crate canadensis_header;
 extern crate crc_any;
 extern crate fallible_collections;
 extern crate heapless;
-extern crate log;
 extern crate zerocopy;
 
 use crc_any::CRCu32;

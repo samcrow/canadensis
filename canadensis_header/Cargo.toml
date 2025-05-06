@@ -11,3 +11,4 @@ description = "The frame header format used by Cyphal/Serial and Cyphal/UDP"
 canadensis_core = { version = "0.3.1", path = "../canadensis_core" }
 zerocopy = "0.6.1"
 crc-any = "2.4.0"
+defmt.workspace = true

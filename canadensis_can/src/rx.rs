@@ -12,6 +12,7 @@ use core::fmt::Debug;
 use core::marker::PhantomData;
 
 use fallible_collections::FallibleVec;
+use l0g::{debug, info};
 
 use crate::data::{CanId, Frame};
 use crate::driver::ReceiveDriver;
@@ -294,7 +295,7 @@ where
             Some(data) => data,
             None => {
                 // Can't use this frame
-                log::debug!("Frame failed sanity checks, ignoring");
+                debug!("Frame failed sanity checks, ignoring");
                 self.increment_error_count();
                 return Ok(None);
             }
@@ -338,7 +339,7 @@ where
                 }
                 Ok(None) => Ok(None),
                 Err(e) => {
-                    log::info!("Receiver accept error {:?}", e);
+                    info!("Receiver accept error {:?}", e);
                     self.increment_error_count();
                     match e {
                         SubscriptionError::Session(SessionError::Memory(e))
@@ -369,7 +370,7 @@ where
             if message_header.source.is_none() {
                 // Anonymous message transfers must always fit into one frame
                 if !(tail_byte.toggle && tail_byte.start && tail_byte.end) {
-                    log::debug!("Anonymous multi-frame transfer, ignoring");
+                    debug!("Anonymous multi-frame transfer, ignoring");
                     return None;
                 }
             }

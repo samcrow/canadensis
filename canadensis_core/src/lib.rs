@@ -9,7 +9,6 @@ extern crate alloc;
 extern crate fallible_collections;
 extern crate fugit;
 extern crate heapless;
-extern crate log;
 pub extern crate nb;
 
 mod error;
@@ -19,14 +18,15 @@ pub mod time;
 pub mod transfer;
 pub mod transport;
 
+pub use crate::error::{OutOfMemoryError, ServiceSubscribeError};
 use core::convert::TryFrom;
 use core::ops::RangeInclusive;
 use core::str::FromStr;
+use defmt::Format;
 
 /// An error indicating that an unacceptable integer was provided to a TryFrom implementation
-#[derive(Debug)]
+#[derive(Debug, Format)]
 pub struct InvalidValue;
-pub use crate::error::{OutOfMemoryError, ServiceSubscribeError};
 
 /// Allowed subject ID values
 const VALID_SUBJECT_IDS: RangeInclusive<u16> = 0..=8191;
@@ -127,7 +127,7 @@ impl From<ServiceId> for usize {
 }
 
 /// A value that can represent a service ID (0..=511) or a subject ID (0..=8192)
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Format)]
 pub struct PortId(u16);
 
 impl From<SubjectId> for PortId {

@@ -2,6 +2,7 @@ use crate::driver::TransmitDriver;
 use crate::Frame;
 use canadensis_core::time::Clock;
 use canadensis_core::{nb, OutOfMemoryError};
+use defmt::Format;
 
 /// An aggregation of two outgoing frame queues that can be used for double-redundant transports
 ///
@@ -102,7 +103,7 @@ where
 }
 
 /// An error from a DoubleRedundantQueueDriver
-#[derive(Debug)]
+#[derive(Debug, Format)]
 pub enum RedundantError<E0, E1> {
     /// An error from driver 0
     Driver0(E0),

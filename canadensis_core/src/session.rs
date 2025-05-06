@@ -4,7 +4,9 @@ use crate::time::{MicrosecondDuration32, Microseconds32};
 use crate::OutOfMemoryError;
 use alloc::collections::BTreeMap;
 use core::fmt::Debug;
+use defmt::Format;
 use heapless::LinearMap;
+use l0g::debug;
 
 /// Something that can keep track of receive sessions associated with other nodes
 ///
@@ -314,7 +316,7 @@ where
 
 impl<N, T, D> SessionTracker<N, T, D> for SessionDynamicMap<N, T, D>
 where
-    N: Ord + Clone + Debug,
+    N: Ord + Clone + Debug + Format,
 {
     fn get(&self, node: N) -> Option<&Session<T, D>> {
         self.sessions.get(&node)
@@ -356,7 +358,7 @@ where
             }
             match expired_node_id {
                 Some(id) => {
-                    log::debug!("Removing expired session from node {:?}", id);
+                    debug!("Removing expired session from node {:?}", id);
                     self.sessions.remove(&id);
                 }
                 None => break,

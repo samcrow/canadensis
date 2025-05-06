@@ -6,6 +6,7 @@ use core::convert::TryFrom;
 use core::fmt;
 use core::fmt::Debug;
 use core::ops::RangeInclusive;
+use defmt::Format;
 
 /// The Cyphal/CAN transport
 pub struct CanTransport(());
@@ -125,7 +126,7 @@ impl From<CanNodeId> for usize {
 const VALID_TRANSFER_IDS: RangeInclusive<u8> = 0..=31;
 
 /// Transfer ID, 5 bits, in range 0..=31
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Format)]
 pub struct CanTransferId(u8);
 
 impl CanTransferId {
@@ -192,7 +193,7 @@ impl Default for CanTransferId {
 }
 
 /// CAN transport errors
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Format)]
 pub enum Error<E> {
     /// Memory allocation failed
     Memory(OutOfMemoryError),

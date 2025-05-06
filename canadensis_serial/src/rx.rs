@@ -4,6 +4,7 @@ use core::marker::PhantomData;
 use core::mem;
 
 use fallible_collections::{FallibleVec, TryHashMap};
+use l0g::debug;
 
 use canadensis_core::subscription::SubscriptionManager;
 use canadensis_core::time::{Clock, MicrosecondDuration32, Microseconds32};
@@ -79,7 +80,7 @@ where
             State::BetweenTransfers => {
                 if byte != 0 {
                     // Start decoding
-                    log::debug!("Starting frame");
+                    debug!("Starting frame");
                     let mut unescaper = Unescaper::new();
                     match unescaper.accept(byte) {
                         Ok(Some(byte)) => {
@@ -132,13 +133,13 @@ where
                                         }
                                     } else {
                                         // Not interested in this transfer
-                                        log::debug!("Got header, but not subscribed");
+                                        debug!("Got header, but not subscribed");
                                         State::Idle
                                     }
                                 }
                                 Err(e) => {
                                     // Invalid header CRC or format
-                                    log::debug!("Header format or CRC invalid: {:?}", e);
+                                    debug!("Header format or CRC invalid: {:?}", e);
                                     State::Idle
                                 }
                             }

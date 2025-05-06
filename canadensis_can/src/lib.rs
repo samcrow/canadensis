@@ -13,7 +13,6 @@ extern crate canadensis_core;
 extern crate canadensis_filter_config;
 extern crate fallible_collections;
 extern crate heapless;
-extern crate log;
 
 pub use crate::crc::TransferCrc;
 pub use crate::data::*;

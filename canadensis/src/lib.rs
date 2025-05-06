@@ -45,6 +45,7 @@ use canadensis_core::transfer::*;
 use canadensis_core::transport::{Receiver, Transmitter};
 use canadensis_core::{ServiceId, SubjectId};
 use canadensis_encoding::{Message, Request, Response, Serialize};
+use defmt::Format;
 
 /// A token from a request that is needed to send a response
 pub struct ResponseToken<T: Transport> {
@@ -560,7 +561,7 @@ impl<T> ServiceToken<T> {
 }
 
 /// Errors that may occur when starting to send messages or requests
-#[derive(Debug)]
+#[derive(Debug, Format)]
 pub enum StartSendError<E> {
     /// Memory to store the publisher was not available
     Memory(OutOfMemoryError),

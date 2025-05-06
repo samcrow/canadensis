@@ -17,6 +17,7 @@ use canadensis_data_types::uavcan::pnp::{
 use core::convert::TryFrom;
 use core::marker::PhantomData;
 use crc_any::CRCu64;
+use defmt::Format;
 
 /// A plug-and-play allocation client that can be used to find a node ID
 pub struct PnpClientService<N, M> {
@@ -85,7 +86,7 @@ where
 }
 
 /// Error type returned by [`PnpClientService::new`].
-#[derive(Debug)]
+#[derive(Debug, Format)]
 pub enum NewError<N: Node> {
     /// The client could not subscribe to the message subject due to a receiver error.
     Subscribe(<N::Receiver as Receiver<N::Clock>>::Error),
@@ -98,7 +99,7 @@ pub enum NewError<N: Node> {
 }
 
 /// Error type returned by [`PnpClientService::send_request`].
-#[derive(Debug)]
+#[derive(Debug, Format)]
 pub enum SendRequestError<N: Node> {
     /// The client has allocated an address already and no longer holds a publish token.
     Allocated,
