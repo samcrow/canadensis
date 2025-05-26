@@ -153,6 +153,15 @@ where
     pub fn node_mut(&mut self) -> &mut N {
         self.node.node_mut()
     }
+
+    /// Returns a reference to the enclosed minimal node
+    pub fn minimal_node(&self) -> &MinimalNode<N> {
+        &self.node
+    }
+    /// Returns a mutable reference to the enclosed minimal node
+    pub fn minimal_node_mut(&mut self) -> &mut MinimalNode<N> {
+        &mut self.node
+    }
 }
 
 impl<N> Node for BasicNode<N>
