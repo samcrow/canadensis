@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_macro`: Added options for `byte`, `utf8`, and `saturated bool` (not a breaking change)
 - `canadensis_codegen_rust`: Added unstable optional support for `byte` and `utf8` (code generation is the same as for uint8)
 - `canadensis_codegen_rust`: Added unstable option to forbid `saturated bool`
+- `canadensis`: Added methods to get the minimal node inside a basic node [#44](https://github.com/samcrow/canadensis/pull/44) 
 
 ## Changed
 
