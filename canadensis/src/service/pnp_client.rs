@@ -8,7 +8,7 @@ use crate::core::transfer::MessageTransfer;
 use crate::core::transport::{Receiver, Transmitter, Transport};
 use crate::core::{nb, Priority, SubjectId};
 use crate::encoding::{Deserialize, Message, Serialize};
-use crate::{Node, PublishToken, StartSendError, TransferHandler};
+use crate::{Node, PublishError, StartSendError, TransferHandler};
 use alloc::vec::Vec;
 use canadensis_data_types::uavcan::node::id_1_0::ID;
 use canadensis_data_types::uavcan::pnp::{
@@ -22,8 +22,8 @@ use crc_any::CRCu64;
 pub struct PnpClientService<N, M> {
     /// The unique ID of this node
     unique_id: [u8; 16],
-    publish_token: Option<PublishToken<M>>,
     _node: PhantomData<N>,
+    _message: PhantomData<M>,
 }
 
 impl<N, M> PnpClientService<N, M>
@@ -47,8 +47,7 @@ where
         node.subscribe_message(M::SUBJECT, M::PAYLOAD_SIZE_MAX, milliseconds(1000))
             .map_err(|err| NewError::Subscribe(err))?;
 
-        let token = node
-            .start_publishing(M::SUBJECT, milliseconds(1000), Priority::Nominal.into())
+        node.start_publishing(M::SUBJECT, milliseconds(1000), Priority::Nominal.into())
             .map_err(|err| match err {
                 StartSendError::Memory(_) => NewError::OutOfMemory,
                 StartSendError::Duplicate => NewError::Duplicate,
@@ -58,24 +57,18 @@ where
 
         Ok(Self {
             unique_id,
-            publish_token: Some(token),
             _node: PhantomData,
+            _message: PhantomData,
         })
     }
 
     /// Creates an outgoing node ID allocation message and gives it to the node
-    pub fn send_request(&mut self, node: &mut N) -> Result<(), SendRequestError<N>> {
+    pub fn send_request(
+        &mut self,
+        node: &mut N,
+    ) -> nb::Result<(), PublishError<<N::Transmitter as Transmitter<N::Clock>>::Error>> {
         let message = M::with_unique_id(&self.unique_id);
-        node.publish(
-            self.publish_token
-                .as_ref()
-                .ok_or(SendRequestError::Allocated)?,
-            &message,
-        )
-        .map_err(|err| match err {
-            nb::Error::WouldBlock => SendRequestError::WouldBlock,
-            nb::Error::Other(err) => SendRequestError::Other(err),
-        })
+        node.publish(M::SUBJECT, &message)
     }
 
     /// Returns a handler for the client
@@ -97,17 +90,6 @@ pub enum NewError<N: Node> {
     Publish(<N::Transmitter as Transmitter<N::Clock>>::Error),
 }
 
-/// Error type returned by [`PnpClientService::send_request`].
-#[derive(Debug)]
-pub enum SendRequestError<N: Node> {
-    /// The client has allocated an address already and no longer holds a publish token.
-    Allocated,
-    /// The client could not send the request because it would block
-    WouldBlock,
-    /// The client could not send the request due to a transmitter error
-    Other(<N::Transmitter as Transmitter<N::Clock>>::Error),
-}
-
 /// Handler for the client
 pub struct PnpClientServiceHandler<'a, N, M> {
     client: &'a mut PnpClientService<N, M>,
@@ -123,15 +105,13 @@ where
         node: &mut N2,
         transfer: &MessageTransfer<Vec<u8>, N2::Transport>,
     ) -> bool {
-        if self.client.publish_token.is_some() {
-            if let Ok(message) = M::deserialize_from_bytes(&transfer.payload) {
-                if message.matches_unique_id(&self.client.unique_id) {
-                    if let Some(node_id) = message.node_id() {
-                        node.set_node_id(node_id);
-                        node.unsubscribe_message(M::SUBJECT);
-                        node.stop_publishing(self.client.publish_token.take().unwrap());
-                        return true;
-                    }
+        if let Ok(message) = M::deserialize_from_bytes(&transfer.payload) {
+            if message.matches_unique_id(&self.client.unique_id) {
+                if let Some(node_id) = message.node_id() {
+                    node.set_node_id(node_id);
+                    node.unsubscribe_message(M::SUBJECT);
+                    node.stop_publishing(M::SUBJECT);
+                    return true;
                 }
             }
         }

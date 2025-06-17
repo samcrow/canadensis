@@ -2,7 +2,7 @@ use core::marker::PhantomData;
 
 use crate::core::time::milliseconds;
 use crate::core::Priority;
-use crate::{Node, PublishToken, StartSendError};
+use crate::{Node, PublishError, StartSendError};
 use canadensis_core::nb;
 use canadensis_core::transport::Transmitter;
 use canadensis_data_types::uavcan::node::port::list_1_0::{List, SUBJECT};
@@ -13,7 +13,6 @@ use canadensis_encoding::bits::BitArray;
 
 /// Publishes `uavcan.node.port.List` messages
 pub struct PortListService<N> {
-    publish_token: PublishToken<List>,
     _node: PhantomData<N>,
 }
 
@@ -34,19 +33,16 @@ where
                 StartSendError::Transport(err) => NewError::Other(err),
                 StartSendError::AnonymousRequest => unreachable!(), // We are publishing a message so this should never happen
             })?;
-        Ok(Self {
-            publish_token: token,
-            _node: PhantomData,
-        })
+        Ok(Self { _node: PhantomData })
     }
 
     /// Publishes a `uavcan.node.port.List` message. This function should be called at least every 10 seconds.
     pub fn publish_port_list(
         &mut self,
         node: &mut N,
-    ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Clock>>::Error> {
+    ) -> nb::Result<(), PublishError<<N::Transmitter as Transmitter<N::Clock>>::Error>> {
         node.publish(
-            &self.publish_token,
+            SUBJECT,
             &List {
                 publishers: SubjectIDList::SparseList(
                     node.publishers()

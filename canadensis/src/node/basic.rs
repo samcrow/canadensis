@@ -1,6 +1,6 @@
 use crate::core::transport::Transmitter;
 use crate::node::{MinimalNode, NodeError};
-use crate::{Node, PublishToken, ResponseToken, ServiceToken, StartSendError, TransferHandler};
+use crate::{Node, PublishError, ResponseToken, ServiceToken, StartSendError, TransferHandler};
 use alloc::vec::Vec;
 use canadensis_core::time::{milliseconds, MicrosecondDuration32};
 use canadensis_core::transfer::{MessageTransfer, ServiceTransfer};
@@ -33,7 +33,6 @@ where
     N: Node,
 {
     node: MinimalNode<N>,
-    port_list_token: PublishToken<List>,
     port_list: List,
     node_info: GetInfoResponse,
     seconds_since_port_list_published: u8,
@@ -62,13 +61,12 @@ where
 
         node.subscribe_request(get_info_1_0::SERVICE, 0, milliseconds(1000))
             .map_err(NodeError::Receiver)?;
-        let port_list_token = node
-            .start_publishing(
-                list_1_0::SUBJECT,
-                milliseconds(1000),
-                Priority::Optional.into(),
-            )
-            .map_err(NodeError::Transmitter)?;
+        node.start_publishing(
+            list_1_0::SUBJECT,
+            milliseconds(1000),
+            Priority::Optional.into(),
+        )
+        .map_err(NodeError::Transmitter)?;
 
         let minimal = MinimalNode::new(node).map_err(NodeError::Transmitter)?;
 
@@ -103,7 +101,6 @@ where
 
         Ok(BasicNode {
             node: minimal,
-            port_list_token,
             port_list,
             node_info,
             seconds_since_port_list_published: 0,
@@ -113,7 +110,7 @@ where
     /// This function must be called once per second to send heartbeat and port list messages
     pub fn run_per_second_tasks(
         &mut self,
-    ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Clock>>::Error> {
+    ) -> nb::Result<(), PublishError<<N::Transmitter as Transmitter<N::Clock>>::Error>> {
         self.node.run_per_second_tasks()?;
         if self.seconds_since_port_list_published == 10 {
             self.seconds_since_port_list_published = 1;
@@ -126,10 +123,10 @@ where
 
     fn publish_port_list(
         &mut self,
-    ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Clock>>::Error> {
+    ) -> nb::Result<(), PublishError<<N::Transmitter as Transmitter<N::Clock>>::Error>> {
         self.node
             .node_mut()
-            .publish(&self.port_list_token, &self.port_list)
+            .publish(list_1_0::SUBJECT, &self.port_list)
     }
 
     /// Sets the operating mode that will be reported in the heartbeat messages
@@ -187,15 +184,12 @@ where
         self.node.node_mut().receive(&mut chained_handler)
     }
 
-    fn start_publishing<T>(
+    fn start_publishing(
         &mut self,
         subject: SubjectId,
         timeout: MicrosecondDuration32,
         priority: <Self::Transport as Transport>::Priority,
-    ) -> Result<PublishToken<T>, StartSendError<<N::Transmitter as Transmitter<N::Clock>>::Error>>
-    where
-        T: Message,
-    {
+    ) -> Result<(), StartSendError<<N::Transmitter as Transmitter<N::Clock>>::Error>> {
         let token = self
             .node
             .node_mut()
@@ -205,35 +199,31 @@ where
         Ok(token)
     }
 
-    fn stop_publishing<T>(&mut self, token: PublishToken<T>)
-    where
-        T: Message,
-    {
-        let subject = token.subject_id();
-        self.node.node_mut().stop_publishing(token);
+    fn stop_publishing(&mut self, subject: SubjectId) {
+        self.node.node_mut().stop_publishing(subject);
         remove_from_list(&mut self.port_list.publishers, subject);
     }
 
     fn publish<T>(
         &mut self,
-        token: &PublishToken<T>,
+        subject: SubjectId,
         payload: &T,
-    ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Clock>>::Error>
+    ) -> nb::Result<(), PublishError<<N::Transmitter as Transmitter<N::Clock>>::Error>>
     where
         T: Message + Serialize,
     {
-        self.node.node_mut().publish(token, payload)
+        self.node.node_mut().publish(subject, payload)
     }
 
     fn publish_loopback<T>(
         &mut self,
-        token: &PublishToken<T>,
+        subject: SubjectId,
         payload: &T,
-    ) -> nb::Result<(), <Self::Transmitter as Transmitter<Self::Clock>>::Error>
+    ) -> nb::Result<(), PublishError<<Self::Transmitter as Transmitter<Self::Clock>>::Error>>
     where
         T: Message + Serialize,
     {
-        self.node.node_mut().publish_loopback(token, payload)
+        self.node.node_mut().publish_loopback(subject, payload)
     }
 
     fn start_sending_requests<T>(
