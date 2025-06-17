@@ -1,6 +1,6 @@
 use crate::core::time::milliseconds;
 use crate::core::Priority;
-use crate::{nb, Node, PublishToken, StartSendError, Transmitter};
+use crate::{nb, Node, PublishError, StartSendError, Transmitter};
 use canadensis_data_types::uavcan::node::health_1_0::Health;
 use canadensis_data_types::uavcan::node::heartbeat_1_0::{Heartbeat, SUBJECT};
 use canadensis_data_types::uavcan::node::mode_1_0::Mode;
@@ -9,7 +9,6 @@ use core::marker::PhantomData;
 /// Publishes heartbeat messages
 pub struct HeartbeatService<N> {
     heartbeat: Heartbeat,
-    publish_token: PublishToken<Heartbeat>,
     _node: PhantomData<N>,
 }
 
@@ -23,7 +22,7 @@ where
     pub fn new(
         node: &mut N,
     ) -> Result<Self, StartSendError<<N::Transmitter as Transmitter<N::Clock>>::Error>> {
-        let token = node.start_publishing(SUBJECT, milliseconds(1000), Priority::Nominal.into())?;
+        node.start_publishing(SUBJECT, milliseconds(1000), Priority::Nominal.into())?;
 
         let heatbeat = Heartbeat {
             uptime: 0,
@@ -38,7 +37,6 @@ where
 
         Ok(Self {
             heartbeat: heatbeat,
-            publish_token: token,
             _node: PhantomData,
         })
     }
@@ -62,8 +60,8 @@ where
     pub fn publish_heartbeat(
         &mut self,
         node: &mut N,
-    ) -> nb::Result<(), <N::Transmitter as Transmitter<N::Clock>>::Error> {
+    ) -> nb::Result<(), PublishError<<N::Transmitter as Transmitter<N::Clock>>::Error>> {
         self.heartbeat.uptime = self.heartbeat.uptime.saturating_add(1);
-        node.publish(&self.publish_token, &self.heartbeat)
+        node.publish(SUBJECT, &self.heartbeat)
     }
 }

@@ -343,47 +343,37 @@ pub trait Node {
 
     /// Starts publishing messages on subject
     ///
-    /// The returned [`PublishToken`] can be used with the [`publish`](#tymethod.publish) function to
-    /// send a message.
-    ///
     /// This function returns an error if memory for the publishing data could not be allocated,
     /// or if the subject ID is already in use.
-    fn start_publishing<T>(
+    fn start_publishing(
         &mut self,
         subject: SubjectId,
         timeout: MicrosecondDuration32,
         priority: <Self::Transport as Transport>::Priority,
-    ) -> Result<
-        PublishToken<T>,
-        StartSendError<<Self::Transmitter as Transmitter<Self::Clock>>::Error>,
-    >
-    where
-        T: Message;
+    ) -> Result<(), StartSendError<<Self::Transmitter as Transmitter<Self::Clock>>::Error>>;
 
     /// Stops publishing messages on a subject
-    fn stop_publishing<T>(&mut self, token: PublishToken<T>)
-    where
-        T: Message;
+    fn stop_publishing(&mut self, subject: SubjectId);
 
     /// Publishes a message
     ///
-    /// A token can be created by calling [`start_publishing`](#tymethod.start_publishing).
+    /// Publishing needs to be started by calling [`start_publishing`](#tymethod.start_publishing).
     fn publish<T>(
         &mut self,
-        token: &PublishToken<T>,
+        subject: SubjectId,
         payload: &T,
-    ) -> nb::Result<(), <Self::Transmitter as Transmitter<Self::Clock>>::Error>
+    ) -> nb::Result<(), PublishError<<Self::Transmitter as Transmitter<Self::Clock>>::Error>>
     where
         T: Message + Serialize;
 
     /// Publishes a message with the loopback flag set to true
     ///
-    /// A token can be created by calling [`start_publishing`](#tymethod.start_publishing).
+    /// Publishing needs to be started by calling [`start_publishing`](#tymethod.start_publishing).
     fn publish_loopback<T>(
         &mut self,
-        token: &PublishToken<T>,
+        subject: SubjectId,
         payload: &T,
-    ) -> nb::Result<(), <Self::Transmitter as Transmitter<Self::Clock>>::Error>
+    ) -> nb::Result<(), PublishError<<Self::Transmitter as Transmitter<Self::Clock>>::Error>>
     where
         T: Message + Serialize;
 
@@ -522,28 +512,13 @@ pub trait Node {
     fn servers(&self) -> impl Iterator<Item = ServiceId>;
 }
 
-/// A token returned from [`Node::start_publishing`](Node#tymethod.start_publishing) that can be
-/// used to a publish a transfer using the associated subject ID
-///
-/// The type parameter `T` constrains the type of message sent.
-pub struct PublishToken<T>(SubjectId, PhantomData<T>);
-
-impl<T> PublishToken<T> {
-    /// Returns the subject ID that this token is used to publish on
-    pub fn subject_id(&self) -> SubjectId {
-        self.0
-    }
-}
-
-mod fmt_impl {
-    use super::PublishToken;
-    use core::fmt::{Debug, Formatter, Result};
-
-    impl<T> Debug for PublishToken<T> {
-        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-            f.debug_tuple("PublishToken").field(&self.0).finish()
-        }
-    }
+/// Errors that may occur when publishing a message
+#[derive(Debug)]
+pub enum PublishError<T> {
+    /// [`Node::start_publishing`](Node#tymethod.start_publishing) has not been called for this subject
+    NotPublishing,
+    /// A transport error occurred
+    Transport(T),
 }
 
 /// A token returned from [`Node::start_sending_requests`](Node#tymethod.start_sending_requests)

@@ -9,7 +9,7 @@ extern crate simplelog;
 
 use canadensis::node::CoreNode;
 use canadensis::requester::TransferIdFixedMap;
-use canadensis::{Node, PublishToken, ResponseToken, TransferHandler};
+use canadensis::{Node, ResponseToken, TransferHandler};
 use canadensis_can::driver::{ReceiveDriver, TransmitDriver};
 use canadensis_can::{CanNodeId, CanReceiver, CanTransmitter, CanTransport, Frame, Mtu};
 use canadensis_core::subscription::Subscription;
@@ -57,17 +57,16 @@ fn can_loopback_time_sync() {
     node.subscribe_message(synchronization_1_0::SUBJECT, 8, milliseconds(100))
         .unwrap();
 
-    let sync_token: PublishToken<Synchronization> = node
-        .start_publishing(
-            synchronization_1_0::SUBJECT,
-            milliseconds(100),
-            Priority::Nominal,
-        )
-        .unwrap();
+    node.start_publishing(
+        synchronization_1_0::SUBJECT,
+        milliseconds(100),
+        Priority::Nominal,
+    )
+    .unwrap();
     clock_handle.set_time(10);
     // Send a non-loopback transfer, which should be ignored
     node.publish(
-        &sync_token,
+        synchronization_1_0::SUBJECT,
         &Synchronization {
             previous_transmission_timestamp_microsecond: 3,
         },
@@ -89,7 +88,7 @@ fn can_loopback_time_sync() {
     let loopback_payload = Synchronization {
         previous_transmission_timestamp_microsecond: 129,
     };
-    node.publish_loopback(&sync_token, &loopback_payload)
+    node.publish_loopback(synchronization_1_0::SUBJECT, &loopback_payload)
         .unwrap();
     // Simulate a short delay before receiving
     clock_handle.set_time(40);

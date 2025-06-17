@@ -13,7 +13,7 @@ use canadensis_encoding::{Message, Request, Response, Serialize};
 use crate::publisher::Publisher;
 use crate::requester::{Requester, TransferIdTracker};
 use crate::serialize::do_serialize;
-use crate::{Node, PublishToken, ResponseToken, ServiceToken, StartSendError, TransferHandler};
+use crate::{Node, PublishError, ResponseToken, ServiceToken, StartSendError, TransferHandler};
 
 /// Basic Cyphal node functionality
 ///
@@ -201,71 +201,78 @@ where
         Ok(())
     }
 
-    fn start_publishing<M>(
+    fn start_publishing(
         &mut self,
         subject: SubjectId,
         timeout: MicrosecondDuration32,
         priority: N::Priority,
-    ) -> Result<PublishToken<M>, StartSendError<T::Error>>
-    where
-        M: Message,
-    {
-        let token = PublishToken(subject, PhantomData);
+    ) -> Result<(), StartSendError<T::Error>> {
         if self.publishers.contains_key(&subject) {
             Err(StartSendError::Duplicate)
         } else {
             self.publishers
                 .insert(subject, Publisher::new(timeout, priority))
-                .map(|_| token)
+                .map(|_| ())
                 .map_err(|_| StartSendError::Memory(OutOfMemoryError))
         }
     }
 
-    fn stop_publishing<M>(&mut self, token: PublishToken<M>)
-    where
-        M: Message,
-    {
-        self.publishers.remove(&token.0);
+    fn stop_publishing(&mut self, subject: SubjectId) {
+        self.publishers.remove(&subject);
     }
 
-    fn publish<M>(&mut self, token: &PublishToken<M>, payload: &M) -> nb::Result<(), T::Error>
+    fn publish<M>(
+        &mut self,
+        subject: SubjectId,
+        payload: &M,
+    ) -> nb::Result<(), PublishError<T::Error>>
     where
         M: Message + Serialize,
     {
-        let publisher = self
-            .publishers
-            .get_mut(&token.0)
-            .expect("Bug: Token exists but no publisher");
-        publisher.publish(
-            &mut self.clock,
-            self.node_id.clone(),
-            token.0,
-            payload,
-            &mut self.transmitter,
-            &mut self.driver,
-        )
+        let publisher = match self.publishers.get_mut(&subject) {
+            Some(publisher) => publisher,
+            None => return Err(nb::Error::Other(PublishError::NotPublishing)),
+        };
+        publisher
+            .publish(
+                &mut self.clock,
+                self.node_id.clone(),
+                subject,
+                payload,
+                &mut self.transmitter,
+                &mut self.driver,
+            )
+            .map_err(|e| match e {
+                nb::Error::WouldBlock => nb::Error::WouldBlock,
+                nb::Error::Other(e) => nb::Error::Other(PublishError::Transport(e)),
+            })
     }
 
     fn publish_loopback<M>(
         &mut self,
-        token: &PublishToken<M>,
+        subject: SubjectId,
         payload: &M,
-    ) -> nb::Result<(), T::Error>
+    ) -> nb::Result<(), PublishError<T::Error>>
     where
         M: Message + Serialize,
     {
-        let publisher = self
-            .publishers
-            .get_mut(&token.0)
-            .expect("Bug: Token exists but no publisher");
-        publisher.publish_loopback(
-            &mut self.clock,
-            self.node_id.clone(),
-            token.0,
-            payload,
-            &mut self.transmitter,
-            &mut self.driver,
-        )
+        let publisher = match self.publishers.get_mut(&subject) {
+            Some(publisher) => publisher,
+            None => return Err(nb::Error::Other(PublishError::NotPublishing)),
+        };
+        publisher
+            .publish_loopback(
+                &mut self.clock,
+                self.node_id.clone(),
+                subject,
+                payload,
+                &mut self.transmitter,
+                &mut self.driver,
+            )
+            .map_err(|e| match e {
+                nb::Error::WouldBlock => nb::Error::WouldBlock,
+                nb::Error::Other(e) => nb::Error::Other(PublishError::Transport(e)),
+            })
     }
 
     /// Sets up to send requests for a service
