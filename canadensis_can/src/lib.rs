@@ -30,6 +30,8 @@ mod rx;
 mod tx;
 mod types;
 
+use canadensis_core::transport::{TransferId, Transport};
+use canadensis_core::{OutOfMemoryError, TransferIdTracker};
 use core::cmp;
 
 /// Calculates the number of frames required and the number of padding bytes to add to a payload so
@@ -90,5 +92,32 @@ fn round_up_frame_length(length: usize) -> usize {
         33..=48 => 48,
         49..=64 => 64,
         _ => panic!("MTU too large for CAN FD"),
+    }
+}
+
+/// CAN transport specific transfer ID tracker
+///
+/// This is much more memory efficient than the generic one since there are only 128 destinations possible.
+pub struct CanTransferIdTracker {
+    ids: [CanTransferId; 128],
+}
+
+impl Default for CanTransferIdTracker {
+    fn default() -> Self {
+        Self {
+            ids: [CanTransferId::default(); 128],
+        }
+    }
+}
+
+impl TransferIdTracker<CanTransport> for CanTransferIdTracker {
+    fn next_transfer_id(
+        &mut self,
+        destination: <CanTransport as Transport>::NodeId,
+    ) -> Result<<CanTransport as Transport>::TransferId, OutOfMemoryError> {
+        let idx = destination.to_u8() as usize;
+        let current = self.ids[idx].clone();
+        self.ids[idx].increment();
+        Ok(current)
     }
 }
