@@ -19,6 +19,7 @@ pub mod time;
 pub mod transfer;
 pub mod transport;
 
+use crate::transport::Transport;
 use core::convert::TryFrom;
 use core::ops::RangeInclusive;
 use core::str::FromStr;
@@ -240,4 +241,13 @@ mod fmt_impl {
             Display::fmt(&self.0, f)
         }
     }
+}
+
+/// Something that can keep track of the next transfer ID to use for each destination node
+pub trait TransferIdTracker<T: Transport>: Default {
+    /// Returns the next transfer ID for the provided node, and increments the stored ID
+    fn next_transfer_id(
+        &mut self,
+        destination: T::NodeId,
+    ) -> Result<T::TransferId, OutOfMemoryError>;
 }

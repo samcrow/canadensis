@@ -7,11 +7,13 @@ use canadensis_core::transfer::{
     Header, MessageTransfer, ServiceHeader, ServiceTransfer, Transfer,
 };
 use canadensis_core::transport::{Receiver, Transmitter, Transport};
-use canadensis_core::{nb, OutOfMemoryError, ServiceId, ServiceSubscribeError, SubjectId};
+use canadensis_core::{
+    nb, OutOfMemoryError, ServiceId, ServiceSubscribeError, SubjectId, TransferIdTracker,
+};
 use canadensis_encoding::{Message, Request, Response, Serialize};
 
 use crate::publisher::Publisher;
-use crate::requester::{Requester, TransferIdTracker};
+use crate::requester::Requester;
 use crate::serialize::do_serialize;
 use crate::{Node, PublishError, ResponseToken, ServiceToken, StartSendError, TransferHandler};
 

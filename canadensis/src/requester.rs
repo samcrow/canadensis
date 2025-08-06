@@ -5,7 +5,7 @@ use heapless::FnvIndexMap;
 use canadensis_core::time::{Clock, MicrosecondDuration32, Microseconds32};
 use canadensis_core::transfer::{Header, ServiceHeader, Transfer};
 use canadensis_core::transport::{TransferId, Transmitter, Transport};
-use canadensis_core::{nb, OutOfMemoryError, ServiceId};
+use canadensis_core::{nb, OutOfMemoryError, ServiceId, TransferIdTracker};
 use canadensis_encoding::{Request, Serialize};
 
 use crate::serialize::do_serialize;
@@ -134,15 +134,6 @@ impl<C: Clock, T: Transmitter<C>, R: TransferIdTracker<T::Transport>> Requester<
         transmitter.push(transfer, clock, driver)?;
         Ok(transfer_id)
     }
-}
-
-/// Something that can keep track of the next transfer ID to use for each destination node
-pub trait TransferIdTracker<T: Transport>: Default {
-    /// Returns the next transfer ID for the provided node, and increments the stored ID
-    fn next_transfer_id(
-        &mut self,
-        destination: T::NodeId,
-    ) -> Result<T::TransferId, OutOfMemoryError>;
 }
 
 /// A fixed-capacity map from destination node IDs to transfer IDs of the next transfer
