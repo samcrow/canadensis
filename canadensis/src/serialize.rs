@@ -14,11 +14,11 @@ where
     F: FnOnce(&[u8]) -> nb::Result<R, E>,
     E: From<OutOfMemoryError>,
 {
-    let payload_bytes = (payload.size_bits() + 7) / 8;
+    let payload_bytes = payload.size_bits().div_ceil(8);
     if payload_bytes > STACK_THRESHOLD {
         let mut bytes: Vec<u8> = FallibleVec::try_with_capacity(payload_bytes)
             .map_err(|e: TryReserveError| nb::Error::Other(E::from(OutOfMemoryError::from(e))))?;
-        bytes.extend(iter::repeat(0).take(payload_bytes));
+        bytes.extend(iter::repeat_n(0, payload_bytes));
         payload.serialize(&mut WriteCursor::new(&mut bytes));
         operation(&bytes)
     } else {

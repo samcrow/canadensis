@@ -116,7 +116,7 @@ impl TransferIdTracker<CanTransport> for CanTransferIdTracker {
         destination: <CanTransport as Transport>::NodeId,
     ) -> Result<<CanTransport as Transport>::TransferId, OutOfMemoryError> {
         let idx = destination.to_u8() as usize;
-        let current = self.ids[idx].clone();
+        let current = self.ids[idx];
         self.ids[idx].increment();
         Ok(current)
     }

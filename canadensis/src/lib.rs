@@ -168,7 +168,7 @@ pub trait TransferHandler<T: Transport> {
     }
 }
 
-impl<'h, T, H> TransferHandler<T> for &'h mut H
+impl<T, H> TransferHandler<T> for &mut H
 where
     T: Transport,
     H: TransferHandler<T>,

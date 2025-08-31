@@ -136,7 +136,7 @@ where
             .payload
             .iter()
             .cloned()
-            .chain(iter::repeat(0).take(frame_stats.last_frame_padding))
+            .chain(iter::repeat_n(0, frame_stats.last_frame_padding))
             .inspect(|byte| crc.add(*byte));
         // Break into frames
         let can_id = make_can_id(&transfer.header, transfer.payload);

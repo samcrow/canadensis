@@ -91,8 +91,7 @@ pub fn escaped_size(raw_size: usize) -> usize {
     if raw_size == 0 {
         1
     } else {
-        // Divide and round up
-        let overhead = (raw_size + 253) / 254;
+        let overhead = raw_size.div_ceil(254);
         raw_size + overhead
     }
 }

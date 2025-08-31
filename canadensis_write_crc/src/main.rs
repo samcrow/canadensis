@@ -156,7 +156,7 @@ fn pad_to_8_bytes(data: &[u8]) -> Cow<'_, [u8]> {
     } else {
         let to_add = 8 - extra;
         let mut data = data.to_vec();
-        data.extend(iter::repeat(0u8).take(to_add));
+        data.extend(iter::repeat_n(0u8, to_add));
         debug_assert!(data.len() % 8 == 0);
         Cow::Owned(data)
     }

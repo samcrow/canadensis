@@ -89,8 +89,7 @@ where
         driver: &mut T::Driver,
     ) -> nb::Result<(), AnonymousPublishError<T::Error>> {
         // Check that the message fits into one frame
-        // Convert to bites, rounding up
-        let payload_size_bytes = (payload.size_bits() + 7) / 8;
+        let payload_size_bytes = payload.size_bits().div_ceil(8);
         if payload_size_bytes > transmitter.mtu() {
             return Err(nb::Error::Other(AnonymousPublishError::Length));
         }

@@ -25,8 +25,7 @@ where
         if node.node_id().is_none() {
             return Err(NewError::Anonymous);
         }
-        let token = node
-            .start_publishing(SUBJECT, milliseconds(10000), Priority::Optional.into())
+        node.start_publishing(SUBJECT, milliseconds(10000), Priority::Optional.into())
             .map_err(|err| match err {
                 StartSendError::Memory(_) => NewError::OutOfMemory,
                 StartSendError::Duplicate => NewError::Duplicate,

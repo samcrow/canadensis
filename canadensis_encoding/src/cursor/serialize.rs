@@ -240,8 +240,8 @@ impl<'b> WriteCursor<'b> {
         if T::EXTENT_BYTES.is_some() {
             // Add delimiter header
             let composite_size_bits = value.size_bits();
-            // Convert bits to bytes, round up
-            let composite_size_bytes: u32 = ((composite_size_bits + 7) / 8)
+            let composite_size_bytes: u32 = composite_size_bits
+                .div_ceil(8)
                 .try_into()
                 .expect("Composite too large for u32");
             self.write_u32(composite_size_bytes);

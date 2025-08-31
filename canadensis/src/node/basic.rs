@@ -3,7 +3,7 @@ use crate::node::{MinimalNode, NodeError};
 use crate::{Node, PublishError, ResponseToken, ServiceToken, StartSendError, TransferHandler};
 use alloc::vec::Vec;
 use canadensis_core::time::{milliseconds, MicrosecondDuration32};
-use canadensis_core::transfer::{MessageTransfer, ServiceTransfer};
+use canadensis_core::transfer::ServiceTransfer;
 use canadensis_core::transport::{Receiver, Transport};
 use canadensis_core::{nb, Priority, ServiceId, ServiceSubscribeError, SubjectId};
 use canadensis_data_types::uavcan::node::get_info_1_0::{self, GetInfoResponse};
@@ -190,13 +190,12 @@ where
         timeout: MicrosecondDuration32,
         priority: <Self::Transport as Transport>::Priority,
     ) -> Result<(), StartSendError<<N::Transmitter as Transmitter<N::Clock>>::Error>> {
-        let token = self
-            .node
+        self.node
             .node_mut()
             .start_publishing(subject, timeout, priority)?;
         // Record that this port is in use
         insert_into_list(&mut self.port_list.publishers, subject);
-        Ok(token)
+        Ok(())
     }
 
     fn stop_publishing(&mut self, subject: SubjectId) {
@@ -397,56 +396,6 @@ where
 
     fn servers(&self) -> impl Iterator<Item = ServiceId> {
         self.node.node().servers()
-    }
-}
-
-/// A transfer handler that responds to node information requests
-struct NodeInfoResponder<'r, 'h, H> {
-    /// The response to send
-    info: &'r GetInfoResponse,
-    /// The inner handler that will process any other incoming transfers
-    inner: &'h mut H,
-}
-
-impl<'r, 'h, H, T> TransferHandler<T> for NodeInfoResponder<'r, 'h, H>
-where
-    H: TransferHandler<T>,
-    T: Transport,
-{
-    fn handle_message<N>(&mut self, node: &mut N, transfer: &MessageTransfer<Vec<u8>, T>) -> bool
-    where
-        N: Node<Transport = T>,
-    {
-        // Forward to inner handler
-        self.inner.handle_message(node, transfer)
-    }
-
-    fn handle_request<N>(
-        &mut self,
-        node: &mut N,
-        token: ResponseToken<T>,
-        transfer: &ServiceTransfer<Vec<u8>, T>,
-    ) -> bool
-    where
-        N: Node<Transport = T>,
-    {
-        if transfer.header.service == get_info_1_0::SERVICE {
-            // Ignore out-of-memory errors
-            let _ = node.send_response(token, milliseconds(1000), self.info);
-            // Request handled
-            true
-        } else {
-            // Forward to inner handler
-            self.inner.handle_request(node, token, transfer)
-        }
-    }
-
-    fn handle_response<N>(&mut self, node: &mut N, transfer: &ServiceTransfer<Vec<u8>, T>) -> bool
-    where
-        N: Node<Transport = T>,
-    {
-        // Forward to inner handler
-        self.inner.handle_response(node, transfer)
     }
 }
 

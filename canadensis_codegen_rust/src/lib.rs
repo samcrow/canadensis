@@ -586,17 +586,16 @@ fn to_rust_type(
 ) -> String {
     match ty {
         ResolvedType::Scalar(scalar) => scalar_to_rust_type(scalar, external_packages),
-        ResolvedType::FixedArray {
+        &ResolvedType::FixedArray {
             inner: ResolvedScalarType::Primitive(PrimitiveType::Boolean),
             len,
         }
-        | ResolvedType::VariableArray {
+        | &ResolvedType::VariableArray {
             inner: ResolvedScalarType::Primitive(PrimitiveType::Boolean),
             max_len: len,
         } => {
             // Use a BitArray
-            // Convert from bits to bytes and round up
-            let bytes = (*len + 7) / 8;
+            let bytes = len.div_ceil(8);
             format!("::canadensis_encoding::bits::BitArray<{}>", bytes)
         }
         ResolvedType::FixedArray { inner, len } => {

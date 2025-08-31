@@ -629,11 +629,11 @@ fn parse_primitive_type(dtype: Pair<'_, Rule>) -> Result<PrimitiveType, Error> {
     let inner_rule = inner.as_rule();
     match inner_rule {
         Rule::type_primitive_truncated => {
-            let type_name = inner.into_inner().last().expect("No type name");
+            let type_name = inner.into_inner().next_back().expect("No type name");
             parse_primitive_type_name(type_name, CastMode::Truncated)
         }
         Rule::type_primitive_saturated => {
-            let type_name = inner.into_inner().last().expect("No type name");
+            let type_name = inner.into_inner().next_back().expect("No type name");
             parse_primitive_type_name(type_name, CastMode::Saturated)
         }
         Rule::type_primitive_bool => parse_boolean_type(inner),

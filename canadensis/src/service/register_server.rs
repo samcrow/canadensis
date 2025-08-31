@@ -79,7 +79,7 @@ where
         match transfer.header.service {
             list_1_0::SERVICE => {
                 if let Ok(request) = ListRequest::deserialize_from_bytes(&transfer.payload) {
-                    debug!("Received list request for {}", request.index as u16);
+                    debug!("Received list request for {}", { request.index });
                     let response = match self
                         .server
                         .registers
