@@ -8,8 +8,6 @@ extern crate regex;
 extern crate serde;
 extern crate serde_json;
 
-mod test_config;
-
 use canadensis_dsdl_frontend::compiled::package::CompiledPackage;
 use canadensis_dsdl_frontend::{Error, Package};
 use regex::Regex;
@@ -50,10 +48,9 @@ fn compile_fail() -> io::Result<()> {
 }
 
 fn try_compile_package(path: &Path) -> Result<CompiledPackage, Box<Error>> {
-    let config = test_config::read_config(path).expect("Failed to read test case configuration");
     let mut package = Package::new();
     package.add_files(path)?;
-    package.compile(&config)
+    package.compile()
 }
 
 struct PrintCause<'a, E>(&'a E);

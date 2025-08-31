@@ -1,1 +1,0 @@
-`byte` is not a valid type

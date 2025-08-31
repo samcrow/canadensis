@@ -1,6 +1,6 @@
 extern crate canadensis_dsdl_frontend;
 use canadensis_dsdl_frontend::compiled::DsdlKind;
-use canadensis_dsdl_frontend::{Config, Error, Package};
+use canadensis_dsdl_frontend::{Error, Package};
 use std::env;
 use std::process;
 
@@ -29,7 +29,7 @@ fn run() -> Result<(), Box<Error>> {
         package.add_files(path)?;
     }
 
-    let compiled = package.compile(&Config::default())?;
+    let compiled = package.compile()?;
 
     for (key, compiled_dsdl) in compiled {
         println!("{}:", key);

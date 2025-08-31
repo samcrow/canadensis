@@ -4,7 +4,7 @@ use crate::ast::types::{
     ArrayLength, ArrayType, CastMode, Definition, Expression, ExpressionAtom, ExpressionType,
     Literal, LiteralType, PrimitiveType, ScalarType, Statement, Type, TypeVersion, VersionedType,
 };
-use crate::{make_error, Config, Error, Identifier, Rule};
+use crate::{make_error, Error, Identifier, Rule};
 use num_bigint::BigInt;
 use num_rational::BigRational;
 use num_traits::identities::Zero;
@@ -16,26 +16,23 @@ pub(crate) mod types;
 mod unescape;
 
 /// Converts a Pest parse tree into an abstract syntax tree
-pub(crate) fn parse_to_ast<'i>(
-    statements: Pairs<'i, Rule>,
-    config: &Config,
-) -> Result<Definition<'i>, Error> {
+pub(crate) fn parse_to_ast<'i>(statements: Pairs<'i, Rule>) -> Result<Definition<'i>, Error> {
     let mut ast_statements: Vec<Statement> = Vec::new();
     let mut eof_span = None;
 
     for statement in statements {
         match statement.as_rule() {
             Rule::statement_directive => {
-                ast_statements.push(parse_directive(statement, config)?);
+                ast_statements.push(parse_directive(statement)?);
             }
             Rule::statement_service_response_marker => {
                 ast_statements.push(Statement::ServiceResponseMarker(statement.as_span()));
             }
             Rule::statement_constant => {
-                ast_statements.push(parse_constant(statement, config)?);
+                ast_statements.push(parse_constant(statement)?);
             }
             Rule::statement_field => {
-                ast_statements.push(parse_field(statement, config)?);
+                ast_statements.push(parse_field(statement)?);
             }
             Rule::statement_padding_field => {
                 ast_statements.push(parse_padding_field(statement)?);
@@ -53,7 +50,7 @@ pub(crate) fn parse_to_ast<'i>(
     })
 }
 
-fn parse_directive<'i>(directive: Pair<'i, Rule>, config: &Config) -> Result<Statement<'i>, Error> {
+fn parse_directive<'i>(directive: Pair<'i, Rule>) -> Result<Statement<'i>, Error> {
     debug_assert_eq!(directive.as_rule(), Rule::statement_directive);
     let inner = directive.into_inner().next().unwrap();
     match inner.as_rule() {
@@ -62,7 +59,7 @@ fn parse_directive<'i>(directive: Pair<'i, Rule>, config: &Config) -> Result<Sta
             let mut id_and_expr = inner.into_inner();
             let identifier = id_and_expr.next().expect("No identifier");
             let expr = match id_and_expr.next() {
-                Some(expr) => Some(parse_expression(expr, config)?),
+                Some(expr) => Some(parse_expression(expr)?),
                 None => None,
             };
             Ok(Statement::Directive {
@@ -77,7 +74,7 @@ fn parse_directive<'i>(directive: Pair<'i, Rule>, config: &Config) -> Result<Sta
     }
 }
 
-fn parse_constant<'i>(constant: Pair<'i, Rule>, config: &Config) -> Result<Statement<'i>, Error> {
+fn parse_constant<'i>(constant: Pair<'i, Rule>) -> Result<Statement<'i>, Error> {
     debug_assert_eq!(constant.as_rule(), Rule::statement_constant);
     let mut parts = constant.into_inner();
 
@@ -87,16 +84,16 @@ fn parse_constant<'i>(constant: Pair<'i, Rule>, config: &Config) -> Result<State
 
     Ok(Statement::Constant {
         // Note: Constants must have primitive types
-        ty: parse_primitive_type(dtype, config)?,
+        ty: parse_primitive_type(dtype)?,
         name: Identifier {
             name: identifier.as_str(),
             span: identifier.as_span(),
         },
-        value: parse_expression(value, config)?,
+        value: parse_expression(value)?,
     })
 }
 
-fn parse_field<'i>(field: Pair<'i, Rule>, config: &Config) -> Result<Statement<'i>, Error> {
+fn parse_field<'i>(field: Pair<'i, Rule>) -> Result<Statement<'i>, Error> {
     debug_assert_eq!(field.as_rule(), Rule::statement_field);
     let span = field.as_span();
     let mut children = field.into_inner();
@@ -104,7 +101,7 @@ fn parse_field<'i>(field: Pair<'i, Rule>, config: &Config) -> Result<Statement<'
     let identifier = children.next().expect("No identifier");
 
     let type_span = dtype.as_span();
-    let ty = parse_data_type(dtype, config)?;
+    let ty = parse_data_type(dtype)?;
     check_field_type(&ty, type_span)?;
 
     Ok(Statement::Field {
@@ -153,74 +150,63 @@ fn parse_padding_field(field: Pair<'_, Rule>) -> Result<Statement<'_>, Error> {
     }
 }
 
-fn parse_expression<'i>(pair: Pair<'i, Rule>, config: &Config) -> Result<Expression<'i>, Error> {
+fn parse_expression<'i>(pair: Pair<'i, Rule>) -> Result<Expression<'i>, Error> {
     let rule = pair.as_rule();
     let pair_span = pair.as_span();
     let mut children = pair.into_inner();
     match rule {
         Rule::expression => {
-            let result = parse_expression(children.next().expect("No child"), config);
+            let result = parse_expression(children.next().expect("No child"));
             assert!(children.next().is_none());
             result
         }
         Rule::expression_atom => Ok(Expression {
             expression: ExpressionType::Atom(Box::new(parse_expression_atom(
                 children.next().expect("No child"),
-                config,
             )?)),
             span: pair_span,
         }),
-        Rule::ex_logical => {
-            parse_binary_op(pair_span, children, config, |rule, lhs, rhs| match rule {
-                Rule::op2_log_or => ExpressionType::LogicalOr(lhs, rhs),
-                Rule::op2_log_and => ExpressionType::LogicalAnd(lhs, rhs),
-                _ => unreachable!("Unexpected rule in op2_log"),
-            })
-        }
-        Rule::ex_comparison => {
-            parse_binary_op(pair_span, children, config, |rule, lhs, rhs| match rule {
-                Rule::op2_cmp_equ => ExpressionType::Equal(lhs, rhs),
-                Rule::op2_cmp_neq => ExpressionType::NotEqual(lhs, rhs),
-                Rule::op2_cmp_leq => ExpressionType::LessOrEqual(lhs, rhs),
-                Rule::op2_cmp_geq => ExpressionType::GreaterOrEqual(lhs, rhs),
-                Rule::op2_cmp_lss => ExpressionType::Less(lhs, rhs),
-                Rule::op2_cmp_grt => ExpressionType::Greater(lhs, rhs),
-                _ => unreachable!("Unexpected rule in op2_cmp"),
-            })
-        }
-        Rule::ex_bitwise => {
-            parse_binary_op(pair_span, children, config, |rule, lhs, rhs| match rule {
-                Rule::op2_bit_or => ExpressionType::BitOr(lhs, rhs),
-                Rule::op2_bit_xor => ExpressionType::BitXor(lhs, rhs),
-                Rule::op2_bit_and => ExpressionType::BitAnd(lhs, rhs),
-                _ => unreachable!("Unexpected rule in op2_bit"),
-            })
-        }
-        Rule::ex_additive => {
-            parse_binary_op(pair_span, children, config, |rule, lhs, rhs| match rule {
-                Rule::op2_add_add => ExpressionType::Add(lhs, rhs),
-                Rule::op2_add_sub => ExpressionType::Subtract(lhs, rhs),
-                _ => unreachable!("Unexpected rule in op2_add"),
-            })
-        }
+        Rule::ex_logical => parse_binary_op(pair_span, children, |rule, lhs, rhs| match rule {
+            Rule::op2_log_or => ExpressionType::LogicalOr(lhs, rhs),
+            Rule::op2_log_and => ExpressionType::LogicalAnd(lhs, rhs),
+            _ => unreachable!("Unexpected rule in op2_log"),
+        }),
+        Rule::ex_comparison => parse_binary_op(pair_span, children, |rule, lhs, rhs| match rule {
+            Rule::op2_cmp_equ => ExpressionType::Equal(lhs, rhs),
+            Rule::op2_cmp_neq => ExpressionType::NotEqual(lhs, rhs),
+            Rule::op2_cmp_leq => ExpressionType::LessOrEqual(lhs, rhs),
+            Rule::op2_cmp_geq => ExpressionType::GreaterOrEqual(lhs, rhs),
+            Rule::op2_cmp_lss => ExpressionType::Less(lhs, rhs),
+            Rule::op2_cmp_grt => ExpressionType::Greater(lhs, rhs),
+            _ => unreachable!("Unexpected rule in op2_cmp"),
+        }),
+        Rule::ex_bitwise => parse_binary_op(pair_span, children, |rule, lhs, rhs| match rule {
+            Rule::op2_bit_or => ExpressionType::BitOr(lhs, rhs),
+            Rule::op2_bit_xor => ExpressionType::BitXor(lhs, rhs),
+            Rule::op2_bit_and => ExpressionType::BitAnd(lhs, rhs),
+            _ => unreachable!("Unexpected rule in op2_bit"),
+        }),
+        Rule::ex_additive => parse_binary_op(pair_span, children, |rule, lhs, rhs| match rule {
+            Rule::op2_add_add => ExpressionType::Add(lhs, rhs),
+            Rule::op2_add_sub => ExpressionType::Subtract(lhs, rhs),
+            _ => unreachable!("Unexpected rule in op2_add"),
+        }),
         Rule::ex_multiplicative => {
-            parse_binary_op(pair_span, children, config, |rule, lhs, rhs| match rule {
+            parse_binary_op(pair_span, children, |rule, lhs, rhs| match rule {
                 Rule::op2_mul_mul => ExpressionType::Multiply(lhs, rhs),
                 Rule::op2_mul_div => ExpressionType::Divide(lhs, rhs),
                 Rule::op2_mul_mod => ExpressionType::Modulo(lhs, rhs),
                 _ => unreachable!("Unexpected rule in op2_mul"),
             })
         }
-        Rule::ex_exponential => {
-            parse_binary_op(pair_span, children, config, |rule, lhs, rhs| match rule {
-                Rule::op2_exp_pow => ExpressionType::Exponent(lhs, rhs),
-                _ => unreachable!("Unexpected rule in op2_exp"),
-            })
-        }
+        Rule::ex_exponential => parse_binary_op(pair_span, children, |rule, lhs, rhs| match rule {
+            Rule::op2_exp_pow => ExpressionType::Exponent(lhs, rhs),
+            _ => unreachable!("Unexpected rule in op2_exp"),
+        }),
         Rule::ex_attribute => {
             // This doesn't use parse_binary_op because it's a little different: the right hand side
             // can only be an identifier.
-            let mut expression = parse_expression(children.next().expect("No child"), config)?;
+            let mut expression = parse_expression(children.next().expect("No child"))?;
 
             while let Some(op2_attrib) = children.next() {
                 assert_eq!(op2_attrib.as_rule(), Rule::op2_attrib);
@@ -240,21 +226,18 @@ fn parse_expression<'i>(pair: Pair<'i, Rule>, config: &Config) -> Result<Express
         Rule::op1_form_log_not => Ok(Expression {
             expression: ExpressionType::UnaryNot(Box::new(parse_expression(
                 children.next().expect("No child"),
-                config,
             )?)),
             span: pair_span,
         }),
         Rule::op1_form_inv_pos => Ok(Expression {
             expression: ExpressionType::UnaryPlus(Box::new(parse_expression(
                 children.next().expect("No child"),
-                config,
             )?)),
             span: pair_span,
         }),
         Rule::op1_form_inv_neg => Ok(Expression {
             expression: ExpressionType::UnaryMinus(Box::new(parse_expression(
                 children.next().expect("No child"),
-                config,
             )?)),
             span: pair_span,
         }),
@@ -265,7 +248,7 @@ fn parse_expression<'i>(pair: Pair<'i, Rule>, config: &Config) -> Result<Express
 fn parse_binary_op<'i, I, F>(
     span: Span<'i>,
     children: I,
-    config: &Config,
+
     mut op_handler: F,
 ) -> Result<Expression<'i>, Error>
 where
@@ -273,13 +256,13 @@ where
     F: FnMut(Rule, Box<Expression<'i>>, Box<Expression<'i>>) -> ExpressionType<'i>,
 {
     let mut children = children.into_iter();
-    let mut expression = parse_expression(children.next().expect("No child"), config)?;
+    let mut expression = parse_expression(children.next().expect("No child"))?;
 
     while let Some(operator) = children.next() {
         let rhs = children
             .next()
             .expect("Non-even number of tokens after first sub-expression");
-        let rhs = parse_expression(rhs, config)?;
+        let rhs = parse_expression(rhs)?;
 
         let operator_rule = get_deepest_rule(operator);
         let new_expr_type = op_handler(operator_rule, Box::new(expression), Box::new(rhs));
@@ -303,44 +286,39 @@ fn get_deepest_rule(mut pair: Pair<'_, Rule>) -> Rule {
     rule
 }
 
-fn parse_expression_atom<'i>(
-    atom: Pair<'i, Rule>,
-    config: &Config,
-) -> Result<ExpressionAtom<'i>, Error> {
+fn parse_expression_atom<'i>(atom: Pair<'i, Rule>) -> Result<ExpressionAtom<'i>, Error> {
     let rule = atom.as_rule();
     match rule {
         Rule::expression_parenthesized => {
             let child = atom.into_inner().next().unwrap();
-            Ok(ExpressionAtom::Parenthesized(parse_expression(
-                child, config,
-            )?))
+            Ok(ExpressionAtom::Parenthesized(parse_expression(child)?))
         }
-        Rule::dtype => Ok(ExpressionAtom::Type(parse_data_type(atom, config)?)),
+        Rule::dtype => Ok(ExpressionAtom::Type(parse_data_type(atom)?)),
         Rule::literal => {
             let child = atom.into_inner().next().unwrap();
-            Ok(ExpressionAtom::Literal(parse_literal(child, config)?))
+            Ok(ExpressionAtom::Literal(parse_literal(child)?))
         }
         Rule::identifier => Ok(ExpressionAtom::Identifier(atom.as_str())),
         _ => unreachable!("Unexpected rule in expression_atom"),
     }
 }
 
-fn parse_data_type<'i>(dtype: Pair<'i, Rule>, config: &Config) -> Result<Type<'i>, Error> {
+fn parse_data_type<'i>(dtype: Pair<'i, Rule>) -> Result<Type<'i>, Error> {
     let array_or_scalar = dtype.into_inner().next().expect("No child");
     match array_or_scalar.as_rule() {
-        Rule::type_array => Ok(Type::Array(parse_array_type(array_or_scalar, config)?)),
-        Rule::type_scalar => Ok(Type::Scalar(parse_scalar_type(array_or_scalar, config)?)),
+        Rule::type_array => Ok(Type::Array(parse_array_type(array_or_scalar)?)),
+        Rule::type_scalar => Ok(Type::Scalar(parse_scalar_type(array_or_scalar)?)),
         _ => unreachable!("Unexpected rule in dtype"),
     }
 }
 
-fn parse_scalar_type<'i>(dtype: Pair<'i, Rule>, config: &Config) -> Result<ScalarType<'i>, Error> {
+fn parse_scalar_type<'i>(dtype: Pair<'i, Rule>) -> Result<ScalarType<'i>, Error> {
     debug_assert_eq!(dtype.as_rule(), Rule::type_scalar);
     let type_span = dtype.as_span();
     let child = dtype.into_inner().next().expect("No child");
     match child.as_rule() {
         Rule::type_versioned => Ok(ScalarType::Versioned(parse_versioned_type(child)?)),
-        Rule::type_primitive => Ok(ScalarType::Primitive(parse_primitive_type(child, config)?)),
+        Rule::type_primitive => Ok(ScalarType::Primitive(parse_primitive_type(child)?)),
         Rule::type_void => {
             let suffix = child.into_inner().next().unwrap();
             let bits = parse_bit_length_suffix(&suffix)?;
@@ -392,7 +370,7 @@ fn parse_version_digits(pair: Pair<'_, Rule>) -> Result<u8, Error> {
         .map_err(|e| make_error(format!("Invalid version number: {}", e), pair.as_span()))
 }
 
-fn parse_array_type<'i>(dtype: Pair<'i, Rule>, config: &Config) -> Result<ArrayType<'i>, Error> {
+fn parse_array_type<'i>(dtype: Pair<'i, Rule>) -> Result<ArrayType<'i>, Error> {
     debug_assert_eq!(dtype.as_rule(), Rule::type_array);
     let variant = dtype.into_inner().next().unwrap();
     let variant_rule = variant.as_rule();
@@ -401,8 +379,8 @@ fn parse_array_type<'i>(dtype: Pair<'i, Rule>, config: &Config) -> Result<ArrayT
     let member_type = variant_children.next().expect("No member type");
     let length = variant_children.next().expect("No length");
 
-    let member_type = parse_scalar_type(member_type, config)?;
-    let length = parse_expression(length, config)?;
+    let member_type = parse_scalar_type(member_type)?;
+    let length = parse_expression(length)?;
 
     let length = match variant_rule {
         Rule::type_array_variable_inclusive => ArrayLength::Inclusive(length),
@@ -416,7 +394,7 @@ fn parse_array_type<'i>(dtype: Pair<'i, Rule>, config: &Config) -> Result<ArrayT
     })
 }
 
-fn parse_literal<'i>(literal: Pair<'i, Rule>, config: &Config) -> Result<Literal<'i>, Error> {
+fn parse_literal<'i>(literal: Pair<'i, Rule>) -> Result<Literal<'i>, Error> {
     let rule = literal.as_rule();
     let span = literal.as_span();
     let lit_type = match rule {
@@ -424,7 +402,7 @@ fn parse_literal<'i>(literal: Pair<'i, Rule>, config: &Config) -> Result<Literal
             let expression_list = literal.into_inner().next().unwrap();
             let expressions = expression_list
                 .into_inner()
-                .map(|expr| parse_expression(expr, config))
+                .map(|expr| parse_expression(expr))
                 .collect::<Result<_, _>>()?;
             LiteralType::Set(expressions)
         }
@@ -645,7 +623,7 @@ fn parse_decimal_digits(variant: Pair<'_, Rule>) -> BigInt {
     value
 }
 
-fn parse_primitive_type(dtype: Pair<'_, Rule>, config: &Config) -> Result<PrimitiveType, Error> {
+fn parse_primitive_type(dtype: Pair<'_, Rule>) -> Result<PrimitiveType, Error> {
     debug_assert_eq!(dtype.as_rule(), Rule::type_primitive);
     let inner = dtype.into_inner().next().expect("No inner type");
     let inner_rule = inner.as_rule();
@@ -658,39 +636,17 @@ fn parse_primitive_type(dtype: Pair<'_, Rule>, config: &Config) -> Result<Primit
             let type_name = inner.into_inner().last().expect("No type name");
             parse_primitive_type_name(type_name, CastMode::Saturated)
         }
-        Rule::type_primitive_bool => parse_boolean_type(inner, config),
-        Rule::type_primitive_name_utf8 => {
-            if config.allow_utf8_and_byte {
-                Ok(PrimitiveType::Utf8)
-            } else {
-                Err(make_error("`utf8` is not a valid type", inner.as_span()))
-            }
-        }
-        Rule::type_primitive_name_byte => {
-            if config.allow_utf8_and_byte {
-                Ok(PrimitiveType::Byte)
-            } else {
-                Err(make_error("`byte` is not a valid type", inner.as_span()))
-            }
-        }
+        Rule::type_primitive_bool => parse_boolean_type(inner),
+        Rule::type_primitive_name_utf8 => Ok(PrimitiveType::Utf8),
+        Rule::type_primitive_name_byte => Ok(PrimitiveType::Byte),
         _ => unreachable!("Unexpected rule in type_primitive"),
     }
 }
 
-fn parse_boolean_type(dtype: Pair<'_, Rule>, config: &Config) -> Result<PrimitiveType, Error> {
+fn parse_boolean_type(dtype: Pair<'_, Rule>) -> Result<PrimitiveType, Error> {
     debug_assert_eq!(dtype.as_rule(), Rule::type_primitive_bool);
     let inner = dtype.into_inner().next().expect("No inner type");
     match inner.as_rule() {
-        Rule::type_primitive_saturated_bool => {
-            if config.allow_saturated_bool {
-                Ok(PrimitiveType::Boolean)
-            } else {
-                Err(make_error(
-                    "`saturated bool` is not a valid type",
-                    inner.as_span(),
-                ))
-            }
-        }
         Rule::type_primitive_name_boolean => Ok(PrimitiveType::Boolean),
         _ => unreachable!("Unexpected rule in type_primitive_bool"),
     }
@@ -772,7 +728,7 @@ fn valid_integer_length(bits: u8) -> bool {
 #[cfg(test)]
 mod test {
     use super::parse_to_ast;
-    use crate::{Config, DsdlParser, Rule};
+    use crate::{DsdlParser, Rule};
     use pest::Parser;
 
     #[test]
@@ -791,7 +747,7 @@ uint12 thingy
 ",
         )
         .unwrap();
-        let _ast = parse_to_ast(definition, &Config::default()).unwrap();
+        let _ast = parse_to_ast(definition).unwrap();
     }
     #[test]
     fn versioned() {
@@ -803,7 +759,7 @@ uavcan.something.OtherPackage.0.7 wabe
 ",
         )
         .unwrap();
-        let _ast = parse_to_ast(definition, &Config::default()).unwrap();
+        let _ast = parse_to_ast(definition).unwrap();
     }
     #[test]
     fn set_literal() {
@@ -815,7 +771,7 @@ uint8[<=2] sprinkles
 ",
         )
         .unwrap();
-        let _ast = parse_to_ast(definition, &Config::default()).unwrap();
+        let _ast = parse_to_ast(definition).unwrap();
     }
     #[test]
     fn print_string() {
@@ -828,6 +784,6 @@ uint8[<=2] sprinkles
             Ok(def) => def,
             Err(e) => panic!("{}", e),
         };
-        let _ast = parse_to_ast(definition, &Config::default()).unwrap();
+        let _ast = parse_to_ast(definition).unwrap();
     }
 }

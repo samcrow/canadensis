@@ -5,7 +5,7 @@ extern crate canadensis_dsdl_frontend;
 
 use canadensis_dsdl_frontend::compiled::package::CompiledPackage;
 use canadensis_dsdl_frontend::compiled::DsdlKind;
-use canadensis_dsdl_frontend::{Config, Error, Package, TypeKey};
+use canadensis_dsdl_frontend::{Error, Package, TypeKey};
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -13,52 +13,34 @@ use std::{fs, io};
 
 #[test]
 fn compile_simple_types_only() -> Result<(), Box<Error>> {
-    let config = Config {
-        allow_utf8_and_byte: true,
-        allow_saturated_bool: false,
-    };
-    test_compile_subdirs(&["tests/simple_dsdl"], &config)?;
+    test_compile_subdirs(&["tests/simple_dsdl"])?;
     Ok(())
 }
 #[test]
 fn compile_simple_types_only_no_byte_utf8() -> Result<(), Box<Error>> {
-    let config = Config {
-        allow_utf8_and_byte: false,
-        allow_saturated_bool: true,
-    };
-    test_compile_subdirs(&["tests/simple_dsdl_no_byte_utf8"], &config)?;
+    test_compile_subdirs(&["tests/simple_dsdl_no_byte_utf8"])?;
     Ok(())
 }
 #[test]
 fn compile_regulated_types_only() -> Result<(), Box<Error>> {
     check_public_regulated_data_types_submodule().map_err(Error::Io)?;
-    test_compile_subdirs(&["tests/public_regulated_data_types"], &Config::default())?;
+    test_compile_subdirs(&["tests/public_regulated_data_types"])?;
     Ok(())
 }
 #[test]
 fn compile_all() -> Result<(), Box<Error>> {
     check_public_regulated_data_types_submodule().map_err(Error::Io)?;
-    let config = Config {
-        allow_utf8_and_byte: true,
-        allow_saturated_bool: false,
-    };
-    test_compile_subdirs(
-        &[
-            "tests/public_regulated_data_types",
-            "tests/nunavut_test_types/test0",
-            "tests/simple_dsdl",
-        ],
-        &config,
-    )?;
+    test_compile_subdirs(&[
+        "tests/public_regulated_data_types",
+        "tests/nunavut_test_types/test0",
+        "tests/simple_dsdl",
+    ])?;
     Ok(())
 }
 
 #[test]
 fn compile_split_namespace() -> Result<(), Box<Error>> {
-    test_compile_subdirs(
-        &["tests/split_namespace/part1", "tests/split_namespace/part2"],
-        &Config::default(),
-    )?;
+    test_compile_subdirs(&["tests/split_namespace/part1", "tests/split_namespace/part2"])?;
     Ok(())
 }
 
@@ -66,7 +48,7 @@ fn compile_split_namespace() -> Result<(), Box<Error>> {
 /// when DSDL types have cyclic dependencies.
 #[test]
 fn test_cycle() {
-    let status = test_compile_subdirs(&["tests/cycle"], &Config::default());
+    let status = test_compile_subdirs(&["tests/cycle"]);
     match status {
         Ok(_) => panic!("Compilation succeeded with cyclic dependency"),
         Err(e) => {
@@ -93,13 +75,10 @@ fn test_cycle() {
 #[test]
 fn compile_service_response_deprecated() -> Result<(), Box<Error>> {
     check_public_regulated_data_types_submodule().map_err(Error::Io)?;
-    let package = test_compile_subdirs(
-        &[
-            "tests/public_regulated_data_types",
-            "tests/nunavut_test_types/test0",
-        ],
-        &Config::default(),
-    )?;
+    let package = test_compile_subdirs(&[
+        "tests/public_regulated_data_types",
+        "tests/nunavut_test_types/test0",
+    ])?;
 
     let dsdl = package
         .get_by_key(&TypeKey::from_str("regulated.basics.DeprecatedService.0.1").unwrap())
@@ -116,17 +95,14 @@ fn compile_service_response_deprecated() -> Result<(), Box<Error>> {
     Ok(())
 }
 
-fn test_compile_subdirs(subdirs: &[&str], config: &Config) -> Result<CompiledPackage, Box<Error>> {
+fn test_compile_subdirs(subdirs: &[&str]) -> Result<CompiledPackage, Box<Error>> {
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let manifest_subdirectories = subdirs.iter().map(|subdir| manifest_dir.join(subdir));
-    test_compile_directories(manifest_subdirectories, config)
+    test_compile_directories(manifest_subdirectories)
 }
 
 /// Checks that the provided set of directories gets compiled successfully with no warnings
-fn test_compile_directories<I, P>(
-    directories: I,
-    config: &Config,
-) -> Result<CompiledPackage, Box<Error>>
+fn test_compile_directories<I, P>(directories: I) -> Result<CompiledPackage, Box<Error>>
 where
     I: IntoIterator<Item = P>,
     P: AsRef<Path>,
@@ -141,7 +117,7 @@ where
             }
         }
     }
-    match package.compile(config) {
+    match package.compile() {
         Ok(compiled) => {
             let warnings = compiled.warnings();
             if warnings.is_empty() {
@@ -172,7 +148,7 @@ fn compile_long_name() -> Result<(), Box<dyn std::error::Error>> {
     let long_name_file_path = long_name_subdir.join("TwoHundredAndFiftyFiveCharactersLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLongLong.1.0.uavcan");
     write_long_name_file(&long_name_file_path)?;
 
-    test_compile_directories([test_dir], &Config::default())?;
+    test_compile_directories([test_dir])?;
     Ok(())
 }
 

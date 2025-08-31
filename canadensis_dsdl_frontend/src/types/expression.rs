@@ -24,7 +24,7 @@ use crate::types::string::StringValue;
 use crate::types::{ScalarType, Type, Value};
 
 pub(crate) fn evaluate_expression(
-    cx: &mut CompileContext<'_, '_>,
+    cx: &mut CompileContext<'_>,
     expression: Expression<'_>,
 ) -> Result<Value, Box<Error>> {
     let span = expression.span;
@@ -231,7 +231,7 @@ pub(crate) fn evaluate_expression(
 }
 
 fn evaluate_atom(
-    cx: &mut CompileContext<'_, '_>,
+    cx: &mut CompileContext<'_>,
     atom: ExpressionAtom,
     span: Span<'_>,
 ) -> Result<Value, Box<Error>> {
@@ -275,7 +275,7 @@ fn evaluate_atom(
 }
 
 fn evaluate_array_length(
-    cx: &mut CompileContext<'_, '_>,
+    cx: &mut CompileContext<'_>,
     length: Expression<'_>,
 ) -> Result<u64, Box<Error>> {
     let length_span = length.span;
@@ -336,7 +336,7 @@ fn rational_bitwise_xor(
 
 /// Converts an AST type into a compiler type
 pub(crate) fn convert_type(
-    cx: &mut CompileContext<'_, '_>,
+    cx: &mut CompileContext<'_>,
     ty: canadensis_dsdl_parser::Type<'_>,
 ) -> Result<Type, Box<Error>> {
     match ty {

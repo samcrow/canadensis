@@ -92,7 +92,7 @@ impl Type {
     /// Resolves this type, looking up a versioned type (if any) and replacing it with a Message
     pub(crate) fn resolve(
         self,
-        cx: &mut CompileContext<'_, '_>,
+        cx: &mut CompileContext<'_>,
         span: Span<'_>,
     ) -> Result<ResolvedType, Box<Error>> {
         match self {
@@ -111,7 +111,7 @@ impl Type {
     /// Returns a bit length set representing the possible lengths of this type
     pub(crate) fn bit_length_set(
         &self,
-        cx: &mut CompileContext<'_, '_>,
+        cx: &mut CompileContext<'_>,
         span: Span<'_>,
     ) -> Result<BitLengthSet, Box<Error>> {
         match self {
@@ -239,7 +239,7 @@ impl ScalarType {
     /// Resolves this type, looking up a versioned type (if any) and replacing it with a [[`Message`]]
     pub(crate) fn resolve(
         self,
-        cx: &mut CompileContext<'_, '_>,
+        cx: &mut CompileContext<'_>,
         span: Span<'_>,
     ) -> Result<ResolvedScalarType, Box<Error>> {
         match self {
@@ -264,7 +264,7 @@ impl ScalarType {
     /// Returns a bit length set representing the possible lengths of this type
     fn bit_length_set(
         &self,
-        cx: &mut CompileContext<'_, '_>,
+        cx: &mut CompileContext<'_>,
         span: Span<'_>,
     ) -> Result<BitLengthSet, Box<Error>> {
         match self {

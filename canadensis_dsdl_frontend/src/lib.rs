@@ -29,8 +29,6 @@ mod type_key;
 pub mod types;
 pub mod warning;
 
-pub use canadensis_dsdl_parser::Config;
-
 pub use crate::error::Error;
 pub use crate::package::Package;
 pub use crate::type_key::{TypeFullName, TypeKey};

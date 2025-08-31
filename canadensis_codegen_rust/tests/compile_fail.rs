@@ -7,7 +7,7 @@ extern crate canadensis_codegen_rust;
 extern crate canadensis_dsdl_frontend;
 
 use canadensis_dsdl_frontend::compiled::package::CompiledPackage;
-use canadensis_dsdl_frontend::{Config, Package};
+use canadensis_dsdl_frontend::Package;
 use std::ffi::OsString;
 use std::fs;
 use std::io;
@@ -51,8 +51,7 @@ fn try_compile_package(
 ) -> Result<CompiledPackage, Box<canadensis_dsdl_frontend::Error>> {
     let mut package = Package::new();
     package.add_files(path)?;
-    let config = Config::default();
-    package.compile(&config)
+    package.compile()
 }
 
 fn try_compile_and_generate_code(path: &Path) -> Result<(), Box<dyn std::error::Error>> {

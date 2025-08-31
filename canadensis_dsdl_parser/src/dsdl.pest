@@ -58,8 +58,7 @@ type_primitive = {type_primitive_truncated
 
 type_primitive_truncated =  {"truncated" ~ ws ~ type_primitive_name}
 type_primitive_saturated = { ("saturated" ~ ws)? ~ type_primitive_name  }   // Defaults to this.
-type_primitive_bool = { type_primitive_saturated_bool | type_primitive_name_boolean }
-type_primitive_saturated_bool = { "saturated" ~ ws ~ type_primitive_name_boolean }
+type_primitive_bool = { type_primitive_name_boolean }
 
 type_primitive_name = {type_primitive_name_unsigned_integer
                     | type_primitive_name_signed_integer

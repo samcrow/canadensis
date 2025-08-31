@@ -4,7 +4,7 @@ extern crate canadensis_dsdl_frontend;
 use std::path::PathBuf;
 
 use canadensis_dsdl_frontend::compiled::package::CompiledPackage;
-use canadensis_dsdl_frontend::{Config, Package};
+use canadensis_dsdl_frontend::Package;
 
 /// Checks that this library can compile the Cyphal public regulated data types, Nunavut test
 /// types, and a few additional Canadensis test types
@@ -43,11 +43,7 @@ fn try_compile_package(
     for path in paths {
         package.add_files(path)?;
     }
-    let config = Config {
-        allow_utf8_and_byte: true,
-        allow_saturated_bool: false,
-    };
-    package.compile(&config)
+    package.compile()
 }
 
 fn try_compile_and_generate_code(paths: &[PathBuf]) -> Result<(), Box<dyn std::error::Error>> {

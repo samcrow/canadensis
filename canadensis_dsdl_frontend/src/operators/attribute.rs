@@ -8,7 +8,7 @@ use canadensis_dsdl_parser::Span;
 
 /// Evaluates the attribute operator `expr.attribute`
 pub(crate) fn evaluate(
-    cx: &mut CompileContext<'_, '_>,
+    cx: &mut CompileContext<'_>,
     lhs: Value,
     rhs: &str,
     span: Span<'_>,
@@ -87,7 +87,7 @@ fn make_set_min_max_gt_undefined_error(
 }
 
 fn evaluate_type_attr(
-    cx: &mut CompileContext<'_, '_>,
+    cx: &mut CompileContext<'_>,
     ty: Type,
     rhs: &str,
     span: Span<'_>,
