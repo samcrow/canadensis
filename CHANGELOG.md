@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_can`: Breaking change: Updated `socketcan` dependency to 3.5.0
 - `canadensis`: Updated examples to use `socketcan` 3.5.0
 - `canadensis_dsdl_frontend`: Breaking change: Changed error types to `Box<Error>`
+- `canadensis_dsdl_frontend`: Set no_std for half dependency [#47](https://github.com/samcrow/canadensis/pull/47)
 - Several crates: Breaking change: Added `CanTransferIdTracker` [#46](https://github.com/samcrow/canadensis/pull/46)
 
 ### Fixed
