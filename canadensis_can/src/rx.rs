@@ -18,7 +18,6 @@ use crate::driver::ReceiveDriver;
 use crate::rx::session::SessionError;
 use crate::rx::subscription::{Subscription, SubscriptionError};
 use crate::types::{CanNodeId, CanTransferId, CanTransport, Error};
-use crate::Mtu;
 use canadensis_core::time::{Clock, MicrosecondDuration32, Microseconds32};
 use canadensis_core::transfer::{Header, MessageHeader, ServiceHeader, Transfer};
 use canadensis_core::transport::Receiver;
@@ -37,8 +36,6 @@ pub struct CanReceiver<C, D> {
     subscriptions_request: Vec<Subscription>,
     /// The ID of this node, or None if this node is anonymous
     id: Option<CanNodeId>,
-    /// MTU of the transport
-    mtu: Mtu,
     /// Number of transfers successfully received
     transfer_count: u64,
     /// Number of transfers that could not be received
@@ -249,24 +246,23 @@ where
     /// Creates a receiver
     ///
     /// id: The ID of this node. This is used to filter incoming service requests and responses.
-    pub fn new(id: CanNodeId, mtu: Mtu) -> Self {
-        Self::new_inner(Some(id), mtu)
+    pub fn new(id: CanNodeId) -> Self {
+        Self::new_inner(Some(id))
     }
 
     /// Creates an anonymous receiver
     ///
     /// An anonymous receiver cannot receive service requests or responses.
-    pub fn new_anonymous(mtu: Mtu) -> Self {
-        Self::new_inner(None, mtu)
+    pub fn new_anonymous() -> Self {
+        Self::new_inner(None)
     }
 
-    fn new_inner(id: Option<CanNodeId>, mtu: Mtu) -> Self {
+    fn new_inner(id: Option<CanNodeId>) -> Self {
         CanReceiver {
             subscriptions_message: Vec::new(),
             subscriptions_response: Vec::new(),
             subscriptions_request: Vec::new(),
             id,
-            mtu,
             transfer_count: 0,
             error_count: 0,
             _driver: PhantomData,
@@ -390,7 +386,7 @@ where
         self.unsubscribe(kind, port_id);
 
         // Create new subscription
-        let new_subscription = Subscription::new(timeout, payload_size_max, port_id, self.mtu);
+        let new_subscription = Subscription::new(timeout, payload_size_max, port_id);
 
         // Add this subscription to the list for this transfer kind
         let subscriptions = self.subscriptions_for_kind(kind);

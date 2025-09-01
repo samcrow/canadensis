@@ -1,7 +1,7 @@
 use crate::rx::buildup::{Buildup, BuildupError};
 use crate::rx::TailByte;
 use crate::types::{CanTransferId, Header, Transfer};
-use crate::{Frame, TransferCrc};
+use crate::Frame;
 use alloc::vec::Vec;
 use canadensis_core::time::{MicrosecondDuration32, Microseconds32};
 use canadensis_core::OutOfMemoryError;
@@ -47,7 +47,6 @@ impl Session {
         frame: Frame,
         frame_header: Header,
         tail: TailByte,
-        max_payload_length: usize,
         transfer_timeout: MicrosecondDuration32,
     ) -> Result<Option<Transfer<Vec<u8>>>, SessionError> {
         if tail.transfer_id != self.buildup.transfer_id() {
@@ -59,17 +58,6 @@ impl Session {
         if frame.loopback() != self.loopback {
             log::info!("Frame loopback flag does not match, ignoring");
             return Ok(None);
-        }
-        // Check if this frame will make the transfer exceed the maximum length
-        let new_payload_length = self.buildup.payload_length() + (frame.data().len() - 1);
-        if new_payload_length > max_payload_length {
-            log::warn!(
-                "Payload too large ({} + {} > {}), ending session",
-                self.buildup.payload_length(),
-                frame.data().len() - 1,
-                max_payload_length
-            );
-            return Err(SessionError::PayloadLength);
         }
         // Check if this frame is too late
         let time_since_first_frame = frame.timestamp() - self.transfer_timestamp;
@@ -91,21 +79,9 @@ impl Session {
 
     fn handle_transfer_data(
         &mut self,
-        mut transfer_data: Vec<u8>,
+        transfer_data: Vec<u8>,
         frame_header: Header,
     ) -> Result<Option<Transfer<Vec<u8>>>, SessionError> {
-        // Check CRC, if this transfer used more than one frame
-        if self.buildup.frames() > 1 {
-            let mut crc = TransferCrc::new();
-            crc.add_bytes(&transfer_data);
-            if crc.get() != 0 {
-                // Invalid CRC, drop transfer
-                return Err(SessionError::Crc);
-            }
-            // Remove the CRC bytes from the transfer data
-            transfer_data.truncate(transfer_data.len() - 2);
-        }
-
         // The header for the transfer has the same priority as the final frame,
         // but the timestamp of the first frame.
         let mut transfer_header = frame_header;
@@ -132,10 +108,6 @@ impl Session {
 
 #[derive(Debug)]
 pub enum SessionError {
-    /// A transfer CRC was invalid
-    Crc,
-    /// The payload was too long
-    PayloadLength,
     /// The session timed out because a frame arrived too lage
     Timeout,
     /// Reassembly failed because of an unexpected frame

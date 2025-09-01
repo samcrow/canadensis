@@ -1,7 +1,7 @@
 use crate::rx::session::{Session, SessionError};
 use crate::rx::TailByte;
 use crate::types::{CanNodeId, Header, Transfer};
-use crate::{Frame, Mtu};
+use crate::Frame;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 use canadensis_core::time::MicrosecondDuration32;
@@ -55,16 +55,11 @@ impl Subscription {
     ///
     /// The `payload_size_max` value is the maximum number of payload bytes that can be received,
     /// not including space for the padding and transfer CRC.
-    pub fn new(
-        timeout: MicrosecondDuration32,
-        payload_size_max: usize,
-        port_id: PortId,
-        mtu: Mtu,
-    ) -> Self {
+    pub fn new(timeout: MicrosecondDuration32, payload_size_max: usize, port_id: PortId) -> Self {
         Subscription {
             sessions: init_rx_sessions(),
             timeout,
-            payload_size_max: add_padding_and_crc_space(payload_size_max, mtu),
+            payload_size_max,
             port_id,
         }
     }
@@ -90,15 +85,11 @@ impl Subscription {
         source_node: CanNodeId,
         tail: TailByte,
     ) -> Result<Option<Transfer<Vec<u8>>>, SubscriptionError> {
-        let max_payload_length = self.payload_size_max;
-
         if tail.start && tail.end {
             // Special case: Everything fits into one frame, so we don't need to allocate a session
-            if frame.data().len() > max_payload_length + 1 {
-                return Err(SubscriptionError::Session(SessionError::PayloadLength));
-            }
             // Make a transfer from this frame (remove the tail byte)
-            let data_without_tail = &frame.data()[..frame.data().len() - 1];
+            let usable_data_len = self.payload_size_max.min(frame.data().len() - 1);
+            let data_without_tail = &frame.data()[..usable_data_len];
             let mut payload = Vec::new();
             payload.try_extend_from_slice(data_without_tail)?;
             let transfer = Transfer {
@@ -119,7 +110,6 @@ impl Subscription {
         source_node: CanNodeId,
         tail: TailByte,
     ) -> Result<Option<Transfer<Vec<u8>>>, SubscriptionError> {
-        let max_payload_length = self.payload_size_max;
         let transfer_timeout = self.timeout;
 
         let slot = &mut self.sessions[usize::from(source_node)];
@@ -155,13 +145,7 @@ impl Subscription {
             }
         };
 
-        let accept_status = session.accept(
-            frame,
-            frame_header,
-            tail,
-            max_payload_length,
-            transfer_timeout,
-        );
+        let accept_status = session.accept(frame, frame_header, tail, transfer_timeout);
         match accept_status {
             Ok(Some(transfer)) => {
                 // Transfer received, this session has served its purpose and can be deleted.
@@ -253,70 +237,4 @@ fn init_rx_sessions() -> [Option<Box<Session>>; RX_SESSIONS_PER_SUBSCRIPTION] {
         None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
         None, None, None, None, None, None, None, None,
     ]
-}
-
-/// Adds space for padding and a transfer CRC to the maximum payload size (if required) and returns
-/// the new maximum payload size
-fn add_padding_and_crc_space(payload_size_max: usize, mtu: Mtu) -> usize {
-    let stats = crate::calculate_frame_stats(payload_size_max, mtu as usize);
-    let crc_space = if stats.frames > 1 { 2 } else { 0 };
-    payload_size_max + stats.last_frame_padding + crc_space
-}
-
-#[cfg(test)]
-mod test {
-    use super::add_padding_and_crc_space;
-    use crate::Mtu;
-
-    #[test]
-    fn space_classic_can() {
-        for size in 0..=7 {
-            assert_eq!(size, add_padding_and_crc_space(size, Mtu::Can8));
-        }
-        for size in 8..=1024 {
-            assert_eq!(size + 2, add_padding_and_crc_space(size, Mtu::Can8));
-        }
-    }
-
-    #[test]
-    #[cfg(feature = "can-fd")]
-    fn space_can_fd() {
-        // One frame
-        for size in 0..=7 {
-            assert_eq!(size, add_padding_and_crc_space(size, Mtu::CanFd64));
-        }
-        for size in 8..=11 {
-            assert_eq!(11, add_padding_and_crc_space(size, Mtu::CanFd64));
-        }
-        for size in 12..=15 {
-            assert_eq!(15, add_padding_and_crc_space(size, Mtu::CanFd64));
-        }
-        for size in 16..=19 {
-            assert_eq!(19, add_padding_and_crc_space(size, Mtu::CanFd64));
-        }
-        for size in 20..=23 {
-            assert_eq!(23, add_padding_and_crc_space(size, Mtu::CanFd64));
-        }
-        for size in 24..=31 {
-            assert_eq!(31, add_padding_and_crc_space(size, Mtu::CanFd64));
-        }
-        for size in 32..=47 {
-            assert_eq!(47, add_padding_and_crc_space(size, Mtu::CanFd64));
-        }
-        for size in 48..=63 {
-            assert_eq!(63, add_padding_and_crc_space(size, Mtu::CanFd64));
-        }
-        // Two frames
-        // 63 payload bytes + 1 tail byte in frame 1
-        // 1..=5 payload bytes + 2 CRC bytes + 1 tail byte in frame 2
-        for size in 64..=68 {
-            assert_eq!(size + 2, add_padding_and_crc_space(size, Mtu::CanFd64));
-        }
-        // Two frames
-        // 63 payload bytes + 1 tail byte in frame 1
-        // 6..=9 payload bytes + padding + 2 CRC bytes + 1 tail byte = 12 bytes in frame 2
-        for size in 69..=72 {
-            assert_eq!(74, add_padding_and_crc_space(size, Mtu::CanFd64));
-        }
-    }
 }

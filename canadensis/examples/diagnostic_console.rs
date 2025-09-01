@@ -15,7 +15,7 @@ use std::process;
 
 use canadensis::core::transport::Receiver;
 use canadensis::encoding::{DataType, Deserialize, ReadCursor};
-use canadensis_can::{CanReceiver, Mtu};
+use canadensis_can::CanReceiver;
 use canadensis_core::time::MicrosecondDuration32;
 use canadensis_data_types::uavcan::diagnostic::record_1_1::{self, Record};
 use canadensis_data_types::uavcan::diagnostic::severity_1_0::Severity;
@@ -30,7 +30,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut can = LinuxCan::new(can);
 
     let mut clock = SystemClock::new();
-    let mut receiver = CanReceiver::new_anonymous(Mtu::Can8);
+    let mut receiver = CanReceiver::new_anonymous();
     receiver
         .subscribe_message(
             record_1_1::SUBJECT,

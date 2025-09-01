@@ -10,7 +10,7 @@ use std::cell::Cell;
 use std::collections::VecDeque;
 
 use canadensis_can::driver::ReceiveDriver;
-use canadensis_can::{CanId, CanNodeId, CanReceiver, Frame, Mtu};
+use canadensis_can::{CanId, CanNodeId, CanReceiver, Frame};
 use canadensis_core::nb;
 use canadensis_core::subscription::Subscription;
 use canadensis_core::time::{Clock, MicrosecondDuration32, Microseconds32};
@@ -31,7 +31,7 @@ fn duration(ticks: u32) -> TestDuration {
 #[test]
 fn test_heartbeat() {
     let mut driver = StubDriver::default();
-    let mut rx = CanReceiver::new(0u8.try_into().unwrap(), Mtu::Can8);
+    let mut rx = CanReceiver::new(0u8.try_into().unwrap());
 
     let heartbeat_subject = SubjectId::try_from(7509).unwrap();
     rx.subscribe_message(heartbeat_subject, 7, duration(0), &mut driver)
@@ -66,7 +66,7 @@ fn test_heartbeat() {
 #[cfg(feature = "can-fd")]
 fn test_string() {
     let mut driver = StubDriver::default();
-    let mut rx = CanReceiver::new(0u8.try_into().unwrap(), Mtu::Can8);
+    let mut rx = CanReceiver::new(0u8.try_into().unwrap());
 
     let string_subject = SubjectId::try_from(4919).unwrap();
     rx.subscribe_message(string_subject, 15, duration(0), &mut driver)
@@ -100,7 +100,7 @@ fn test_string() {
 #[test]
 fn test_node_info_request() {
     let mut driver = StubDriver::default();
-    let mut rx = CanReceiver::new(42u8.try_into().unwrap(), Mtu::Can8);
+    let mut rx = CanReceiver::new(42u8.try_into().unwrap());
 
     let service = ServiceId::try_from(430).unwrap();
     rx.subscribe_request(service, 0, duration(0), &mut driver)
@@ -135,7 +135,7 @@ fn test_node_info_request() {
 #[test]
 fn test_node_info_response() {
     let mut driver = StubDriver::default();
-    let mut rx = CanReceiver::new(123u8.try_into().unwrap(), Mtu::Can8);
+    let mut rx = CanReceiver::new(123u8.try_into().unwrap());
 
     let service = ServiceId::try_from(430).unwrap();
     rx.subscribe_response(service, 69, duration(100), &mut driver)
@@ -211,7 +211,7 @@ fn test_node_info_response() {
 fn test_node_info_response_timeout() {
     let mut driver = StubDriver::default();
     let clock = ClockOwner::default();
-    let mut rx = CanReceiver::new(123u8.try_into().unwrap(), Mtu::Can8);
+    let mut rx = CanReceiver::new(123u8.try_into().unwrap());
 
     let service = ServiceId::try_from(430).unwrap();
     rx.subscribe_response(service, 69, duration(100), &mut driver)
@@ -250,7 +250,7 @@ fn test_node_info_response_timeout() {
 fn test_array() {
     let mut driver = StubDriver::default();
     let clock = ClockOwner::default();
-    let mut rx = CanReceiver::new(0u8.try_into().unwrap(), Mtu::CanFd64);
+    let mut rx = CanReceiver::new(0u8.try_into().unwrap());
 
     let subject = SubjectId::try_from(4919).unwrap();
     rx.subscribe_message(subject, 94, duration(1), &mut driver)
@@ -322,7 +322,7 @@ fn test_array() {
 fn test_multi_frame_anonymous() {
     // Multi-frame anonymous transfers must be ignored
     let mut driver = StubDriver::default();
-    let mut receiver = CanReceiver::new(CanNodeId::try_from(3u8).unwrap(), Mtu::Can8);
+    let mut receiver = CanReceiver::new(CanNodeId::try_from(3u8).unwrap());
     let subject_id = SubjectId::try_from(10).unwrap();
     receiver
         .subscribe_message(
@@ -413,7 +413,7 @@ fn test_multi_frame_anonymous() {
 #[test]
 fn test_anonymous_receive_multi_frame() {
     let mut driver = StubDriver::default();
-    let mut rx = CanReceiver::new_anonymous(Mtu::Can8);
+    let mut rx = CanReceiver::new_anonymous();
     rx.subscribe_message(
         8166.try_into().unwrap(),
         9,
@@ -458,7 +458,7 @@ fn test_anonymous_receive_multi_frame() {
 #[test]
 fn test_ignore_request_to_other_node() {
     let mut driver = StubDriver::default();
-    let mut rx = CanReceiver::new(43u8.try_into().unwrap(), Mtu::Can8);
+    let mut rx = CanReceiver::new(43u8.try_into().unwrap());
 
     let service = ServiceId::try_from(430).unwrap();
     rx.subscribe_request(service, 0, duration(0), &mut driver)
@@ -474,6 +474,148 @@ fn test_ignore_request_to_other_node() {
     let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
 
     assert_eq!(transfer, None);
+}
+
+#[test]
+fn test_message_payload_too_large_single_frame() {
+    let mut driver = StubDriver::default();
+    let mut rx: CanReceiver<StubClock, StubDriver> = CanReceiver::new(120u8.try_into().unwrap());
+    let subject = SubjectId::try_from(39).unwrap();
+    rx.subscribe_message(subject, 4, duration(0), &mut driver)
+        .unwrap();
+    driver.push(Frame::new(
+        instant(13309),
+        0b1000_0011_0000000100111_01001001.try_into().unwrap(),
+        &[0xab, 0x19, 0x7f, 0x23, 0x03, 0xee, 0xca, 0b111_00011],
+    ));
+    let clock = ClockOwner::default();
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    assert_eq!(
+        transfer,
+        Some(Transfer {
+            header: Header::Message(MessageHeader {
+                timestamp: instant(13309),
+                transfer_id: 3.try_into().unwrap(),
+                priority: Priority::Nominal,
+                subject,
+                source: Some(CanNodeId::try_from(73u8).unwrap()),
+            }),
+            loopback: false,
+            payload: vec![0xab, 0x19, 0x7f, 0x23],
+        })
+    );
+}
+
+#[test]
+fn test_message_payload_too_large_multi_frame() {
+    let mut driver = StubDriver::default();
+    let mut rx: CanReceiver<StubClock, StubDriver> = CanReceiver::new(120u8.try_into().unwrap());
+    let subject = SubjectId::try_from(39).unwrap();
+    rx.subscribe_message(subject, 8, duration(100), &mut driver)
+        .unwrap();
+    let frame_id = 0b1000_0011_0000000100111_01001001.try_into().unwrap();
+    driver.push(Frame::new(
+        instant(13309),
+        frame_id,
+        &[0xab, 0x19, 0x7f, 0x23, 0x03, 0xee, 0xca, 0b101_00111],
+    ));
+    driver.push(Frame::new(
+        instant(13399),
+        frame_id,
+        &[
+            // Payload
+            0xf1,
+            0x82,
+            // Transfer CRC
+            0x2d,
+            0x34,
+            // Tail byte
+            0b010_00111,
+        ],
+    ));
+    let clock = ClockOwner::default();
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    assert_eq!(
+        transfer,
+        Some(Transfer {
+            header: Header::Message(MessageHeader {
+                timestamp: instant(13309),
+                transfer_id: 7.try_into().unwrap(),
+                priority: Priority::Nominal,
+                subject,
+                source: Some(CanNodeId::try_from(73u8).unwrap()),
+            }),
+            loopback: false,
+            payload: vec![0xab, 0x19, 0x7f, 0x23, 0x03, 0xee, 0xca, 0xf1],
+        })
+    );
+}
+
+#[test]
+fn test_message_payload_too_large_multi_frame_split_crc() {
+    let mut driver = StubDriver::default();
+    let mut rx: CanReceiver<StubClock, StubDriver> = CanReceiver::new(120u8.try_into().unwrap());
+    let subject = SubjectId::try_from(39).unwrap();
+    rx.subscribe_message(subject, 4, duration(100), &mut driver)
+        .unwrap();
+    let frame_id = 0b1000_0011_0000000100111_01001001.try_into().unwrap();
+    driver.push(Frame::new(
+        instant(13309),
+        frame_id,
+        &[
+            0xab,
+            0x19,
+            0x7f,
+            0x23,
+            0x03,
+            0xee,
+            0x30,
+            // Tail byte
+            0b101_00111,
+        ],
+    ));
+    driver.push(Frame::new(
+        instant(13319),
+        frame_id,
+        &[
+            0x41,
+            0x49,
+            0x9c,
+            0xa4,
+            0xfe,
+            0xff,
+            // First byte of transfer CRC
+            0x29,
+            // Tail byte
+            0b000_00111,
+        ],
+    ));
+    driver.push(Frame::new(
+        instant(13399),
+        frame_id,
+        &[
+            // Second byte of transfer CRC
+            0x5f,
+            // Tail byte
+            0b011_00111,
+        ],
+    ));
+    let clock = ClockOwner::default();
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    assert_eq!(
+        transfer,
+        Some(Transfer {
+            header: Header::Message(MessageHeader {
+                timestamp: instant(13309),
+                transfer_id: 7.try_into().unwrap(),
+                priority: Priority::Nominal,
+                subject,
+                source: Some(CanNodeId::try_from(73u8).unwrap()),
+            }),
+            loopback: false,
+            payload: vec![0xab, 0x19, 0x7f, 0x23],
+        })
+    );
 }
 
 /// A driver that reads from a queue of frames

@@ -8,6 +8,7 @@ const TRANSFER_CRC_INIT: u16 = 0xffff;
 const TRANSFER_CRC_POLY: u16 = 0x1021;
 
 /// Calculates the 32-bit transfer CRC
+#[derive(Debug)]
 pub struct TransferCrc {
     value: u16,
 }
