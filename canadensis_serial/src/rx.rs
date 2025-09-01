@@ -2,6 +2,7 @@ use alloc::vec::Vec;
 use core::convert::TryFrom;
 use core::marker::PhantomData;
 use core::mem;
+use crc_any::CRCu32;
 
 use fallible_collections::{FallibleVec, TryHashMap};
 
@@ -15,7 +16,7 @@ use canadensis_header::Header as SerialHeader;
 use crate::cobs::Unescaper;
 use crate::driver::ReceiveDriver;
 use crate::header_collector::HeaderCollector;
-use crate::{make_payload_crc, Error, SerialNodeId, SerialTransferId, SerialTransport};
+use crate::{transfer_crc, Error, SerialNodeId, SerialTransferId, SerialTransport};
 
 /// A serial transport receiver
 ///
@@ -115,13 +116,13 @@ where
                                     let header = header.as_core_header(now);
                                     if let Some(subscription) = self.is_interested(&header) {
                                         // Try to allocate memory for the incoming transfer
-                                        // (add 4 bytes at the end for the CRC)
                                         match FallibleVec::try_with_capacity(
-                                            subscription.payload_size_max + 4,
+                                            subscription.payload_size_max,
                                         ) {
                                             Ok(payload) => State::Payload {
                                                 unescaper,
                                                 header,
+                                                crc: CrcTracker::new(),
                                                 payload,
                                             },
                                             Err(_) => {
@@ -151,29 +152,30 @@ where
                         // Keep the same state
                         State::Header { unescaper, header }
                     }
-                    // Unexpected zero byte
-                    Err(_) => State::Idle,
+                    Err(_) => {
+                        log::warn!("Unexpected zero byte in Header state");
+                        State::Idle
+                    }
                 }
             }
             State::Payload {
                 mut unescaper,
                 header,
+                mut crc,
                 mut payload,
             } => {
                 match unescaper.accept(byte) {
                     Ok(Some(byte)) => {
-                        if payload.len() == payload.capacity() {
-                            // Reached maximum payload length, forced to finish the transfer
-                            self.state = State::Idle;
-                            return Ok(self.complete_transfer(header, payload));
-                        } else {
-                            // Keep collecting bytes
-                            payload.push(byte);
-                            State::Payload {
-                                unescaper,
-                                header,
-                                payload,
+                        if let Some(byte_before_crc) = crc.digest(byte) {
+                            if payload.len() < payload.capacity() {
+                                payload.push(byte_before_crc);
                             }
+                        }
+                        State::Payload {
+                            unescaper,
+                            header,
+                            crc,
+                            payload,
                         }
                     }
                     Ok(None) => {
@@ -181,14 +183,15 @@ where
                         State::Payload {
                             unescaper,
                             header,
+                            crc,
                             payload,
                         }
                     }
                     Err(_) => {
-                        // Got a zero (end delimiter)
+                        log::debug!("Got a zero (end delimiter)");
                         self.state = State::BetweenTransfers;
                         // Check and finish the transfer
-                        return Ok(self.complete_transfer(header, payload));
+                        return Ok(self.complete_transfer(header, payload, crc));
                     }
                 }
             }
@@ -364,44 +367,34 @@ where
     fn complete_transfer(
         &mut self,
         header: Header<SerialTransport>,
-        mut payload_and_crc: Vec<u8>,
+        payload: Vec<u8>,
+        crc: CrcTracker,
     ) -> Option<Transfer<Vec<u8>, SerialTransport>> {
-        if payload_and_crc.len() >= 4 {
-            let mut crc_bytes = [0u8; 4];
-            crc_bytes.copy_from_slice(&payload_and_crc[payload_and_crc.len() - 4..]);
-            let crc = u32::from_le_bytes(crc_bytes);
-
-            payload_and_crc.truncate(payload_and_crc.len() - 4);
-            let payload = payload_and_crc;
-            if crc != make_payload_crc(&payload) {
-                // Incorrect CRC
-                return None;
+        if !crc.correct() {
+            log::debug!("Dropping transfer due to incorrect transfer CRC");
+            return None;
+        }
+        // Record that this transfer was received
+        if let Some(subscription) = self.find_subscription_mut(&header) {
+            if let Some(source_node) = header.source() {
+                // This may fail to allocate memory.
+                // TODO: Handle allocation failure
+                let _ = subscription.sessions.insert(
+                    *source_node,
+                    Session {
+                        expiration_time: header.timestamp() + subscription.timeout,
+                        last_transfer_id: *header.transfer_id(),
+                    },
+                );
             }
-
-            // Record that this transfer was received
-            if let Some(subscription) = self.find_subscription_mut(&header) {
-                if let Some(source_node) = header.source() {
-                    // This may fail to allocate memory.
-                    // TODO: Handle allocation failure
-                    let _ = subscription.sessions.insert(
-                        *source_node,
-                        Session {
-                            expiration_time: header.timestamp() + subscription.timeout,
-                            last_transfer_id: *header.transfer_id(),
-                        },
-                    );
-                }
-                Some(Transfer {
-                    header,
-                    loopback: false,
-                    payload,
-                })
-            } else {
-                // The subscription was removed while receiving the transfer
-                None
-            }
+            Some(Transfer {
+                header,
+                loopback: false,
+                payload,
+            })
         } else {
-            // Not enough bytes for a CRC
+            // The subscription was removed while receiving the transfer
+            log::debug!("No matching subscription for header");
             None
         }
     }
@@ -466,12 +459,100 @@ enum State {
     },
     /// Got a header, collecting payload bytes
     ///
-    /// The last 4 bytes of the payload may be the payload CRC.
-    ///
-    /// The capacity of the payload is set to the maximum payload length plus 4 bytes.
+    /// The capacity of the payload is set to the maximum payload length.
     Payload {
         unescaper: Unescaper,
         header: Header<SerialTransport>,
+        /// CRC of the payload bytes so far (after COBS unescaping, not including the header)
+        ///
+        /// This may cover more bytes than the capacity of `payload`
+        crc: CrcTracker,
         payload: Vec<u8>,
     },
+}
+
+/// Tracks the CRC of bytes processed so far and the last four bytes,
+/// which may be the transfer CRC
+struct CrcTracker {
+    /// CRC of all bytes before last_four_bytes
+    crc: CRCu32,
+    /// Most recent four bytes processed, with the oldest byte
+    /// in the least significant position
+    last_four_bytes: u32,
+    bytes_processed: u8,
+}
+
+impl CrcTracker {
+    pub fn new() -> CrcTracker {
+        CrcTracker {
+            crc: transfer_crc(),
+            last_four_bytes: 0x0,
+            bytes_processed: 0,
+        }
+    }
+
+    /// Handles a byte
+    ///
+    /// If this tracker has already processed four bytes, this function returns the
+    /// byte before the most recent four bytes.
+    pub fn digest(&mut self, byte: u8) -> Option<u8> {
+        let byte_out = if self.bytes_processed >= 4 {
+            Some(self.last_four_bytes as u8)
+        } else {
+            None
+        };
+        if let Some(byte_out) = byte_out {
+            self.crc.digest(&[byte_out]);
+        }
+        self.last_four_bytes = (u32::from(byte) << 24) | (self.last_four_bytes >> 8);
+        self.bytes_processed = self.bytes_processed.saturating_add(1);
+        byte_out
+    }
+    /// Returns true if the most recent four bytes contain a little-endian value that matches the
+    /// CRC of the previous bytes
+    pub fn correct(&self) -> bool {
+        self.bytes_processed >= 4 && self.crc.get_crc() == self.last_four_bytes
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::CrcTracker;
+
+    #[test]
+    fn crc_tracker_empty() {
+        let tracker = CrcTracker::new();
+        assert!(!tracker.correct());
+    }
+    #[test]
+    fn crc_tracker_zero() {
+        let mut tracker = CrcTracker::new();
+        tracker.digest(0x00);
+        tracker.digest(0x00);
+        tracker.digest(0x00);
+        tracker.digest(0x00);
+        assert!(tracker.correct());
+    }
+    #[test]
+    fn crc_tracker_four_bytes() {
+        let mut tracker = CrcTracker::new();
+        IntoIterator::into_iter([0x39, 0x52, 0xee, 0x11, 0x68, 0x81, 0x3e, 0xc8]).for_each(
+            |byte| {
+                tracker.digest(byte);
+            },
+        );
+        assert!(tracker.correct());
+    }
+    #[test]
+    fn crc_tracker_long() {
+        let mut tracker = CrcTracker::new();
+        IntoIterator::into_iter([
+            0xc2, 0xcf, 0xcc, 0xc0, 0x1c, 0xd7, 0x90, 0x5f, 0x95, 0x9e, 0xa4, 0x7c, 0x91, 0xe0,
+            0xa0, 0xe4, 0xbd, 0xf9, 0x4a, 0x9d, 0x44, 0xc7, 0x7c, 0x7f, 0x59, 0xcb, 0x5b, 0x2e,
+        ])
+        .for_each(|byte| {
+            tracker.digest(byte);
+        });
+        assert!(tracker.correct());
+    }
 }

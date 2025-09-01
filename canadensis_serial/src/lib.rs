@@ -45,9 +45,13 @@ pub type SerialNodeId = NodeId16;
 /// This is just a `u64`.
 pub type SerialTransferId = TransferId64;
 
+/// Returns a CRC calculator for a serial transfer CRC
+fn transfer_crc() -> CRCu32 {
+    CRCu32::crc32c()
+}
 /// Calculates the CRC of a payload
 fn make_payload_crc(payload: &[u8]) -> u32 {
-    let mut crc = CRCu32::crc32c();
+    let mut crc = transfer_crc();
     crc.digest(payload);
     crc.get_crc()
 }
