@@ -101,7 +101,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Create a node with capacity for 8 publishers and 8 requesters
     let transmitter = CanTransmitter::new(Mtu::Can8);
-    let receiver = CanReceiver::new(node_id, Mtu::Can8);
+    let receiver = CanReceiver::new(node_id);
 
     const TRANSFER_IDS: usize = 8;
     const PUBLISHERS: usize = 8;

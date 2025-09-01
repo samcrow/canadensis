@@ -49,7 +49,7 @@ fn can_loopback_time_sync() {
         clock_handle.clock(),
         node_id,
         CanTransmitter::new(Mtu::Can8),
-        CanReceiver::new(node_id, Mtu::Can8),
+        CanReceiver::new(node_id),
         LoopbackOnlyDriver::default(),
     );
 

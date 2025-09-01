@@ -5,6 +5,7 @@ use crate::types::CanTransferId;
 use fallible_collections::{FallibleVec, TryReserveError};
 
 use super::TailByte;
+use crate::TransferCrc;
 use canadensis_core::OutOfMemoryError;
 
 /// Reassembles frames into a transfer
@@ -14,12 +15,23 @@ pub struct Buildup {
     transfer_id: CanTransferId,
     /// The number of frames processed
     frames: usize,
+    /// The number of payload bytes processed, not including the transfer CRC or tail bytes
+    ///
+    /// This may be greater than payload_size_max
+    payload_size: usize,
     /// If the next frame should have the start bit set
     expect_start: bool,
     /// If the next frame should have the toggle bit set
     expect_toggle: bool,
+    /// The maximum number of payload bytes to store
+    payload_size_max: usize,
     /// The bytes collected so far, not including tail bytes
+    ///
+    /// The length of this never exceeds payload_size_max.
     transfer: Vec<u8>,
+    /// The CRC of the bytes collected so far, excluding tail bytes (possibly more than
+    /// payload_size_max)
+    crc: TransferCrc,
 }
 
 impl Buildup {
@@ -29,14 +41,17 @@ impl Buildup {
     /// It returns an error if memory allocation fails.
     pub fn new(
         transfer_id: CanTransferId,
-        max_payload_length: usize,
+        payload_size_max: usize,
     ) -> Result<Self, OutOfMemoryError> {
         Ok(Buildup {
             transfer_id,
             frames: 0,
+            payload_size: 0,
             expect_start: true,
             expect_toggle: true,
-            transfer: FallibleVec::try_with_capacity(max_payload_length)?,
+            payload_size_max,
+            transfer: FallibleVec::try_with_capacity(payload_size_max)?,
+            crc: TransferCrc::new(),
         })
     }
 
@@ -46,7 +61,7 @@ impl Buildup {
     /// this Buildup, or if the frame data is empty.
     ///
     /// If this frame is the last frame in the transfer, this function returns the reassembled
-    /// payload, including the padding and transfer CRC (if applicable) but excluding any
+    /// payload, including the padding but excluding the transfer CRC and any
     /// tail bytes. After the payload is returned, this Buildup must not be used again.
     pub fn add(&mut self, frame_data: &[u8]) -> Result<Option<Vec<u8>>, BuildupError> {
         self.frames += 1;
@@ -70,32 +85,46 @@ impl Buildup {
         self.expect_start = false;
         self.expect_toggle = !self.expect_toggle;
 
-        // Copy data
         let frame_without_tail = &frame_data[..frame_data.len() - 1];
-        FallibleVec::try_extend_from_slice(&mut self.transfer, frame_without_tail)?;
+        let capacity_remaining = self.payload_size_max - self.transfer.len();
+        let bytes_to_copy = capacity_remaining.min(frame_without_tail.len());
+        log::debug!(
+            "transfer.len() = {} capacity_remaining = {} bytes_to_copy = {}",
+            self.transfer.len(),
+            capacity_remaining,
+            bytes_to_copy
+        );
+        FallibleVec::try_extend_from_slice(
+            &mut self.transfer,
+            &frame_without_tail[..bytes_to_copy],
+        )?;
 
+        self.crc.add_bytes(frame_without_tail);
+        self.payload_size += frame_without_tail.len();
+        // Remove CRC
+        if tail.end && !tail.start {
+            self.payload_size -= 2;
+        }
+
+        let skip_crc = tail.start && tail.end;
         if tail.end {
-            // End of transfer, return the transfer data
-            let data = mem::take(&mut self.transfer);
-            Ok(Some(data))
+            if skip_crc || self.crc.get() == 0 {
+                // End of transfer, return the transfer data without the CRC
+                self.transfer.truncate(self.payload_size);
+                let data = mem::take(&mut self.transfer);
+                Ok(Some(data))
+            } else {
+                Err(BuildupError::Crc)
+            }
         } else {
             // Expect more frames
             Ok(None)
         }
     }
 
-    /// Returns the number of payload bytes collected
-    pub fn payload_length(&self) -> usize {
-        self.transfer.len()
-    }
-
     /// Returns the ID of the transfer that is being reassembled
     pub fn transfer_id(&self) -> CanTransferId {
         self.transfer_id
-    }
-    /// Returns the number of frames processed
-    pub fn frames(&self) -> usize {
-        self.frames
     }
 }
 
@@ -104,6 +133,7 @@ pub enum BuildupError {
     OutOfMemory,
     InvalidStart,
     InvalidToggle,
+    Crc,
 }
 
 impl From<TryReserveError> for BuildupError {
@@ -193,7 +223,7 @@ mod test {
 
     #[test]
     fn test_node_info_response() {
-        let payload: [u8; 71] = [
+        let payload: [u8; 69] = [
             0x01, 0x00, // Protocol version
             0x00, 0x00, // Hardware version
             0x01, 0x00, // Software version
@@ -207,7 +237,6 @@ mod test {
             b'e', // org.uavcan.pyuavcan.demo.basic_usage
             0x00, // Software image CRC length
             0x00, // Certificate of authenticity length
-            0x9a, 0xe7, // Transfer CRC
         ];
 
         let frames: [&[u8]; 11] = [
@@ -237,7 +266,7 @@ mod test {
 
     #[test]
     fn test_array() {
-        let payload: [u8; 63 + 47] = [
+        let payload: [u8; 63 + 45] = [
             0x00, 0xb8, // Array length = 92
             0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,
             0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b,
@@ -249,7 +278,6 @@ mod test {
             0x59, 0x5a, 0x5b, // The rest of 0..=91
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, // 14 padding bytes
-            0xc0, 0x48, // Transfer CRC
         ];
         let frames: [&[u8]; 2] = [
             &[

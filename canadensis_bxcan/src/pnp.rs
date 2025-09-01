@@ -34,7 +34,7 @@ where
         let driver = BxCanDriver::new(can);
         let mut driver = SingleQueueDriver::new(SingleFrameQueue::new(), driver);
         let transmitter = CanTransmitter::new(Mtu::Can8);
-        let receiver = CanReceiver::new_anonymous(Mtu::Can8);
+        let receiver = CanReceiver::new_anonymous();
         let client = PnpClient::new(transmitter, receiver, unique_id, &mut driver)?;
         Ok(BxCanPnpClient {
             clock,
