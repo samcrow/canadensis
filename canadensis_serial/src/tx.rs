@@ -84,7 +84,7 @@ where
             .iter()
             .copied()
             .chain(transfer.payload.as_ref().iter().copied())
-            .chain(payload_crc.as_bytes().iter().copied());
+            .chain(IntoIterator::into_iter(payload_crc.to_le_bytes()));
         let escaped_length = cobs::escape_from_iter(data_to_escape, &mut escape_buffer)
             .expect("Incorrect escaped length");
         // Calculate the required queue capacity based on the real escaped length

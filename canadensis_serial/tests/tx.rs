@@ -1,14 +1,15 @@
 extern crate canadensis_core;
 extern crate canadensis_serial;
 
-use canadensis_core::time::{Clock, Microseconds32};
+mod utils;
+
+use self::utils::{MockDriver, ZeroClock};
+use canadensis_core::time::Microseconds32;
 use canadensis_core::transfer::{Header, MessageHeader, Transfer};
 use canadensis_core::transport::Transmitter;
-use canadensis_core::{nb, Priority};
-use canadensis_serial::driver::{ReceiveDriver, TransmitDriver};
+use canadensis_core::Priority;
 use canadensis_serial::{SerialTransmitter, SerialTransport};
-use std::collections::VecDeque;
-use std::convert::{Infallible, TryInto};
+use std::convert::TryInto;
 
 #[test]
 fn transmit_capacity_1() {
@@ -50,43 +51,4 @@ fn transmit_minimum_capacity() {
     tx.flush(&mut ZeroClock, &mut driver).unwrap();
     let queue: Vec<u8> = driver.iter().copied().collect();
     assert_eq!(queue.len(), MIN_QUEUE_CAPACITY)
-}
-
-/// A driver that stores frames in a queue and allows frames written to be read back
-#[derive(Default)]
-pub struct MockDriver {
-    bytes: VecDeque<u8>,
-}
-
-impl MockDriver {
-    /// Returns an iterator over the bytes in the queue from front to back
-    pub fn iter(&self) -> std::collections::vec_deque::Iter<'_, u8> {
-        self.bytes.iter()
-    }
-}
-
-impl TransmitDriver for MockDriver {
-    type Error = Infallible;
-
-    fn send_byte(&mut self, byte: u8) -> nb::Result<(), Self::Error> {
-        self.bytes.push_back(byte);
-        Ok(())
-    }
-}
-
-impl ReceiveDriver for MockDriver {
-    type Error = Infallible;
-
-    fn receive_byte(&mut self) -> nb::Result<u8, Self::Error> {
-        self.bytes.pop_front().ok_or(nb::Error::WouldBlock)
-    }
-}
-
-/// A clock that produces a Microseconds32 value that is always zero
-pub struct ZeroClock;
-
-impl Clock for ZeroClock {
-    fn now(&mut self) -> Microseconds32 {
-        Microseconds32::from_ticks(0)
-    }
 }
