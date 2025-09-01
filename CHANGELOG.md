@@ -45,6 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `canadensis_can`: Breaking change: CAN transport can successfully receive transfers that are larger than the
   subscription's maximum transfer length  [#48](https://github.com/samcrow/canadensis/pull/48)
+- `canadensis_serial`: Serial transport can successfully receive transfers that are larger than the
+  subscription's maximum transfer length  [#49](https://github.com/samcrow/canadensis/pull/49)
 - `canadensis_codegen_rust`: Deprecated modules are no longer deprecated for tests, which avoids irrelevant warnings
   when compiling tests
 
