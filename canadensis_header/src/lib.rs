@@ -1,7 +1,6 @@
 #![no_std]
 
 extern crate canadensis_core;
-extern crate crc_any;
 extern crate zerocopy;
 
 use canadensis_core::time::Microseconds32;
@@ -10,9 +9,9 @@ use canadensis_core::transport::{TransferId, Transport};
 use canadensis_core::{InvalidValue, Priority, ServiceId, SubjectId};
 use core::convert::TryFrom;
 use core::mem;
-use crc_any::CRCu16;
 use zerocopy::byteorder::{U16, U32, U64};
 use zerocopy::{AsBytes, BigEndian, FromBytes, LittleEndian};
+use canadensis_core::crc::Crc16CcittFalse;
 
 pub const SIZE: usize = mem::size_of::<RawHeader>();
 
@@ -55,8 +54,8 @@ impl RawHeader {
     /// Returns true if this header's checksum is correct
     pub fn checksum_valid(&self) -> bool {
         let header_bytes = self.as_bytes();
-        let mut crc = header_crc();
-        crc.digest(header_bytes);
+        let mut crc = Crc16CcittFalse::new();
+        crc.digest_bytes(header_bytes);
         crc.get_crc() == 0
     }
 }
@@ -183,8 +182,8 @@ impl From<Header> for RawHeader {
         // Calculate CRC for the header, excluding the CRC field
         header.header_checksum = {
             let bytes: &[u8] = header.as_bytes();
-            let mut crc = header_crc();
-            crc.digest(&bytes[..bytes.len() - 2]);
+            let mut crc = Crc16CcittFalse::new();
+            crc.digest_bytes(&bytes[..bytes.len() - 2]);
             crc.get_crc().into()
         };
         debug_assert!(header.checksum_valid());
@@ -327,11 +326,6 @@ fn check_node_id(id: u16) -> Result<Option<NodeId16>, InvalidValue> {
     } else {
         NodeId16::try_from(id).map(Some)
     }
-}
-
-/// Returns a CRC calculator used for headers
-pub fn header_crc() -> CRCu16 {
-    CRCu16::crc16ccitt_false()
 }
 
 /// A 16-bit node ID
