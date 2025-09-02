@@ -15,13 +15,11 @@ extern crate fallible_collections;
 extern crate heapless;
 extern crate log;
 
-pub use crate::crc::TransferCrc;
 pub use crate::data::*;
 pub use crate::rx::CanReceiver;
 pub use crate::tx::CanTransmitter;
 pub use crate::types::*;
 
-mod crc;
 mod data;
 pub mod driver;
 pub mod queue;

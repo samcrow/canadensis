@@ -4,6 +4,7 @@ use alloc::vec::Vec;
 
 use fallible_collections::{FallibleVec, TryReserveError};
 
+use canadensis_core::crc::CrcTracker;
 use canadensis_core::{OutOfMemoryError, Priority};
 use canadensis_header::Header;
 
@@ -17,12 +18,14 @@ use crate::UdpTransferId;
 /// * Frames have consecutive frame indices (out-of-order reassembly is not currently supported)
 /// * Frames have the same transfer ID
 /// * Frames have the same priority
-/// * The total number of bytes does not exceed the maximum allowed length
 ///
 #[derive(Debug)]
 pub struct Buildup {
-    /// The transfer bytes (not including UDP frame headers) that have been collected so far
+    /// The transfer bytes (not including UDP frame headers) that have been collected so far,
+    /// excluding any bytes after `max_length`
     bytes: Vec<u8>,
+    /// The CRC of all bytes collected so far
+    crc: CrcTracker,
     /// The expected index of the next frame
     next_frame_index: u32,
     /// The priority of the first frame, which all other frames should match
@@ -40,19 +43,28 @@ impl Buildup {
         header: &Header,
         bytes_after_header: &[u8],
         max_length: usize,
-    ) -> Result<Self, BuildupError> {
-        if bytes_after_header.len() > max_length {
-            return Err(BuildupError::Length);
-        }
+    ) -> Result<Self, OutOfMemoryError> {
         let mut bytes: Vec<u8> = FallibleVec::try_with_capacity(max_length)?;
-        bytes.extend_from_slice(bytes_after_header);
+        let mut crc = CrcTracker::new();
+        bytes_after_header.iter().for_each(|&byte| {
+            if let Some(digested) = crc.digest(byte) {
+                if bytes.len() < bytes.capacity() {
+                    bytes.push(digested);
+                }
+            }
+        });
 
         Ok(Buildup {
             bytes,
+            crc,
             next_frame_index: header.frame_index + 1,
             priority: header.priority,
             transfer_id: header.transfer_id,
         })
+    }
+
+    pub fn crc_correct(&self) -> bool {
+        self.crc.correct()
     }
 
     /// Adds a frame to this buildup
@@ -68,14 +80,18 @@ impl Buildup {
         if header.priority != self.priority {
             return Err(BuildupError::Priority);
         }
-        if self.bytes.len() + bytes_after_header.len() > self.bytes.capacity() {
-            return Err(BuildupError::Length);
-        }
-        self.bytes.extend_from_slice(bytes_after_header);
+        bytes_after_header.iter().for_each(|&byte| {
+            if let Some(digested) = self.crc.digest(byte) {
+                if self.bytes.len() < self.bytes.capacity() {
+                    self.bytes.push(digested);
+                }
+            }
+        });
+        self.next_frame_index += 1;
         Ok(())
     }
 
-    /// Consumes this buildup and returns the payload bytes (possibly including a CRC at the end)
+    /// Consumes this buildup and returns the payload bytes
     pub fn into_payload(self) -> Vec<u8> {
         self.bytes
     }
@@ -90,10 +106,10 @@ pub enum BuildupError {
     Priority,
     /// The frame transfer ID did not match
     TransferId,
-    /// The reassembled transfer was too long
-    Length,
     /// Ran out of memory
     Memory(OutOfMemoryError),
+    /// The payload CRC was incorrect
+    Crc,
 }
 
 impl From<OutOfMemoryError> for BuildupError {

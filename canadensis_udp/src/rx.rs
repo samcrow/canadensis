@@ -6,6 +6,7 @@ use core::net::Ipv4Addr;
 use fallible_collections::FallibleVec;
 use zerocopy::FromBytes;
 
+use canadensis_core::crc::CrcTracker;
 use canadensis_core::session::{Session, SessionTracker};
 use canadensis_core::time::{Clock, MicrosecondDuration32, Microseconds32};
 use canadensis_core::transfer::{Header, MessageHeader, ServiceHeader, Transfer};
@@ -15,10 +16,10 @@ use canadensis_header::{DataSpecifier, Header as UdpHeader, RawHeader};
 
 use crate::address::Address;
 use crate::driver::UdpSocket;
-use crate::rx::buildup::Buildup;
+use crate::rx::buildup::{Buildup, BuildupError};
 use crate::rx::subscriptions::Subscriptions;
-use crate::{data_crc, MIN_PACKET_SIZE, TRANSFER_CRC_SIZE};
 use crate::{Error, UdpNodeId, UdpTransferId, UdpTransport};
+use crate::{MIN_PACKET_SIZE, TRANSFER_CRC_SIZE};
 
 mod buildup;
 mod subscriptions;
@@ -315,70 +316,71 @@ where
             }
             session.set_last_activity(now);
             let result = session.handle_frame(header, bytes_after_header, self.payload_size_max);
-
-            if let Ok(Some(_)) = &result {
-                // Successfully received
-                // Don't need the session anymore
-                self.sessions.remove(source_node_id);
+            match result {
+                Ok(Some(payload)) => {
+                    // Successfully received
+                    // Don't need the session anymore
+                    self.sessions.remove(source_node_id);
+                    Ok(Some(self.convert_reassembly_result(payload, header, now)))
+                }
+                Ok(None) => Ok(None),
+                Err(e) => {
+                    log::warn!("Buildup error {:?}, removing session", e);
+                    self.sessions.remove(source_node_id);
+                    Ok(None)
+                }
             }
-
-            self.convert_reassembly_result(result, header, now)
         } else {
             // Special case for anonymous transfers, which must be single-frame
             let mut session = Session::new(now, self.timeout, None, UdpSessionData::default());
             let result = session.handle_frame(header, bytes_after_header, self.payload_size_max);
-            self.convert_reassembly_result(result, header, now)
+            match result {
+                Ok(Some(payload)) => Ok(Some(self.convert_reassembly_result(payload, header, now))),
+                Ok(None) => Ok(None),
+                Err(BuildupError::Memory(_)) => Err(OutOfMemoryError),
+                Err(_) => Ok(None),
+            }
         }
     }
 
     fn convert_reassembly_result(
         &self,
-        result: Result<Option<Vec<u8>>, OutOfMemoryError>,
+        reassembled: Vec<u8>,
         header: &UdpHeader,
         now: Microseconds32,
-    ) -> Result<Option<Transfer<Vec<u8>, UdpTransport>>, OutOfMemoryError> {
-        match result {
-            Ok(Some(reassembled)) => {
-                // Add the transfer headers and record the completed transfer
-                let header = match header.data_specifier {
-                    DataSpecifier::Subject { from, subject, .. } => {
-                        Header::Message(MessageHeader {
-                            timestamp: now,
-                            transfer_id: header.transfer_id,
-                            priority: header.priority,
-                            subject,
-                            source: from,
-                        })
-                    }
-                    DataSpecifier::ServiceRequest { service, from, to } => {
-                        Header::Request(ServiceHeader {
-                            timestamp: now,
-                            transfer_id: header.transfer_id,
-                            priority: header.priority,
-                            service,
-                            source: from,
-                            destination: to,
-                        })
-                    }
-                    DataSpecifier::ServiceResponse { service, from, to } => {
-                        Header::Response(ServiceHeader {
-                            timestamp: now,
-                            transfer_id: header.transfer_id,
-                            priority: header.priority,
-                            service,
-                            source: from,
-                            destination: to,
-                        })
-                    }
-                };
-                Ok(Some(Transfer {
-                    header,
-                    loopback: false,
-                    payload: reassembled,
-                }))
+    ) -> Transfer<Vec<u8>, UdpTransport> {
+        // Add the transfer headers and record the completed transfer
+        let header = match header.data_specifier {
+            DataSpecifier::Subject { from, subject, .. } => Header::Message(MessageHeader {
+                timestamp: now,
+                transfer_id: header.transfer_id,
+                priority: header.priority,
+                subject,
+                source: from,
+            }),
+            DataSpecifier::ServiceRequest { service, from, to } => Header::Request(ServiceHeader {
+                timestamp: now,
+                transfer_id: header.transfer_id,
+                priority: header.priority,
+                service,
+                source: from,
+                destination: to,
+            }),
+            DataSpecifier::ServiceResponse { service, from, to } => {
+                Header::Response(ServiceHeader {
+                    timestamp: now,
+                    transfer_id: header.transfer_id,
+                    priority: header.priority,
+                    service,
+                    source: from,
+                    destination: to,
+                })
             }
-            Ok(None) => Ok(None),
-            Err(e) => Err(e),
+        };
+        Transfer {
+            header,
+            loopback: false,
+            payload: reassembled,
         }
     }
 
@@ -398,7 +400,7 @@ trait UdpSession {
         header: &UdpHeader,
         bytes_after_header: &[u8],
         max_payload_length: usize,
-    ) -> Result<Option<Vec<u8>>, OutOfMemoryError>;
+    ) -> Result<Option<Vec<u8>>, BuildupError>;
 }
 
 impl UdpSession for Session<UdpTransferId, UdpSessionData> {
@@ -411,100 +413,55 @@ impl UdpSession for Session<UdpTransferId, UdpSessionData> {
         header: &UdpHeader,
         bytes_after_header: &[u8],
         max_payload_length: usize,
-    ) -> Result<Option<Vec<u8>>, OutOfMemoryError> {
-        // The buildup will collect the payload and the transfer CRC in the last frame, so it
-        // needs extra capacity
-        let max_payload_and_crc_length = max_payload_length + TRANSFER_CRC_SIZE;
-        if bytes_after_header.len() < TRANSFER_CRC_SIZE + 1 {
+    ) -> Result<Option<Vec<u8>>, BuildupError> {
+        if bytes_after_header.len() < TRANSFER_CRC_SIZE {
             // Frame not long enough
             return Ok(None);
         }
-        let payload_bytes = &bytes_after_header[..bytes_after_header.len() - TRANSFER_CRC_SIZE];
-        // Every frame has a transfer CRC at the end.
-        // If this is the last frame, the CRC covers the whole transfer (not including the CRCs of
-        // the previous frames).
-        // Otherwise, the CRC covers the data in this frame only.
-        // 4 cases:
         let first_frame = header.frame_index == 0;
         let last_frame = header.last_frame;
-        match (first_frame, last_frame) {
-            (true, true) => {
-                // Frame index 0 and last (single-frame transfer):
-                // Check frame CRC, no buildup, return payload only
-                if check_frame_crc(bytes_after_header) {
-                    let mut payload: Vec<u8> = FallibleVec::try_with_capacity(payload_bytes.len())?;
-                    payload.extend_from_slice(payload_bytes);
-                    Ok(Some(payload))
-                } else {
-                    Ok(None)
-                }
-            }
-            (true, false) => {
-                // Frame index 0 and not last (beginning):
-                // Check frame CRC, create buildup and add payload only
-                if check_frame_crc(bytes_after_header) {
-                    let buildup =
-                        match Buildup::new(header, payload_bytes, max_payload_and_crc_length) {
-                            Ok(buildup) => buildup,
-                            Err(_) => {
-                                // payload_bytes was greater than max_payload_and_crc_length
-                                return Ok(None);
-                            }
-                        };
-                    self.data_mut().buildup = Some(buildup);
-                } else {
-                    log::debug!("Incorrect first frame CRC");
-                }
-                Ok(None)
-            }
-            (false, false) => {
-                // Frame index >0 and not last (middle):
-                // Check frame CRC, add payload only to buildup
-                if check_frame_crc(bytes_after_header) {
-                    if let Some(buildup) = self.data_mut().buildup.as_mut() {
-                        let _ = buildup.push(header, payload_bytes);
+        let data = self.data_mut();
+
+        if first_frame && last_frame {
+            // Special case for a single-frame transfer
+            let mut payload: Vec<u8> = FallibleVec::try_with_capacity(max_payload_length)?;
+            let mut crc = CrcTracker::new();
+            bytes_after_header.iter().copied().for_each(|byte| {
+                if let Some(digested) = crc.digest(byte) {
+                    if payload.len() < max_payload_length {
+                        payload.push(digested)
                     }
                 }
-                Ok(None)
+            });
+            if crc.correct() {
+                Ok(Some(payload))
+            } else {
+                Err(BuildupError::Crc)
             }
-            (false, true) => {
-                // Frame index >0 and last (end):
-                // Add payload and transfer CRC to buildup, extract combined payload and transfer CRC,
-                // check full transfer CRC, return combined payload
-                if let Some(mut buildup) = self.data_mut().buildup.take() {
-                    if buildup.push(header, bytes_after_header).is_ok() {
-                        let payload_and_crc = buildup.into_payload();
-                        if check_frame_crc(&payload_and_crc) {
-                            // Remove CRC from the end
-                            let mut payload = payload_and_crc;
-                            payload.truncate(payload.len() - TRANSFER_CRC_SIZE);
-                            Ok(Some(payload))
+        } else {
+            match data.buildup.take() {
+                Some(mut buildup) => {
+                    buildup.push(header, bytes_after_header)?;
+                    if last_frame {
+                        if buildup.crc_correct() {
+                            Ok(Some(buildup.into_payload()))
                         } else {
-                            Ok(None)
+                            Err(BuildupError::Crc)
                         }
                     } else {
+                        data.buildup = Some(buildup);
                         Ok(None)
                     }
-                } else {
-                    log::debug!("No buildup");
+                }
+                None => {
+                    data.buildup = Some(Buildup::new(
+                        header,
+                        bytes_after_header,
+                        max_payload_length,
+                    )?);
                     Ok(None)
                 }
             }
         }
     }
-}
-
-fn check_frame_crc(bytes_after_header: &[u8]) -> bool {
-    let crc_start = bytes_after_header.len() - TRANSFER_CRC_SIZE;
-    let expected_crc = {
-        let mut expected_crc_bytes: [u8; 4] = [0; 4];
-        expected_crc_bytes.copy_from_slice(&bytes_after_header[crc_start..]);
-        u32::from_le_bytes(expected_crc_bytes)
-    };
-
-    let bytes_to_crc = &bytes_after_header[..crc_start];
-
-    let mut crc = data_crc();
-    crc.digest(bytes_to_crc);
-    crc.get_crc() == expected_crc
 }

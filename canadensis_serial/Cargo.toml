@@ -12,7 +12,6 @@ description = "A Cyphal implementation: Cyphal/Serial transport"
 [dependencies]
 zerocopy = "0.6.0"
 heapless = "0.8.0"
-crc-any = "2.4.0"
 fallible_collections = "0.5.1"
 log = "0.4.14"
 

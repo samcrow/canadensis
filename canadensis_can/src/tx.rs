@@ -11,12 +11,12 @@ use canadensis_core::time::{Clock, Microseconds32};
 use canadensis_core::transfer::{Header, ServiceHeader, Transfer};
 use canadensis_core::transport::Transmitter;
 
-use crate::crc::TransferCrc;
 use crate::data::Frame;
 use crate::driver::TransmitDriver;
 use crate::tx::breakdown::Breakdown;
 use crate::types::{CanNodeId, CanTransport, Error};
 use crate::{CanId, Mtu};
+use canadensis_core::crc::Crc16CcittFalse as TransferCrc;
 
 mod breakdown;
 #[cfg(test)]
@@ -137,7 +137,7 @@ where
             .iter()
             .cloned()
             .chain(iter::repeat_n(0, frame_stats.last_frame_padding))
-            .inspect(|byte| crc.add(*byte));
+            .inspect(|byte| crc.digest(*byte));
         // Break into frames
         let can_id = make_can_id(&transfer.header, transfer.payload);
         let mut breakdown = Breakdown::new(self.mtu, *transfer.header.transfer_id());
@@ -161,7 +161,7 @@ where
         if frames != 0 {
             // The payload + padding was split across at least one non-last frame (handled above)
             // and the last frame (still in the Breakdown). It needs a CRC.
-            let crc_value = crc.get();
+            let crc_value = crc.get_crc();
             // Add the CRC value, most significant byte first
             let crc_bytes = [(crc_value >> 8) as u8, crc_value as u8];
             for &byte in crc_bytes.iter() {

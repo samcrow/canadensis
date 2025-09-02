@@ -5,7 +5,7 @@ use crate::types::CanTransferId;
 use fallible_collections::{FallibleVec, TryReserveError};
 
 use super::TailByte;
-use crate::TransferCrc;
+use canadensis_core::crc::Crc16CcittFalse as TransferCrc;
 use canadensis_core::OutOfMemoryError;
 
 /// Reassembles frames into a transfer
@@ -99,7 +99,7 @@ impl Buildup {
             &frame_without_tail[..bytes_to_copy],
         )?;
 
-        self.crc.add_bytes(frame_without_tail);
+        self.crc.digest_bytes(frame_without_tail);
         self.payload_size += frame_without_tail.len();
         // Remove CRC
         if tail.end && !tail.start {
@@ -108,7 +108,7 @@ impl Buildup {
 
         let skip_crc = tail.start && tail.end;
         if tail.end {
-            if skip_crc || self.crc.get() == 0 {
+            if skip_crc || self.crc.get_crc() == 0 {
                 // End of transfer, return the transfer data without the CRC
                 self.transfer.truncate(self.payload_size);
                 let data = mem::take(&mut self.transfer);

@@ -28,12 +28,12 @@ where
     ///
     /// # Panics
     ///
-    /// This function panics if `MTU` is less than 29. 29 bytes is the minimum MTU required to
-    /// contain a header, transfer CRC, and one byte of payload in each frame.
+    /// This function panics if `MTU` is less than 28. 28 bytes is the minimum MTU required to
+    /// contain a header and transfer CRC in each frame.
     pub fn new(destination_port: u16) -> Self {
-        // MTU must be big enough for the header, transfer CRC, and at least 1 byte of data
+        // MTU must be big enough for the header and transfer CRC
         assert!(
-            MTU > canadensis_header::SIZE + TRANSFER_CRC_SIZE + 1,
+            MTU > canadensis_header::SIZE + TRANSFER_CRC_SIZE,
             "MTU is too small"
         );
 
@@ -171,6 +171,7 @@ where
     }
 }
 
+#[derive(Eq, PartialEq, Debug)]
 pub(crate) struct UdpFrame {
     deadline: Microseconds32,
     data: Vec<u8>,

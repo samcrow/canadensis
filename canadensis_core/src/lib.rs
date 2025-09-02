@@ -12,6 +12,7 @@ extern crate heapless;
 extern crate log;
 pub extern crate nb;
 
+pub mod crc;
 mod error;
 pub mod session;
 pub mod subscription;
