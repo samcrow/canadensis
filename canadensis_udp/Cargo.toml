@@ -7,12 +7,9 @@ license = "MIT OR Apache-2.0"
 keywords = ["uavcan", "cyphal"]
 description = "A Cyphal implementation: Cyphal/UDP transport"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 heapless = "0.8.0"
 zerocopy = "0.6.0"
-crc-any = "2.4.0"
 fallible_collections = "0.5.1"
 log = "0.4.14"
 nb = "1.0.0"

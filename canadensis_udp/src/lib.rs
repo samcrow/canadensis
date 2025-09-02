@@ -26,7 +26,6 @@
 extern crate alloc;
 extern crate canadensis_core;
 extern crate canadensis_header;
-extern crate crc_any;
 extern crate fallible_collections;
 extern crate heapless;
 extern crate log;
@@ -37,7 +36,6 @@ use canadensis_core::transport::Transport;
 use canadensis_core::{OutOfMemoryError, Priority};
 use canadensis_header::{NodeId16, TransferId64};
 use core::fmt::Debug;
-use crc_any::CRCu32;
 
 pub use crate::rx::{UdpReceiver, UdpSessionData};
 pub use crate::tx::UdpTransmitter;
@@ -54,9 +52,8 @@ const TRANSFER_CRC_SIZE: usize = 4;
 
 /// The minimum size of a Cyphal/UDP packet
 ///
-/// This is also the minimum MTU. It includes the Cyphal/UDP header, 1 byte of data, and the
-/// transfer CRC.
-pub const MIN_PACKET_SIZE: usize = canadensis_header::SIZE + 1 + TRANSFER_CRC_SIZE;
+/// This is also the minimum MTU. It includes the Cyphal/UDP header and the transfer CRC.
+pub const MIN_PACKET_SIZE: usize = canadensis_header::SIZE + TRANSFER_CRC_SIZE;
 
 /// The default UDP port used for communication
 pub const DEFAULT_PORT: u16 = 9382;
@@ -104,9 +101,4 @@ impl<S> From<OutOfMemoryError> for Error<S> {
     fn from(oom: OutOfMemoryError) -> Self {
         Error::Memory(oom)
     }
-}
-
-/// Returns a CRC calculator used for data
-fn data_crc() -> CRCu32 {
-    CRCu32::crc32c()
 }

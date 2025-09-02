@@ -2,14 +2,14 @@ use alloc::vec::Vec;
 use core::iter::Peekable;
 use core::mem;
 
-use crc_any::CRCu32;
+use canadensis_core::crc::Crc32c;
 use zerocopy::AsBytes;
 
 use canadensis_core::time::Microseconds32;
 use canadensis_core::Priority;
 
 use crate::tx::UdpFrame;
-use crate::{data_crc, UdpTransferId, TRANSFER_CRC_SIZE};
+use crate::UdpTransferId;
 use canadensis_header::{DataSpecifier, Header, RawHeader, LAST_FRAME};
 
 /// An iterator that breaks a transfer into UDP frames and adds a CRC to each frame
@@ -18,14 +18,12 @@ pub(crate) struct Breakdown<P: Iterator<Item = u8>> {
     header_base: HeaderBase,
     /// The transmit deadline for this transfer
     deadline: Microseconds32,
-    /// The payload iterator
-    payload: Peekable<P>,
+    /// The payload and transfer CRC iterator
+    payload: Peekable<AddCrc<P>>,
     /// The index of the frame currently being assembled
     frame_index: u32,
     /// If the last frame has already been produced
     done: bool,
-    /// A transfer CRC that has processed the data in all packets produced so far
-    transfer_crc: CRCu32,
     /// The payload in the frame currently being assembled
     ///
     /// Before the frame is returned, the first header::SIZE bytes are empty. The header and CRC
@@ -51,13 +49,12 @@ impl<P: Iterator<Item = u8>> Breakdown<P> {
         Breakdown {
             header_base,
             deadline,
-            payload: payload.peekable(),
+            payload: AddCrc::new(payload).peekable(),
             frame_index: 0,
             done: false,
-            transfer_crc: data_crc(),
             // Initialize the current frame with empty space for the header. The payload will follow.
             current_frame: {
-                let mut frame: Vec<u8> = Vec::with_capacity(mtu - TRANSFER_CRC_SIZE);
+                let mut frame: Vec<u8> = Vec::with_capacity(mtu);
                 frame.extend_from_slice(&[0; canadensis_header::SIZE]);
                 frame
             },
@@ -70,19 +67,16 @@ impl<P: Iterator<Item = u8>> Breakdown<P> {
     ///
     /// This function also re-initializes self.current_frame with header::SIZE zero bytes
     /// so that payload bytes can be added.
-    fn take_frame(&mut self, header: Header, crc: u32) -> UdpFrame {
+    fn take_frame(&mut self, header: Header) -> UdpFrame {
         // Copy the header into the current frame
         self.current_frame[..canadensis_header::SIZE]
             .copy_from_slice(RawHeader::from(header).as_bytes());
-        // Add CRC
-        self.current_frame.extend_from_slice(&crc.to_le_bytes());
         let frame = UdpFrame {
             deadline: self.deadline,
             data: mem::take(&mut self.current_frame),
         };
         // Add space in the new current frame for the header
-        self.current_frame
-            .reserve_exact(self.mtu - TRANSFER_CRC_SIZE);
+        self.current_frame.reserve(self.mtu);
         self.current_frame
             .extend_from_slice(&[0; canadensis_header::SIZE]);
         frame
@@ -115,25 +109,11 @@ where
             match self.payload.next() {
                 Some(byte) => {
                     self.current_frame.push(byte);
-                    self.transfer_crc.digest(&[byte]);
 
                     if self.current_frame.len() == self.current_frame.capacity() {
                         let more_payload_coming = self.payload.peek().is_some();
                         let header = self.make_header(!more_payload_coming);
-
-                        // This is not the last frame, so calculate the CRC over the data in this
-                        // frame only.
-                        // The CRC hasn't been added yet, so go all the way to the end.
-                        let data_crc = {
-                            let mut crc = data_crc();
-                            crc.digest(
-                                &self.current_frame
-                                    [canadensis_header::SIZE..self.current_frame.len()],
-                            );
-                            crc.get_crc()
-                        };
-
-                        let frame = self.take_frame(header, data_crc);
+                        let frame = self.take_frame(header);
                         self.frame_index += 1;
                         assert_eq!(self.frame_index & LAST_FRAME, 0, "Frame index too large");
                         break Some(frame);
@@ -142,10 +122,8 @@ where
                 None => {
                     if self.current_frame.len() != canadensis_header::SIZE {
                         // End of data, return a frame with the last frame bit set
-                        // and with a CRC covering all the data
                         let header = self.make_header(true);
-                        let transfer_crc = self.transfer_crc.get_crc();
-                        let frame = self.take_frame(header, transfer_crc);
+                        let frame = self.take_frame(header);
                         self.done = true;
                         break Some(frame);
                     } else {
@@ -166,8 +144,9 @@ mod tests {
     use canadensis_core::time::Microseconds32;
     use canadensis_core::{Priority, ServiceId, SubjectId};
 
-    use crate::{data_crc, UdpNodeId, TRANSFER_CRC_SIZE};
-    use canadensis_header::{header_crc, DataSpecifier};
+    use crate::tx::UdpFrame;
+    use crate::UdpNodeId;
+    use canadensis_header::DataSpecifier;
 
     use super::{Breakdown, HeaderBase};
 
@@ -182,14 +161,32 @@ mod tests {
             priority: Default::default(),
             data: 0x39fe,
         };
-        // No payload, should produce no frame
+        // One frame with header and CRC only
         let mut breakdown = Breakdown::new(
             header_base,
             Microseconds32::from_ticks(0),
             iter::empty(),
             1472,
         );
-        assert!(breakdown.next().is_none(), "Unexpected frame");
+        assert_eq!(
+            Some(UdpFrame {
+                deadline: Microseconds32::from_ticks(0),
+                data: vec![
+                    0x01, // Version
+                    0x04, // Priority
+                    0x30, 0xde, // Source node
+                    0xff, 0xff, // Destination node
+                    0xff, 0x1f, // Subject
+                    0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, // Transfer ID
+                    0x00, 0x00, 0x00, 0x80, // Frame index and last frame flag
+                    0xfe, 0x39, // User data
+                    0x4b, 0x59, // Header CRC
+                    // (No data)
+                    0x00, 0x00, 0x00, 0x00, // Transfer CRC
+                ]
+            }),
+            breakdown.next()
+        );
     }
 
     #[test]
@@ -212,33 +209,20 @@ mod tests {
         );
         let frame = breakdown.next().expect("No frame");
         assert!(breakdown.next().is_none(), "Extra frame at end");
-
-        assert_eq!(
-            frame.data.len(),
-            canadensis_header::SIZE + payload.len() + TRANSFER_CRC_SIZE
-        );
-        // Check everything before the header CRC
         let expected_bytes = [
             0x1, // Version
             0x4, // Priority
             0x30, 0xde, // Source node
             0xff, 0xff, // Destination node
             0xff, 0x1f, // Subject
-            0x08, 0x07, 0x06, 05, 0x04, 0x03, 0x02, 0x01, // Transfer ID
+            0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, // Transfer ID
             0x00, 0x00, 0x00, 0x80, // Frame index and last frame flag
-            0xfe, 0x39, // Data
+            0xfe, 0x39, // User data
+            0x4b, 0x59, // Header CRC
+            0xf2, // Payload
+            0xd3, 0x4c, 0x28, 0x40, // Transfer CRC
         ];
-        assert_eq!(
-            HexDebug(&frame.data[..canadensis_header::SIZE - 2]),
-            HexDebug(expected_bytes.as_slice())
-        );
-        check_header_crc(&frame.data[..canadensis_header::SIZE]);
-        assert_eq!(
-            frame.data[canadensis_header::SIZE],
-            payload[0],
-            "Incorrect payload"
-        );
-        check_single_frame_data_crc(&frame.data[canadensis_header::SIZE..]);
+        assert_eq!(HexDebug(&frame.data), HexDebug(expected_bytes.as_slice()));
     }
     #[test]
     fn test_one_full_frame() {
@@ -263,12 +247,6 @@ mod tests {
         );
         let frame = breakdown.next().expect("No frame");
         assert!(breakdown.next().is_none(), "Extra frame at end");
-
-        assert_eq!(
-            frame.data.len(),
-            canadensis_header::SIZE + payload.len() + TRANSFER_CRC_SIZE
-        );
-        // Check everything before the header CRC
         let expected_bytes = [
             0x1, // Version
             0x2, // Priority
@@ -277,19 +255,12 @@ mod tests {
             0x20, 0xc0, // Service bit | request bit | service ID
             0x24, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Transfer ID
             0x00, 0x00, 0x00, 0x80, // Frame index and last frame flag
-            0x21, 0x10, // Data
+            0x21, 0x10, // User data
+            0xb1, 0x95, // Header CRC
+            0xf2, 0x93, 0x01, 0xfd, // Payload
+            0x43, 0x2a, 0x08, 0x7e, // Transfer CRC
         ];
-        assert_eq!(
-            HexDebug(&frame.data[..canadensis_header::SIZE - 2]),
-            HexDebug(expected_bytes.as_slice())
-        );
-        check_header_crc(&frame.data[..canadensis_header::SIZE]);
-        assert_eq!(
-            frame.data[canadensis_header::SIZE..][..payload.len()],
-            payload,
-            "Incorrect payload"
-        );
-        check_single_frame_data_crc(&frame.data[canadensis_header::SIZE..]);
+        assert_eq!(HexDebug(&frame.data), HexDebug(expected_bytes.as_slice()));
     }
 
     #[test]
@@ -316,9 +287,7 @@ mod tests {
         // First frame
         {
             let frame = breakdown.next().expect("No frame");
-            assert_eq!(frame.data.len(), mtu);
-            // Check everything before the header CRC
-            let expected_bytes = [
+            let expected_bytes: [u8; 32] = [
                 0x1, // Version
                 0x5, // Priority
                 0x09, 0x00, // Source node
@@ -326,28 +295,16 @@ mod tests {
                 0x1f, 0x80, // Service bit | service ID
                 0xe3, 0x0f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Transfer ID
                 0x00, 0x00, 0x00, 0x00, // Frame index, not last frame
-                0xfe, 0xff, // Data
+                0xfe, 0xff, // User data
+                0xa2, 0x85, // Header CRC
+                0xf2, 0x93, 0x01, 0xfd, 0xe6, // Payload
+                0xc1, 0xfa, 0xb9, // First three bytes of transfer CRC
             ];
-            assert_eq!(
-                HexDebug(&frame.data[..canadensis_header::SIZE - 2]),
-                HexDebug(expected_bytes.as_slice())
-            );
-            check_header_crc(&frame.data[..canadensis_header::SIZE]);
-            assert_eq!(
-                frame.data[canadensis_header::SIZE..][..4],
-                payload[..4],
-                "Incorrect payload"
-            );
-            check_single_frame_data_crc(&frame.data[canadensis_header::SIZE..]);
+            assert_eq!(HexDebug(&frame.data), HexDebug(expected_bytes.as_slice()));
         }
         // Second frame
         {
             let frame = breakdown.next().expect("No frame");
-            assert_eq!(
-                frame.data.len(),
-                canadensis_header::SIZE + 1 + TRANSFER_CRC_SIZE
-            );
-            // Check everything before the header CRC
             let expected_bytes = [
                 0x1, // Version
                 0x5, // Priority
@@ -356,55 +313,13 @@ mod tests {
                 0x1f, 0x80, // Service bit | service ID
                 0xe3, 0x0f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Transfer ID
                 0x01, 0x00, 0x00, 0x80, // Frame index, last frame
-                0xfe, 0xff, // Data
+                0xfe, 0xff, // User data
+                0xdc, 0x7f, // Header CRC
+                0xc5, // Last byte of transfer CRC
             ];
-            assert_eq!(
-                HexDebug(&frame.data[..canadensis_header::SIZE - 2]),
-                HexDebug(expected_bytes.as_slice())
-            );
-            check_header_crc(&frame.data[..canadensis_header::SIZE]);
-            assert_eq!(
-                frame.data[canadensis_header::SIZE],
-                payload[4],
-                "Incorrect payload"
-            );
-            // Because this is the last frame of a multi-frame transfer, the CRC should cover
-            // the complete payload reassembled from all the frames.
-            check_full_payload_crc(
-                &payload,
-                &frame.data[frame.data.len() - TRANSFER_CRC_SIZE..],
-            );
+            assert_eq!(HexDebug(&frame.data), HexDebug(expected_bytes.as_slice()));
         }
         assert!(breakdown.next().is_none(), "Extra frame at end");
-    }
-
-    fn check_header_crc(header_bytes: &[u8]) {
-        assert_eq!(header_bytes.len(), canadensis_header::SIZE);
-        let mut crc = header_crc();
-        crc.digest(header_bytes);
-        assert_eq!(crc.get_crc(), 0);
-    }
-
-    fn check_single_frame_data_crc(payload_and_crc: &[u8]) {
-        let (payload, crc_bytes) =
-            payload_and_crc.split_at(payload_and_crc.len() - TRANSFER_CRC_SIZE);
-        let actual_crc =
-            u32::from_le_bytes([crc_bytes[0], crc_bytes[1], crc_bytes[2], crc_bytes[3]]);
-        let mut crc = data_crc();
-        crc.digest(payload);
-        assert_eq!(crc.get_crc(), actual_crc);
-    }
-
-    fn check_full_payload_crc(payload: &[u8], actual_crc_bytes: &[u8]) {
-        let actual_crc = u32::from_le_bytes([
-            actual_crc_bytes[0],
-            actual_crc_bytes[1],
-            actual_crc_bytes[2],
-            actual_crc_bytes[3],
-        ]);
-        let mut crc = data_crc();
-        crc.digest(payload);
-        assert_eq!(crc.get_crc(), actual_crc);
     }
 
     /// Wraps a slice and implements Debug in a way that always uses hexadecimal numbers
@@ -424,5 +339,79 @@ mod tests {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             write!(f, "{:#04x}", self.0)
         }
+    }
+}
+
+/// A byte stream adapter that adds a little-endian CRC32 of the previous bytes
+struct AddCrc<I> {
+    inner: I,
+    crc: Crc32c,
+    crc_bytes_provided: u8,
+}
+
+impl<I> AddCrc<I> {
+    pub fn new(inner: I) -> AddCrc<I> {
+        AddCrc {
+            inner,
+            crc: Crc32c::new(),
+            crc_bytes_provided: 0,
+        }
+    }
+}
+
+impl<I> Iterator for AddCrc<I>
+where
+    I: Iterator<Item = u8>,
+{
+    type Item = u8;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.crc_bytes_provided {
+            0 => match self.inner.next() {
+                Some(byte) => {
+                    self.crc.digest(byte);
+                    Some(byte)
+                }
+                None => {
+                    self.crc_bytes_provided = 1;
+                    Some(self.crc.get_crc() as u8)
+                }
+            },
+            1 => {
+                self.crc_bytes_provided = 2;
+                Some((self.crc.get_crc() >> 8) as u8)
+            }
+            2 => {
+                self.crc_bytes_provided = 3;
+                Some((self.crc.get_crc() >> 16) as u8)
+            }
+            3 => {
+                self.crc_bytes_provided = 4;
+                Some((self.crc.get_crc() >> 24) as u8)
+            }
+            _ => None,
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::AddCrc;
+
+    #[test]
+    fn add_crc_empty() {
+        let expected: Vec<u8> = vec![0x00, 0x00, 0x00, 0x00];
+        assert_eq!(
+            expected,
+            AddCrc::new(core::iter::empty()).collect::<Vec<u8>>()
+        );
+    }
+    #[test]
+    fn add_crc_short() {
+        let expected: Vec<u8> = vec![0x6f, 0x77, 0x6f, 0x9f, 0x30, 0x05, 0xf0];
+        assert_eq!(
+            expected,
+            AddCrc::new(IntoIterator::into_iter([0x6f, 0x77, 0x6f])).collect::<Vec<u8>>()
+        );
     }
 }

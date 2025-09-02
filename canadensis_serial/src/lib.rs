@@ -3,14 +3,12 @@
 extern crate alloc;
 extern crate canadensis_core;
 extern crate canadensis_header;
-extern crate crc_any;
 extern crate fallible_collections;
 extern crate heapless;
 extern crate log;
 extern crate zerocopy;
 
-use crc_any::CRCu32;
-
+use canadensis_core::crc::Crc32c;
 use canadensis_core::transport::Transport;
 use canadensis_core::{OutOfMemoryError, Priority};
 use canadensis_header::{NodeId16, TransferId64};
@@ -45,14 +43,10 @@ pub type SerialNodeId = NodeId16;
 /// This is just a `u64`.
 pub type SerialTransferId = TransferId64;
 
-/// Returns a CRC calculator for a serial transfer CRC
-fn transfer_crc() -> CRCu32 {
-    CRCu32::crc32c()
-}
 /// Calculates the CRC of a payload
 fn make_payload_crc(payload: &[u8]) -> u32 {
-    let mut crc = transfer_crc();
-    crc.digest(payload);
+    let mut crc = Crc32c::new();
+    crc.digest_bytes(payload);
     crc.get_crc()
 }
 

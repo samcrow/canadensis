@@ -1,21 +1,20 @@
 extern crate canadensis_core;
 extern crate canadensis_linux;
 extern crate canadensis_udp;
+extern crate log;
 extern crate simplelog;
 
-use canadensis_core::session::SessionDynamicMap;
+mod utils;
+
+use crate::utils::{init_test_logging, TestUdpReceiver};
 use canadensis_core::time::{milliseconds, Clock, MicrosecondDuration32};
 use canadensis_core::transfer::{Header, MessageHeader, ServiceHeader, Transfer};
 use canadensis_core::transport::{Receiver, TransferId, Transmitter};
 use canadensis_core::{Priority, SubjectId};
 use canadensis_linux::SystemClock;
 use canadensis_udp::driver::{StdUdpSocket, UdpSocket};
-use canadensis_udp::{
-    UdpNodeId, UdpReceiver, UdpSessionData, UdpTransferId, UdpTransmitter, UdpTransport,
-};
+use canadensis_udp::{UdpNodeId, UdpTransferId, UdpTransmitter, UdpTransport};
 use core::net::Ipv4Addr;
-use log::LevelFilter;
-use simplelog::{ColorChoice, TermLogger, TerminalMode};
 use std::convert::{TryFrom, TryInto};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
@@ -151,13 +150,6 @@ fn transmit_receive_response_one_byte_one_frame() {
         |rx, socket| rx.unsubscribe_response(service, socket),
     )
 }
-
-type TestUdpReceiver<const MTU: usize> = UdpReceiver<
-    SystemClock,
-    SessionDynamicMap<UdpNodeId, UdpTransferId, UdpSessionData>,
-    StdUdpSocket,
-    MTU,
->;
 
 fn check_loopback<S, U, const MTU: usize>(
     mut transfer: Transfer<Vec<u8>, UdpTransport>,
@@ -323,12 +315,3 @@ For my military knowledge, though I'm plucky and adventury,
 Has only been brought down to the beginning of the century;
 But still, in matters vegetable, animal, and mineral,
 I am the very model of a modern Major-Gineral."#;
-
-fn init_test_logging() {
-    let _ = TermLogger::init(
-        LevelFilter::Trace,
-        Default::default(),
-        TerminalMode::Stderr,
-        ColorChoice::Auto,
-    );
-}

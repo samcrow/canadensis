@@ -2,10 +2,10 @@ use alloc::vec::Vec;
 use core::convert::TryFrom;
 use core::marker::PhantomData;
 use core::mem;
-use crc_any::CRCu32;
 
 use fallible_collections::{FallibleVec, TryHashMap};
 
+use canadensis_core::crc::CrcTracker;
 use canadensis_core::subscription::SubscriptionManager;
 use canadensis_core::time::{Clock, MicrosecondDuration32, Microseconds32};
 use canadensis_core::transfer::{Header, Transfer};
@@ -16,7 +16,7 @@ use canadensis_header::Header as SerialHeader;
 use crate::cobs::Unescaper;
 use crate::driver::ReceiveDriver;
 use crate::header_collector::HeaderCollector;
-use crate::{transfer_crc, Error, SerialNodeId, SerialTransferId, SerialTransport};
+use crate::{Error, SerialNodeId, SerialTransferId, SerialTransport};
 
 /// A serial transport receiver
 ///
@@ -469,90 +469,4 @@ enum State {
         crc: CrcTracker,
         payload: Vec<u8>,
     },
-}
-
-/// Tracks the CRC of bytes processed so far and the last four bytes,
-/// which may be the transfer CRC
-struct CrcTracker {
-    /// CRC of all bytes before last_four_bytes
-    crc: CRCu32,
-    /// Most recent four bytes processed, with the oldest byte
-    /// in the least significant position
-    last_four_bytes: u32,
-    bytes_processed: u8,
-}
-
-impl CrcTracker {
-    pub fn new() -> CrcTracker {
-        CrcTracker {
-            crc: transfer_crc(),
-            last_four_bytes: 0x0,
-            bytes_processed: 0,
-        }
-    }
-
-    /// Handles a byte
-    ///
-    /// If this tracker has already processed four bytes, this function returns the
-    /// byte before the most recent four bytes.
-    pub fn digest(&mut self, byte: u8) -> Option<u8> {
-        let byte_out = if self.bytes_processed >= 4 {
-            Some(self.last_four_bytes as u8)
-        } else {
-            None
-        };
-        if let Some(byte_out) = byte_out {
-            self.crc.digest(&[byte_out]);
-        }
-        self.last_four_bytes = (u32::from(byte) << 24) | (self.last_four_bytes >> 8);
-        self.bytes_processed = self.bytes_processed.saturating_add(1);
-        byte_out
-    }
-    /// Returns true if the most recent four bytes contain a little-endian value that matches the
-    /// CRC of the previous bytes
-    pub fn correct(&self) -> bool {
-        self.bytes_processed >= 4 && self.crc.get_crc() == self.last_four_bytes
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::CrcTracker;
-
-    #[test]
-    fn crc_tracker_empty() {
-        let tracker = CrcTracker::new();
-        assert!(!tracker.correct());
-    }
-    #[test]
-    fn crc_tracker_zero() {
-        let mut tracker = CrcTracker::new();
-        tracker.digest(0x00);
-        tracker.digest(0x00);
-        tracker.digest(0x00);
-        tracker.digest(0x00);
-        assert!(tracker.correct());
-    }
-    #[test]
-    fn crc_tracker_four_bytes() {
-        let mut tracker = CrcTracker::new();
-        IntoIterator::into_iter([0x39, 0x52, 0xee, 0x11, 0x68, 0x81, 0x3e, 0xc8]).for_each(
-            |byte| {
-                tracker.digest(byte);
-            },
-        );
-        assert!(tracker.correct());
-    }
-    #[test]
-    fn crc_tracker_long() {
-        let mut tracker = CrcTracker::new();
-        IntoIterator::into_iter([
-            0xc2, 0xcf, 0xcc, 0xc0, 0x1c, 0xd7, 0x90, 0x5f, 0x95, 0x9e, 0xa4, 0x7c, 0x91, 0xe0,
-            0xa0, 0xe4, 0xbd, 0xf9, 0x4a, 0x9d, 0x44, 0xc7, 0x7c, 0x7f, 0x59, 0xcb, 0x5b, 0x2e,
-        ])
-        .for_each(|byte| {
-            tracker.digest(byte);
-        });
-        assert!(tracker.correct());
-    }
 }
