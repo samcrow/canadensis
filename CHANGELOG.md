@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_dsdl_parser`: Breaking change: Removed support for `saturated bool` and `truncated bool` types to match
   the updated specification
 - Several crates: Breaking change: Added `CanTransferIdTracker` [#46](https://github.com/samcrow/canadensis/pull/46)
+- `canadensis_header`: Breaking change: Removed `header_crc()` public function and dependency on `crc-any`
 
 ### Fixed
 
