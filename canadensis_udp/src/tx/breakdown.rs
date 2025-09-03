@@ -2,15 +2,15 @@ use alloc::vec::Vec;
 use core::iter::Peekable;
 use core::mem;
 
-use canadensis_core::crc::Crc32c;
-use zerocopy::AsBytes;
+use zerocopy::IntoBytes;
 
+use canadensis_core::crc::Crc32c;
 use canadensis_core::time::Microseconds32;
 use canadensis_core::Priority;
+use canadensis_header::{DataSpecifier, Header, RawHeader, LAST_FRAME};
 
 use crate::tx::UdpFrame;
 use crate::UdpTransferId;
-use canadensis_header::{DataSpecifier, Header, RawHeader, LAST_FRAME};
 
 /// An iterator that breaks a transfer into UDP frames and adds a CRC to each frame
 pub(crate) struct Breakdown<P: Iterator<Item = u8>> {

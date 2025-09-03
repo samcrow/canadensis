@@ -39,7 +39,7 @@ impl Display for ImplementSerialize<'_, '_> {
                 if self.zero_copy {
                     writeln!(
                         f,
-                        "cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));"
+                        "cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));"
                     )?;
                 } else {
                     for field in &gstruct.fields {

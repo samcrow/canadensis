@@ -15,7 +15,9 @@ pub mod reg {
                         not(doctest),
                         doc = " Description of a generic musical note in terms of basic physical quantities.\n\n This type may be used to control sound notification emitters assuming the best effort policy:\n if the requested parameters exceed the capabilities of the emitter, the closest possible values should be assumed."
                     )]
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Note {
                         ///
@@ -48,7 +50,7 @@ pub mod reg {
                             96
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Note {
@@ -81,7 +83,9 @@ pub mod reg {
                             not(doctest),
                             doc = " Positive torque is co-directed with positive position/velocity/acceleration.\n Provided states may allow the consumer to deduce certain hidden states such as the moment of inertia."
                         )]
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct Planar {
 ///
@@ -112,7 +116,7 @@ pub torque: crate::uavcan::si::unit::torque::scalar_1_0::Scalar,
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for Planar {
@@ -194,7 +198,9 @@ pub value: crate::reg::udral::physics::dynamics::rotation::planar_0_1::Planar,
                             not(doctest),
                             doc = " Positive force is co-directed with positive position/velocity/acceleration.\n Provided kinetic states may allow the consumer to deduce certain hidden states such as the mass of the load."
                         )]
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct Linear {
 ///
@@ -225,7 +231,7 @@ pub force: crate::uavcan::si::unit::force::scalar_1_0::Scalar,
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for Linear {
@@ -308,7 +314,9 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                         not(doctest),
                         doc = " DC or AC line electric power quantities. Generally, the following current sign convention applies:\n\n   - Positive current flows from the electric power supply network to the load (e.g., an actuator).\n\n   - If the electric network is the load itself powered from a source (e.g., battery), the current is negative."
                     )]
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Power {
                         ///
@@ -335,7 +343,7 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                             64
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Power {
@@ -413,7 +421,9 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                         not(doctest),
                         doc = " A generic source or sink of electric power (battery, turbogenerator, braking resistor, etc.).\n Low-pass filtering should be applied to avoid aliasing effects (as is the case everywhere else)."
                     )]
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Source {
                         #[cfg_attr(
@@ -458,7 +468,7 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                             128
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Source {
@@ -540,7 +550,9 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                             not(doctest),
                             doc = " Cartesian coordinates of a point in space."
                         )]
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct Point {
                             ///
@@ -565,7 +577,7 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for Point {
@@ -593,7 +605,9 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                             not(doctest),
                             doc = " The kinematic state of a point, as opposed to that of a body, is devoid of rotation information.\n Therefore, the velocity is specified in the parent coordinate frame."
                         )]
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct PointState {
                             ///
@@ -624,7 +638,7 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for PointState {
@@ -650,7 +664,9 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                         /// Fixed size 60 bytes
                         ///
                         #[cfg_attr(not(doctest), doc = " See PointState for details.")]
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct PointStateVar {
 ///
@@ -680,7 +696,7 @@ pub velocity: crate::reg::udral::physics::kinematics::translation::velocity3_var
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for PointStateVar {
@@ -756,7 +772,9 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::point_state_var_0_
                         ///
                         /// Fixed size 36 bytes
                         ///
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct PointVar {
                             ///
@@ -791,7 +809,7 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::point_state_var_0_
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for PointVar {
@@ -816,7 +834,9 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::point_state_var_0_
                         ///
                         /// Fixed size 40 bytes
                         ///
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct Pose {
                             ///
@@ -848,7 +868,7 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::point_state_var_0_
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for Pose {
@@ -873,7 +893,9 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::point_state_var_0_
                         ///
                         /// Fixed size 82 bytes
                         ///
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct PoseVar {
                             ///
@@ -908,7 +930,7 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::point_state_var_0_
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for PoseVar {
@@ -988,7 +1010,9 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::pose_var_0_1::Pose
                             not(doctest),
                             doc = " First-order kinematic state of a body in space: pose and twist.\n The pose defines a coordinate system transformation from the parent frame to the child frame.\n The twist is specified in the child frame (body frame)."
                         )]
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct State {
                             ///
@@ -1020,7 +1044,7 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::pose_var_0_1::Pose
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for State {
@@ -1049,7 +1073,9 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::pose_var_0_1::Pose
                             not(doctest),
                             doc = " See State for details. This type extends it with covariance matrices."
                         )]
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct StateVar {
 ///
@@ -1079,7 +1105,7 @@ pub twist: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::Twi
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for StateVar {
@@ -1159,7 +1185,9 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::state_var_0_1::Sta
                             not(doctest),
                             doc = " Motion of a rigid body in 3D space defined in the body frame."
                         )]
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct Twist {
                             #[cfg_attr(not(doctest), doc = " Linear velocity in the body frame.")]
@@ -1195,7 +1223,7 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::state_var_0_1::Sta
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for Twist {
@@ -1220,7 +1248,9 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::state_var_0_1::Sta
                         ///
                         /// Fixed size 66 bytes
                         ///
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct TwistVar {
                             ///
@@ -1255,7 +1285,7 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::state_var_0_1::Sta
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for TwistVar {
@@ -1337,7 +1367,9 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::Twi
                             not(doctest),
                             doc = " Geodetic position: latitude, longitude, and altitude.\n The order is chosen to match the axis ordering of the NED frame.\n The size and layout of this structure is equal to the Cartesian pose type."
                         )]
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct Point {
                             #[cfg_attr(not(doctest), doc = " [radian]")]
@@ -1380,7 +1412,7 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::Twi
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for Point {
@@ -1410,7 +1442,9 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::Twi
                             not(doctest),
                             doc = " The kinematic state of a point, as opposed to that of a body, is devoid of rotation information.\n Therefore, the velocity is specified in the parent coordinate frame."
                         )]
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct PointState {
                             ///
@@ -1441,7 +1475,7 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::Twi
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for PointState {
@@ -1467,7 +1501,9 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::Twi
                         /// Fixed size 60 bytes
                         ///
                         #[cfg_attr(not(doctest), doc = " See PointState for details.")]
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct PointStateVar {
 ///
@@ -1497,7 +1533,7 @@ pub velocity: crate::reg::udral::physics::kinematics::translation::velocity3_var
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for PointStateVar {
@@ -1573,7 +1609,9 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1
                         ///
                         /// Fixed size 36 bytes
                         ///
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct PointVar {
                             ///
@@ -1608,7 +1646,7 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for PointVar {
@@ -1637,7 +1675,9 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1
                             not(doctest),
                             doc = " Zero rotation is the state where the axes of the body frame are aligned with the axes of the local NED frame:\n X points north, Y points east, Z points down."
                         )]
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct Pose {
                             ///
@@ -1669,7 +1709,7 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for Pose {
@@ -1694,7 +1734,9 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1
                         ///
                         /// Fixed size 82 bytes
                         ///
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct PoseVar {
                             ///
@@ -1729,7 +1771,7 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for PoseVar {
@@ -1758,7 +1800,9 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1
                             not(doctest),
                             doc = " First-order kinematic state of a body near the surface of a planet.\n The pose defines a coordinate system transformation from the parent frame to the child frame.\n The twist is specified in the child frame (body frame)."
                         )]
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct State {
                             ///
@@ -1790,7 +1834,7 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for State {
@@ -1819,7 +1863,9 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1
                             not(doctest),
                             doc = " See State for details. This type extends it with covariance matrices."
                         )]
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct StateVar {
 ///
@@ -1849,7 +1895,7 @@ pub twist: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::Twi
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for StateVar {
@@ -1928,7 +1974,9 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::state_var_0_1::Stat
                         /// Fixed size 12 bytes
                         ///
                         #[cfg_attr(not(doctest), doc = " Rotation about an axis.")]
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct Planar {
                             ///
@@ -1967,7 +2015,7 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::state_var_0_1::Stat
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for Planar {
@@ -2050,7 +2098,9 @@ pub value: crate::reg::udral::physics::kinematics::rotation::planar_0_1::Planar,
                         /// Fixed size 12 bytes
                         ///
                         #[cfg_attr(not(doctest), doc = " Movement along an axis.")]
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct Linear {
                             ///
@@ -2087,7 +2137,7 @@ pub value: crate::reg::udral::physics::kinematics::rotation::planar_0_1::Planar,
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for Linear {
@@ -2371,7 +2421,9 @@ pub acceleration_error_variance: ::half::f16,
                             not(doctest),
                             doc = " Linear velocity with covariance.\n Observe that this is a structural subtype of uavcan.si.unit.velocity.Scalar.1.0."
                         )]
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct Velocity3Var {
                             ///
@@ -2405,7 +2457,7 @@ pub acceleration_error_variance: ::half::f16,
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for Velocity3Var {
@@ -2585,7 +2637,9 @@ pub acceleration_error_variance: ::half::f16,
                         not(doctest),
                         doc = " Standard TAI64N time label (https://cr.yp.to/libtai/tai64.html). Quote from the source:\n\n   TAI stands for Temps Atomique International, the current international real-time standard.\n   One TAI second is defined as the duration of 9192631770 periods of the radiation corresponding\n   to the transition between the two hyperfine levels of the ground state of the cesium atom.\n   TAI also specifies a frame of reference. Further discussion of special relativity is outside\n   the scope of this document.\n\n   A TAI64 label is an integer between 0 and 2^64 referring to a particular second of real time. Integer s refers to:\n\n       - the TAI second beginning exactly 2^62 - s seconds before the beginning of 1970 TAI,\n         if s is between 0 inclusive and 2^62 exclusive; or\n\n       - the TAI second beginning exactly s - 2^62 seconds after the beginning of 1970 TAI,\n         if s is between 2^62 inclusive and 2^63 exclusive.\n"
                     )]
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct TAI64 {
                         #[cfg_attr(
@@ -2610,7 +2664,7 @@ pub acceleration_error_variance: ::half::f16,
                             64
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for TAI64 {
@@ -2634,7 +2688,9 @@ pub acceleration_error_variance: ::half::f16,
                     ///
                     /// Fixed size 12 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct TAI64Var {
                         ///
@@ -2665,7 +2721,7 @@ pub acceleration_error_variance: ::half::f16,
                             96
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for TAI64Var {
@@ -2748,7 +2804,9 @@ pub acceleration_error_variance: ::half::f16,
                             not(doctest),
                             doc = " An actuator is a device that actuates a mechanical load using electric energy from the high-voltage DC power bus.\n There are multiple kinds of actuators with a dedicated namespace for each; additionally, this \"common\" namespace\n hosts certain elements shared between several (or all) kinds."
                         )]
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct _0 {}
                         impl ::canadensis_encoding::DataType for _0 {
@@ -2776,7 +2834,7 @@ pub acceleration_error_variance: ::half::f16,
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for _0 {
@@ -2809,7 +2867,7 @@ pub acceleration_error_variance: ::half::f16,
                                 doc = " The load is above SOA or regeneration below the SOA."
                             )]
                             ///
-                            /// `saturated bool`
+                            /// `bool`
                             ///
                             /// Always aligned,
                             /// size 1 bits
@@ -2819,13 +2877,13 @@ pub acceleration_error_variance: ::half::f16,
                                 doc = " Supply voltage is above or below the SOA."
                             )]
                             ///
-                            /// `saturated bool`
+                            /// `bool`
                             ///
                             /// Not always aligned,
                             /// size 1 bits
                             pub voltage: bool,
                             ///
-                            /// `saturated bool`
+                            /// `bool`
                             ///
                             /// Not always aligned,
                             /// size 1 bits
@@ -2835,7 +2893,7 @@ pub acceleration_error_variance: ::half::f16,
                                 doc = " Temperature is above or below the SOA."
                             )]
                             ///
-                            /// `saturated bool`
+                            /// `bool`
                             ///
                             /// Not always aligned,
                             /// size 1 bits
@@ -2845,7 +2903,7 @@ pub acceleration_error_variance: ::half::f16,
                                 doc = " The absolute velocity of the load is above the SOA."
                             )]
                             ///
-                            /// `saturated bool`
+                            /// `bool`
                             ///
                             /// Not always aligned,
                             /// size 1 bits
@@ -2855,7 +2913,7 @@ pub acceleration_error_variance: ::half::f16,
                                 doc = " The load cannot be driven due to a mechanical failure."
                             )]
                             ///
-                            /// `saturated bool`
+                            /// `bool`
                             ///
                             /// Not always aligned,
                             /// size 1 bits
@@ -2865,7 +2923,7 @@ pub acceleration_error_variance: ::half::f16,
                                 doc = " The mechanical vibration level exceeds the SOA."
                             )]
                             ///
-                            /// `saturated bool`
+                            /// `bool`
                             ///
                             /// Not always aligned,
                             /// size 1 bits
@@ -2875,7 +2933,7 @@ pub acceleration_error_variance: ::half::f16,
                                 doc = " Configuration is missing or invalid."
                             )]
                             ///
-                            /// `saturated bool`
+                            /// `bool`
                             ///
                             /// Not always aligned,
                             /// size 1 bits
@@ -2885,7 +2943,7 @@ pub acceleration_error_variance: ::half::f16,
                                 doc = " The requested control mode is not supported by the actuator."
                             )]
                             ///
-                            /// `saturated bool`
+                            /// `bool`
                             ///
                             /// Always aligned,
                             /// size 1 bits
@@ -2896,7 +2954,7 @@ pub acceleration_error_variance: ::half::f16,
                                 doc = " None of the above (vendor-specific)."
                             )]
                             ///
-                            /// `saturated bool`
+                            /// `bool`
                             ///
                             /// Not always aligned,
                             /// size 1 bits
@@ -3028,7 +3086,9 @@ pub acceleration_error_variance: ::half::f16,
                                 not(doctest),
                                 doc = " This is a collection of weakly-typed primitives used to control groups of actuators synchronously.\n\n Actuators are expected to subscribe using the largest array type. Publishers would choose the array type\n depending on the number of actuators in the group. The actuators would be expecting the largest array type,\n where the missing elements will be zero-filled automatically by the protocol stack thanks to the\n Implicit Zero Extension Rule (refer to the Cyphal Specification for details).\n\n The physical meaning of the values contained in the array is defined by the respective actuator service specification.\n If ratiometric control is used, then the range should be [-1, +1].\n\n It follows that a standalone actuator (that is not a member of any group) is just a special case of a group of 1,\n where the setpoint type is a single scalar.\n\n The Cyphal Specification might benefit from supporting flexible array fields to avoid having to deal with redundant\n similar types: https://en.wikipedia.org/wiki/Flexible_array_member, so that instead of having multiple types that\n differ only in size of the array fields, one could just say `float16[0] value` such that the size of zero indicates\n that the array is a flex array."
                             )]
-                            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                            #[derive(
+                                ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                            )]
                             #[repr(C, packed)]
                             pub struct _0 {}
                             impl ::canadensis_encoding::DataType for _0 {
@@ -3051,7 +3111,8 @@ pub acceleration_error_variance: ::half::f16,
                                     &self,
                                     cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                                 ) {
-                                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                    cursor
+                                        .write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                                 }
                             }
                             impl ::canadensis_encoding::Deserialize for _0 {
@@ -3077,7 +3138,9 @@ pub acceleration_error_variance: ::half::f16,
                             ///
                             /// Fixed size 2 bytes
                             ///
-                            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                            #[derive(
+                                ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                            )]
                             #[repr(C, packed)]
                             pub struct Scalar {
                                 ///
@@ -3101,7 +3164,8 @@ pub acceleration_error_variance: ::half::f16,
                                     &self,
                                     cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                                 ) {
-                                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                    cursor
+                                        .write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                                 }
                             }
                             impl ::canadensis_encoding::Deserialize for Scalar {
@@ -3128,7 +3192,9 @@ pub acceleration_error_variance: ::half::f16,
                             ///
                             /// Fixed size 4 bytes
                             ///
-                            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                            #[derive(
+                                ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                            )]
                             #[repr(C, packed)]
                             pub struct Vector2 {
                                 ///
@@ -3152,7 +3218,8 @@ pub acceleration_error_variance: ::half::f16,
                                     &self,
                                     cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                                 ) {
-                                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                    cursor
+                                        .write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                                 }
                             }
                             impl ::canadensis_encoding::Deserialize for Vector2 {
@@ -3179,7 +3246,9 @@ pub acceleration_error_variance: ::half::f16,
                             ///
                             /// Fixed size 62 bytes
                             ///
-                            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                            #[derive(
+                                ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                            )]
                             #[repr(C, packed)]
                             pub struct Vector31 {
                                 ///
@@ -3203,7 +3272,8 @@ pub acceleration_error_variance: ::half::f16,
                                     &self,
                                     cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                                 ) {
-                                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                    cursor
+                                        .write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                                 }
                             }
                             impl ::canadensis_encoding::Deserialize for Vector31 {
@@ -3230,7 +3300,9 @@ pub acceleration_error_variance: ::half::f16,
                             ///
                             /// Fixed size 6 bytes
                             ///
-                            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                            #[derive(
+                                ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                            )]
                             #[repr(C, packed)]
                             pub struct Vector3 {
                                 ///
@@ -3254,7 +3326,8 @@ pub acceleration_error_variance: ::half::f16,
                                     &self,
                                     cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                                 ) {
-                                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                    cursor
+                                        .write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                                 }
                             }
                             impl ::canadensis_encoding::Deserialize for Vector3 {
@@ -3281,7 +3354,9 @@ pub acceleration_error_variance: ::half::f16,
                             ///
                             /// Fixed size 8 bytes
                             ///
-                            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                            #[derive(
+                                ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                            )]
                             #[repr(C, packed)]
                             pub struct Vector4 {
                                 ///
@@ -3305,7 +3380,8 @@ pub acceleration_error_variance: ::half::f16,
                                     &self,
                                     cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                                 ) {
-                                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                    cursor
+                                        .write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                                 }
                             }
                             impl ::canadensis_encoding::Deserialize for Vector4 {
@@ -3332,7 +3408,9 @@ pub acceleration_error_variance: ::half::f16,
                             ///
                             /// Fixed size 12 bytes
                             ///
-                            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                            #[derive(
+                                ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                            )]
                             #[repr(C, packed)]
                             pub struct Vector6 {
                                 ///
@@ -3356,7 +3434,8 @@ pub acceleration_error_variance: ::half::f16,
                                     &self,
                                     cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                                 ) {
-                                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                    cursor
+                                        .write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                                 }
                             }
                             impl ::canadensis_encoding::Deserialize for Vector6 {
@@ -3383,7 +3462,9 @@ pub acceleration_error_variance: ::half::f16,
                             ///
                             /// Fixed size 16 bytes
                             ///
-                            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                            #[derive(
+                                ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                            )]
                             #[repr(C, packed)]
                             pub struct Vector8 {
                                 ///
@@ -3407,7 +3488,8 @@ pub acceleration_error_variance: ::half::f16,
                                     &self,
                                     cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                                 ) {
-                                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                    cursor
+                                        .write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                                 }
                             }
                             impl ::canadensis_encoding::Deserialize for Vector8 {
@@ -3515,7 +3597,9 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                             not(doctest),
                             doc = " The electronic speed controller (ESC) service is designed for controlling and monitoring electric drives.\n From the standpoint of this standard, an electric drive is just a special case of a servo. For generality,\n COTS electric drives are recommended to also support the servo interface defined in the adjacent namespace.\n\n ESCs (drives) are segregated into groups. Each ESC in a group has an index that is unique within the group.\n Drives in a group are commanded synchronously by publishing a message containing an array of setpoints.\n There are several subjects defined:\n\n   - Setpoint array subject. Every participant subscribes to the same setpoint subject.\n     Every message is consumed by all participants according to their index in the group.\n     The setpoint subject defines the group. There may be an arbitrary number of such groups in the network.\n\n   - Readiness subject. Every participant subscribes to the same readiness control subject which is used to command\n     the state of the group: sleep, standby, or engaged. In many cases there will be one global subject controlling\n     the state of the entire system; in other cases there will be dedicated controls on a per-subsystem basis.\n\n   - Feedback subjects published by each ESC separately, as shown on the diagram below.\n\n                                                   SUBJECT NAME        SUBJECT TYPE\n  +----------------+\n  |   Controller   |---------+------------+----... setpoint            reg.udral.service.actuator.common.sp.*\n  |                |-------+-)----------+-)----... readiness           reg.udral.service.common.Readiness\n  +----------------+       | |          | |\n   ^ ^ ^ ^  ^ ^ ^ ^        v v          v v\n   | | | |  | | | |   +---------+  +---------+\n   | | | |  | | | |   |Drive i=0|  |Drive i=1| ...\n   | | | |  | | | |   +---------+  +---------+\n   | | | |  | | | |     | | | |      | | | |\n   | | | |  | | | +-----+ | | |      | | | |       feedback            reg.udral.service.actuator.common.Feedback\n   | | | |  | | +---------+ | |      | | | |       status              reg.udral.service.actuator.common.Status\n   | | | |  | +-------------+ |      | | | |       power               reg.udral.physics.electricity.PowerTs\n   | | | |  +-----------------+      | | | |       dynamics            reg.udral.physics.dynamics.rotation.PlanarTs\n   | | | |                           | | | |\n   | | | +---------------------------+ | | |\n   | | +-------------------------------+ | |\n   | +-----------------------------------+ |\n   +---------------------------------------+\n\n Notice that the physics subjects are timestamped.\n\n Vendor/application-specific subjects are not shown here.\n Vendors are encouraged to publish additional data (e.g., temperatures) on separate subjects.\n\n\n   SETPOINT SUBJECT\n\n The setpoint subject is ignored unless the drive is ENGAGED. As long as the drive is not ENGAGED, it shall not apply\n any power to the load excepting non-operational scenarios such as maintenance and diagnostics, which are\n outside of the scope of this service definition. More on readiness and safety in the next section.\n\n Upon reception of a setpoint message, a group participant fetches its setpoint from the array using the array\n element whose index equals the index of the group participant. By virtue of the Implicit Zero Extension Rule,\n if the message is too short, the setpoint will be interpreted as zero.\n\n If no valid setpoint was received in CONTROL_TIMEOUT or a lower implementation-specific value,\n the drive should assume a zero setpoint for safety reasons.\n The minimum setpoint publication period should be at least twice lower than its timeout.\n\n While stopped, the drive may either allow the load to freewheel or it may force it to a particular parking position,\n depending on the implementation requirements. The actual state of the load may be continuously reported using the\n dynamics subject. Notice that per the safety rule introduced earlier, the parking position may be impossile\n to enforce unless the drive is ENGAGED because it may require delivering power to the load.\n\n The setpoint message types that can be used to command a group of drives are defined in\n reg.udral.service.actuator.common.sp; please read the documentation related to that namespace for further information.\n Servo setpoint message types may also be supported on an implementation-specific basis for enhanced interoperability.\n If the group is controlled using different setpoint subjects concurrently, the behavior is implementation-defined.\n\n The following control modes are defined, none of which are mandatory to support.\n The control mode in use is to be specified using the register API.\n This service does not support switching the control mode or setting the motion profile at runtime;\n for that, please refer to the servo service.\n\n   0. Ratiometric voltage control. Each setpoint scalar is a value normalized/saturated in [-1, +1] representing\n      the Q-axis/phase/armature (depending on the type of the drive) voltage as a fraction of the maximum.\n      This control mode emulates the behavior of a typical RCPWM-controlled BLDC drive.\n\n   1. Ratiometric current/torque control. Each setpoint scalar is a value normalized/saturated in [-1, +1] representing\n      the Q-axis/phase/armature (depending on the type of the drive) current as a fraction of the maximum.\n      A negative setpoint during forward rotation (positive during reverse rotation) commands braking.\n\n   2. Speed control. Each setpoint scalar contains the target angular velocity of the load in radian/second.\n\n   -. More control modes may be added later. Which control modes are supported is implementation-defined.\n\n Considerations that apply to all control modes:\n  -  Negative setpoint values represent reversal; a positive setpoint is co-directed with positive rotation/torque.\n  -  If reverse operation is not supported, negative values should be clamped to zero.\n  -  A non-finite setpoint is to be treated as zero.\n\n\n   READINESS SUBJECT\n\n The default state is STANDBY. While in this state, the drive is not allowed to deliver power to the load,\n and the setpoint subject is ignored. The drive shall enter this state automatically if the readiness subject\n is not updated for CONTROL_TIMEOUT.\n\n While the drive is ENGAGED, the setpoint commands are processed normally as described in the adjacent section.\n If the drive does not support bidirectional operation, implementations are recommended to ensure that the load\n is driven at some minimum power level (idling) while the drive is ENGAGED regardless of the commanded setpoint,\n unless such behavior is deemed incompatible with the functional requirements of the controlled drive.\n\n If the selected readiness state is SLEEP, the behavior is implementation-defined. Implementations are recommended to\n power off the high-voltage circuitry and all non-essential components (e.g., LED indication, sensors, etc.)\n to minimize the power consumption.\n\n Implementations are recommended to announce transitions between the readiness states using audiovisual feedback.\n\n The worst-case state transition latency is not defined. The controlling element (that is, the unit that publishes\n to the setpoint and readiness subjects) is expected to monitor the actual readiness status of each component using\n the feedback subject. For example, a sensorless electric motor drive may choose to spool-up before entering the\n ENGAGED state, which would obviously take time; as soon as the spool-up is finished, the drive would switch its\n reported status from STANDBY to ENGAGED, thereby indicating that it is ready for normal operation.\n\n\n   PUBLISHED SUBJECTS\n\n The following subjects shall be published immediately after a new setpoint is applied even if the drive is STANDBY:\n\n   SUBJECT             RECOMMENDED PRIORITY\n   ---------------------------------------------\n   feedback            same as the setpoint\n   power               second to the setpoint\n   dynamics            second to the setpoint\n\n If no setpoint is being published, these subjects should continue being updated at least at 1/MAX_PUBLICATION_PERIOD.\n The publication rate requirements do not apply if the readiness state is SLEEP.\n\n If the setpoint publication rate exceeds 50 Hz, implementations are allowed (but not required) to throttle these\n subjects by dropping some of the messages such that the publication rate of each subject does not exceed 50 Hz.\n Implementations operating over Classic CAN are recommended to do this.\n\n The other subjects may be published at an implementation-defined rate and priority,\n which should be consistent across the group.\n\n Implementations are encouraged to provide additional subjects for enhanced feedback and monitoring.\n\n The measurements carried by the published messages should be low-pass filtered with an adequate cutoff frequency to\n avoid aliasing effects. Implementations should strive to sample all parameters simultaneously.\n\n If a float-typed reported quantity is unknown, the corresponding value should be NaN.\n\n\n   CONVENTIONS AND ASSUMPTIONS\n\n A drive powers a rotary mechanical load that may be connected via a gearbox. It is the responsibility of\n the drive to account for the gear ratio of the gearbox when calculating related parameters such as angular\n velocity or torque.\n\n It is assumed that there is a well-defined direction of rotation that is referred to as forward rotation.\n A positive angular velocity represents forward rotation. Likewise, forward torque is positive.\n\n It is assumed that the drive is powered from a DC electric power supply network. A positive electric current\n represents current flowing from the network into the drive, also referred to as the state of driving/motoring.\n The opposite -- braking/regeneration -- is represented by negative current.\n\n Excepting edge cases and transients, torque and current are generally of the same sign.\n The above is summarized on the following four-quadrant diagram:\n\n                                   +velocity\n                                       ^\n                               braking,| forward,\n                               negative| positive\n                               power   | power\n                            -----------+---------->  +torque/current\n                               reverse,| braking,\n                               positive| negative\n                               power   | power\n"
                         )]
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct _0 {}
                         impl ::canadensis_encoding::DataType for _0 {
@@ -3532,7 +3616,7 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for _0 {
@@ -3561,7 +3645,9 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                             not(doctest),
                             doc = " A servo can actuate either a translational or rotary load using electric power from the high-voltage DC bus.\n\n The type of load (translational or rotational) dictates which type is used for commanding the setpoint and reporting\n the status:\n   - reg.udral.physics.dynamics.rotation.Planar[Ts]\n   - reg.udral.physics.dynamics.translation.Linear[Ts]\n For generality, either or both of these types are referred to as \"timestamped dynamics\" or \"non-timestamped dynamics\".\n\n The default readiness state is STANDBY. While in this state, the servo is not allowed to apply force to the load,\n and the setpoint subject is ignored. The servo shall enter the STANDBY state automatically if the readiness subject\n is not updated for CONTROL_TIMEOUT.\n\n The subjects defined by this service are shown on the following canvas. Implementers are encouraged to add\n custom subjects with additional data. Notice that the physics subjects are timestamped.\n\n                  SUBJECT NAME                         SUBJECT TYPE                                    RATE\n\n   +------------+ setpoint             +------------+  (non-timestamped dynamics) (see below)          R\n   |            |--------------------->|            |\n   |            | readiness            |            |  reg.udral.service.common.Readiness              any\n   |            |--------------------->|            |\n   |            | feedback             |            |  reg.udral.service.actuator.common.Feedback      R\n   |            |<---------------------|            |\n   | Controller | status               |   Servo    |  reg.udral.service.actuator.common.Status        any\n   |            |<---------------------|            |\n   |            | power                |            |  reg.udral.physics.electricity.PowerTs           R\n   |            |<---------------------|            |\n   |            | dynamics             |            |  (timestamped dynamics)                          R\n   |            |<---------------------|            |\n   +------------+                      +------------+\n\n Should it be necessary to control a group of servos in lockstep, an arbitrary number of them may subscribe\n to the same setpoint subject (their published subjects would be different of course).\n\n If the servo is ENGAGED, setpoint messages are processed as follows: the first field of the kinematic setpoint type\n that contains a finite value is taken as the commanded setpoint. The following non-negative finite fields define\n the motion profile, where negative and non-finite values are ignored.\n\n For example, a translational dynamics message containing the following values:\n   position     = +0.35\n   velocity     = NaN\n   acceleration = NaN\n   force        = 30\n ...is interpreted as follows: position the load at 0.35 meters relative to the neutral, limit the force to 30 newton,\n do not limit the velocity and acceleration. Here is another example:\n   angular position     = NaN\n   angular velocity     = +400\n   angular acceleration = NaN\n   torque               = 50\n which is interpreted as follows: reach the angular velocity of 400 radian/second in the forward direction,\n limit the torque to 50 newton*meters, do not limit the acceleration.\n\n The motion profile parameters that are not supported are to be silently ignored by the servo. If the commanded\n parameter cannot be controlled by the servo, the setpoint is to be ignored. For example, in the second example above,\n if the servo does not support angular velocity control, the setpoint message would be discarded.\n\n The above describes the typical use case where each servo is controlled over a dedicated setpoint\n subject independently (or a group of servos are controlled in lockstep using the same setpoint subject).\n Some applications may require synchronous independent control of multiple servos in a group, similar to ESC.\n To address this, a compliant servo should support another operating mode where the controlled quantity\n (position, velocity, force, etc.) is selected statically along with the motion profile (using the register API),\n and the servo subscribes to the setpoint subject of type \"reg.udral.service.actuator.common.sp.*\".\n Having its index in the group configured statically, the servo fetches the setpoint from the appropriate\n index in the setpoint array.\n The resulting topology closely resembles that of the ESC service:\n\n                                                   SUBJECT NAME            SUBJECT TYPE\n  +----------------+\n  |   Controller   |---------+------------+----... setpoint                reg.udral.service.actuator.common.sp.*\n  |                |-------+-)----------+-)----... readiness               reg.udral.service.common.Readiness\n  +----------------+       | |          | |\n   ^ ^ ^ ^  ^ ^ ^ ^        v v          v v\n   | | | |  | | | |   +---------+  +---------+\n   | | | |  | | | |   |Servo i=0|  |Servo i=1| ...\n   | | | |  | | | |   +---------+  +---------+\n   | | | |  | | | |     | | | |      | | | |\n   | | | |  | | | +-----+ | | |      | | | |       feedback                reg.udral.service.actuator.common.Feedback\n   | | | |  | | +---------+ | |      | | | |       status                  reg.udral.service.actuator.common.Status\n   | | | |  | +-------------+ |      | | | |       power                   reg.udral.physics.electricity.PowerTs\n   | | | |  +-----------------+      | | | |       dynamics                (timestamped dynamics)\n   | | | |                           | | | |\n   | | | +---------------------------+ | | |\n   | | +-------------------------------+ | |\n   | +-----------------------------------+ |\n   +---------------------------------------+\n\n If the selected readiness state is SLEEP, the behavior is implementation-defined. Implementations are recommended to\n power off the high-voltage circuitry and all non-essential components (e.g., LED indication, sensors, etc.)\n to minimize the power consumption. The publication rate requirements do not apply if the state is SLEEP.\n\n The worst-case readiness state transition latency is not defined.\n\n The following subjects shall be published immediately after a new setpoint is applied even if the servo is STANDBY:\n\n   SUBJECT NAME        RECOMMENDED PRIORITY\n   ---------------------------------------------\n   feedback            same as the setpoint\n   power               second to the setpoint\n   dynamics            second to the setpoint\n\n If no setpoint is being published, these subjects should continue being updated at least at 1/MAX_PUBLICATION_PERIOD.\n\n If the setpoint publication rate exceeds 50 Hz, implementations are allowed (but not required) to throttle these\n subjects by dropping some of the messages such that the publication rate of each subject does not exceed 50 Hz.\n Implementations operating over Classic CAN are recommended to do this.\n\n The other subjects may be published at an implementation-defined rate and priority,\n which should be consistent across the group.\n\n The measurements carried by the published messages should be low-pass filtered with an adequate cutoff frequency to\n avoid aliasing effects. Implementations should strive to sample all parameters simultaneously.\n\n It is assumed that the servo is powered from a DC electric power supply network. A positive electric current\n represents current flowing from the DC network into the servo (negative represents regeneration).\n\n Excepting edge cases and transients, torque/force and current are generally of the same sign (barring the difference\n introduced by the power dissipated by the servo itself).\n\n                                   +velocity\n                                       ^\n                               braking,| forward,\n                               negative| positive\n                               power   | power\n                            -----------+---------->  +torque/force/current\n                               reverse,| braking,\n                               positive| negative\n                               power   | power\n\n An example implementation is available at https://github.com/OpenCyphal/demos"
                         )]
-                        #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                        #[derive(
+                            ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                        )]
                         #[repr(C, packed)]
                         pub struct _0 {}
                         impl ::canadensis_encoding::DataType for _0 {
@@ -3578,7 +3664,7 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                                 &self,
                                 cursor: &mut ::canadensis_encoding::WriteCursor<'_>,
                             ) {
-                                cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                                cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                             }
                         }
                         impl ::canadensis_encoding::Deserialize for _0 {
@@ -3608,7 +3694,9 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                         not(doctest),
                         doc = " This is the smart battery monitoring service. A smart battery is required to publish on the following subjects:\n\n   SUBJECT                         TYPE                                            TYP. RATE [Hz]\n   energy_source                   reg.udral.physics.electricity.SourceTs          1...100\n   status                          reg.udral.service.battery.Status                ~1\n   parameters                      reg.udral.service.battery.Parameters            ~0.2\n\n Observe that only the first subject can be used for estimating the endurance of the power source. The other subjects\n are designed for monitoring, diagnostics, and maintenance.\n\n Optionally, the battery service can subscribe to a readiness control subject (see reg.udral.service.common.Readiness),\n which enables the following two optional capabilities:\n\n   - SLEEP mode: when the readiness subject commands the sleep state, the battery management system may enter a\n     low power consumption state, possibly deactivating some of its capabilities.\n\n   - STANDBY mode: the battery management system may implement additional safety protections that may otherwise\n     interfere with the normal operation of the vehicle. For example, the traction battery may limit the maximum\n     load current and the depth of discharge unless the commanded state is ENGAGED. By doing so, the battery can\n     protect itself and the supplied high-voltage DC network from accidental damage while the vehicle is parked.\n     Limiting the output power or discharge of the traction battery might lead to catastrophic consequences in\n     an aerial vehicle, hence such safety checks are to be disabled once the battery is commanded into the ENGAGED\n     state.\n\n If readiness state selection is not supported, the battery may not subscribe to the readiness control subject,\n in which case it should permanently report its state as ENGAGED unless the battery is unfit for use (e.g., due\n to degradation or a failure).\n\n By convention, positive current flows from the DC network into the battery. Therefore, the current is\n negative when the battery powers the system, and positive when it is being charged.\n\n Systems that leverage multiple battery packs simultaneously should be configured to publish the status of each\n pack on a separate subject.\n\n Published quantities should be low-pass filtered to avoid aliasing effects.\n Publishers should strive to sample all parameters atomically.\n\n The reported quantities are focused on the amount of energy that can be reclaimed from the battery. In a\n simplified view, this can be seen as the amount of energy that is \"stored\" in the battery; however, this\n interpretation is not strictly correct because the amount of retrievable energy may be dependent on external\n factors such as the temperature of the battery or the load current. Energy estimation is hard and requires\n accurate modeling of the state of the battery, which may be impossible to do without precise tracking of each\n charging cycle. Despite the complications, this is considered to be a superior approach compared to the commonly\n used alternative where the state estimation is focused on the electric charge, because the latter cannot be used\n directly to predict the endurance of the system.\n\n The methods of energy estimation are implementation-defined."
                     )]
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct _0 {}
                     impl ::canadensis_encoding::DataType for _0 {
@@ -3622,7 +3710,7 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                             0
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for _0 {
@@ -3649,7 +3737,9 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                         not(doctest),
                         doc = " Generic error codes reported by the service provider.\n An error is reported when the corresponding parameter exceeds its safe operating area (SOA) as defined by the vendor;\n see https://en.wikipedia.org/wiki/Safe_operating_area.\n As long as an error condition is present, the service health should not be NOMINAL.\n\n If there are multiple error conditions present, the most severe one should be reported. The severity ordering\n is implementation-defined. Barring special requirements, it is recommended to give preference to errors whose\n code is smaller (e.g., BAD_BATTERY trumps TEMPERATURE_COLD)."
                     )]
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Error {
                         ///
@@ -3720,7 +3810,7 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                             8
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Error {
@@ -4164,7 +4254,9 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                         not(doctest),
                         doc = " Battery chemistry type and its form-factor.\n Observe that there is no item to represent unknown technology because it is required to be known.\n This information may be used by charging systems to select the appropriate charging strategy.\n If the battery is of an uncommon type, it may be preferred to report the closest-matching type listed here\n instead of OTHER."
                     )]
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Technology {
                         ///
@@ -4261,7 +4353,7 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                             8
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Technology {
@@ -4411,7 +4503,9 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                         not(doctest),
                         doc = " A generic sensor status information.\n This data should be published at a low rate but not lower than the specified limit."
                     )]
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Status {
                         #[cfg_attr(
@@ -4461,7 +4555,7 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                             96
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Status {
@@ -4761,7 +4855,7 @@ pub mod uavcan {
                 not(doctest),
                 doc = " Nested type.\n Result of a file system operation."
             )]
-            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
             #[repr(C, packed)]
             pub struct Error {
                 ///
@@ -4801,7 +4895,7 @@ pub mod uavcan {
                     16
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                    cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for Error {
@@ -4907,7 +5001,7 @@ pub mod uavcan {
                 pub unix_timestamp_of_last_modification: u64,
                 #[cfg_attr(not(doctest), doc = " True if file, false if directory.")]
                 ///
-                /// `saturated bool`
+                /// `bool`
                 ///
                 /// Always aligned,
                 /// size 1 bits
@@ -4917,7 +5011,7 @@ pub mod uavcan {
                     doc = " This is a link to another entry; the above flag indicates the type of the target."
                 )]
                 ///
-                /// `saturated bool`
+                /// `bool`
                 ///
                 /// Not always aligned,
                 /// size 1 bits
@@ -4927,7 +5021,7 @@ pub mod uavcan {
                     doc = " The item can be read by the caller (applies to files and directories)."
                 )]
                 ///
-                /// `saturated bool`
+                /// `bool`
                 ///
                 /// Not always aligned,
                 /// size 1 bits
@@ -4937,7 +5031,7 @@ pub mod uavcan {
                     doc = " The item can be written by the caller (applies to files and directories).\n If such entry does not exist, all flags should be cleared/ignored."
                 )]
                 ///
-                /// `saturated bool`
+                /// `bool`
                 ///
                 /// Not always aligned,
                 /// size 1 bits
@@ -5066,7 +5160,7 @@ pub mod uavcan {
                 pub unix_timestamp_of_last_modification: u64,
                 #[cfg_attr(not(doctest), doc = " True if file, false if directory.")]
                 ///
-                /// `saturated bool`
+                /// `bool`
                 ///
                 /// Always aligned,
                 /// size 1 bits
@@ -5076,7 +5170,7 @@ pub mod uavcan {
                     doc = " This is a link to another entry; the above flag indicates the type of the target."
                 )]
                 ///
-                /// `saturated bool`
+                /// `bool`
                 ///
                 /// Not always aligned,
                 /// size 1 bits
@@ -5086,7 +5180,7 @@ pub mod uavcan {
                     doc = " The item can be read by the caller (applies to files and directories)."
                 )]
                 ///
-                /// `saturated bool`
+                /// `bool`
                 ///
                 /// Not always aligned,
                 /// size 1 bits
@@ -5096,7 +5190,7 @@ pub mod uavcan {
                     doc = " The item can be written by the caller (applies to files and directories).\n If such entry does not exist, all flags should be cleared/ignored."
                 )]
                 ///
-                /// `saturated bool`
+                /// `bool`
                 ///
                 /// Not always aligned,
                 /// size 1 bits
@@ -5389,7 +5483,7 @@ pub mod uavcan {
                     doc = " Do not remove the source. Used to copy instead of moving."
                 )]
                 ///
-                /// `saturated bool`
+                /// `bool`
                 ///
                 /// Always aligned,
                 /// size 1 bits
@@ -5399,7 +5493,7 @@ pub mod uavcan {
                     doc = " If the destination exists, remove it beforehand."
                 )]
                 ///
-                /// `saturated bool`
+                /// `bool`
                 ///
                 /// Not always aligned,
                 /// size 1 bits
@@ -5459,7 +5553,7 @@ pub mod uavcan {
             ///
             /// Fixed size 2 bytes
             ///
-            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
             #[repr(C, packed)]
             #[deprecated]
             pub struct ModifyResponse {
@@ -5481,7 +5575,7 @@ pub mod uavcan {
                     16
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                    cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for ModifyResponse {
@@ -5519,7 +5613,7 @@ pub mod uavcan {
                     doc = " Do not remove the source. Used to copy instead of moving."
                 )]
                 ///
-                /// `saturated bool`
+                /// `bool`
                 ///
                 /// Always aligned,
                 /// size 1 bits
@@ -5529,7 +5623,7 @@ pub mod uavcan {
                     doc = " If the destination exists, remove it beforehand."
                 )]
                 ///
-                /// `saturated bool`
+                /// `bool`
                 ///
                 /// Not always aligned,
                 /// size 1 bits
@@ -5589,7 +5683,7 @@ pub mod uavcan {
             ///
             /// Fixed size 2 bytes
             ///
-            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
             #[repr(C, packed)]
             pub struct ModifyResponse {
                 ///
@@ -5610,7 +5704,7 @@ pub mod uavcan {
                     16
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                    cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for ModifyResponse {
@@ -6061,7 +6155,7 @@ pub mod uavcan {
             ///
             /// Fixed size 2 bytes
             ///
-            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
             #[repr(C, packed)]
             #[deprecated]
             pub struct WriteResponse {
@@ -6083,7 +6177,7 @@ pub mod uavcan {
                     16
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                    cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for WriteResponse {
@@ -6170,7 +6264,7 @@ pub mod uavcan {
             ///
             /// Fixed size 2 bytes
             ///
-            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
             #[repr(C, packed)]
             pub struct WriteResponse {
                 ///
@@ -6191,7 +6285,7 @@ pub mod uavcan {
                     16
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                    cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for WriteResponse {
@@ -6299,7 +6393,7 @@ pub mod uavcan {
                 ///
                 /// Fixed size 0 bytes
                 ///
-                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
                 #[repr(C, packed)]
                 #[deprecated]
                 pub struct HandleIncomingPacketResponse {}
@@ -6314,7 +6408,7 @@ pub mod uavcan {
                         0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                        cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for HandleIncomingPacketResponse {
@@ -6417,7 +6511,7 @@ pub mod uavcan {
                 ///
                 /// Fixed size 0 bytes
                 ///
-                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
                 #[repr(C, packed)]
                 pub struct HandleIncomingPacketResponse {}
                 impl ::canadensis_encoding::DataType for HandleIncomingPacketResponse {
@@ -6431,7 +6525,7 @@ pub mod uavcan {
                         0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                        cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for HandleIncomingPacketResponse {
@@ -6502,7 +6596,7 @@ pub mod uavcan {
                         doc = " Expect data back (i.e., instruct the modem to use the NAT table)."
                     )]
                     ///
-                    /// `saturated bool`
+                    /// `bool`
                     ///
                     /// Always aligned,
                     /// size 1 bits
@@ -6512,7 +6606,7 @@ pub mod uavcan {
                         doc = " Use Datagram Transport Layer Security. Drop the packet if DTLS is not supported.\n Option flags."
                     )]
                     ///
-                    /// `saturated bool`
+                    /// `bool`
                     ///
                     /// Not always aligned,
                     /// size 1 bits
@@ -6656,7 +6750,7 @@ pub mod uavcan {
                         doc = " Expect data back (i.e., instruct the modem to use the NAT table)."
                     )]
                     ///
-                    /// `saturated bool`
+                    /// `bool`
                     ///
                     /// Always aligned,
                     /// size 1 bits
@@ -6666,7 +6760,7 @@ pub mod uavcan {
                         doc = " Use Datagram Transport Layer Security. Drop the packet if DTLS is not supported.\n Option flags."
                     )]
                     ///
-                    /// `saturated bool`
+                    /// `bool`
                     ///
                     /// Not always aligned,
                     /// size 1 bits
@@ -7356,7 +7450,7 @@ Extended
                     not(doctest),
                     doc = " Standard EtherType constants as defined by IEEE Registration Authority and IANA.\n This list is only a small subset of constants that are considered to be relevant for Cyphal."
                 )]
-                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
                 #[repr(C, packed)]
                 pub struct EtherType {
                     ///
@@ -7381,7 +7475,7 @@ Extended
                         16
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                        cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for EtherType {
@@ -7963,7 +8057,7 @@ Extended
             ///
             /// Fixed size 1 bytes
             ///
-            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
             #[repr(C, packed)]
             #[deprecated]
             pub struct ExecuteCommandResponse {
@@ -8016,7 +8110,7 @@ Extended
                     8
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                    cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for ExecuteCommandResponse {
@@ -8038,8 +8132,6 @@ Extended
                 );
             }
         }
-        #[allow(deprecated)]
-        #[cfg_attr(not(test), deprecated)]
         pub mod execute_command_1_1 {
             #[cfg_attr(not(doctest), doc = "The fixed ID of this service")]
             pub const SERVICE: ::canadensis_core::ServiceId =
@@ -8151,9 +8243,8 @@ Extended
             ///
             /// Fixed size 1 bytes
             ///
-            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
             #[repr(C, packed)]
-            #[deprecated]
             pub struct ExecuteCommandResponse {
                 #[cfg_attr(not(doctest), doc = " The result of the request.")]
                 ///
@@ -8204,202 +8295,7 @@ Extended
                     8
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
-                }
-            }
-            impl ::canadensis_encoding::Deserialize for ExecuteCommandResponse {
-                fn deserialize(
-                    cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
-                ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
-                where
-                    Self: Sized,
-                {
-                    Ok(Self::deserialize_zero_copy(cursor))
-                }
-            }
-            #[test]
-            fn test_layout() {
-                assert_eq!(::core::mem::size_of::<ExecuteCommandResponse>() * 8, 8);
-                assert_eq!(
-                    ::memoffset::offset_of!(ExecuteCommandResponse, status) * 8,
-                    0
-                );
-            }
-        }
-        #[allow(deprecated)]
-        #[cfg_attr(not(test), deprecated)]
-        pub mod execute_command_1_2 {
-            #[cfg_attr(not(doctest), doc = "The fixed ID of this service")]
-            #[deprecated]
-            pub const SERVICE: ::canadensis_core::ServiceId =
-                ::canadensis_core::ServiceId::from_truncating(435);
-
-            /// `uavcan.node.ExecuteCommand.1.2`
-            ///
-            /// Size ranges from 3 to 258 bytes
-            ///
-            #[cfg_attr(
-                not(doctest),
-                doc = " Instructs the server node to execute or commence execution of a simple predefined command.\n All standard commands are optional; i.e., not guaranteed to be supported by all nodes."
-            )]
-            #[deprecated]
-            pub struct ExecuteCommandRequest {
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " Standard pre-defined commands are at the top of the range (defined below).\n Vendors can define arbitrary, vendor-specific commands in the bottom part of the range (starting from zero).\n Vendor-specific commands shall not use identifiers above 32767."
-                )]
-                ///
-                /// `saturated uint16`
-                ///
-                /// Always aligned,
-                /// size 16 bits
-                pub command: u16,
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " A string parameter supplied to the command. The format and interpretation is command-specific.\n The standard commands do not use this field (ignore it), excepting the following:\n   - COMMAND_BEGIN_SOFTWARE_UPDATE"
-                )]
-                ///
-                /// `saturated uint8[<=255]`
-                ///
-                /// Always aligned,
-                /// size ranges from 0 to 2040 bits
-                pub parameter: ::heapless::Vec<u8, 255>,
-            }
-            impl ::canadensis_encoding::DataType for ExecuteCommandRequest {
-                /// This type is delimited with an extent of 300 bytes.
-                const EXTENT_BYTES: Option<u32> = Some(300);
-            }
-            impl ::canadensis_encoding::Request for ExecuteCommandRequest {}
-            impl ExecuteCommandRequest {
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " Reboot the node.\n Note that some standard commands may or may not require a restart in order to take effect; e.g., factory reset."
-                )]
-                pub const COMMAND_RESTART: u16 = 65535;
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " Shut down the node; further access will not be possible until the power is turned back on."
-                )]
-                pub const COMMAND_POWER_OFF: u16 = 65534;
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " Begin the software update process using uavcan.file.Read. This command makes use of the \"parameter\" field below.\n The parameter contains the path to the new software image file to be downloaded by the server from the client\n using the standard service uavcan.file.Read. Observe that this operation swaps the roles of the client and\n the server.\n\n Upon reception of this command, the server (updatee) will evaluate whether it is possible to begin the\n software update process. If that is deemed impossible, the command will be rejected with one of the\n error codes defined in the response section of this definition (e.g., BAD_STATE if the node is currently\n on-duty and a sudden interruption of its activities is considered unsafe, and so on).\n If an update process is already underway, the updatee should abort the process and restart with the new file,\n unless the updatee can determine that the specified file is the same file that is already being downloaded,\n in which case it is allowed to respond SUCCESS and continue the old update process.\n If there are no other conditions precluding the requested update, the updatee will return a SUCCESS and\n initiate the file transfer process by invoking the standard service uavcan.file.Read repeatedly until the file\n is transferred fully (please refer to the documentation for that data type for more information about its usage).\n\n While the software is being updated, the updatee should set its mode (the field \"mode\" in uavcan.node.Heartbeat)\n to MODE_SOFTWARE_UPDATE. Please refer to the documentation for uavcan.node.Heartbeat for more information.\n\n It is recognized that most systems will have to interrupt their normal services to perform the software update\n (unless some form of software hot swapping is implemented, as is the case in some high-availability systems).\n\n Microcontrollers that are requested to update their firmware may need to stop execution of their current firmware\n and start the embedded bootloader (although other approaches are possible as well). In that case,\n while the embedded bootloader is running, the mode reported via the message uavcan.node.Heartbeat should be\n MODE_SOFTWARE_UPDATE as long as the bootloader is runing, even if no update-related activities\n are currently underway. For example, if the update process failed and the bootloader cannot load the software,\n the same mode MODE_SOFTWARE_UPDATE will be reported.\n It is also recognized that in a microcontroller setting, the application that served the update request will have\n to pass the update-related metadata (such as the node-ID of the server and the firmware image file path) to\n the embedded bootloader. The tactics of that transaction lie outside of the scope of this specification."
-                )]
-                pub const COMMAND_BEGIN_SOFTWARE_UPDATE: u16 = 65533;
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " Return the node's configuration back to the factory default settings (may require restart).\n Due to the uncertainty whether a restart is required, generic interfaces should always force a restart."
-                )]
-                pub const COMMAND_FACTORY_RESET: u16 = 65532;
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " Cease activities immediately, enter a safe state until restarted.\n Further operation may no longer be possible until a restart command is executed."
-                )]
-                pub const COMMAND_EMERGENCY_STOP: u16 = 65531;
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " This command instructs the node to store the current configuration parameter values and other persistent states\n to the non-volatile storage. Nodes are allowed to manage persistent states automatically, obviating the need for\n this command by committing all such data to the non-volatile memory automatically as necessary. However, some\n nodes may lack this functionality, in which case this parameter should be used. Generic interfaces should always\n invoke this command in order to ensure that the data is stored even if the node doesn't implement automatic\n persistence management."
-                )]
-                pub const COMMAND_STORE_PERSISTENT_STATES: u16 = 65530;
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " This command instructs the node to physically identify itself in some way--e.g., by flashing a light or\n emitting a sound. The duration and the nature of the identification process is implementation-defined.\n This command can be useful for human operators to match assigned node-ID values to physical nodes during setup."
-                )]
-                pub const COMMAND_IDENTIFY: u16 = 65529;
-            }
-            impl ::canadensis_encoding::Serialize for ExecuteCommandRequest {
-                fn size_bits(&self) -> usize {
-                    16 + 8 + (self.parameter).len() * 8 + 0
-                }
-                fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_aligned_u16(self.command);
-                    cursor.write_aligned_u8((self.parameter).len() as u8);
-                    cursor.write_bytes(&(self.parameter)[..]);
-                }
-            }
-            impl ::canadensis_encoding::Deserialize for ExecuteCommandRequest {
-                fn deserialize(
-                    cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
-                ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
-                where
-                    Self: Sized,
-                {
-                    Ok(ExecuteCommandRequest {
-                        command: { cursor.read_u16() as _ },
-                        parameter: {
-                            let length = cursor.read_u8() as _;
-                            if length <= 255 {
-                                let mut elements = ::heapless::Vec::new();
-                                for _ in 0..length {
-                                    let _ = elements.push(cursor.read_u8() as _);
-                                }
-                                elements
-                            } else {
-                                return Err(::canadensis_encoding::DeserializeError::ArrayLength);
-                            }
-                        },
-                    })
-                }
-            }
-
-            /// `uavcan.node.ExecuteCommand.1.2`
-            ///
-            /// Fixed size 1 bytes
-            ///
-            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
-            #[repr(C, packed)]
-            #[deprecated]
-            pub struct ExecuteCommandResponse {
-                #[cfg_attr(not(doctest), doc = " The result of the request.")]
-                ///
-                /// `saturated uint8`
-                ///
-                /// Always aligned,
-                /// size 8 bits
-                pub status: u8,
-            }
-            impl ::canadensis_encoding::DataType for ExecuteCommandResponse {
-                /// This type is delimited with an extent of 48 bytes.
-                const EXTENT_BYTES: Option<u32> = Some(48);
-            }
-            impl ::canadensis_encoding::Response for ExecuteCommandResponse {}
-            impl ExecuteCommandResponse {
-                #[cfg_attr(not(doctest), doc = " Started or executed successfully")]
-                pub const STATUS_SUCCESS: u8 = 0;
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " Could not start or the desired outcome could not be reached"
-                )]
-                pub const STATUS_FAILURE: u8 = 1;
-                #[cfg_attr(not(doctest), doc = " Denied due to lack of authorization")]
-                pub const STATUS_NOT_AUTHORIZED: u8 = 2;
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " The requested command is not known or not supported"
-                )]
-                pub const STATUS_BAD_COMMAND: u8 = 3;
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " The supplied parameter cannot be used with the selected command"
-                )]
-                pub const STATUS_BAD_PARAMETER: u8 = 4;
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " The current state of the node does not permit execution of this command"
-                )]
-                pub const STATUS_BAD_STATE: u8 = 5;
-                #[cfg_attr(
-                    not(doctest),
-                    doc = " The operation should have succeeded but an unexpected failure occurred"
-                )]
-                pub const STATUS_INTERNAL_ERROR: u8 = 6;
-            }
-            impl ::canadensis_encoding::Serialize for ExecuteCommandResponse {
-                fn size_bits(&self) -> usize {
-                    8
-                }
-                fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                    cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for ExecuteCommandResponse {
@@ -8434,7 +8330,7 @@ Extended
                 not(doctest),
                 doc = " Full node info request.\n All of the returned information shall be static (unchanged) while the node is running.\n It is highly recommended to support this service on all nodes."
             )]
-            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
             #[repr(C, packed)]
             pub struct GetInfoRequest {}
             impl ::canadensis_encoding::DataType for GetInfoRequest {
@@ -8448,7 +8344,7 @@ Extended
                     0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                    cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for GetInfoRequest {
@@ -8669,7 +8565,7 @@ Extended
                 not(doctest),
                 doc = " Returns a set of general low-level transport statistical counters.\n Servers are encouraged but not required to sample the data atomically."
             )]
-            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
             #[repr(C, packed)]
             pub struct GetTransportStatisticsRequest {}
             impl ::canadensis_encoding::DataType for GetTransportStatisticsRequest {
@@ -8683,7 +8579,7 @@ Extended
                     0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                    cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for GetTransportStatisticsRequest {
@@ -8950,7 +8846,7 @@ Extended
                 not(doctest),
                 doc = " Defines a node-ID.\n The maximum valid value is dependent on the underlying transport layer.\n Values lower than 128 are always valid for all transports.\n Refer to the specification for more info."
             )]
-            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
             #[repr(C, packed)]
             pub struct ID {
                 ///
@@ -8971,7 +8867,7 @@ Extended
                     16
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                    cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for ID {
@@ -9409,7 +9305,7 @@ Extended
                         doc = " The index represents the identifier value. True -- present/used. False -- absent/unused."
                     )]
                     ///
-                    /// `saturated bool[512]`
+                    /// `bool[512]`
                     ///
                     /// Always aligned,
                     /// size 512 bits
@@ -9463,7 +9359,7 @@ Extended
                         doc = " The index represents the identifier value. True -- present/used. False -- absent/unused."
                     )]
                     ///
-                    /// `saturated bool[512]`
+                    /// `bool[512]`
                     ///
                     /// Always aligned,
                     /// size 512 bits
@@ -9566,7 +9462,7 @@ Extended
                         doc = " The index represents the identifier value. True -- present/used. False -- absent/unused."
                     )]
                     ///
-                    /// saturated bool[8192]
+                    /// bool[8192]
                     Mask(::canadensis_encoding::bits::BitArray<1024>),
                     #[cfg_attr(
                         not(doctest),
@@ -9669,7 +9565,7 @@ Extended
                         doc = " The index represents the identifier value. True -- present/used. False -- absent/unused."
                     )]
                     ///
-                    /// saturated bool[8192]
+                    /// bool[8192]
                     Mask(::canadensis_encoding::bits::BitArray<1024>),
                     #[cfg_attr(
                         not(doctest),
@@ -9767,7 +9663,7 @@ Extended
                 not(doctest),
                 doc = " A shortened semantic version representation: only major and minor.\n The protocol generally does not concern itself with the patch version."
             )]
-            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
             #[repr(C, packed)]
             pub struct Version {
                 ///
@@ -9794,7 +9690,7 @@ Extended
                     16
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                    cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for Version {
@@ -9939,7 +9835,7 @@ Extended
                     pub term: u32,
                     #[cfg_attr(not(doctest), doc = " Refer to the Raft paper for explanation.")]
                     ///
-                    /// `saturated bool`
+                    /// `bool`
                     ///
                     /// Always aligned,
                     /// size 1 bits
@@ -10077,7 +9973,7 @@ Extended
                     not(doctest),
                     doc = " One PnP node-ID allocation entry.\n This type is a part of the Raft consensus algorithm. Please refer to the type AppendEntries for details."
                 )]
-                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
                 #[repr(C, packed)]
                 pub struct Entry {
                     #[cfg_attr(not(doctest), doc = " Refer to the Raft paper for explanation.")]
@@ -10116,7 +10012,7 @@ Extended
                         176
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                        cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for Entry {
@@ -10150,7 +10046,7 @@ Extended
                     not(doctest),
                     doc = " This type is a part of the Raft consensus algorithm. Please refer to the type AppendEntries for details."
                 )]
-                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
                 #[repr(C, packed)]
                 pub struct RequestVoteRequest {
                     ///
@@ -10184,7 +10080,7 @@ Extended
                         80
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                        cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for RequestVoteRequest {
@@ -10224,7 +10120,7 @@ Extended
                     pub term: u32,
                     #[cfg_attr(not(doctest), doc = " Refer to the Raft paper for explanation.")]
                     ///
-                    /// `saturated bool`
+                    /// `bool`
                     ///
                     /// Always aligned,
                     /// size 1 bits
@@ -10351,7 +10247,7 @@ Extended
                 not(doctest),
                 doc = " In order to be able to operate in a Cyphal network, a node shall have a node-ID that is unique within the network.\n Typically, a valid node-ID can be configured manually for each node; however, in certain use cases the manual\n approach is either undesirable or impossible, therefore Cyphal defines the high-level feature of plug-and-play\n nodes that allows nodes to obtain a node-ID value automatically upon connection to the network. When combined\n with automatic physical layer configuration (such as auto bit rate detection), this feature allows one to implement\n nodes that can join a Cyphal network without any prior manual configuration whatsoever. Such nodes are referred to\n as \"plug-and-play nodes\" (or \"PnP nodes\" for brevity).\n\n The feature is fundamentally non-deterministic and is likely to be unfit for some high-reliability systems;\n the designers need to carefully consider the trade-offs involved before deciding to rely on this feature.\n Normally, static node-ID settings should be preferred.\n\n This feature relies on the concept of \"anonymous message transfers\", please consult with the Cyphal transport\n layer specification for details.\n\n The process of plug-and-play node-ID allocation always involves two types of nodes: \"allocators\", which serve\n allocation requests; and \"allocatees\", which request PnP node-ID from allocators. A Cyphal network may implement\n the following configurations of allocators:\n\n   - Zero allocators, in which case plug-and-play node-ID allocation cannot be used, only nodes with statically\n     configured node-ID can communicate.\n\n   - One allocator, in which case the feature of plug-and-play node-ID allocation will become unavailable\n     if the allocator fails. In this configuration, the role of the allocator can be performed even by a very\n     resource-constrained system, e.g., a low-end microcontroller.\n\n   - Three allocators, in which case the allocators will be using a replicated allocation table via a\n     distributed consensus algorithm. In this configuration, the network can tolerate the loss of one\n     allocator and continue to serve allocation requests. This configuration requires the allocators to\n     maintain large data structures for the needs of the distributed consensus algorithm, and may therefore\n     require a slightly more sophisticated computational platform, e.g., a high-end microcontroller.\n\n   - Five allocators, it is the same as the three allocator configuration reviewed above except that the network\n     can tolerate the loss of two allocators and still continue to serve allocation requests.\n\n In order to get a PnP node-ID, an allocatee shall have a globally unique 128-bit integer identifier, known as\n unique-ID (where \"globally unique\" means that the probability of having two nodes anywhere in the world that share\n the same unique-ID is negligibly low). This is the same value that is used in the field unique_id of the data type\n uavcan.node.GetInfo. All PnP nodes shall support the service uavcan.node.GetInfo, and they shall use the same\n unique-ID value when requesting node-ID allocation and when responding to the GetInfo requests (there may exist\n other usages of the unique-ID value, but they lie outside of the scope of the PnP protocol).\n\n During allocation, the allocatee communicates its unique-ID to the allocator (or allocators in the case of a\n redundant allocator configuration), which then use it to produce an appropriate allocation response. Unique-ID\n values are kept by allocators in the \"allocation table\" - a data structure that contains the mapping between\n unique-ID and the corresponding node-ID values. The allocation table is a write-only data structure that can\n only expand. When a new allocatee requests a PnP node-ID, its unique-ID is recorded in the allocation table,\n and all subsequent allocation requests from the same allocatee will be served with the same node-ID value.\n\n In configurations with redundant allocators, every allocator maintains a replica of the same allocation table\n (a Cyphal network cannot contain more than one allocation table, regardless of the number of allocators employed).\n While the allocation table is a write-only data structure that can only grow, it is still possible to wipe the\n table completely (as long as it is removed from all redundant allocators on the network simultaneously),\n forcing the allocators to forget known nodes and perform all future allocations anew.\n\n In the context of the following description, nodes that use a manually-configured node-ID will be referred to as\n \"static nodes\". It is assumed that allocators are always static nodes themselves since there is no other authority\n on the network that can grant a PnP node-ID, so allocators are unable to request a PnP node-ID for themselves.\n Excepting allocators, it is not recommended to mix PnP and static nodes on the same network; i.e., normally,\n a Cyphal network should contain either all static nodes, or all PnP nodes (excepting allocators). If this\n recommendation cannot be followed, the following rules of safe co-existence of PnP nodes with static nodes should\n be adopted:\n   - It is safe to connect PnP nodes to the bus at any time.\n   - A static node can be connected to the bus if the allocator (allocators) is (are) already aware of it.\n     I.e., the static node is already listed in the allocation table.\n   - A new static node (i.e., a node that does not meet the above criterion) can be connected to the bus only if\n     no PnP allocation requests are happening at the moment.\n\n Due to the possibility of coexistence of static nodes with PnP nodes, allocators are tasked with monitoring\n the nodes present in the network. If the allocator detects an online node in the network the node-ID of which is\n not found in the allocation table (or the local copy thereof in the case of redundant allocators), the allocator\n shall create a new mock entry where the node-ID matches that of the newly detected node and the unique-ID is set to\n zero (i.e., a 128-bit long sequence of zero bits). This behavior ensures that PnP nodes will never be granted\n node-ID values that are already taken by static nodes. Allocators are allowed to request the true unique-ID of the\n newly detected nodes by issuing requests uavcan.node.GetInfo instead of using mock zero unique-IDs, but this is not\n required for the sake of simplicity and determinism (some nodes may fail to respond to the GetInfo request, e.g.,\n if this service is not supported). Note that in the case of redundant allocators, some of them may be relieved of\n this task due to the intrinsic properties of the distributed consensus algorithm; please refer to the documentation\n for the data type uavcan.pnp.cluster.AppendEntries for more information.\n\n The unique-ID & node-ID pair of each allocator shall be kept in the allocation table as well. It is allowed to replace\n the unique-ID values of allocators with zeros at the discretion of the implementer.\n\n As can be inferred from the above, the process of PnP node-ID allocation involves up to two types of communications:\n\n   - \"Allocatee-allocator exchange\" - this communication is used when an allocatee requests a PnP node-ID from the\n     allocator (or redundant allocators), and also when the allocator transmits a response back to the allocatee.\n     This communication is invariant to the allocator configuration used, i.e., the allocatees are not aware of\n     how many allocators are available on the network and how they are configured. In configurations with\n     non-redundant (i.e., single) allocator, this is the only type of PnP allocation exchanges.\n\n   - \"Allocator-allocator exchange\" - this communication is used by redundant allocators for the maintenance of\n     the replicated allocation table and for other needs of the distributed consensus algorithm. Allocatees are\n     completely isolated and are unaware of these exchanges. This communication is not used with the single-allocator\n     configuration, since there is only one server and the allocation table is not distributed. The data types\n     used for the allocator-allocator exchanges are defined in the namespace uavcan.pnp.cluster.\n\n As has been said earlier, the logic used for communication between allocators (for the needs of the maintenance of\n the distributed allocation table) is completely unrelated to the allocatees. The allocatees are unaware of these\n exchanges, and they are also unaware of the allocator configuration used on the network: single or redundant.\n As such, the documentation you're currently reading does not describe the logic and requirements of the\n allocator-allocator exchanges for redundant configurations; for that, please refer to the documentation for the\n data type uavcan.pnp.cluster.AppendEntries.\n\n Allocatee-allocator exchanges are performed using only this message type uavcan.pnp.NodeIDAllocationData. Allocators\n use it with regular message transfers; allocatees use it with anonymous message transfers. The specification and\n usage info for this data type is provided below.\n\n The general idea of the allocatee-allocator exchanges is that the allocatee communicates to the allocator its\n unique-ID and, if applicable, the preferred node-ID value that it would like to have. The allocatee uses\n anonymous message transfers of this type. The allocator performs the allocation and sends a response using\n the same message type, where the field for unique-ID is populated with the unique-ID of the requesting node\n and the field for node-ID is populated with the allocated node-ID. All exchanges from allocatee to allocator use\n single-frame transfers only (see the specification for more information on the limitations of anonymous messages).\n\n The allocatee-allocator exchange logic differs between allocators and allocatees. For allocators, the logic is\n trivial: upon reception of a request, the allocator performs an allocation and sends a response back. If the\n allocation could not be performed for any reason (e.g., the allocation table is full, or there was a failure),\n no response is sent back (i.e., the request is simply ignored); the recommended strategy for the allocatee is to\n continue sending new allocation requests until a response is granted or a higher-level system (e.g., a maintenance\n technician or some automation) intervenes to rectify the problem (e.g., by purging the allocation table).\n The allocator that could not complete an allocation for any reason is recommended to emit a diagnostic message\n with a human-readable description of the problem. For allocatees, the logic is described below.\n\n This message is used for PnP node-ID allocation on all transports where the maximum transmission unit size is\n sufficiently large. For low-MTU transports such as Classic CAN there is an older version of the definition (v1)\n that takes the low MTU into account (the unique-ID value is replaced with a short hash in order to fit the data\n into one 7-byte-long transfer).\n\n Generally, the randomly chosen values of the request period (Trequest) should be in the range from 0 to 1 seconds.\n Applications that are not concerned about the allocation time are recommended to pick higher values, as it will\n reduce interference with other nodes where faster allocations may be desirable. The random interval shall be chosen\n anew per transmission, whereas the pseudo node-ID value is allowed to stay constant per node.\n\n The source of random data for Trequest shall be likely to yield different values for participating nodes, avoiding\n common sequences. This implies that the time since boot alone is not a sufficiently robust source of randomness,\n as that would be probable to cause nodes powered up at the same time to emit colliding messages repeatedly.\n\n The response timeout is not explicitly defined for this protocol, as the allocatee will request a new allocation\n Trequest units of time later again, unless an allocation has been granted. Since the request and response messages\n are fully idempotent, accidentally repeated messages (e.g., due to benign race conditions that are inherent to this\n protocol) are harmless.\n\n On the allocatee's side the protocol is defined through the following set of rules:\n\n   Rule A. On initialization:\n     1. The allocatee subscribes to this message.\n     2. The allocatee starts the Request Timer with a random interval of Trequest.\n\n   Rule B. On expiration of the Request Timer:\n     1. Request Timer restarts with a random interval of Trequest (chosen anew).\n     2. The allocatee broadcasts an allocation request message, where the fields are populated as follows:\n        node_id   - the preferred node-ID, or the highest valid value if the allocatee doesn't have any preference.\n        unique_id - the 128-bit unique-ID of the allocatee, same value that is reported via uavcan.node.GetInfo.\n\n   Rule C. On an allocation message WHERE (source node-ID is non-anonymous, i.e., regular allocation response)\n                                    AND   (the field unique_id matches the allocatee's unique-ID):\n     1. Request Timer stops.\n     2. The allocatee initializes its node-ID with the received value.\n     3. The allocatee terminates its subscription to allocation messages.\n     4. Exit.\n\n As can be seen, the algorithm assumes that the allocatee will continue to emit requests at random intervals\n until an allocation is granted or the allocatee is disconnected."
             )]
-            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
             #[repr(C, packed)]
             pub struct NodeIDAllocationData {
                 #[cfg_attr(
@@ -10386,7 +10282,7 @@ Extended
                     144
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                    cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for NodeIDAllocationData {
@@ -10426,7 +10322,7 @@ Extended
                 )]
                 pub struct Bit {
                     ///
-                    /// `saturated bool[<=2048]`
+                    /// `bool[<=2048]`
                     ///
                     /// Always aligned,
                     /// size ranges from 0 to 2048 bits
@@ -11096,7 +10992,7 @@ Extended
             ///
             /// Fixed size 0 bytes
             ///
-            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
             #[repr(C, packed)]
             pub struct Empty {}
             impl ::canadensis_encoding::DataType for Empty {
@@ -11110,7 +11006,7 @@ Extended
                     0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                    cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for Empty {
@@ -11136,7 +11032,7 @@ Extended
                 ///
                 pub struct Bit {
                     ///
-                    /// `saturated bool`
+                    /// `bool`
                     ///
                     /// Always aligned,
                     /// size 1 bits
@@ -11174,7 +11070,7 @@ Extended
                 ///
                 /// Fixed size 2 bytes
                 ///
-                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
                 #[repr(C, packed)]
                 pub struct Integer16 {
                     ///
@@ -11195,7 +11091,7 @@ Extended
                         16
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                        cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for Integer16 {
@@ -11219,7 +11115,7 @@ Extended
                 ///
                 /// Fixed size 4 bytes
                 ///
-                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
                 #[repr(C, packed)]
                 pub struct Integer32 {
                     ///
@@ -11240,7 +11136,7 @@ Extended
                         32
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                        cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for Integer32 {
@@ -11264,7 +11160,7 @@ Extended
                 ///
                 /// Fixed size 8 bytes
                 ///
-                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
                 #[repr(C, packed)]
                 pub struct Integer64 {
                     ///
@@ -11285,7 +11181,7 @@ Extended
                         64
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                        cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for Integer64 {
@@ -11309,7 +11205,7 @@ Extended
                 ///
                 /// Fixed size 1 bytes
                 ///
-                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
                 #[repr(C, packed)]
                 pub struct Integer8 {
                     ///
@@ -11330,7 +11226,7 @@ Extended
                         8
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                        cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for Integer8 {
@@ -11354,7 +11250,7 @@ Extended
                 ///
                 /// Fixed size 2 bytes
                 ///
-                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
                 #[repr(C, packed)]
                 pub struct Natural16 {
                     ///
@@ -11375,7 +11271,7 @@ Extended
                         16
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                        cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for Natural16 {
@@ -11399,7 +11295,7 @@ Extended
                 ///
                 /// Fixed size 4 bytes
                 ///
-                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
                 #[repr(C, packed)]
                 pub struct Natural32 {
                     ///
@@ -11420,7 +11316,7 @@ Extended
                         32
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                        cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for Natural32 {
@@ -11444,7 +11340,7 @@ Extended
                 ///
                 /// Fixed size 8 bytes
                 ///
-                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
                 #[repr(C, packed)]
                 pub struct Natural64 {
                     ///
@@ -11465,7 +11361,7 @@ Extended
                         64
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                        cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for Natural64 {
@@ -11489,7 +11385,7 @@ Extended
                 ///
                 /// Fixed size 1 bytes
                 ///
-                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
                 #[repr(C, packed)]
                 pub struct Natural8 {
                     ///
@@ -11510,7 +11406,7 @@ Extended
                         8
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                        cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for Natural8 {
@@ -11534,7 +11430,7 @@ Extended
                 ///
                 /// Fixed size 2 bytes
                 ///
-                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
                 #[repr(C, packed)]
                 pub struct Real16 {
                     #[cfg_attr(
@@ -11559,7 +11455,7 @@ Extended
                         16
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                        cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for Real16 {
@@ -11583,7 +11479,7 @@ Extended
                 ///
                 /// Fixed size 4 bytes
                 ///
-                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
                 #[repr(C, packed)]
                 pub struct Real32 {
                     #[cfg_attr(
@@ -11608,7 +11504,7 @@ Extended
                         32
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                        cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for Real32 {
@@ -11632,7 +11528,7 @@ Extended
                 ///
                 /// Fixed size 8 bytes
                 ///
-                #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
                 #[repr(C, packed)]
                 pub struct Real64 {
                     #[cfg_attr(
@@ -11657,7 +11553,7 @@ Extended
                         64
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                        cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                        cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                     }
                 }
                 impl ::canadensis_encoding::Deserialize for Real64 {
@@ -11876,7 +11772,7 @@ Extended
                     doc = " Mutable means that the register can be written using this service.\n Immutable registers cannot be written, but that doesn't imply that their values are constant (unchanging)."
                 )]
                 ///
-                /// `saturated bool`
+                /// `bool`
                 ///
                 /// Always aligned,
                 /// size 1 bits
@@ -11886,7 +11782,7 @@ Extended
                     doc = " Persistence means that the register retains its value permanently across power cycles or any other changes\n in the state of the server, until it is explicitly overwritten (either via Cyphal, any other interface,\n or by the device itself).\n\n The server is recommended to manage persistence automatically by committing changed register values to a\n non-volatile storage automatically as necessary. If automatic persistence management is not implemented, it\n can be controlled manually via the standard service uavcan.node.ExecuteCommand. The same service can be used\n to return the configuration to a factory-default state. Please refer to its definition for more information.\n\n Consider the following examples:\n   - Configuration parameters are usually both mutable and persistent.\n   - Diagnostic values are usually immutable and non-persisient.\n   - Registers that trigger an activity when written are typically mutable but non-persisient.\n   - Registers that contain factory-programmed values such as calibration coefficients that can't\n     be changed are typically immutable but persistent."
                 )]
                 ///
-                /// `saturated bool`
+                /// `bool`
                 ///
                 /// Not always aligned,
                 /// size 1 bits
@@ -11953,7 +11849,7 @@ Extended
                 not(doctest),
                 doc = " This service allows the caller to discover the names of all registers available on the server\n by iterating the index field from zero until an empty name is returned.\n\n The ordering of the registers shall remain constant while the server is running.\n The ordering is not guaranteed to remain unchanged when the server node is restarted."
             )]
-            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
             #[repr(C, packed)]
             pub struct ListRequest {
                 ///
@@ -11974,7 +11870,7 @@ Extended
                     16
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                    cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for ListRequest {
@@ -14274,7 +14170,9 @@ Extended
                     ///
                     /// Fixed size 4 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Scalar {
                         ///
@@ -14295,7 +14193,7 @@ Extended
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -14322,7 +14220,9 @@ Extended
                     ///
                     /// Fixed size 12 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Vector3 {
                         ///
@@ -14343,7 +14243,7 @@ Extended
                             96
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Vector3 {
@@ -14372,7 +14272,9 @@ Extended
                     ///
                     /// Fixed size 16 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Quaternion {
                         ///
@@ -14393,7 +14295,7 @@ Extended
                             128
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Quaternion {
@@ -14417,7 +14319,9 @@ Extended
                     ///
                     /// Fixed size 4 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Scalar {
                         ///
@@ -14438,7 +14342,7 @@ Extended
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -14464,7 +14368,9 @@ Extended
                     ///
                     /// Fixed size 4 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Scalar {
                         ///
@@ -14485,7 +14391,7 @@ Extended
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -14512,7 +14418,9 @@ Extended
                     ///
                     /// Fixed size 12 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Vector3 {
                         ///
@@ -14533,7 +14441,7 @@ Extended
                             96
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Vector3 {
@@ -14562,7 +14470,9 @@ Extended
                     ///
                     /// Fixed size 4 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Scalar {
                         ///
@@ -14583,7 +14493,7 @@ Extended
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -14607,7 +14517,9 @@ Extended
                     ///
                     /// Fixed size 12 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Vector3 {
                         ///
@@ -14628,7 +14540,7 @@ Extended
                             96
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Vector3 {
@@ -14654,7 +14566,9 @@ Extended
                     ///
                     /// Fixed size 4 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Scalar {
                         ///
@@ -14675,7 +14589,7 @@ Extended
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -14699,7 +14613,9 @@ Extended
                     ///
                     /// Fixed size 8 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct WideScalar {
                         ///
@@ -14720,7 +14636,7 @@ Extended
                             64
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for WideScalar {
@@ -14746,7 +14662,9 @@ Extended
                     ///
                     /// Fixed size 4 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Scalar {
                         ///
@@ -14767,7 +14685,7 @@ Extended
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -14793,7 +14711,9 @@ Extended
                     ///
                     /// Fixed size 4 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Scalar {
                         ///
@@ -14814,7 +14734,7 @@ Extended
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -14840,7 +14760,9 @@ Extended
                     ///
                     /// Fixed size 4 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Scalar {
                         ///
@@ -14861,7 +14783,7 @@ Extended
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -14887,7 +14809,9 @@ Extended
                     ///
                     /// Fixed size 4 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Scalar {
                         ///
@@ -14908,7 +14832,7 @@ Extended
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -14932,7 +14856,9 @@ Extended
                     ///
                     /// Fixed size 12 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Vector3 {
                         ///
@@ -14953,7 +14879,7 @@ Extended
                             96
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Vector3 {
@@ -14979,7 +14905,9 @@ Extended
                     ///
                     /// Fixed size 4 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Scalar {
                         ///
@@ -15000,7 +14928,7 @@ Extended
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -15026,7 +14954,9 @@ Extended
                     ///
                     /// Fixed size 4 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Scalar {
                         ///
@@ -15047,7 +14977,7 @@ Extended
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -15071,7 +15001,9 @@ Extended
                     ///
                     /// Fixed size 12 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Vector3 {
                         ///
@@ -15092,7 +15024,7 @@ Extended
                             96
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Vector3 {
@@ -15116,7 +15048,9 @@ Extended
                     ///
                     /// Fixed size 8 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct WideScalar {
                         ///
@@ -15137,7 +15071,7 @@ Extended
                             64
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for WideScalar {
@@ -15161,7 +15095,9 @@ Extended
                     ///
                     /// Fixed size 24 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct WideVector3 {
                         ///
@@ -15182,7 +15118,7 @@ Extended
                             192
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for WideVector3 {
@@ -15208,7 +15144,9 @@ Extended
                     ///
                     /// Fixed size 4 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Scalar {
                         ///
@@ -15229,7 +15167,7 @@ Extended
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -15264,7 +15202,9 @@ Extended
                         not(doctest),
                         doc = " Use v1.1 instead where the unit of measure is named correctly."
                     )]
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     #[deprecated]
                     pub struct Scalar {
@@ -15286,7 +15226,7 @@ Extended
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -15310,7 +15250,9 @@ Extended
                     ///
                     /// Fixed size 4 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Scalar {
                         ///
@@ -15331,7 +15273,7 @@ Extended
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -15361,7 +15303,9 @@ Extended
                         not(doctest),
                         doc = " Use v1.1 instead where the unit of measure is named correctly."
                     )]
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     #[deprecated]
                     pub struct Vector3 {
@@ -15383,7 +15327,7 @@ Extended
                             96
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Vector3 {
@@ -15407,7 +15351,9 @@ Extended
                     ///
                     /// Fixed size 12 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Vector3 {
                         ///
@@ -15428,7 +15374,7 @@ Extended
                             96
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Vector3 {
@@ -15454,7 +15400,9 @@ Extended
                     ///
                     /// Fixed size 4 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Scalar {
                         ///
@@ -15475,7 +15423,7 @@ Extended
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -15499,7 +15447,9 @@ Extended
                     ///
                     /// Fixed size 12 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Vector3 {
                         ///
@@ -15520,7 +15470,7 @@ Extended
                             96
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Vector3 {
@@ -15546,7 +15496,9 @@ Extended
                     ///
                     /// Fixed size 4 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Scalar {
                         ///
@@ -15567,7 +15519,7 @@ Extended
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -15593,7 +15545,9 @@ Extended
                     ///
                     /// Fixed size 4 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Scalar {
                         ///
@@ -15614,7 +15568,7 @@ Extended
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -15640,7 +15594,9 @@ Extended
                     ///
                     /// Fixed size 4 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Scalar {
                         ///
@@ -15661,7 +15617,7 @@ Extended
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -15687,7 +15643,9 @@ Extended
                     ///
                     /// Fixed size 4 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Scalar {
                         ///
@@ -15708,7 +15666,7 @@ Extended
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -15734,7 +15692,9 @@ Extended
                     ///
                     /// Fixed size 4 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Scalar {
                         ///
@@ -15755,7 +15715,7 @@ Extended
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -15779,7 +15739,9 @@ Extended
                     ///
                     /// Fixed size 12 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Vector3 {
                         ///
@@ -15800,7 +15762,7 @@ Extended
                             96
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Vector3 {
@@ -15826,7 +15788,9 @@ Extended
                     ///
                     /// Fixed size 4 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Scalar {
                         ///
@@ -15847,7 +15811,7 @@ Extended
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -15871,7 +15835,9 @@ Extended
                     ///
                     /// Fixed size 12 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Vector3 {
                         ///
@@ -15892,7 +15858,7 @@ Extended
                             96
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Vector3 {
@@ -15918,7 +15884,9 @@ Extended
                     ///
                     /// Fixed size 4 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Scalar {
                         ///
@@ -15939,7 +15907,7 @@ Extended
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -15965,7 +15933,9 @@ Extended
                     ///
                     /// Fixed size 4 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Scalar {
                         ///
@@ -15986,7 +15956,7 @@ Extended
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -16012,7 +15982,9 @@ Extended
                     ///
                     /// Fixed size 4 bytes
                     ///
-                    #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
                     #[repr(C, packed)]
                     pub struct Scalar {
                         ///
@@ -16033,7 +16005,7 @@ Extended
                             32
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                            cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                         }
                     }
                     impl ::canadensis_encoding::Deserialize for Scalar {
@@ -16072,7 +16044,7 @@ Extended
                 not(doctest),
                 doc = " Every node that acts as a time synchronization master, or is capable of acting as such,\n should support this service.\n Its objective is to provide information about which time system is currently used in the network.\n\n Once a time system is chosen, it cannot be changed as long as at least one node on the network is running.\n In other words, the time system cannot be changed while the network is operating.\n An implication of this is that if there are redundant time synchronization masters, they all shall\n use the same time system always."
             )]
-            #[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]
+            #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
             #[repr(C, packed)]
             pub struct GetSynchronizationMasterInfoRequest {}
             impl ::canadensis_encoding::DataType for GetSynchronizationMasterInfoRequest {
@@ -16086,7 +16058,7 @@ Extended
                     0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
-                    cursor.write_aligned_bytes(::zerocopy::AsBytes::as_bytes(self));
+                    cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
                 }
             }
             impl ::canadensis_encoding::Deserialize for GetSynchronizationMasterInfoRequest {

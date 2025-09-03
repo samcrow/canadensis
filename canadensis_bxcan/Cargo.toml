@@ -12,11 +12,11 @@ description = "Bridge between Canadensis and the BXCAN peripherals found in some
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bxcan = "0.7.0"
+bxcan = "0.8.0"
 nb = "1.0.0"
 log = "0.4"
 fallible_collections = "0.5.1"
-heapless = "0.8.0"
+heapless = "0.9.1"
 cortex-m = "0.7.3"
 
 [dependencies.canadensis]

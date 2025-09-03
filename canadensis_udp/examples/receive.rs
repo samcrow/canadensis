@@ -11,7 +11,7 @@ use std::time::Duration;
 use core::net::Ipv4Addr;
 use log::LevelFilter;
 use simplelog::{ColorChoice, TermLogger};
-use zerocopy::AsBytes;
+use zerocopy::IntoBytes;
 
 use canadensis_core::session::SessionDynamicMap;
 use canadensis_core::time::MicrosecondDuration32;

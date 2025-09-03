@@ -10,8 +10,8 @@ description = "A Cyphal implementation: Cyphal/Serial transport"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-zerocopy = "0.6.0"
-heapless = "0.8.0"
+zerocopy = "0.8.26"
+heapless = "0.9.1"
 fallible_collections = "0.5.1"
 log = "0.4.14"
 

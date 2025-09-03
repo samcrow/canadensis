@@ -12,7 +12,7 @@ license = "MIT OR Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-heapless = "0.8.0"
+heapless = "0.9.1"
 
 [dependencies.crc-any]
 version = "2.4.0"
