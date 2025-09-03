@@ -8132,8 +8132,11 @@ Extended
                 );
             }
         }
+        #[allow(deprecated)]
+        #[cfg_attr(not(test), deprecated)]
         pub mod execute_command_1_1 {
             #[cfg_attr(not(doctest), doc = "The fixed ID of this service")]
+            #[deprecated]
             pub const SERVICE: ::canadensis_core::ServiceId =
                 ::canadensis_core::ServiceId::from_truncating(435);
 
@@ -8145,6 +8148,7 @@ Extended
                 not(doctest),
                 doc = " Instructs the server node to execute or commence execution of a simple predefined command.\n All standard commands are optional; i.e., not guaranteed to be supported by all nodes."
             )]
+            #[deprecated]
             pub struct ExecuteCommandRequest {
                 #[cfg_attr(
                     not(doctest),
@@ -8245,6 +8249,7 @@ Extended
             ///
             #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
             #[repr(C, packed)]
+            #[deprecated]
             pub struct ExecuteCommandResponse {
                 #[cfg_attr(not(doctest), doc = " The result of the request.")]
                 ///
@@ -8315,6 +8320,407 @@ Extended
                     ::core::mem::offset_of!(ExecuteCommandResponse, status) * 8,
                     0
                 );
+            }
+        }
+        #[allow(deprecated)]
+        #[cfg_attr(not(test), deprecated)]
+        pub mod execute_command_1_2 {
+            #[cfg_attr(not(doctest), doc = "The fixed ID of this service")]
+            #[deprecated]
+            pub const SERVICE: ::canadensis_core::ServiceId =
+                ::canadensis_core::ServiceId::from_truncating(435);
+
+            /// `uavcan.node.ExecuteCommand.1.2`
+            ///
+            /// Size ranges from 3 to 258 bytes
+            ///
+            #[cfg_attr(
+                not(doctest),
+                doc = " Instructs the server node to execute or commence execution of a simple predefined command.\n All standard commands are optional; i.e., not guaranteed to be supported by all nodes."
+            )]
+            #[deprecated]
+            pub struct ExecuteCommandRequest {
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Standard pre-defined commands are at the top of the range (defined below).\n Vendors can define arbitrary, vendor-specific commands in the bottom part of the range (starting from zero).\n Vendor-specific commands shall not use identifiers above 32767."
+                )]
+                ///
+                /// `saturated uint16`
+                ///
+                /// Always aligned,
+                /// size 16 bits
+                pub command: u16,
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " A string parameter supplied to the command. The format and interpretation is command-specific.\n The standard commands do not use this field (ignore it), excepting the following:\n   - COMMAND_BEGIN_SOFTWARE_UPDATE"
+                )]
+                ///
+                /// `saturated uint8[<=255]`
+                ///
+                /// Always aligned,
+                /// size ranges from 0 to 2040 bits
+                pub parameter: ::heapless::Vec<u8, 255>,
+            }
+            impl ::canadensis_encoding::DataType for ExecuteCommandRequest {
+                /// This type is delimited with an extent of 300 bytes.
+                const EXTENT_BYTES: Option<u32> = Some(300);
+            }
+            impl ::canadensis_encoding::Request for ExecuteCommandRequest {}
+            impl ExecuteCommandRequest {
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Reboot the node.\n Note that some standard commands may or may not require a restart in order to take effect; e.g., factory reset."
+                )]
+                pub const COMMAND_RESTART: u16 = 65535;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Shut down the node; further access will not be possible until the power is turned back on."
+                )]
+                pub const COMMAND_POWER_OFF: u16 = 65534;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Begin the software update process using uavcan.file.Read. This command makes use of the \"parameter\" field below.\n The parameter contains the path to the new software image file to be downloaded by the server from the client\n using the standard service uavcan.file.Read. Observe that this operation swaps the roles of the client and\n the server.\n\n Upon reception of this command, the server (updatee) will evaluate whether it is possible to begin the\n software update process. If that is deemed impossible, the command will be rejected with one of the\n error codes defined in the response section of this definition (e.g., BAD_STATE if the node is currently\n on-duty and a sudden interruption of its activities is considered unsafe, and so on).\n If an update process is already underway, the updatee should abort the process and restart with the new file,\n unless the updatee can determine that the specified file is the same file that is already being downloaded,\n in which case it is allowed to respond SUCCESS and continue the old update process.\n If there are no other conditions precluding the requested update, the updatee will return a SUCCESS and\n initiate the file transfer process by invoking the standard service uavcan.file.Read repeatedly until the file\n is transferred fully (please refer to the documentation for that data type for more information about its usage).\n\n While the software is being updated, the updatee should set its mode (the field \"mode\" in uavcan.node.Heartbeat)\n to MODE_SOFTWARE_UPDATE. Please refer to the documentation for uavcan.node.Heartbeat for more information.\n\n It is recognized that most systems will have to interrupt their normal services to perform the software update\n (unless some form of software hot swapping is implemented, as is the case in some high-availability systems).\n\n Microcontrollers that are requested to update their firmware may need to stop execution of their current firmware\n and start the embedded bootloader (although other approaches are possible as well). In that case,\n while the embedded bootloader is running, the mode reported via the message uavcan.node.Heartbeat should be\n MODE_SOFTWARE_UPDATE as long as the bootloader is runing, even if no update-related activities\n are currently underway. For example, if the update process failed and the bootloader cannot load the software,\n the same mode MODE_SOFTWARE_UPDATE will be reported.\n It is also recognized that in a microcontroller setting, the application that served the update request will have\n to pass the update-related metadata (such as the node-ID of the server and the firmware image file path) to\n the embedded bootloader. The tactics of that transaction lie outside of the scope of this specification."
+                )]
+                pub const COMMAND_BEGIN_SOFTWARE_UPDATE: u16 = 65533;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Return the node's configuration back to the factory default settings (may require restart).\n Due to the uncertainty whether a restart is required, generic interfaces should always force a restart."
+                )]
+                pub const COMMAND_FACTORY_RESET: u16 = 65532;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Cease activities immediately, enter a safe state until restarted.\n Further operation may no longer be possible until a restart command is executed."
+                )]
+                pub const COMMAND_EMERGENCY_STOP: u16 = 65531;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " This command instructs the node to store the current configuration parameter values and other persistent states\n to the non-volatile storage. Nodes are allowed to manage persistent states automatically, obviating the need for\n this command by committing all such data to the non-volatile memory automatically as necessary. However, some\n nodes may lack this functionality, in which case this parameter should be used. Generic interfaces should always\n invoke this command in order to ensure that the data is stored even if the node doesn't implement automatic\n persistence management."
+                )]
+                pub const COMMAND_STORE_PERSISTENT_STATES: u16 = 65530;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " This command instructs the node to physically identify itself in some way--e.g., by flashing a light or\n emitting a sound. The duration and the nature of the identification process is implementation-defined.\n This command can be useful for human operators to match assigned node-ID values to physical nodes during setup."
+                )]
+                pub const COMMAND_IDENTIFY: u16 = 65529;
+            }
+            impl ::canadensis_encoding::Serialize for ExecuteCommandRequest {
+                fn size_bits(&self) -> usize {
+                    16 + 8 + (self.parameter).len() * 8 + 0
+                }
+                fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                    cursor.write_aligned_u16(self.command);
+                    cursor.write_aligned_u8((self.parameter).len() as u8);
+                    cursor.write_bytes(&(self.parameter)[..]);
+                }
+            }
+            impl ::canadensis_encoding::Deserialize for ExecuteCommandRequest {
+                fn deserialize(
+                    cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                where
+                    Self: Sized,
+                {
+                    Ok(ExecuteCommandRequest {
+                        command: { cursor.read_u16() as _ },
+                        parameter: {
+                            let length = cursor.read_u8() as _;
+                            if length <= 255 {
+                                let mut elements = ::heapless::Vec::new();
+                                for _ in 0..length {
+                                    let _ = elements.push(cursor.read_u8() as _);
+                                }
+                                elements
+                            } else {
+                                return Err(::canadensis_encoding::DeserializeError::ArrayLength);
+                            }
+                        },
+                    })
+                }
+            }
+
+            /// `uavcan.node.ExecuteCommand.1.2`
+            ///
+            /// Fixed size 1 bytes
+            ///
+            #[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]
+            #[repr(C, packed)]
+            #[deprecated]
+            pub struct ExecuteCommandResponse {
+                #[cfg_attr(not(doctest), doc = " The result of the request.")]
+                ///
+                /// `saturated uint8`
+                ///
+                /// Always aligned,
+                /// size 8 bits
+                pub status: u8,
+            }
+            impl ::canadensis_encoding::DataType for ExecuteCommandResponse {
+                /// This type is delimited with an extent of 48 bytes.
+                const EXTENT_BYTES: Option<u32> = Some(48);
+            }
+            impl ::canadensis_encoding::Response for ExecuteCommandResponse {}
+            impl ExecuteCommandResponse {
+                #[cfg_attr(not(doctest), doc = " Started or executed successfully")]
+                pub const STATUS_SUCCESS: u8 = 0;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Could not start or the desired outcome could not be reached"
+                )]
+                pub const STATUS_FAILURE: u8 = 1;
+                #[cfg_attr(not(doctest), doc = " Denied due to lack of authorization")]
+                pub const STATUS_NOT_AUTHORIZED: u8 = 2;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " The requested command is not known or not supported"
+                )]
+                pub const STATUS_BAD_COMMAND: u8 = 3;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " The supplied parameter cannot be used with the selected command"
+                )]
+                pub const STATUS_BAD_PARAMETER: u8 = 4;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " The current state of the node does not permit execution of this command"
+                )]
+                pub const STATUS_BAD_STATE: u8 = 5;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " The operation should have succeeded but an unexpected failure occurred"
+                )]
+                pub const STATUS_INTERNAL_ERROR: u8 = 6;
+            }
+            impl ::canadensis_encoding::Serialize for ExecuteCommandResponse {
+                fn size_bits(&self) -> usize {
+                    8
+                }
+                fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                    cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
+                }
+            }
+            impl ::canadensis_encoding::Deserialize for ExecuteCommandResponse {
+                fn deserialize(
+                    cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                where
+                    Self: Sized,
+                {
+                    Ok(Self::deserialize_zero_copy(cursor))
+                }
+            }
+            #[test]
+            fn test_layout() {
+                assert_eq!(::core::mem::size_of::<ExecuteCommandResponse>() * 8, 8);
+                assert_eq!(
+                    ::core::mem::offset_of!(ExecuteCommandResponse, status) * 8,
+                    0
+                );
+            }
+        }
+        pub mod execute_command_1_3 {
+            #[cfg_attr(not(doctest), doc = "The fixed ID of this service")]
+            pub const SERVICE: ::canadensis_core::ServiceId =
+                ::canadensis_core::ServiceId::from_truncating(435);
+
+            /// `uavcan.node.ExecuteCommand.1.3`
+            ///
+            /// Size ranges from 3 to 258 bytes
+            ///
+            #[cfg_attr(
+                not(doctest),
+                doc = " Instructs the server node to execute or commence execution of a simple predefined command.\n All standard commands are optional; i.e., not guaranteed to be supported by all nodes."
+            )]
+            pub struct ExecuteCommandRequest {
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Standard pre-defined commands are at the top of the range (defined below).\n Vendors can define arbitrary, vendor-specific commands in the bottom part of the range (starting from zero).\n Vendor-specific commands shall not use identifiers above 32767."
+                )]
+                ///
+                /// `saturated uint16`
+                ///
+                /// Always aligned,
+                /// size 16 bits
+                pub command: u16,
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " A string parameter supplied to the command. The format and interpretation is command-specific.\n The standard commands do not use this field (ignore it), excepting the following:\n   - COMMAND_BEGIN_SOFTWARE_UPDATE"
+                )]
+                ///
+                /// `saturated uint8[<=255]`
+                ///
+                /// Always aligned,
+                /// size ranges from 0 to 2040 bits
+                pub parameter: ::heapless::Vec<u8, 255>,
+            }
+            impl ::canadensis_encoding::DataType for ExecuteCommandRequest {
+                /// This type is delimited with an extent of 300 bytes.
+                const EXTENT_BYTES: Option<u32> = Some(300);
+            }
+            impl ::canadensis_encoding::Request for ExecuteCommandRequest {}
+            impl ExecuteCommandRequest {
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Reboot the node.\n Note that some standard commands may or may not require a restart in order to take effect; e.g., factory reset."
+                )]
+                pub const COMMAND_RESTART: u16 = 65535;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Shut down the node; further access will not be possible until the power is turned back on."
+                )]
+                pub const COMMAND_POWER_OFF: u16 = 65534;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Begin the software update process using uavcan.file.Read. This command makes use of the \"parameter\" field below.\n The parameter contains the path to the new software image file to be downloaded by the server from the client\n using the standard service uavcan.file.Read. Observe that this operation swaps the roles of the client and\n the server.\n\n Upon reception of this command, the server (updatee) will evaluate whether it is possible to begin the\n software update process. If that is deemed impossible, the command will be rejected with one of the\n error codes defined in the response section of this definition (e.g., BAD_STATE if the node is currently\n on-duty and a sudden interruption of its activities is considered unsafe, and so on).\n If an update process is already underway, the updatee should abort the process and restart with the new file,\n unless the updatee can determine that the specified file is the same file that is already being downloaded,\n in which case it is allowed to respond SUCCESS and continue the old update process.\n If there are no other conditions precluding the requested update, the updatee will return a SUCCESS and\n initiate the file transfer process by invoking the standard service uavcan.file.Read repeatedly until the file\n is transferred fully (please refer to the documentation for that data type for more information about its usage).\n\n While the software is being updated, the updatee should set its mode (the field \"mode\" in uavcan.node.Heartbeat)\n to MODE_SOFTWARE_UPDATE. Please refer to the documentation for uavcan.node.Heartbeat for more information.\n\n It is recognized that most systems will have to interrupt their normal services to perform the software update\n (unless some form of software hot swapping is implemented, as is the case in some high-availability systems).\n\n Microcontrollers that are requested to update their firmware may need to stop execution of their current firmware\n and start the embedded bootloader (although other approaches are possible as well). In that case,\n while the embedded bootloader is running, the mode reported via the message uavcan.node.Heartbeat should be\n MODE_SOFTWARE_UPDATE as long as the bootloader is runing, even if no update-related activities\n are currently underway. For example, if the update process failed and the bootloader cannot load the software,\n the same mode MODE_SOFTWARE_UPDATE will be reported.\n It is also recognized that in a microcontroller setting, the application that served the update request will have\n to pass the update-related metadata (such as the node-ID of the server and the firmware image file path) to\n the embedded bootloader. The tactics of that transaction lie outside of the scope of this specification."
+                )]
+                pub const COMMAND_BEGIN_SOFTWARE_UPDATE: u16 = 65533;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Return the node's configuration back to the factory default settings (may require restart).\n Due to the uncertainty whether a restart is required, generic interfaces should always force a restart."
+                )]
+                pub const COMMAND_FACTORY_RESET: u16 = 65532;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Cease activities immediately, enter a safe state until restarted.\n Further operation may no longer be possible until a restart command is executed."
+                )]
+                pub const COMMAND_EMERGENCY_STOP: u16 = 65531;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " This command instructs the node to store the current configuration parameter values and other persistent states\n to the non-volatile storage. Nodes are allowed to manage persistent states automatically, obviating the need for\n this command by committing all such data to the non-volatile memory automatically as necessary. However, some\n nodes may lack this functionality, in which case this parameter should be used. Generic interfaces should always\n invoke this command in order to ensure that the data is stored even if the node doesn't implement automatic\n persistence management."
+                )]
+                pub const COMMAND_STORE_PERSISTENT_STATES: u16 = 65530;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " This command instructs the node to physically identify itself in some way--e.g., by flashing a light or\n emitting a sound. The duration and the nature of the identification process is implementation-defined.\n This command can be useful for human operators to match assigned node-ID values to physical nodes during setup."
+                )]
+                pub const COMMAND_IDENTIFY: u16 = 65529;
+            }
+            impl ::canadensis_encoding::Serialize for ExecuteCommandRequest {
+                fn size_bits(&self) -> usize {
+                    16 + 8 + (self.parameter).len() * 8 + 0
+                }
+                fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                    cursor.write_aligned_u16(self.command);
+                    cursor.write_aligned_u8((self.parameter).len() as u8);
+                    cursor.write_bytes(&(self.parameter)[..]);
+                }
+            }
+            impl ::canadensis_encoding::Deserialize for ExecuteCommandRequest {
+                fn deserialize(
+                    cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                where
+                    Self: Sized,
+                {
+                    Ok(ExecuteCommandRequest {
+                        command: { cursor.read_u16() as _ },
+                        parameter: {
+                            let length = cursor.read_u8() as _;
+                            if length <= 255 {
+                                let mut elements = ::heapless::Vec::new();
+                                for _ in 0..length {
+                                    let _ = elements.push(cursor.read_u8() as _);
+                                }
+                                elements
+                            } else {
+                                return Err(::canadensis_encoding::DeserializeError::ArrayLength);
+                            }
+                        },
+                    })
+                }
+            }
+
+            /// `uavcan.node.ExecuteCommand.1.3`
+            ///
+            /// Size ranges from 2 to 48 bytes
+            ///
+            pub struct ExecuteCommandResponse {
+                #[cfg_attr(not(doctest), doc = " The result of the request.")]
+                ///
+                /// `saturated uint8`
+                ///
+                /// Always aligned,
+                /// size 8 bits
+                pub status: u8,
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Any output that could be useful that has the capability to convey detailed information.\n Users can send commands and receive specific data, like device status or measurements back in a streamlined manner.\n The standard commands should leave this field empty unless explicitly specified otherwise."
+                )]
+                ///
+                /// `saturated uint8[<=46]`
+                ///
+                /// Always aligned,
+                /// size ranges from 0 to 368 bits
+                pub output: ::heapless::Vec<u8, 46>,
+            }
+            impl ::canadensis_encoding::DataType for ExecuteCommandResponse {
+                /// This type is delimited with an extent of 48 bytes.
+                const EXTENT_BYTES: Option<u32> = Some(48);
+            }
+            impl ::canadensis_encoding::Response for ExecuteCommandResponse {}
+            impl ExecuteCommandResponse {
+                #[cfg_attr(not(doctest), doc = " Started or executed successfully")]
+                pub const STATUS_SUCCESS: u8 = 0;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " Could not start or the desired outcome could not be reached"
+                )]
+                pub const STATUS_FAILURE: u8 = 1;
+                #[cfg_attr(not(doctest), doc = " Denied due to lack of authorization")]
+                pub const STATUS_NOT_AUTHORIZED: u8 = 2;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " The requested command is not known or not supported"
+                )]
+                pub const STATUS_BAD_COMMAND: u8 = 3;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " The supplied parameter cannot be used with the selected command"
+                )]
+                pub const STATUS_BAD_PARAMETER: u8 = 4;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " The current state of the node does not permit execution of this command"
+                )]
+                pub const STATUS_BAD_STATE: u8 = 5;
+                #[cfg_attr(
+                    not(doctest),
+                    doc = " The operation should have succeeded but an unexpected failure occurred"
+                )]
+                pub const STATUS_INTERNAL_ERROR: u8 = 6;
+            }
+            impl ::canadensis_encoding::Serialize for ExecuteCommandResponse {
+                fn size_bits(&self) -> usize {
+                    8 + 8 + (self.output).len() * 8 + 0
+                }
+                fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                    cursor.write_aligned_u8(self.status);
+                    cursor.write_aligned_u8((self.output).len() as u8);
+                    cursor.write_bytes(&(self.output)[..]);
+                }
+            }
+            impl ::canadensis_encoding::Deserialize for ExecuteCommandResponse {
+                fn deserialize(
+                    cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                where
+                    Self: Sized,
+                {
+                    Ok(ExecuteCommandResponse {
+                        status: { cursor.read_u8() as _ },
+                        output: {
+                            let length = cursor.read_u8() as _;
+                            if length <= 46 {
+                                let mut elements = ::heapless::Vec::new();
+                                for _ in 0..length {
+                                    let _ = elements.push(cursor.read_u8() as _);
+                                }
+                                elements
+                            } else {
+                                return Err(::canadensis_encoding::DeserializeError::ArrayLength);
+                            }
+                        },
+                    })
+                }
             }
         }
         pub mod get_info_1_0 {
@@ -12292,6 +12698,108 @@ Extended
                 }
             }
             pub mod angle {
+                pub mod narrow_scalar_1_0 {
+                    /// `uavcan.si.sample.angle.NarrowScalar.1.0`
+                    ///
+                    /// Fixed size 9 bytes
+                    ///
+                    pub struct NarrowScalar {
+                        ///
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
+                        ///
+                        /// Always aligned,
+                        /// size 56 bits
+                        pub timestamp:
+                            crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
+                        ///
+                        /// `saturated float16`
+                        ///
+                        /// Always aligned,
+                        /// size 16 bits
+                        pub radian: ::half::f16,
+                    }
+                    impl ::canadensis_encoding::DataType for NarrowScalar {
+                        /// This type is sealed.
+                        const EXTENT_BYTES: Option<u32> = None;
+                    }
+                    impl ::canadensis_encoding::Message for NarrowScalar {}
+                    impl NarrowScalar {}
+                    impl ::canadensis_encoding::Serialize for NarrowScalar {
+                        fn size_bits(&self) -> usize {
+                            72
+                        }
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_composite(&self.timestamp);
+                            cursor.write_f16(self.radian);
+                        }
+                    }
+                    impl ::canadensis_encoding::Deserialize for NarrowScalar {
+                        fn deserialize(
+                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                        where
+                            Self: Sized,
+                        {
+                            Ok(NarrowScalar {
+                                timestamp: { cursor.read_composite()? },
+                                radian: { cursor.read_f16() },
+                            })
+                        }
+                    }
+                }
+                pub mod narrow_vector3_1_0 {
+                    /// `uavcan.si.sample.angle.NarrowVector3.1.0`
+                    ///
+                    /// Fixed size 13 bytes
+                    ///
+                    pub struct NarrowVector3 {
+                        ///
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
+                        ///
+                        /// Always aligned,
+                        /// size 56 bits
+                        pub timestamp:
+                            crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
+                        ///
+                        /// `saturated float16[3]`
+                        ///
+                        /// Always aligned,
+                        /// size 48 bits
+                        pub radian: [::half::f16; 3],
+                    }
+                    impl ::canadensis_encoding::DataType for NarrowVector3 {
+                        /// This type is sealed.
+                        const EXTENT_BYTES: Option<u32> = None;
+                    }
+                    impl ::canadensis_encoding::Message for NarrowVector3 {}
+                    impl NarrowVector3 {}
+                    impl ::canadensis_encoding::Serialize for NarrowVector3 {
+                        fn size_bits(&self) -> usize {
+                            104
+                        }
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_composite(&self.timestamp);
+                            for value in (self.radian).iter() {
+                                cursor.write_f16(*value);
+                            }
+                        }
+                    }
+                    impl ::canadensis_encoding::Deserialize for NarrowVector3 {
+                        fn deserialize(
+                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                        where
+                            Self: Sized,
+                        {
+                            Ok(NarrowVector3 {
+                                timestamp: { cursor.read_composite()? },
+                                radian: {
+                                    [cursor.read_f16(), cursor.read_f16(), cursor.read_f16()]
+                                },
+                            })
+                        }
+                    }
+                }
                 pub mod quaternion_1_0 {
                     /// `uavcan.si.sample.angle.Quaternion.1.0`
                     ///
@@ -12395,6 +12903,161 @@ Extended
                             Ok(Scalar {
                                 timestamp: { cursor.read_composite()? },
                                 radian: { cursor.read_f32() },
+                            })
+                        }
+                    }
+                }
+                pub mod vector3_1_0 {
+                    /// `uavcan.si.sample.angle.Vector3.1.0`
+                    ///
+                    /// Fixed size 19 bytes
+                    ///
+                    pub struct Vector3 {
+                        ///
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
+                        ///
+                        /// Always aligned,
+                        /// size 56 bits
+                        pub timestamp:
+                            crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
+                        ///
+                        /// `saturated float32[3]`
+                        ///
+                        /// Always aligned,
+                        /// size 96 bits
+                        pub radian: [f32; 3],
+                    }
+                    impl ::canadensis_encoding::DataType for Vector3 {
+                        /// This type is sealed.
+                        const EXTENT_BYTES: Option<u32> = None;
+                    }
+                    impl ::canadensis_encoding::Message for Vector3 {}
+                    impl Vector3 {}
+                    impl ::canadensis_encoding::Serialize for Vector3 {
+                        fn size_bits(&self) -> usize {
+                            152
+                        }
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_composite(&self.timestamp);
+                            for value in (self.radian).iter() {
+                                cursor.write_f32(*value);
+                            }
+                        }
+                    }
+                    impl ::canadensis_encoding::Deserialize for Vector3 {
+                        fn deserialize(
+                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                        where
+                            Self: Sized,
+                        {
+                            Ok(Vector3 {
+                                timestamp: { cursor.read_composite()? },
+                                radian: {
+                                    [cursor.read_f32(), cursor.read_f32(), cursor.read_f32()]
+                                },
+                            })
+                        }
+                    }
+                }
+                pub mod wide_scalar_1_0 {
+                    /// `uavcan.si.sample.angle.WideScalar.1.0`
+                    ///
+                    /// Fixed size 15 bytes
+                    ///
+                    pub struct WideScalar {
+                        ///
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
+                        ///
+                        /// Always aligned,
+                        /// size 56 bits
+                        pub timestamp:
+                            crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
+                        ///
+                        /// `saturated float64`
+                        ///
+                        /// Always aligned,
+                        /// size 64 bits
+                        pub radian: f64,
+                    }
+                    impl ::canadensis_encoding::DataType for WideScalar {
+                        /// This type is sealed.
+                        const EXTENT_BYTES: Option<u32> = None;
+                    }
+                    impl ::canadensis_encoding::Message for WideScalar {}
+                    impl WideScalar {}
+                    impl ::canadensis_encoding::Serialize for WideScalar {
+                        fn size_bits(&self) -> usize {
+                            120
+                        }
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_composite(&self.timestamp);
+                            cursor.write_f64(self.radian);
+                        }
+                    }
+                    impl ::canadensis_encoding::Deserialize for WideScalar {
+                        fn deserialize(
+                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                        where
+                            Self: Sized,
+                        {
+                            Ok(WideScalar {
+                                timestamp: { cursor.read_composite()? },
+                                radian: { cursor.read_f64() },
+                            })
+                        }
+                    }
+                }
+                pub mod wide_vector3_1_0 {
+                    /// `uavcan.si.sample.angle.WideVector3.1.0`
+                    ///
+                    /// Fixed size 31 bytes
+                    ///
+                    pub struct WideVector3 {
+                        ///
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
+                        ///
+                        /// Always aligned,
+                        /// size 56 bits
+                        pub timestamp:
+                            crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
+                        ///
+                        /// `saturated float64[3]`
+                        ///
+                        /// Always aligned,
+                        /// size 192 bits
+                        pub radian: [f64; 3],
+                    }
+                    impl ::canadensis_encoding::DataType for WideVector3 {
+                        /// This type is sealed.
+                        const EXTENT_BYTES: Option<u32> = None;
+                    }
+                    impl ::canadensis_encoding::Message for WideVector3 {}
+                    impl WideVector3 {}
+                    impl ::canadensis_encoding::Serialize for WideVector3 {
+                        fn size_bits(&self) -> usize {
+                            248
+                        }
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_composite(&self.timestamp);
+                            for value in (self.radian).iter() {
+                                cursor.write_f64(*value);
+                            }
+                        }
+                    }
+                    impl ::canadensis_encoding::Deserialize for WideVector3 {
+                        fn deserialize(
+                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                        where
+                            Self: Sized,
+                        {
+                            Ok(WideVector3 {
+                                timestamp: { cursor.read_composite()? },
+                                radian: {
+                                    [cursor.read_f64(), cursor.read_f64(), cursor.read_f64()]
+                                },
                             })
                         }
                     }
@@ -13017,6 +13680,108 @@ Extended
                 }
             }
             pub mod length {
+                pub mod narrow_scalar_1_0 {
+                    /// `uavcan.si.sample.length.NarrowScalar.1.0`
+                    ///
+                    /// Fixed size 9 bytes
+                    ///
+                    pub struct NarrowScalar {
+                        ///
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
+                        ///
+                        /// Always aligned,
+                        /// size 56 bits
+                        pub timestamp:
+                            crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
+                        ///
+                        /// `saturated float16`
+                        ///
+                        /// Always aligned,
+                        /// size 16 bits
+                        pub meter: ::half::f16,
+                    }
+                    impl ::canadensis_encoding::DataType for NarrowScalar {
+                        /// This type is sealed.
+                        const EXTENT_BYTES: Option<u32> = None;
+                    }
+                    impl ::canadensis_encoding::Message for NarrowScalar {}
+                    impl NarrowScalar {}
+                    impl ::canadensis_encoding::Serialize for NarrowScalar {
+                        fn size_bits(&self) -> usize {
+                            72
+                        }
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_composite(&self.timestamp);
+                            cursor.write_f16(self.meter);
+                        }
+                    }
+                    impl ::canadensis_encoding::Deserialize for NarrowScalar {
+                        fn deserialize(
+                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                        where
+                            Self: Sized,
+                        {
+                            Ok(NarrowScalar {
+                                timestamp: { cursor.read_composite()? },
+                                meter: { cursor.read_f16() },
+                            })
+                        }
+                    }
+                }
+                pub mod narrow_vector3_1_0 {
+                    /// `uavcan.si.sample.length.NarrowVector3.1.0`
+                    ///
+                    /// Fixed size 13 bytes
+                    ///
+                    pub struct NarrowVector3 {
+                        ///
+                        /// `uavcan.time.SynchronizedTimestamp.1.0`
+                        ///
+                        /// Always aligned,
+                        /// size 56 bits
+                        pub timestamp:
+                            crate::uavcan::time::synchronized_timestamp_1_0::SynchronizedTimestamp,
+                        ///
+                        /// `saturated float16[3]`
+                        ///
+                        /// Always aligned,
+                        /// size 48 bits
+                        pub meter: [::half::f16; 3],
+                    }
+                    impl ::canadensis_encoding::DataType for NarrowVector3 {
+                        /// This type is sealed.
+                        const EXTENT_BYTES: Option<u32> = None;
+                    }
+                    impl ::canadensis_encoding::Message for NarrowVector3 {}
+                    impl NarrowVector3 {}
+                    impl ::canadensis_encoding::Serialize for NarrowVector3 {
+                        fn size_bits(&self) -> usize {
+                            104
+                        }
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_composite(&self.timestamp);
+                            for value in (self.meter).iter() {
+                                cursor.write_f16(*value);
+                            }
+                        }
+                    }
+                    impl ::canadensis_encoding::Deserialize for NarrowVector3 {
+                        fn deserialize(
+                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                        where
+                            Self: Sized,
+                        {
+                            Ok(NarrowVector3 {
+                                timestamp: { cursor.read_composite()? },
+                                meter: {
+                                    [cursor.read_f16(), cursor.read_f16(), cursor.read_f16()]
+                                },
+                            })
+                        }
+                    }
+                }
                 pub mod scalar_1_0 {
                     /// `uavcan.si.sample.length.Scalar.1.0`
                     ///
@@ -14267,6 +15032,100 @@ Extended
                 }
             }
             pub mod angle {
+                pub mod narrow_scalar_1_0 {
+                    /// `uavcan.si.unit.angle.NarrowScalar.1.0`
+                    ///
+                    /// Fixed size 2 bytes
+                    ///
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
+                    #[repr(C, packed)]
+                    pub struct NarrowScalar {
+                        ///
+                        /// `saturated float16`
+                        ///
+                        /// Always aligned,
+                        /// size 16 bits
+                        pub radian: ::half::f16,
+                    }
+                    impl ::canadensis_encoding::DataType for NarrowScalar {
+                        /// This type is sealed.
+                        const EXTENT_BYTES: Option<u32> = None;
+                    }
+                    impl ::canadensis_encoding::Message for NarrowScalar {}
+                    impl NarrowScalar {}
+                    impl ::canadensis_encoding::Serialize for NarrowScalar {
+                        fn size_bits(&self) -> usize {
+                            16
+                        }
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
+                        }
+                    }
+                    impl ::canadensis_encoding::Deserialize for NarrowScalar {
+                        fn deserialize(
+                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                        where
+                            Self: Sized,
+                        {
+                            Ok(Self::deserialize_zero_copy(cursor))
+                        }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<NarrowScalar>() * 8, 16);
+                        assert_eq!(::core::mem::offset_of!(NarrowScalar, radian) * 8, 0);
+                    }
+                }
+                pub mod narrow_vector3_1_0 {
+                    /// `uavcan.si.unit.angle.NarrowVector3.1.0`
+                    ///
+                    /// Fixed size 6 bytes
+                    ///
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
+                    #[repr(C, packed)]
+                    pub struct NarrowVector3 {
+                        ///
+                        /// `saturated float16[3]`
+                        ///
+                        /// Always aligned,
+                        /// size 48 bits
+                        pub radian: [::half::f16; 3],
+                    }
+                    impl ::canadensis_encoding::DataType for NarrowVector3 {
+                        /// This type is sealed.
+                        const EXTENT_BYTES: Option<u32> = None;
+                    }
+                    impl ::canadensis_encoding::Message for NarrowVector3 {}
+                    impl NarrowVector3 {}
+                    impl ::canadensis_encoding::Serialize for NarrowVector3 {
+                        fn size_bits(&self) -> usize {
+                            48
+                        }
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
+                        }
+                    }
+                    impl ::canadensis_encoding::Deserialize for NarrowVector3 {
+                        fn deserialize(
+                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                        where
+                            Self: Sized,
+                        {
+                            Ok(Self::deserialize_zero_copy(cursor))
+                        }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<NarrowVector3>() * 8, 48);
+                        assert_eq!(::core::mem::offset_of!(NarrowVector3, radian) * 8, 0);
+                    }
+                }
                 pub mod quaternion_1_0 {
                     /// `uavcan.si.unit.angle.Quaternion.1.0`
                     ///
@@ -14359,6 +15218,147 @@ Extended
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
                         assert_eq!(::core::mem::offset_of!(Scalar, radian) * 8, 0);
+                    }
+                }
+                pub mod vector3_1_0 {
+                    /// `uavcan.si.unit.angle.Vector3.1.0`
+                    ///
+                    /// Fixed size 12 bytes
+                    ///
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
+                    #[repr(C, packed)]
+                    pub struct Vector3 {
+                        ///
+                        /// `saturated float32[3]`
+                        ///
+                        /// Always aligned,
+                        /// size 96 bits
+                        pub radian: [f32; 3],
+                    }
+                    impl ::canadensis_encoding::DataType for Vector3 {
+                        /// This type is sealed.
+                        const EXTENT_BYTES: Option<u32> = None;
+                    }
+                    impl ::canadensis_encoding::Message for Vector3 {}
+                    impl Vector3 {}
+                    impl ::canadensis_encoding::Serialize for Vector3 {
+                        fn size_bits(&self) -> usize {
+                            96
+                        }
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
+                        }
+                    }
+                    impl ::canadensis_encoding::Deserialize for Vector3 {
+                        fn deserialize(
+                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                        where
+                            Self: Sized,
+                        {
+                            Ok(Self::deserialize_zero_copy(cursor))
+                        }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<Vector3>() * 8, 96);
+                        assert_eq!(::core::mem::offset_of!(Vector3, radian) * 8, 0);
+                    }
+                }
+                pub mod wide_scalar_1_0 {
+                    /// `uavcan.si.unit.angle.WideScalar.1.0`
+                    ///
+                    /// Fixed size 8 bytes
+                    ///
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
+                    #[repr(C, packed)]
+                    pub struct WideScalar {
+                        ///
+                        /// `saturated float64`
+                        ///
+                        /// Always aligned,
+                        /// size 64 bits
+                        pub radian: f64,
+                    }
+                    impl ::canadensis_encoding::DataType for WideScalar {
+                        /// This type is sealed.
+                        const EXTENT_BYTES: Option<u32> = None;
+                    }
+                    impl ::canadensis_encoding::Message for WideScalar {}
+                    impl WideScalar {}
+                    impl ::canadensis_encoding::Serialize for WideScalar {
+                        fn size_bits(&self) -> usize {
+                            64
+                        }
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
+                        }
+                    }
+                    impl ::canadensis_encoding::Deserialize for WideScalar {
+                        fn deserialize(
+                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                        where
+                            Self: Sized,
+                        {
+                            Ok(Self::deserialize_zero_copy(cursor))
+                        }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<WideScalar>() * 8, 64);
+                        assert_eq!(::core::mem::offset_of!(WideScalar, radian) * 8, 0);
+                    }
+                }
+                pub mod wide_vector3_1_0 {
+                    /// `uavcan.si.unit.angle.WideVector3.1.0`
+                    ///
+                    /// Fixed size 24 bytes
+                    ///
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
+                    #[repr(C, packed)]
+                    pub struct WideVector3 {
+                        ///
+                        /// `saturated float64[3]`
+                        ///
+                        /// Always aligned,
+                        /// size 192 bits
+                        pub radian: [f64; 3],
+                    }
+                    impl ::canadensis_encoding::DataType for WideVector3 {
+                        /// This type is sealed.
+                        const EXTENT_BYTES: Option<u32> = None;
+                    }
+                    impl ::canadensis_encoding::Message for WideVector3 {}
+                    impl WideVector3 {}
+                    impl ::canadensis_encoding::Serialize for WideVector3 {
+                        fn size_bits(&self) -> usize {
+                            192
+                        }
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
+                        }
+                    }
+                    impl ::canadensis_encoding::Deserialize for WideVector3 {
+                        fn deserialize(
+                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                        where
+                            Self: Sized,
+                        {
+                            Ok(Self::deserialize_zero_copy(cursor))
+                        }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<WideVector3>() * 8, 192);
+                        assert_eq!(::core::mem::offset_of!(WideVector3, radian) * 8, 0);
                     }
                 }
             }
@@ -14949,6 +15949,100 @@ Extended
                 }
             }
             pub mod length {
+                pub mod narrow_scalar_1_0 {
+                    /// `uavcan.si.unit.length.NarrowScalar.1.0`
+                    ///
+                    /// Fixed size 2 bytes
+                    ///
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
+                    #[repr(C, packed)]
+                    pub struct NarrowScalar {
+                        ///
+                        /// `saturated float16`
+                        ///
+                        /// Always aligned,
+                        /// size 16 bits
+                        pub meter: ::half::f16,
+                    }
+                    impl ::canadensis_encoding::DataType for NarrowScalar {
+                        /// This type is sealed.
+                        const EXTENT_BYTES: Option<u32> = None;
+                    }
+                    impl ::canadensis_encoding::Message for NarrowScalar {}
+                    impl NarrowScalar {}
+                    impl ::canadensis_encoding::Serialize for NarrowScalar {
+                        fn size_bits(&self) -> usize {
+                            16
+                        }
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
+                        }
+                    }
+                    impl ::canadensis_encoding::Deserialize for NarrowScalar {
+                        fn deserialize(
+                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                        where
+                            Self: Sized,
+                        {
+                            Ok(Self::deserialize_zero_copy(cursor))
+                        }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<NarrowScalar>() * 8, 16);
+                        assert_eq!(::core::mem::offset_of!(NarrowScalar, meter) * 8, 0);
+                    }
+                }
+                pub mod narrow_vector3_1_0 {
+                    /// `uavcan.si.unit.length.NarrowVector3.1.0`
+                    ///
+                    /// Fixed size 6 bytes
+                    ///
+                    #[derive(
+                        ::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable,
+                    )]
+                    #[repr(C, packed)]
+                    pub struct NarrowVector3 {
+                        ///
+                        /// `saturated float16[3]`
+                        ///
+                        /// Always aligned,
+                        /// size 48 bits
+                        pub meter: [::half::f16; 3],
+                    }
+                    impl ::canadensis_encoding::DataType for NarrowVector3 {
+                        /// This type is sealed.
+                        const EXTENT_BYTES: Option<u32> = None;
+                    }
+                    impl ::canadensis_encoding::Message for NarrowVector3 {}
+                    impl NarrowVector3 {}
+                    impl ::canadensis_encoding::Serialize for NarrowVector3 {
+                        fn size_bits(&self) -> usize {
+                            48
+                        }
+                        fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
+                            cursor.write_aligned_bytes(::zerocopy::IntoBytes::as_bytes(self));
+                        }
+                    }
+                    impl ::canadensis_encoding::Deserialize for NarrowVector3 {
+                        fn deserialize(
+                            cursor: &mut ::canadensis_encoding::ReadCursor<'_>,
+                        ) -> ::core::result::Result<Self, ::canadensis_encoding::DeserializeError>
+                        where
+                            Self: Sized,
+                        {
+                            Ok(Self::deserialize_zero_copy(cursor))
+                        }
+                    }
+                    #[test]
+                    fn test_layout() {
+                        assert_eq!(::core::mem::size_of::<NarrowVector3>() * 8, 48);
+                        assert_eq!(::core::mem::offset_of!(NarrowVector3, meter) * 8, 0);
+                    }
+                }
                 pub mod scalar_1_0 {
                     /// `uavcan.si.unit.length.Scalar.1.0`
                     ///

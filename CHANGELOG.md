@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Several crates: Breaking change: Added `CanTransferIdTracker` [#46](https://github.com/samcrow/canadensis/pull/46)
 - `canadensis_header`: Breaking change: Removed `header_crc()` public function and dependency on `crc-any`
 - Various crates: Breaking changes: Updated dependencies [#52](https://github.com/samcrow/canadensis/pull/52)
+- `canadensis_data_types`: Regenerated based on new public_regulated_data_types revision a229bb78e76c48a3082be163bc240b2c13ff2d89
 
 ### Fixed
 
