@@ -22,7 +22,3 @@ path = "../canadensis_core"
 [dependencies.canadensis_encoding]
 version = "0.3.2"
 path = "../canadensis_encoding"
-
-[dev-dependencies]
-memoffset = "0.8.0"
-
