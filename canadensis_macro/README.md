@@ -10,8 +10,3 @@ zerocopy = "0.8.26"
 canadensis_encoding = "0.3.0" # (version may be incorrect)
 canadensis_core = "0.3.0" # (version may be incorrect)
 ```
-
-For testing, it also depends on this, which should be under `dev-dependencies`:
-```toml
-memoffset = "0.8.0"
-```

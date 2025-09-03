@@ -43,8 +43,6 @@ heapless = "0.9.1"
 zerocopy = "0.8.26"
 canadensis_core = "0.3.0"
 canadensis_encoding = "0.3.0"
-[dev-dependencies]
-memoffset = "0.8.0"
 "#,
     )
 }
@@ -847,7 +845,7 @@ mod fmt_impl {
                                 GeneratedField::Data(field) => {
                                     writeln!(
                                         f,
-                                        "assert_eq!(::memoffset::offset_of!({}, {}) * 8, {});",
+                                        "assert_eq!(::core::mem::offset_of!({}, {}) * 8, {});",
                                         self.name.type_name, field.name, expected_offset_bits
                                     )?;
 

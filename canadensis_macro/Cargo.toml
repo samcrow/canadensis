@@ -32,7 +32,6 @@ path = "../canadensis_codegen_rust"
 half = { version = "2.6.0", default-features = false }
 heapless = "0.9.1"
 zerocopy = "0.8.26"
-memoffset = "0.8.0"
 canadensis_encoding = { path = "../canadensis_encoding" }
 canadensis_data_types = { path = "../canadensis_data_types" }
 

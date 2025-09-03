@@ -66,9 +66,9 @@ pub mod reg {
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Note>() * 8, 96);
-                        assert_eq!(::memoffset::offset_of!(Note, frequency) * 8, 0);
-                        assert_eq!(::memoffset::offset_of!(Note, duration) * 8, 32);
-                        assert_eq!(::memoffset::offset_of!(Note, acoustic_power) * 8, 64);
+                        assert_eq!(::core::mem::offset_of!(Note, frequency) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Note, duration) * 8, 32);
+                        assert_eq!(::core::mem::offset_of!(Note, acoustic_power) * 8, 64);
                     }
                 }
             }
@@ -132,8 +132,8 @@ pub torque: crate::uavcan::si::unit::torque::scalar_1_0::Scalar,
                         #[test]
                         fn test_layout() {
                             assert_eq!(::core::mem::size_of::<Planar>() * 8, 128);
-                            assert_eq!(::memoffset::offset_of!(Planar, kinematics) * 8, 0);
-                            assert_eq!(::memoffset::offset_of!(Planar, torque) * 8, 96);
+                            assert_eq!(::core::mem::offset_of!(Planar, kinematics) * 8, 0);
+                            assert_eq!(::core::mem::offset_of!(Planar, torque) * 8, 96);
                         }
                     }
                     pub mod planar_ts_0_1 {
@@ -247,8 +247,8 @@ pub force: crate::uavcan::si::unit::force::scalar_1_0::Scalar,
                         #[test]
                         fn test_layout() {
                             assert_eq!(::core::mem::size_of::<Linear>() * 8, 128);
-                            assert_eq!(::memoffset::offset_of!(Linear, kinematics) * 8, 0);
-                            assert_eq!(::memoffset::offset_of!(Linear, force) * 8, 96);
+                            assert_eq!(::core::mem::offset_of!(Linear, kinematics) * 8, 0);
+                            assert_eq!(::core::mem::offset_of!(Linear, force) * 8, 96);
                         }
                     }
                     pub mod linear_ts_0_1 {
@@ -359,8 +359,8 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Power>() * 8, 64);
-                        assert_eq!(::memoffset::offset_of!(Power, current) * 8, 0);
-                        assert_eq!(::memoffset::offset_of!(Power, voltage) * 8, 32);
+                        assert_eq!(::core::mem::offset_of!(Power, current) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Power, voltage) * 8, 32);
                     }
                 }
                 pub mod power_ts_0_1 {
@@ -484,9 +484,9 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Source>() * 8, 128);
-                        assert_eq!(::memoffset::offset_of!(Source, power) * 8, 0);
-                        assert_eq!(::memoffset::offset_of!(Source, energy) * 8, 64);
-                        assert_eq!(::memoffset::offset_of!(Source, full_energy) * 8, 96);
+                        assert_eq!(::core::mem::offset_of!(Source, power) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Source, energy) * 8, 64);
+                        assert_eq!(::core::mem::offset_of!(Source, full_energy) * 8, 96);
                     }
                 }
                 pub mod source_ts_0_1 {
@@ -593,7 +593,7 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                         #[test]
                         fn test_layout() {
                             assert_eq!(::core::mem::size_of::<Point>() * 8, 192);
-                            assert_eq!(::memoffset::offset_of!(Point, value) * 8, 0);
+                            assert_eq!(::core::mem::offset_of!(Point, value) * 8, 0);
                         }
                     }
                     pub mod point_state_0_1 {
@@ -654,8 +654,8 @@ pub value: crate::reg::udral::physics::dynamics::translation::linear_0_1::Linear
                         #[test]
                         fn test_layout() {
                             assert_eq!(::core::mem::size_of::<PointState>() * 8, 288);
-                            assert_eq!(::memoffset::offset_of!(PointState, position) * 8, 0);
-                            assert_eq!(::memoffset::offset_of!(PointState, velocity) * 8, 192);
+                            assert_eq!(::core::mem::offset_of!(PointState, position) * 8, 0);
+                            assert_eq!(::core::mem::offset_of!(PointState, velocity) * 8, 192);
                         }
                     }
                     pub mod point_state_var_0_1 {
@@ -712,8 +712,8 @@ pub velocity: crate::reg::udral::physics::kinematics::translation::velocity3_var
                         #[test]
                         fn test_layout() {
                             assert_eq!(::core::mem::size_of::<PointStateVar>() * 8, 480);
-                            assert_eq!(::memoffset::offset_of!(PointStateVar, position) * 8, 0);
-                            assert_eq!(::memoffset::offset_of!(PointStateVar, velocity) * 8, 288);
+                            assert_eq!(::core::mem::offset_of!(PointStateVar, position) * 8, 0);
+                            assert_eq!(::core::mem::offset_of!(PointStateVar, velocity) * 8, 288);
                         }
                     }
                     pub mod point_state_var_ts_0_1 {
@@ -825,8 +825,8 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::point_state_var_0_
                         #[test]
                         fn test_layout() {
                             assert_eq!(::core::mem::size_of::<PointVar>() * 8, 288);
-                            assert_eq!(::memoffset::offset_of!(PointVar, value) * 8, 0);
-                            assert_eq!(::memoffset::offset_of!(PointVar, covariance_urt) * 8, 192);
+                            assert_eq!(::core::mem::offset_of!(PointVar, value) * 8, 0);
+                            assert_eq!(::core::mem::offset_of!(PointVar, covariance_urt) * 8, 192);
                         }
                     }
                     pub mod pose_0_1 {
@@ -884,8 +884,8 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::point_state_var_0_
                         #[test]
                         fn test_layout() {
                             assert_eq!(::core::mem::size_of::<Pose>() * 8, 320);
-                            assert_eq!(::memoffset::offset_of!(Pose, position) * 8, 0);
-                            assert_eq!(::memoffset::offset_of!(Pose, orientation) * 8, 192);
+                            assert_eq!(::core::mem::offset_of!(Pose, position) * 8, 0);
+                            assert_eq!(::core::mem::offset_of!(Pose, orientation) * 8, 192);
                         }
                     }
                     pub mod pose_var_0_1 {
@@ -946,8 +946,8 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::point_state_var_0_
                         #[test]
                         fn test_layout() {
                             assert_eq!(::core::mem::size_of::<PoseVar>() * 8, 656);
-                            assert_eq!(::memoffset::offset_of!(PoseVar, value) * 8, 0);
-                            assert_eq!(::memoffset::offset_of!(PoseVar, covariance_urt) * 8, 320);
+                            assert_eq!(::core::mem::offset_of!(PoseVar, value) * 8, 0);
+                            assert_eq!(::core::mem::offset_of!(PoseVar, covariance_urt) * 8, 320);
                         }
                     }
                     pub mod pose_var_ts_0_1 {
@@ -1060,8 +1060,8 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::pose_var_0_1::Pose
                         #[test]
                         fn test_layout() {
                             assert_eq!(::core::mem::size_of::<State>() * 8, 512);
-                            assert_eq!(::memoffset::offset_of!(State, pose) * 8, 0);
-                            assert_eq!(::memoffset::offset_of!(State, twist) * 8, 320);
+                            assert_eq!(::core::mem::offset_of!(State, pose) * 8, 0);
+                            assert_eq!(::core::mem::offset_of!(State, twist) * 8, 320);
                         }
                     }
                     pub mod state_var_0_1 {
@@ -1121,8 +1121,8 @@ pub twist: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::Twi
                         #[test]
                         fn test_layout() {
                             assert_eq!(::core::mem::size_of::<StateVar>() * 8, 1184);
-                            assert_eq!(::memoffset::offset_of!(StateVar, pose) * 8, 0);
-                            assert_eq!(::memoffset::offset_of!(StateVar, twist) * 8, 656);
+                            assert_eq!(::core::mem::offset_of!(StateVar, pose) * 8, 0);
+                            assert_eq!(::core::mem::offset_of!(StateVar, twist) * 8, 656);
                         }
                     }
                     pub mod state_var_ts_0_1 {
@@ -1239,8 +1239,8 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::state_var_0_1::Sta
                         #[test]
                         fn test_layout() {
                             assert_eq!(::core::mem::size_of::<Twist>() * 8, 192);
-                            assert_eq!(::memoffset::offset_of!(Twist, linear) * 8, 0);
-                            assert_eq!(::memoffset::offset_of!(Twist, angular) * 8, 96);
+                            assert_eq!(::core::mem::offset_of!(Twist, linear) * 8, 0);
+                            assert_eq!(::core::mem::offset_of!(Twist, angular) * 8, 96);
                         }
                     }
                     pub mod twist_var_0_1 {
@@ -1301,8 +1301,8 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::state_var_0_1::Sta
                         #[test]
                         fn test_layout() {
                             assert_eq!(::core::mem::size_of::<TwistVar>() * 8, 528);
-                            assert_eq!(::memoffset::offset_of!(TwistVar, value) * 8, 0);
-                            assert_eq!(::memoffset::offset_of!(TwistVar, covariance_urt) * 8, 192);
+                            assert_eq!(::core::mem::offset_of!(TwistVar, value) * 8, 0);
+                            assert_eq!(::core::mem::offset_of!(TwistVar, covariance_urt) * 8, 192);
                         }
                     }
                     pub mod twist_var_ts_0_1 {
@@ -1428,9 +1428,9 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::Twi
                         #[test]
                         fn test_layout() {
                             assert_eq!(::core::mem::size_of::<Point>() * 8, 192);
-                            assert_eq!(::memoffset::offset_of!(Point, latitude) * 8, 0);
-                            assert_eq!(::memoffset::offset_of!(Point, longitude) * 8, 64);
-                            assert_eq!(::memoffset::offset_of!(Point, altitude) * 8, 128);
+                            assert_eq!(::core::mem::offset_of!(Point, latitude) * 8, 0);
+                            assert_eq!(::core::mem::offset_of!(Point, longitude) * 8, 64);
+                            assert_eq!(::core::mem::offset_of!(Point, altitude) * 8, 128);
                         }
                     }
                     pub mod point_state_0_1 {
@@ -1491,8 +1491,8 @@ pub value: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::Twi
                         #[test]
                         fn test_layout() {
                             assert_eq!(::core::mem::size_of::<PointState>() * 8, 288);
-                            assert_eq!(::memoffset::offset_of!(PointState, position) * 8, 0);
-                            assert_eq!(::memoffset::offset_of!(PointState, velocity) * 8, 192);
+                            assert_eq!(::core::mem::offset_of!(PointState, position) * 8, 0);
+                            assert_eq!(::core::mem::offset_of!(PointState, velocity) * 8, 192);
                         }
                     }
                     pub mod point_state_var_0_1 {
@@ -1549,8 +1549,8 @@ pub velocity: crate::reg::udral::physics::kinematics::translation::velocity3_var
                         #[test]
                         fn test_layout() {
                             assert_eq!(::core::mem::size_of::<PointStateVar>() * 8, 480);
-                            assert_eq!(::memoffset::offset_of!(PointStateVar, position) * 8, 0);
-                            assert_eq!(::memoffset::offset_of!(PointStateVar, velocity) * 8, 288);
+                            assert_eq!(::core::mem::offset_of!(PointStateVar, position) * 8, 0);
+                            assert_eq!(::core::mem::offset_of!(PointStateVar, velocity) * 8, 288);
                         }
                     }
                     pub mod point_state_var_ts_0_1 {
@@ -1662,8 +1662,8 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1
                         #[test]
                         fn test_layout() {
                             assert_eq!(::core::mem::size_of::<PointVar>() * 8, 288);
-                            assert_eq!(::memoffset::offset_of!(PointVar, value) * 8, 0);
-                            assert_eq!(::memoffset::offset_of!(PointVar, covariance_urt) * 8, 192);
+                            assert_eq!(::core::mem::offset_of!(PointVar, value) * 8, 0);
+                            assert_eq!(::core::mem::offset_of!(PointVar, covariance_urt) * 8, 192);
                         }
                     }
                     pub mod pose_0_1 {
@@ -1725,8 +1725,8 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1
                         #[test]
                         fn test_layout() {
                             assert_eq!(::core::mem::size_of::<Pose>() * 8, 320);
-                            assert_eq!(::memoffset::offset_of!(Pose, position) * 8, 0);
-                            assert_eq!(::memoffset::offset_of!(Pose, orientation) * 8, 192);
+                            assert_eq!(::core::mem::offset_of!(Pose, position) * 8, 0);
+                            assert_eq!(::core::mem::offset_of!(Pose, orientation) * 8, 192);
                         }
                     }
                     pub mod pose_var_0_1 {
@@ -1787,8 +1787,8 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1
                         #[test]
                         fn test_layout() {
                             assert_eq!(::core::mem::size_of::<PoseVar>() * 8, 656);
-                            assert_eq!(::memoffset::offset_of!(PoseVar, value) * 8, 0);
-                            assert_eq!(::memoffset::offset_of!(PoseVar, covariance_urt) * 8, 320);
+                            assert_eq!(::core::mem::offset_of!(PoseVar, value) * 8, 0);
+                            assert_eq!(::core::mem::offset_of!(PoseVar, covariance_urt) * 8, 320);
                         }
                     }
                     pub mod state_0_1 {
@@ -1850,8 +1850,8 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::point_state_var_0_1
                         #[test]
                         fn test_layout() {
                             assert_eq!(::core::mem::size_of::<State>() * 8, 512);
-                            assert_eq!(::memoffset::offset_of!(State, pose) * 8, 0);
-                            assert_eq!(::memoffset::offset_of!(State, twist) * 8, 320);
+                            assert_eq!(::core::mem::offset_of!(State, pose) * 8, 0);
+                            assert_eq!(::core::mem::offset_of!(State, twist) * 8, 320);
                         }
                     }
                     pub mod state_var_0_1 {
@@ -1911,8 +1911,8 @@ pub twist: crate::reg::udral::physics::kinematics::cartesian::twist_var_0_1::Twi
                         #[test]
                         fn test_layout() {
                             assert_eq!(::core::mem::size_of::<StateVar>() * 8, 1184);
-                            assert_eq!(::memoffset::offset_of!(StateVar, pose) * 8, 0);
-                            assert_eq!(::memoffset::offset_of!(StateVar, twist) * 8, 656);
+                            assert_eq!(::core::mem::offset_of!(StateVar, pose) * 8, 0);
+                            assert_eq!(::core::mem::offset_of!(StateVar, twist) * 8, 656);
                         }
                     }
                     pub mod state_var_ts_0_1 {
@@ -2031,10 +2031,10 @@ pub value: crate::reg::udral::physics::kinematics::geodetic::state_var_0_1::Stat
                         #[test]
                         fn test_layout() {
                             assert_eq!(::core::mem::size_of::<Planar>() * 8, 96);
-                            assert_eq!(::memoffset::offset_of!(Planar, angular_position) * 8, 0);
-                            assert_eq!(::memoffset::offset_of!(Planar, angular_velocity) * 8, 32);
+                            assert_eq!(::core::mem::offset_of!(Planar, angular_position) * 8, 0);
+                            assert_eq!(::core::mem::offset_of!(Planar, angular_velocity) * 8, 32);
                             assert_eq!(
-                                ::memoffset::offset_of!(Planar, angular_acceleration) * 8,
+                                ::core::mem::offset_of!(Planar, angular_acceleration) * 8,
                                 64
                             );
                         }
@@ -2153,9 +2153,9 @@ pub value: crate::reg::udral::physics::kinematics::rotation::planar_0_1::Planar,
                         #[test]
                         fn test_layout() {
                             assert_eq!(::core::mem::size_of::<Linear>() * 8, 96);
-                            assert_eq!(::memoffset::offset_of!(Linear, position) * 8, 0);
-                            assert_eq!(::memoffset::offset_of!(Linear, velocity) * 8, 32);
-                            assert_eq!(::memoffset::offset_of!(Linear, acceleration) * 8, 64);
+                            assert_eq!(::core::mem::offset_of!(Linear, position) * 8, 0);
+                            assert_eq!(::core::mem::offset_of!(Linear, velocity) * 8, 32);
+                            assert_eq!(::core::mem::offset_of!(Linear, acceleration) * 8, 64);
                         }
                     }
                     pub mod linear_ts_0_1 {
@@ -2473,9 +2473,9 @@ pub acceleration_error_variance: ::half::f16,
                         #[test]
                         fn test_layout() {
                             assert_eq!(::core::mem::size_of::<Velocity3Var>() * 8, 192);
-                            assert_eq!(::memoffset::offset_of!(Velocity3Var, value) * 8, 0);
+                            assert_eq!(::core::mem::offset_of!(Velocity3Var, value) * 8, 0);
                             assert_eq!(
-                                ::memoffset::offset_of!(Velocity3Var, covariance_urt) * 8,
+                                ::core::mem::offset_of!(Velocity3Var, covariance_urt) * 8,
                                 96
                             );
                         }
@@ -2680,7 +2680,7 @@ pub acceleration_error_variance: ::half::f16,
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<TAI64>() * 8, 64);
-                        assert_eq!(::memoffset::offset_of!(TAI64, tai64n) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(TAI64, tai64n) * 8, 0);
                     }
                 }
                 pub mod tai64_var_0_1 {
@@ -2737,8 +2737,8 @@ pub acceleration_error_variance: ::half::f16,
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<TAI64Var>() * 8, 96);
-                        assert_eq!(::memoffset::offset_of!(TAI64Var, value) * 8, 0);
-                        assert_eq!(::memoffset::offset_of!(TAI64Var, error_variance) * 8, 64);
+                        assert_eq!(::core::mem::offset_of!(TAI64Var, value) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(TAI64Var, error_variance) * 8, 64);
                     }
                 }
                 pub mod tai64_var_ts_0_1 {
@@ -3184,7 +3184,7 @@ pub acceleration_error_variance: ::half::f16,
                             #[test]
                             fn test_layout() {
                                 assert_eq!(::core::mem::size_of::<Scalar>() * 8, 16);
-                                assert_eq!(::memoffset::offset_of!(Scalar, value) * 8, 0);
+                                assert_eq!(::core::mem::offset_of!(Scalar, value) * 8, 0);
                             }
                         }
                         pub mod vector2_0_1 {
@@ -3238,7 +3238,7 @@ pub acceleration_error_variance: ::half::f16,
                             #[test]
                             fn test_layout() {
                                 assert_eq!(::core::mem::size_of::<Vector2>() * 8, 32);
-                                assert_eq!(::memoffset::offset_of!(Vector2, value) * 8, 0);
+                                assert_eq!(::core::mem::offset_of!(Vector2, value) * 8, 0);
                             }
                         }
                         pub mod vector31_0_1 {
@@ -3292,7 +3292,7 @@ pub acceleration_error_variance: ::half::f16,
                             #[test]
                             fn test_layout() {
                                 assert_eq!(::core::mem::size_of::<Vector31>() * 8, 496);
-                                assert_eq!(::memoffset::offset_of!(Vector31, value) * 8, 0);
+                                assert_eq!(::core::mem::offset_of!(Vector31, value) * 8, 0);
                             }
                         }
                         pub mod vector3_0_1 {
@@ -3346,7 +3346,7 @@ pub acceleration_error_variance: ::half::f16,
                             #[test]
                             fn test_layout() {
                                 assert_eq!(::core::mem::size_of::<Vector3>() * 8, 48);
-                                assert_eq!(::memoffset::offset_of!(Vector3, value) * 8, 0);
+                                assert_eq!(::core::mem::offset_of!(Vector3, value) * 8, 0);
                             }
                         }
                         pub mod vector4_0_1 {
@@ -3400,7 +3400,7 @@ pub acceleration_error_variance: ::half::f16,
                             #[test]
                             fn test_layout() {
                                 assert_eq!(::core::mem::size_of::<Vector4>() * 8, 64);
-                                assert_eq!(::memoffset::offset_of!(Vector4, value) * 8, 0);
+                                assert_eq!(::core::mem::offset_of!(Vector4, value) * 8, 0);
                             }
                         }
                         pub mod vector6_0_1 {
@@ -3454,7 +3454,7 @@ pub acceleration_error_variance: ::half::f16,
                             #[test]
                             fn test_layout() {
                                 assert_eq!(::core::mem::size_of::<Vector6>() * 8, 96);
-                                assert_eq!(::memoffset::offset_of!(Vector6, value) * 8, 0);
+                                assert_eq!(::core::mem::offset_of!(Vector6, value) * 8, 0);
                             }
                         }
                         pub mod vector8_0_1 {
@@ -3508,7 +3508,7 @@ pub acceleration_error_variance: ::half::f16,
                             #[test]
                             fn test_layout() {
                                 assert_eq!(::core::mem::size_of::<Vector8>() * 8, 128);
-                                assert_eq!(::memoffset::offset_of!(Vector8, value) * 8, 0);
+                                assert_eq!(::core::mem::offset_of!(Vector8, value) * 8, 0);
                             }
                         }
                     }
@@ -3826,7 +3826,7 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Error>() * 8, 8);
-                        assert_eq!(::memoffset::offset_of!(Error, value) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Error, value) * 8, 0);
                     }
                 }
                 pub mod parameters_0_3 {
@@ -4369,7 +4369,7 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Technology>() * 8, 8);
-                        assert_eq!(::memoffset::offset_of!(Technology, value) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Technology, value) * 8, 0);
                     }
                 }
             }
@@ -4571,9 +4571,9 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Status>() * 8, 96);
-                        assert_eq!(::memoffset::offset_of!(Status, data_validity_period) * 8, 0);
-                        assert_eq!(::memoffset::offset_of!(Status, error_count) * 8, 32);
-                        assert_eq!(::memoffset::offset_of!(Status, sensor_temperature) * 8, 64);
+                        assert_eq!(::core::mem::offset_of!(Status, data_validity_period) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Status, error_count) * 8, 32);
+                        assert_eq!(::core::mem::offset_of!(Status, sensor_temperature) * 8, 64);
                     }
                 }
             }
@@ -4911,7 +4911,7 @@ pub mod uavcan {
             #[test]
             fn test_layout() {
                 assert_eq!(::core::mem::size_of::<Error>() * 8, 16);
-                assert_eq!(::memoffset::offset_of!(Error, value) * 8, 0);
+                assert_eq!(::core::mem::offset_of!(Error, value) * 8, 0);
             }
         }
         #[allow(deprecated)]
@@ -5591,7 +5591,7 @@ pub mod uavcan {
             #[test]
             fn test_layout() {
                 assert_eq!(::core::mem::size_of::<ModifyResponse>() * 8, 16);
-                assert_eq!(::memoffset::offset_of!(ModifyResponse, error) * 8, 0);
+                assert_eq!(::core::mem::offset_of!(ModifyResponse, error) * 8, 0);
             }
         }
         pub mod modify_1_1 {
@@ -5720,7 +5720,7 @@ pub mod uavcan {
             #[test]
             fn test_layout() {
                 assert_eq!(::core::mem::size_of::<ModifyResponse>() * 8, 16);
-                assert_eq!(::memoffset::offset_of!(ModifyResponse, error) * 8, 0);
+                assert_eq!(::core::mem::offset_of!(ModifyResponse, error) * 8, 0);
             }
         }
         #[allow(deprecated)]
@@ -6193,7 +6193,7 @@ pub mod uavcan {
             #[test]
             fn test_layout() {
                 assert_eq!(::core::mem::size_of::<WriteResponse>() * 8, 16);
-                assert_eq!(::memoffset::offset_of!(WriteResponse, error) * 8, 0);
+                assert_eq!(::core::mem::offset_of!(WriteResponse, error) * 8, 0);
             }
         }
         pub mod write_1_1 {
@@ -6301,7 +6301,7 @@ pub mod uavcan {
             #[test]
             fn test_layout() {
                 assert_eq!(::core::mem::size_of::<WriteResponse>() * 8, 16);
-                assert_eq!(::memoffset::offset_of!(WriteResponse, error) * 8, 0);
+                assert_eq!(::core::mem::offset_of!(WriteResponse, error) * 8, 0);
             }
         }
     }
@@ -7491,7 +7491,7 @@ Extended
                 #[test]
                 fn test_layout() {
                     assert_eq!(::core::mem::size_of::<EtherType>() * 8, 16);
-                    assert_eq!(::memoffset::offset_of!(EtherType, value) * 8, 0);
+                    assert_eq!(::core::mem::offset_of!(EtherType, value) * 8, 0);
                 }
             }
             pub mod frame_0_1 {
@@ -8127,7 +8127,7 @@ Extended
             fn test_layout() {
                 assert_eq!(::core::mem::size_of::<ExecuteCommandResponse>() * 8, 8);
                 assert_eq!(
-                    ::memoffset::offset_of!(ExecuteCommandResponse, status) * 8,
+                    ::core::mem::offset_of!(ExecuteCommandResponse, status) * 8,
                     0
                 );
             }
@@ -8312,7 +8312,7 @@ Extended
             fn test_layout() {
                 assert_eq!(::core::mem::size_of::<ExecuteCommandResponse>() * 8, 8);
                 assert_eq!(
-                    ::memoffset::offset_of!(ExecuteCommandResponse, status) * 8,
+                    ::core::mem::offset_of!(ExecuteCommandResponse, status) * 8,
                     0
                 );
             }
@@ -8883,7 +8883,7 @@ Extended
             #[test]
             fn test_layout() {
                 assert_eq!(::core::mem::size_of::<ID>() * 8, 16);
-                assert_eq!(::memoffset::offset_of!(ID, value) * 8, 0);
+                assert_eq!(::core::mem::offset_of!(ID, value) * 8, 0);
             }
         }
         pub mod io_statistics_0_1 {
@@ -9706,8 +9706,8 @@ Extended
             #[test]
             fn test_layout() {
                 assert_eq!(::core::mem::size_of::<Version>() * 8, 16);
-                assert_eq!(::memoffset::offset_of!(Version, major) * 8, 0);
-                assert_eq!(::memoffset::offset_of!(Version, minor) * 8, 8);
+                assert_eq!(::core::mem::offset_of!(Version, major) * 8, 0);
+                assert_eq!(::core::mem::offset_of!(Version, minor) * 8, 8);
             }
         }
     }
@@ -10028,9 +10028,9 @@ Extended
                 #[test]
                 fn test_layout() {
                     assert_eq!(::core::mem::size_of::<Entry>() * 8, 176);
-                    assert_eq!(::memoffset::offset_of!(Entry, term) * 8, 0);
-                    assert_eq!(::memoffset::offset_of!(Entry, unique_id) * 8, 32);
-                    assert_eq!(::memoffset::offset_of!(Entry, node_id) * 8, 160);
+                    assert_eq!(::core::mem::offset_of!(Entry, term) * 8, 0);
+                    assert_eq!(::core::mem::offset_of!(Entry, unique_id) * 8, 32);
+                    assert_eq!(::core::mem::offset_of!(Entry, node_id) * 8, 160);
                 }
             }
             pub mod request_vote_1_0 {
@@ -10096,13 +10096,13 @@ Extended
                 #[test]
                 fn test_layout() {
                     assert_eq!(::core::mem::size_of::<RequestVoteRequest>() * 8, 80);
-                    assert_eq!(::memoffset::offset_of!(RequestVoteRequest, term) * 8, 0);
+                    assert_eq!(::core::mem::offset_of!(RequestVoteRequest, term) * 8, 0);
                     assert_eq!(
-                        ::memoffset::offset_of!(RequestVoteRequest, last_log_term) * 8,
+                        ::core::mem::offset_of!(RequestVoteRequest, last_log_term) * 8,
                         32
                     );
                     assert_eq!(
-                        ::memoffset::offset_of!(RequestVoteRequest, last_log_index) * 8,
+                        ::core::mem::offset_of!(RequestVoteRequest, last_log_index) * 8,
                         64
                     );
                 }
@@ -10299,11 +10299,11 @@ Extended
             fn test_layout() {
                 assert_eq!(::core::mem::size_of::<NodeIDAllocationData>() * 8, 144);
                 assert_eq!(
-                    ::memoffset::offset_of!(NodeIDAllocationData, node_id) * 8,
+                    ::core::mem::offset_of!(NodeIDAllocationData, node_id) * 8,
                     0
                 );
                 assert_eq!(
-                    ::memoffset::offset_of!(NodeIDAllocationData, unique_id) * 8,
+                    ::core::mem::offset_of!(NodeIDAllocationData, unique_id) * 8,
                     16
                 );
             }
@@ -11107,7 +11107,7 @@ Extended
                 #[test]
                 fn test_layout() {
                     assert_eq!(::core::mem::size_of::<Integer16>() * 8, 16);
-                    assert_eq!(::memoffset::offset_of!(Integer16, value) * 8, 0);
+                    assert_eq!(::core::mem::offset_of!(Integer16, value) * 8, 0);
                 }
             }
             pub mod integer32_1_0 {
@@ -11152,7 +11152,7 @@ Extended
                 #[test]
                 fn test_layout() {
                     assert_eq!(::core::mem::size_of::<Integer32>() * 8, 32);
-                    assert_eq!(::memoffset::offset_of!(Integer32, value) * 8, 0);
+                    assert_eq!(::core::mem::offset_of!(Integer32, value) * 8, 0);
                 }
             }
             pub mod integer64_1_0 {
@@ -11197,7 +11197,7 @@ Extended
                 #[test]
                 fn test_layout() {
                     assert_eq!(::core::mem::size_of::<Integer64>() * 8, 64);
-                    assert_eq!(::memoffset::offset_of!(Integer64, value) * 8, 0);
+                    assert_eq!(::core::mem::offset_of!(Integer64, value) * 8, 0);
                 }
             }
             pub mod integer8_1_0 {
@@ -11242,7 +11242,7 @@ Extended
                 #[test]
                 fn test_layout() {
                     assert_eq!(::core::mem::size_of::<Integer8>() * 8, 8);
-                    assert_eq!(::memoffset::offset_of!(Integer8, value) * 8, 0);
+                    assert_eq!(::core::mem::offset_of!(Integer8, value) * 8, 0);
                 }
             }
             pub mod natural16_1_0 {
@@ -11287,7 +11287,7 @@ Extended
                 #[test]
                 fn test_layout() {
                     assert_eq!(::core::mem::size_of::<Natural16>() * 8, 16);
-                    assert_eq!(::memoffset::offset_of!(Natural16, value) * 8, 0);
+                    assert_eq!(::core::mem::offset_of!(Natural16, value) * 8, 0);
                 }
             }
             pub mod natural32_1_0 {
@@ -11332,7 +11332,7 @@ Extended
                 #[test]
                 fn test_layout() {
                     assert_eq!(::core::mem::size_of::<Natural32>() * 8, 32);
-                    assert_eq!(::memoffset::offset_of!(Natural32, value) * 8, 0);
+                    assert_eq!(::core::mem::offset_of!(Natural32, value) * 8, 0);
                 }
             }
             pub mod natural64_1_0 {
@@ -11377,7 +11377,7 @@ Extended
                 #[test]
                 fn test_layout() {
                     assert_eq!(::core::mem::size_of::<Natural64>() * 8, 64);
-                    assert_eq!(::memoffset::offset_of!(Natural64, value) * 8, 0);
+                    assert_eq!(::core::mem::offset_of!(Natural64, value) * 8, 0);
                 }
             }
             pub mod natural8_1_0 {
@@ -11422,7 +11422,7 @@ Extended
                 #[test]
                 fn test_layout() {
                     assert_eq!(::core::mem::size_of::<Natural8>() * 8, 8);
-                    assert_eq!(::memoffset::offset_of!(Natural8, value) * 8, 0);
+                    assert_eq!(::core::mem::offset_of!(Natural8, value) * 8, 0);
                 }
             }
             pub mod real16_1_0 {
@@ -11471,7 +11471,7 @@ Extended
                 #[test]
                 fn test_layout() {
                     assert_eq!(::core::mem::size_of::<Real16>() * 8, 16);
-                    assert_eq!(::memoffset::offset_of!(Real16, value) * 8, 0);
+                    assert_eq!(::core::mem::offset_of!(Real16, value) * 8, 0);
                 }
             }
             pub mod real32_1_0 {
@@ -11520,7 +11520,7 @@ Extended
                 #[test]
                 fn test_layout() {
                     assert_eq!(::core::mem::size_of::<Real32>() * 8, 32);
-                    assert_eq!(::memoffset::offset_of!(Real32, value) * 8, 0);
+                    assert_eq!(::core::mem::offset_of!(Real32, value) * 8, 0);
                 }
             }
             pub mod real64_1_0 {
@@ -11569,7 +11569,7 @@ Extended
                 #[test]
                 fn test_layout() {
                     assert_eq!(::core::mem::size_of::<Real64>() * 8, 64);
-                    assert_eq!(::memoffset::offset_of!(Real64, value) * 8, 0);
+                    assert_eq!(::core::mem::offset_of!(Real64, value) * 8, 0);
                 }
             }
         }
@@ -11886,7 +11886,7 @@ Extended
             #[test]
             fn test_layout() {
                 assert_eq!(::core::mem::size_of::<ListRequest>() * 8, 16);
-                assert_eq!(::memoffset::offset_of!(ListRequest, index) * 8, 0);
+                assert_eq!(::core::mem::offset_of!(ListRequest, index) * 8, 0);
             }
 
             /// `uavcan.register.List.1.0`
@@ -14210,7 +14210,7 @@ Extended
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
                         assert_eq!(
-                            ::memoffset::offset_of!(Scalar, meter_per_second_per_second) * 8,
+                            ::core::mem::offset_of!(Scalar, meter_per_second_per_second) * 8,
                             0
                         );
                     }
@@ -14260,7 +14260,7 @@ Extended
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Vector3>() * 8, 96);
                         assert_eq!(
-                            ::memoffset::offset_of!(Vector3, meter_per_second_per_second) * 8,
+                            ::core::mem::offset_of!(Vector3, meter_per_second_per_second) * 8,
                             0
                         );
                     }
@@ -14311,7 +14311,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Quaternion>() * 8, 128);
-                        assert_eq!(::memoffset::offset_of!(Quaternion, wxyz) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Quaternion, wxyz) * 8, 0);
                     }
                 }
                 pub mod scalar_1_0 {
@@ -14358,7 +14358,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
-                        assert_eq!(::memoffset::offset_of!(Scalar, radian) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Scalar, radian) * 8, 0);
                     }
                 }
             }
@@ -14408,7 +14408,7 @@ Extended
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
                         assert_eq!(
-                            ::memoffset::offset_of!(Scalar, radian_per_second_per_second) * 8,
+                            ::core::mem::offset_of!(Scalar, radian_per_second_per_second) * 8,
                             0
                         );
                     }
@@ -14458,7 +14458,7 @@ Extended
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Vector3>() * 8, 96);
                         assert_eq!(
-                            ::memoffset::offset_of!(Vector3, radian_per_second_per_second) * 8,
+                            ::core::mem::offset_of!(Vector3, radian_per_second_per_second) * 8,
                             0
                         );
                     }
@@ -14509,7 +14509,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
-                        assert_eq!(::memoffset::offset_of!(Scalar, radian_per_second) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Scalar, radian_per_second) * 8, 0);
                     }
                 }
                 pub mod vector3_1_0 {
@@ -14556,7 +14556,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Vector3>() * 8, 96);
-                        assert_eq!(::memoffset::offset_of!(Vector3, radian_per_second) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Vector3, radian_per_second) * 8, 0);
                     }
                 }
             }
@@ -14605,7 +14605,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
-                        assert_eq!(::memoffset::offset_of!(Scalar, second) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Scalar, second) * 8, 0);
                     }
                 }
                 pub mod wide_scalar_1_0 {
@@ -14652,7 +14652,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<WideScalar>() * 8, 64);
-                        assert_eq!(::memoffset::offset_of!(WideScalar, second) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(WideScalar, second) * 8, 0);
                     }
                 }
             }
@@ -14701,7 +14701,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
-                        assert_eq!(::memoffset::offset_of!(Scalar, coulomb) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Scalar, coulomb) * 8, 0);
                     }
                 }
             }
@@ -14750,7 +14750,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
-                        assert_eq!(::memoffset::offset_of!(Scalar, ampere) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Scalar, ampere) * 8, 0);
                     }
                 }
             }
@@ -14799,7 +14799,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
-                        assert_eq!(::memoffset::offset_of!(Scalar, joule) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Scalar, joule) * 8, 0);
                     }
                 }
             }
@@ -14848,7 +14848,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
-                        assert_eq!(::memoffset::offset_of!(Scalar, newton) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Scalar, newton) * 8, 0);
                     }
                 }
                 pub mod vector3_1_0 {
@@ -14895,7 +14895,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Vector3>() * 8, 96);
-                        assert_eq!(::memoffset::offset_of!(Vector3, newton) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Vector3, newton) * 8, 0);
                     }
                 }
             }
@@ -14944,7 +14944,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
-                        assert_eq!(::memoffset::offset_of!(Scalar, hertz) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Scalar, hertz) * 8, 0);
                     }
                 }
             }
@@ -14993,7 +14993,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
-                        assert_eq!(::memoffset::offset_of!(Scalar, meter) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Scalar, meter) * 8, 0);
                     }
                 }
                 pub mod vector3_1_0 {
@@ -15040,7 +15040,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Vector3>() * 8, 96);
-                        assert_eq!(::memoffset::offset_of!(Vector3, meter) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Vector3, meter) * 8, 0);
                     }
                 }
                 pub mod wide_scalar_1_0 {
@@ -15087,7 +15087,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<WideScalar>() * 8, 64);
-                        assert_eq!(::memoffset::offset_of!(WideScalar, meter) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(WideScalar, meter) * 8, 0);
                     }
                 }
                 pub mod wide_vector3_1_0 {
@@ -15134,7 +15134,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<WideVector3>() * 8, 192);
-                        assert_eq!(::memoffset::offset_of!(WideVector3, meter) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(WideVector3, meter) * 8, 0);
                     }
                 }
             }
@@ -15184,7 +15184,7 @@ Extended
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
                         assert_eq!(
-                            ::memoffset::offset_of!(Scalar, candela_per_square_meter) * 8,
+                            ::core::mem::offset_of!(Scalar, candela_per_square_meter) * 8,
                             0
                         );
                     }
@@ -15242,7 +15242,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
-                        assert_eq!(::memoffset::offset_of!(Scalar, tesla) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Scalar, tesla) * 8, 0);
                     }
                 }
                 pub mod scalar_1_1 {
@@ -15289,7 +15289,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
-                        assert_eq!(::memoffset::offset_of!(Scalar, ampere_per_meter) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Scalar, ampere_per_meter) * 8, 0);
                     }
                 }
                 #[allow(deprecated)]
@@ -15343,7 +15343,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Vector3>() * 8, 96);
-                        assert_eq!(::memoffset::offset_of!(Vector3, tesla) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Vector3, tesla) * 8, 0);
                     }
                 }
                 pub mod vector3_1_1 {
@@ -15390,7 +15390,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Vector3>() * 8, 96);
-                        assert_eq!(::memoffset::offset_of!(Vector3, ampere_per_meter) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Vector3, ampere_per_meter) * 8, 0);
                     }
                 }
             }
@@ -15439,7 +15439,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
-                        assert_eq!(::memoffset::offset_of!(Scalar, tesla) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Scalar, tesla) * 8, 0);
                     }
                 }
                 pub mod vector3_1_0 {
@@ -15486,7 +15486,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Vector3>() * 8, 96);
-                        assert_eq!(::memoffset::offset_of!(Vector3, tesla) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Vector3, tesla) * 8, 0);
                     }
                 }
             }
@@ -15535,7 +15535,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
-                        assert_eq!(::memoffset::offset_of!(Scalar, kilogram) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Scalar, kilogram) * 8, 0);
                     }
                 }
             }
@@ -15584,7 +15584,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
-                        assert_eq!(::memoffset::offset_of!(Scalar, watt) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Scalar, watt) * 8, 0);
                     }
                 }
             }
@@ -15633,7 +15633,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
-                        assert_eq!(::memoffset::offset_of!(Scalar, pascal) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Scalar, pascal) * 8, 0);
                     }
                 }
             }
@@ -15682,7 +15682,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
-                        assert_eq!(::memoffset::offset_of!(Scalar, kelvin) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Scalar, kelvin) * 8, 0);
                     }
                 }
             }
@@ -15731,7 +15731,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
-                        assert_eq!(::memoffset::offset_of!(Scalar, newton_meter) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Scalar, newton_meter) * 8, 0);
                     }
                 }
                 pub mod vector3_1_0 {
@@ -15778,7 +15778,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Vector3>() * 8, 96);
-                        assert_eq!(::memoffset::offset_of!(Vector3, newton_meter) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Vector3, newton_meter) * 8, 0);
                     }
                 }
             }
@@ -15827,7 +15827,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
-                        assert_eq!(::memoffset::offset_of!(Scalar, meter_per_second) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Scalar, meter_per_second) * 8, 0);
                     }
                 }
                 pub mod vector3_1_0 {
@@ -15874,7 +15874,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Vector3>() * 8, 96);
-                        assert_eq!(::memoffset::offset_of!(Vector3, meter_per_second) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Vector3, meter_per_second) * 8, 0);
                     }
                 }
             }
@@ -15923,7 +15923,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
-                        assert_eq!(::memoffset::offset_of!(Scalar, volt) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Scalar, volt) * 8, 0);
                     }
                 }
             }
@@ -15972,7 +15972,7 @@ Extended
                     #[test]
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
-                        assert_eq!(::memoffset::offset_of!(Scalar, cubic_meter) * 8, 0);
+                        assert_eq!(::core::mem::offset_of!(Scalar, cubic_meter) * 8, 0);
                     }
                 }
             }
@@ -16022,7 +16022,7 @@ Extended
                     fn test_layout() {
                         assert_eq!(::core::mem::size_of::<Scalar>() * 8, 32);
                         assert_eq!(
-                            ::memoffset::offset_of!(Scalar, cubic_meter_per_second) * 8,
+                            ::core::mem::offset_of!(Scalar, cubic_meter_per_second) * 8,
                             0
                         );
                     }
