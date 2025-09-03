@@ -3,7 +3,7 @@
 //!
 //! This node connects uses a UDP transport.
 //!
-//! Usage: `tcp_serial_basic_node <node ID>`
+//! Usage: `udp_basic_node <node ID>`
 //!
 //! # Testing
 //!
@@ -73,7 +73,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     const REQUESTERS: usize = 8;
     const MTU: usize = 1200;
 
-    let socket = StdUdpSocket::bind(Ipv4Addr::LOCALHOST, DEFAULT_PORT).unwrap();
+    let socket = StdUdpSocket::bind(Ipv4Addr::UNSPECIFIED, DEFAULT_PORT).unwrap();
     let transmitter = UdpTransmitter::<StdUdpSocket, MTU>::new(DEFAULT_PORT);
     let receiver = UdpReceiver::new(Some(node_id), Ipv4Addr::LOCALHOST);
     let core_node: CoreNode<

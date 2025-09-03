@@ -56,6 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   [#51](https://github.com/samcrow/canadensis/pull/51)
 - `canadensis_codegen_rust`: Deprecated modules are no longer deprecated for tests, which avoids irrelevant warnings
   when compiling tests
+- `canadensis`: Updated udp_basic_node example to work when running on the same computer as `yakut monitor`
 
 ## [canadensis-v0.3.3](https://github.com/samcrow/canadensis/releases/tag/canadensis-v0.3.3) - 2025-03-23
 

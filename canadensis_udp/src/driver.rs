@@ -55,6 +55,7 @@ pub use self::std_socket::StdUdpSocket;
 mod std_socket {
     use super::UdpSocket;
     use core::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
+    use socket2::{Domain, Protocol, SockAddr, Socket, Type};
     use std::time::Duration;
 
     /// A socket that uses the standard library UdpSocket implementation
@@ -63,11 +64,17 @@ mod std_socket {
     impl StdUdpSocket {
         /// Creates a socket and binds it to the provided IP address and port
         pub fn bind(interface_address: Ipv4Addr, local_port: u16) -> std::io::Result<Self> {
-            let socket = std::net::UdpSocket::bind((interface_address, local_port))?;
+            let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
+            // The reuse address option lets multiple processes get the same multicast packets
+            socket.set_reuse_address(true)?;
             socket.set_multicast_ttl_v4(16)?;
             // Set a low read timeout to approximate non-blocking reads but keep writes blocking
             socket.set_read_timeout(Some(Duration::from_millis(1)))?;
-            Ok(StdUdpSocket(socket))
+            socket.bind(&SockAddr::from(SocketAddrV4::new(
+                interface_address,
+                local_port,
+            )))?;
+            Ok(StdUdpSocket(socket.into()))
         }
     }
 

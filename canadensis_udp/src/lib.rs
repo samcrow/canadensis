@@ -30,6 +30,8 @@ extern crate fallible_collections;
 extern crate heapless;
 extern crate log;
 extern crate nb;
+#[cfg(feature = "std")]
+extern crate socket2;
 extern crate zerocopy;
 
 use canadensis_core::transport::Transport;
