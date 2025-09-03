@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 use core::marker::PhantomData;
-use heapless::FnvIndexMap;
+use heapless::index_map::FnvIndexMap;
 
 use canadensis_core::time::{Clock, MicrosecondDuration32, Microseconds32};
 use canadensis_core::transfer::{

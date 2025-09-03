@@ -3,7 +3,7 @@ use core::marker::PhantomData;
 
 use fallible_collections::FallibleVec;
 use heapless::Deque;
-use zerocopy::AsBytes;
+use zerocopy::IntoBytes;
 
 use canadensis_core::time::Clock;
 use canadensis_core::transfer::Transfer;

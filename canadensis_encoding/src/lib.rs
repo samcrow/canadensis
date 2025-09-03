@@ -14,7 +14,7 @@ mod cursor;
 pub use crate::cursor::deserialize::ReadCursor;
 pub use crate::cursor::serialize::WriteCursor;
 use core::cmp;
-use zerocopy::{AsBytes, FromBytes};
+use zerocopy::{FromBytes, Immutable, IntoBytes};
 
 /// Trait for types that can be encoded into Cyphal transfers, or decoded from transfers
 pub trait DataType {
@@ -52,21 +52,21 @@ pub trait Deserialize: DataType {
 
     /// Deserializes a value from a slice of bytes and returns it
     ///
-    /// This is available only for types that implement [`Sized`], [`AsBytes`], and [`FromBytes`].
+    /// This is available only for types that implement [`Sized`], [`IntoBytes`], and [`FromBytes`].
     ///
     /// # Panics
     ///
     /// This function panics if the provided cursor is not aligned to a byte boundary.
     fn deserialize_zero_copy(cursor: &mut ReadCursor<'_>) -> Self
     where
-        Self: Sized + AsBytes + FromBytes,
+        Self: Sized + IntoBytes + FromBytes + Immutable,
     {
         // This isn't quite zero-copy. It's one-copy, but it eliminates handling each field
         // individually.
         let cursor_bytes = cursor.as_bytes().expect("Cursor not aligned");
         let mut value = Self::new_zeroed();
 
-        let value_bytes = value.as_bytes_mut();
+        let value_bytes = value.as_mut_bytes();
         // To apply implicit truncation and zero extension, copy whatever bytes we can
         let bytes_to_copy = cmp::min(value_bytes.len(), cursor_bytes.len());
         value_bytes[..bytes_to_copy].copy_from_slice(&cursor_bytes[..bytes_to_copy]);

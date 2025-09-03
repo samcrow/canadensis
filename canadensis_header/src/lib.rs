@@ -3,6 +3,7 @@
 extern crate canadensis_core;
 extern crate zerocopy;
 
+use canadensis_core::crc::Crc16CcittFalse;
 use canadensis_core::time::Microseconds32;
 use canadensis_core::transfer::{MessageHeader, ServiceHeader};
 use canadensis_core::transport::{TransferId, Transport};
@@ -10,8 +11,7 @@ use canadensis_core::{InvalidValue, Priority, ServiceId, SubjectId};
 use core::convert::TryFrom;
 use core::mem;
 use zerocopy::byteorder::{U16, U32, U64};
-use zerocopy::{AsBytes, BigEndian, FromBytes, LittleEndian};
-use canadensis_core::crc::Crc16CcittFalse;
+use zerocopy::{BigEndian, FromBytes, Immutable, IntoBytes, LittleEndian};
 
 pub const SIZE: usize = mem::size_of::<RawHeader>();
 
@@ -19,7 +19,7 @@ pub const SIZE: usize = mem::size_of::<RawHeader>();
 ///
 /// [This post](https://forum.opencyphal.org/t/cyphal-udp-architectural-issues-caused-by-the-dependency-between-the-nodes-ip-address-and-its-identity/1765/60)
 /// specifies the header format.
-#[derive(AsBytes, FromBytes, Debug)]
+#[derive(IntoBytes, FromBytes, Immutable, Debug)]
 #[repr(C)]
 pub struct RawHeader {
     /// 4 bits of version, upper 4 bits reserved

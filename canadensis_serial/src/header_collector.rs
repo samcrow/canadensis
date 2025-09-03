@@ -35,6 +35,6 @@ impl HeaderCollector {
 
     /// Interprets the bytes as a header
     pub fn as_header(&self) -> RawHeader {
-        RawHeader::read_from(&self.bytes[..]).expect("Incorrect byte length or alignment")
+        RawHeader::read_from_bytes(&self.bytes[..]).expect("Incorrect byte length or alignment")
     }
 }

@@ -1,6 +1,6 @@
 //! Sending of service requests
 
-use heapless::FnvIndexMap;
+use heapless::index_map::FnvIndexMap;
 
 use canadensis_core::time::{Clock, MicrosecondDuration32, Microseconds32};
 use canadensis_core::transfer::{Header, ServiceHeader, Transfer};

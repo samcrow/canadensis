@@ -38,9 +38,9 @@ mod struct_as_enum;
 pub fn generated_code_dependencies() -> String {
     String::from(
         r#"[dependencies]
-half = { version = ">=2.2, <2.5", default-features = false, features = ["zerocopy"] }
-heapless = "0.8.0"
-zerocopy = "0.6.0"
+half = { version = "2.6.0", default-features = false, features = ["zerocopy"] }
+heapless = "0.9.1"
+zerocopy = "0.8.26"
 canadensis_core = "0.3.0"
 canadensis_encoding = "0.3.0"
 [dev-dependencies]
@@ -786,7 +786,7 @@ mod fmt_impl {
             // Derive zerocopy traits if possible
             let supports_zero_copy = self.supports_zero_copy();
             if supports_zero_copy {
-                writeln!(f, "#[derive(::zerocopy::FromBytes, ::zerocopy::AsBytes)]")?;
+                writeln!(f, "#[derive(::zerocopy::IntoBytes, ::zerocopy::FromBytes, ::zerocopy::Immutable)]")?;
                 writeln!(f, "#[repr(C, packed)]")?;
             }
 

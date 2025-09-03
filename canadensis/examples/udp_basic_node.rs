@@ -15,10 +15,8 @@
 //!
 //! ## Interact with the node using Yakut
 //!
-//! Note: This will not work until pycyphal is updated, see <https://github.com/OpenCyphal/pycyphal/pull/253>
-//!
 //! ```
-//! yakut --transport "UDPTransport('127.0.0.127')" monitor
+//! CYPHAL_PATH=~/.cyphal/ UAVCAN__UDP__IFACE=127.0.0.1 UAVCAN__NODE__ID=127 yakut monitor
 //! ```
 //!
 

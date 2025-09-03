@@ -12,8 +12,8 @@ description = "A Cyphal implementation: Node types and re-exports from some othe
 [dependencies]
 crc-any = { version = "2.4.0", default-features = false  }
 fallible_collections = "0.5.1"
-heapless = "0.8.0"
-half = { version = ">=2.2, <2.5", default-features = false }
+heapless = "0.9.1"
+half = { version = "2.6.0", default-features = false }
 log = "0.4"
 
 # Depends on most other canadensis crates that are not transport-specific

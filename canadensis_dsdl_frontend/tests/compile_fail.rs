@@ -5,8 +5,6 @@
 
 extern crate canadensis_dsdl_frontend;
 extern crate regex;
-extern crate serde;
-extern crate serde_json;
 
 use canadensis_dsdl_frontend::compiled::package::CompiledPackage;
 use canadensis_dsdl_frontend::{Error, Package};

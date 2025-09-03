@@ -11,4 +11,4 @@ repository = "https://github.com/samcrow/canadensis"
 
 [dependencies]
 num-integer = "0.1.44"
-itertools = "0.10.1"
+itertools = "0.14.0"

@@ -8,8 +8,8 @@ keywords = ["uavcan", "cyphal"]
 description = "A Cyphal implementation: Cyphal/UDP transport"
 
 [dependencies]
-heapless = "0.8.0"
-zerocopy = "0.6.0"
+heapless = "0.9.1"
+zerocopy = "0.8.26"
 fallible_collections = "0.5.1"
 log = "0.4.14"
 nb = "1.0.0"

@@ -88,8 +88,9 @@ where
             return Ok(None);
         }
         // Check header validity, ignore frames with invalid headers
-        let header =
-            RawHeader::read_from_prefix(buffer).and_then(|header| UdpHeader::try_from(header).ok());
+        let header = RawHeader::read_from_prefix(buffer)
+            .ok()
+            .and_then(|(header, _)| UdpHeader::try_from(header).ok());
         let header: UdpHeader = match header {
             Some(header) => header,
             None => return Ok(None),
