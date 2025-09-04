@@ -3,8 +3,6 @@
 use canadensis_core::transport::{TransferId, Transport};
 use canadensis_core::{InvalidValue, OutOfMemoryError, Priority};
 use core::convert::TryFrom;
-use core::fmt;
-use core::fmt::Debug;
 use core::ops::RangeInclusive;
 
 /// The Cyphal/CAN transport
@@ -27,7 +25,7 @@ const VALID_NODE_IDS: RangeInclusive<u8> = 0..=127;
 ///
 /// Valid node IDs are in the range 0..=127 (7 bits). IDs 126 and 127 are reserved for diagnostic
 /// and debugging tools.
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub struct CanNodeId(u8);
 
 impl CanNodeId {
@@ -64,12 +62,6 @@ impl AsMut<[CanTransferId]> for CanTransferIds {
 impl Default for CanTransferIds {
     fn default() -> Self {
         CanTransferIds([CanTransferId::default(); *VALID_NODE_IDS.end() as usize + 1])
-    }
-}
-
-impl fmt::Display for CanNodeId {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Display::fmt(&self.0, f)
     }
 }
 
@@ -125,7 +117,7 @@ impl From<CanNodeId> for usize {
 const VALID_TRANSFER_IDS: RangeInclusive<u8> = 0..=31;
 
 /// Transfer ID, 5 bits, in range 0..=31
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct CanTransferId(u8);
 
 impl CanTransferId {
@@ -203,5 +195,30 @@ pub enum Error<E> {
 impl<E> From<OutOfMemoryError> for Error<E> {
     fn from(oom: OutOfMemoryError) -> Self {
         Error::Memory(oom)
+    }
+}
+
+mod fmt_impl {
+    use super::{CanNodeId, CanTransferId};
+    use core::fmt::{Debug, Display, Formatter, Result};
+    impl Display for CanNodeId {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+            Display::fmt(&self.0, f)
+        }
+    }
+    impl Debug for CanNodeId {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+            Debug::fmt(&self.0, f)
+        }
+    }
+    impl Display for CanTransferId {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+            Display::fmt(&self.0, f)
+        }
+    }
+    impl Debug for CanTransferId {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+            Debug::fmt(&self.0, f)
+        }
     }
 }

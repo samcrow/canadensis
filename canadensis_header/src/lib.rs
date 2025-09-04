@@ -331,7 +331,7 @@ fn check_node_id(id: u16) -> Result<Option<NodeId16>, InvalidValue> {
 /// A 16-bit node ID
 ///
 /// This allows all u16 values except 65535, which is reserved for anonymous transfers
-#[derive(Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash)]
 pub struct NodeId16(u16);
 
 const NODE_ID_RESERVED_ANONYMOUS_OR_BROADCAST: u16 = 0xffff;
@@ -367,7 +367,7 @@ impl From<NodeId16> for usize {
 /// A transfer identifier that should not wrap
 ///
 /// This is just a `u64`.
-#[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]
+#[derive(Default, Copy, Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub struct TransferId64(u64);
 
 impl TransferId for TransferId64 {
@@ -385,5 +385,30 @@ impl From<TransferId64> for u64 {
 impl From<u64> for TransferId64 {
     fn from(value: u64) -> Self {
         TransferId64(value)
+    }
+}
+
+mod fmt_impl {
+    use super::{NodeId16, TransferId64};
+    use core::fmt::{Debug, Display, Formatter, Result};
+    impl Display for NodeId16 {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+            Display::fmt(&self.0, f)
+        }
+    }
+    impl Debug for NodeId16 {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+            Debug::fmt(&self.0, f)
+        }
+    }
+    impl Display for TransferId64 {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+            Display::fmt(&self.0, f)
+        }
+    }
+    impl Debug for TransferId64 {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+            Debug::fmt(&self.0, f)
+        }
     }
 }
