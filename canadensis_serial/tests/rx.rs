@@ -20,7 +20,7 @@ fn test_receive_payload_too_large() {
     let mut driver = MockDriver::default();
 
     let subject = SubjectId::try_from(993).unwrap();
-    rx.subscribe_message(subject, 16, milliseconds(1000), &mut driver)
+    rx.subscribe_message(subject, 3, milliseconds(1000), &mut driver)
         .unwrap();
 
     let wire_bytes = [
@@ -38,7 +38,7 @@ fn test_receive_payload_too_large() {
         0x0d, 0xba, // Header CRC
         // -- End header --
         0xab, 0xac, 0xad, 0xae, 0xaf, 0xb0, 0xa3, 0x90, 0x81, 0x28, 0xff, 0x01, 0x1f, 0xcc, 0xbe,
-        0x99, 0x83, 0xf0, 0x73, 0x65, // Data (21 bytes, but will only collect 16)
+        0x99, 0x83, 0xf0, 0x73, 0x65, // Data (21 bytes, but will only collect 3)
         0xa3, 0x54, 0x55, 0x73, // Transfer CRC, little-endian
         0x00, 0x00, 0x00, // Frame delimiters
     ];
@@ -54,10 +54,7 @@ fn test_receive_payload_too_large() {
                 source: Some(SerialNodeId::try_from(0x3fe).unwrap())
             }),
             loopback: false,
-            payload: vec![
-                0xab, 0xac, 0xad, 0xae, 0xaf, 0xb0, 0xa3, 0x90, 0x81, 0x28, 0xff, 0x01, 0x1f, 0xcc,
-                0xbe, 0x99
-            ],
+            payload: vec![0xab, 0xac, 0xad,],
         })
     )
 }

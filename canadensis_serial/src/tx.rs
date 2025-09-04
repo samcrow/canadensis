@@ -1,7 +1,6 @@
 use alloc::vec::Vec;
 use core::marker::PhantomData;
 
-use fallible_collections::FallibleVec;
 use heapless::Deque;
 use zerocopy::IntoBytes;
 
@@ -75,7 +74,9 @@ where
         let header = RawHeader::from(Header::from(transfer.header));
         let payload_crc = crate::make_payload_crc(transfer.payload.as_ref());
         // Escape the header, payload, and payload CRC into a temporary buffer
-        let mut escape_buffer: Vec<u8> = FallibleVec::try_with_capacity(escaped_length)
+        let mut escape_buffer: Vec<u8> = Vec::new();
+        escape_buffer
+            .try_reserve_exact(escaped_length)
             .map_err(|e| Error::Memory(OutOfMemoryError::from(e)))?;
         escape_buffer.resize(escaped_length, 0);
 

@@ -1,8 +1,8 @@
+use alloc::collections::TryReserveError;
 use alloc::vec::Vec;
 use core::mem;
 
 use crate::types::CanTransferId;
-use fallible_collections::{FallibleVec, TryReserveError};
 
 use super::TailByte;
 use canadensis_core::crc::Crc16CcittFalse as TransferCrc;
@@ -23,8 +23,6 @@ pub struct Buildup {
     expect_start: bool,
     /// If the next frame should have the toggle bit set
     expect_toggle: bool,
-    /// The maximum number of payload bytes to store
-    payload_size_max: usize,
     /// The bytes collected so far, not including tail bytes
     ///
     /// The length of this never exceeds payload_size_max.
@@ -43,14 +41,16 @@ impl Buildup {
         transfer_id: CanTransferId,
         payload_size_max: usize,
     ) -> Result<Self, OutOfMemoryError> {
+        let mut transfer = Vec::new();
+        transfer.try_reserve_exact(payload_size_max)?;
+
         Ok(Buildup {
             transfer_id,
             frames: 0,
             payload_size: 0,
             expect_start: true,
             expect_toggle: true,
-            payload_size_max,
-            transfer: FallibleVec::try_with_capacity(payload_size_max)?,
+            transfer,
             crc: TransferCrc::new(),
         })
     }
@@ -86,18 +86,10 @@ impl Buildup {
         self.expect_toggle = !self.expect_toggle;
 
         let frame_without_tail = &frame_data[..frame_data.len() - 1];
-        let capacity_remaining = self.payload_size_max - self.transfer.len();
+        let capacity_remaining = self.transfer.capacity() - self.transfer.len();
         let bytes_to_copy = capacity_remaining.min(frame_without_tail.len());
-        log::debug!(
-            "transfer.len() = {} capacity_remaining = {} bytes_to_copy = {}",
-            self.transfer.len(),
-            capacity_remaining,
-            bytes_to_copy
-        );
-        FallibleVec::try_extend_from_slice(
-            &mut self.transfer,
-            &frame_without_tail[..bytes_to_copy],
-        )?;
+        self.transfer
+            .extend_from_slice(&frame_without_tail[..bytes_to_copy]);
 
         self.crc.digest_bytes(frame_without_tail);
         self.payload_size += frame_without_tail.len();

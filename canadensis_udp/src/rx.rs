@@ -3,7 +3,6 @@ use core::convert::TryFrom;
 use core::marker::PhantomData;
 use core::net::Ipv4Addr;
 
-use fallible_collections::FallibleVec;
 use zerocopy::FromBytes;
 
 use canadensis_core::crc::CrcTracker;
@@ -425,7 +424,8 @@ impl UdpSession for Session<UdpTransferId, UdpSessionData> {
 
         if first_frame && last_frame {
             // Special case for a single-frame transfer
-            let mut payload: Vec<u8> = FallibleVec::try_with_capacity(max_payload_length)?;
+            let mut payload: Vec<u8> = Vec::new();
+            payload.try_reserve_exact(max_payload_length)?;
             let mut crc = CrcTracker::new();
             bytes_after_header.iter().copied().for_each(|byte| {
                 if let Some(digested) = crc.digest(byte) {
@@ -464,5 +464,45 @@ impl UdpSession for Session<UdpTransferId, UdpSessionData> {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::UdpSession;
+    use crate::{UdpSessionData, UdpTransferId};
+    use canadensis_core::session::Session;
+    use canadensis_core::time::{MicrosecondDuration32, Microseconds32};
+    use canadensis_core::Priority;
+    use canadensis_header::{DataSpecifier, Header};
+    use std::convert::TryInto;
+
+    #[test]
+    fn small_capacity_single_frame() {
+        let mut session: Session<UdpTransferId, UdpSessionData> = Session::new(
+            Microseconds32::from_ticks(39),
+            MicrosecondDuration32::from_ticks(100_000),
+            None,
+            Default::default(),
+        );
+        let header = Header {
+            priority: Priority::Optional,
+            data_specifier: DataSpecifier::Subject {
+                from: Some(309.try_into().unwrap()),
+                subject: 903.try_into().unwrap(),
+            },
+            transfer_id: 19034.try_into().unwrap(),
+            frame_index: 0,
+            last_frame: true,
+            data: 0,
+        };
+        let received_payload = session
+            .handle_frame(
+                &header,
+                &[0xa0, 0xa1, 0xa2, 0xa3, 0xa4, 0xb1, 0x8a, 0xe9, 0xde, 0xb3],
+                3,
+            )
+            .expect("Reassembly error");
+        assert_eq!(received_payload, Some(vec![0xa0, 0xa1, 0xa2]));
     }
 }

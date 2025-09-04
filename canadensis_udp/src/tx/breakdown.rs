@@ -137,7 +137,7 @@ where
 }
 
 #[cfg(test)]
-mod tests {
+mod breakdown_tests {
     use std::convert::TryFrom;
     use std::iter;
 
@@ -395,7 +395,7 @@ where
 }
 
 #[cfg(test)]
-mod test {
+mod add_crc_tests {
     use super::AddCrc;
 
     #[test]

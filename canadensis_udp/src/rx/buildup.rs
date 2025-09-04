@@ -1,8 +1,7 @@
 //! Reassembles UDP packets into transfers
 
+use alloc::collections::TryReserveError;
 use alloc::vec::Vec;
-
-use fallible_collections::{FallibleVec, TryReserveError};
 
 use canadensis_core::crc::CrcTracker;
 use canadensis_core::{OutOfMemoryError, Priority};
@@ -44,7 +43,8 @@ impl Buildup {
         bytes_after_header: &[u8],
         max_length: usize,
     ) -> Result<Self, OutOfMemoryError> {
-        let mut bytes: Vec<u8> = FallibleVec::try_with_capacity(max_length)?;
+        let mut bytes = Vec::new();
+        bytes.try_reserve_exact(max_length)?;
         let mut crc = CrcTracker::new();
         bytes_after_header.iter().for_each(|&byte| {
             if let Some(digested) = crc.digest(byte) {
@@ -120,5 +120,75 @@ impl From<OutOfMemoryError> for BuildupError {
 impl From<TryReserveError> for BuildupError {
     fn from(inner: TryReserveError) -> Self {
         BuildupError::Memory(inner.into())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Buildup;
+    use canadensis_core::Priority;
+    use canadensis_header::{DataSpecifier, Header};
+    use core::convert::TryInto;
+
+    #[test]
+    fn small_capacity_single_frame() {
+        let initial_header = Header {
+            priority: Priority::Fast,
+            data_specifier: DataSpecifier::ServiceResponse {
+                from: 3.try_into().unwrap(),
+                to: 4.try_into().unwrap(),
+                service: 32.try_into().unwrap(),
+            },
+            transfer_id: 900.try_into().unwrap(),
+            frame_index: 0,
+            last_frame: true,
+            data: 0,
+        };
+        // The incoming frame has 6 bytes of data (before the CRC) but the maximum length is 4.
+        // The buildup should collect only 4 bytes.
+        let buildup = Buildup::new(
+            &initial_header,
+            &[0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a],
+            4,
+        )
+        .unwrap();
+        assert_eq!(buildup.into_payload(), vec![0x01, 0x02, 0x03, 0x04]);
+    }
+
+    #[test]
+    fn small_capacity_two_frames() {
+        let header1 = Header {
+            priority: Priority::Fast,
+            data_specifier: DataSpecifier::ServiceResponse {
+                from: 3.try_into().unwrap(),
+                to: 4.try_into().unwrap(),
+                service: 32.try_into().unwrap(),
+            },
+            transfer_id: 900.try_into().unwrap(),
+            frame_index: 0,
+            last_frame: false,
+            data: 0,
+        };
+        // The incoming frames have 6 bytes of data (before the CRC) but the maximum length is 4.
+        // The buildup should collect only 4 bytes.
+        let mut buildup = Buildup::new(&header1, &[0x01, 0x02, 0x03], 4).unwrap();
+
+        let header2 = Header {
+            priority: Priority::Fast,
+            data_specifier: DataSpecifier::ServiceResponse {
+                from: 3.try_into().unwrap(),
+                to: 4.try_into().unwrap(),
+                service: 32.try_into().unwrap(),
+            },
+            transfer_id: 900.try_into().unwrap(),
+            frame_index: 1,
+            last_frame: true,
+            data: 0,
+        };
+        buildup
+            .push(&header2, &[0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a])
+            .unwrap();
+
+        assert_eq!(buildup.into_payload(), vec![0x01, 0x02, 0x03, 0x04]);
     }
 }

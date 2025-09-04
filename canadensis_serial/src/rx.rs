@@ -2,8 +2,7 @@ use alloc::vec::Vec;
 use core::convert::TryFrom;
 use core::marker::PhantomData;
 use core::mem;
-
-use fallible_collections::{FallibleVec, TryHashMap};
+use fallible_collections::TryHashMap;
 
 use canadensis_core::crc::CrcTracker;
 use canadensis_core::subscription::SubscriptionManager;
@@ -116,10 +115,11 @@ where
                                     let header = header.as_core_header(now);
                                     if let Some(subscription) = self.is_interested(&header) {
                                         // Try to allocate memory for the incoming transfer
-                                        match FallibleVec::try_with_capacity(
-                                            subscription.payload_size_max,
-                                        ) {
-                                            Ok(payload) => State::Payload {
+                                        let mut payload = Vec::new();
+                                        match payload
+                                            .try_reserve_exact(subscription.payload_size_max)
+                                        {
+                                            Ok(()) => State::Payload {
                                                 unescaper,
                                                 header,
                                                 crc: CrcTracker::new(),

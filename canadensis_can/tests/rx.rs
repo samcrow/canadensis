@@ -481,7 +481,7 @@ fn test_message_payload_too_large_single_frame() {
     let mut driver = StubDriver::default();
     let mut rx: CanReceiver<StubClock, StubDriver> = CanReceiver::new(120u8.try_into().unwrap());
     let subject = SubjectId::try_from(39).unwrap();
-    rx.subscribe_message(subject, 4, duration(0), &mut driver)
+    rx.subscribe_message(subject, 3, duration(0), &mut driver)
         .unwrap();
     driver.push(Frame::new(
         instant(13309),
@@ -501,7 +501,7 @@ fn test_message_payload_too_large_single_frame() {
                 source: Some(CanNodeId::try_from(73u8).unwrap()),
             }),
             loopback: false,
-            payload: vec![0xab, 0x19, 0x7f, 0x23],
+            payload: vec![0xab, 0x19, 0x7f],
         })
     );
 }

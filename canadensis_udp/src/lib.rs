@@ -26,7 +26,6 @@
 extern crate alloc;
 extern crate canadensis_core;
 extern crate canadensis_header;
-extern crate fallible_collections;
 extern crate heapless;
 extern crate log;
 extern crate nb;
