@@ -24,17 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `canadensis_udp`: Breaking change: Made instant non-generic, now using `fugit` time types
 - `canadensis_udp`: Breaking change: Removed `embedded-nal` dependency, switched to using IP address types from
   `core::net` (requires rustc 1.77.0 or later)
-- `canadensis_data_types`: Updated to the latest public_regulated_data types from revision 
-  f9f67906cc0ca5d7c1b429924852f6b28f313cbf
-- `canadensis`: Breaking change: Updated `heapless` dependency to 0.8
 - `canadensis_can`: Breaking change: Replaced hash32 with core::hash
-- `canadensis_codegen_rust`: Breaking change: Updated `heapless` dependency of generated code to 0.8
-- `canadensis_core`: Breaking change: Replaced hash32 with core::hash
-- `canadensis_data_types`: Breaking change: Updated `heapless` dependency to 0.8
 - `canadensis_header`: Breaking change: Replaced hash32 with core::hash
-- `canadensis_macro`: Breaking change: Updated `heapless` dependency of generated code to 0.8
-- `canadensis_can`: Breaking change: Updated `socketcan` dependency to 3.5.0
-- `canadensis`: Updated examples to use `socketcan` 3.5.0
 - `canadensis_dsdl_frontend`: Breaking change: Changed error types to `Box<Error>`
 - `canadensis_dsdl_frontend`: Set no_std for half dependency [#47](https://github.com/samcrow/canadensis/pull/47)
 - `canadensis_dsdl_parser`: Breaking change: Removed support for `saturated bool` and `truncated bool` types to match
