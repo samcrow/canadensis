@@ -63,9 +63,6 @@ where
         clock: &mut C,
         driver: &mut Self::Driver,
     ) -> Result<Option<Transfer<Vec<u8>, Self::Transport>>, Self::Error> {
-        // The current time is equal to or greater than the frame timestamp. Use that timestamp
-        // to clean up expired sessions.
-        self.clean_expired_sessions(clock.now());
         // Loop until all available frames have been handled
         loop {
             match driver.receive(clock) {
@@ -430,13 +427,6 @@ where
         self.error_count = self.error_count.wrapping_add(1)
     }
 
-    /// Deletes all sessions that have expired
-    fn clean_expired_sessions(&mut self, now: Microseconds32) {
-        clean_sessions_from_subscriptions(&mut self.subscriptions_message, now);
-        clean_sessions_from_subscriptions(&mut self.subscriptions_request, now);
-        clean_sessions_from_subscriptions(&mut self.subscriptions_response, now);
-    }
-
     fn apply_frame_filters(&mut self, driver: &mut D) {
         let message_subscriptions = self.subscriptions_message.iter().map(|sub| {
             canadensis_core::subscription::Subscription::Message(sub.port_id().try_into().unwrap())
@@ -451,21 +441,6 @@ where
             .chain(request_subscriptions)
             .chain(response_subscriptions);
         driver.apply_filters(self.id, all_subscriptions);
-    }
-}
-
-fn clean_sessions_from_subscriptions(subscriptions: &mut Vec<Subscription>, now: Microseconds32) {
-    for subscription in subscriptions {
-        let timeout = subscription.timeout();
-        for slot in subscription.sessions_mut().iter_mut() {
-            if let Some(session) = slot.as_deref_mut() {
-                let deadline = session.transfer_timestamp() + timeout;
-                if now > deadline {
-                    // This session has timed out, delete it.
-                    *slot = None;
-                }
-            }
-        }
     }
 }
 

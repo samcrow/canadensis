@@ -72,10 +72,10 @@ impl Buildup {
         // Check tail byte
         let tail = TailByte::parse(*frame_data.last().unwrap());
         if tail.start != self.expect_start {
-            return Err(BuildupError::InvalidStart);
+            return Ok(None);
         }
         if tail.toggle != self.expect_toggle {
-            return Err(BuildupError::InvalidToggle);
+            return Ok(None);
         }
         assert_eq!(
             tail.transfer_id, self.transfer_id,
@@ -106,6 +106,7 @@ impl Buildup {
                 let data = mem::take(&mut self.transfer);
                 Ok(Some(data))
             } else {
+                log::debug!("Incorrect transfer CRC");
                 Err(BuildupError::Crc)
             }
         } else {
@@ -123,8 +124,6 @@ impl Buildup {
 #[derive(Debug)]
 pub enum BuildupError {
     OutOfMemory,
-    InvalidStart,
-    InvalidToggle,
     Crc,
 }
 
