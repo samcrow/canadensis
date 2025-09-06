@@ -19,10 +19,10 @@ jobs:
       with:
         submodules: recursive
     - name: Build
-      run: cargo build --verbose --workspace
+      run: cargo build --verbose --workspace --all-features
     - name: Build canadensis_udp no_std
       run: cargo build --package canadensis_udp --no-default-features
     - name: Generate code from public regulated data types
       run: cargo run --bin canadensis_codegen_rust -- compile --rustfmt -o canadensis_data_types/src/generated.rs canadensis_dsdl_frontend/tests/public_regulated_data_types
     - name: Run tests
-      run: cargo test --verbose --workspace
+      run: cargo test --verbose --workspace --all-features
