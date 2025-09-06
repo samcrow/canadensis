@@ -121,10 +121,18 @@ const VALID_TRANSFER_IDS: RangeInclusive<u8> = 0..=31;
 pub struct CanTransferId(u8);
 
 impl CanTransferId {
+    /// The largest allowed transfer ID
+    pub const MAX: CanTransferId = CanTransferId(*VALID_TRANSFER_IDS.end());
     /// Returns the default transfer ID (0). This is equivalent to Default::default(), but it can
     /// be called in a constant expression.
     pub const fn const_default() -> Self {
         CanTransferId(0)
+    }
+    /// Returns this transfer ID as a u8
+    ///
+    /// Unlike `Into::into`, this is const.
+    pub const fn to_u8(self) -> u8 {
+        self.0
     }
 }
 

@@ -13,7 +13,7 @@ use canadensis_can::driver::ReceiveDriver;
 use canadensis_can::{CanId, CanNodeId, CanReceiver, Frame};
 use canadensis_core::nb;
 use canadensis_core::subscription::Subscription;
-use canadensis_core::time::{Clock, MicrosecondDuration32, Microseconds32};
+use canadensis_core::time::{milliseconds, Clock, MicrosecondDuration32, Microseconds32};
 use canadensis_core::transfer::*;
 use canadensis_core::transport::Receiver;
 use canadensis_core::{Priority, ServiceId, SubjectId};
@@ -208,7 +208,7 @@ fn test_node_info_response() {
     }
 }
 #[test]
-fn test_node_info_response_timeout() {
+fn test_node_info_response_no_timeout() {
     let mut driver = StubDriver::default();
     let clock = ClockOwner::default();
     let mut rx = CanReceiver::new(123u8.try_into().unwrap());
@@ -228,22 +228,27 @@ fn test_node_info_response_timeout() {
         (b"n.demo.\x01", 190),
         (b"basic_u\x21", 197),
         (b"sage\x00\x00\x9a\x01", 198),
-        // The last frame barely misses the deadline
+        // The last frame is 101 ticks after the first frame
         (&[0xe7, 0x61], 201),
     ];
 
-    for &(frame_data, frame_time) in frames_and_times.iter() {
-        let frame = Frame::new(
-            instant(frame_time),
-            0x126BBDAA.try_into().unwrap(),
-            frame_data,
-        );
+    let (last_frame, frames) = frames_and_times.split_last().unwrap();
+    let frame_id = 0x126BBDAA.try_into().unwrap();
+    for &(frame_data, frame_time) in frames {
+        let frame = Frame::new(instant(frame_time), frame_id, frame_data);
         driver.push(frame);
-        // When the last frame is accepted, it has timed out and the whole transfer gets discarded.
         clock.set_ticks(frame_time);
         let maybe_transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
         assert!(maybe_transfer.is_none());
     }
+    // The last frame completes the transfer even though the time difference between the first
+    // and last frames is greater than the transfer-ID timeout.
+    let frame = Frame::new(instant(last_frame.1), frame_id, last_frame.0);
+    driver.push(frame);
+    clock.set_ticks(last_frame.1);
+    let maybe_transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    // TODO: Check transfer content
+    assert!(maybe_transfer.is_some());
 }
 #[test]
 #[cfg(feature = "can-fd")]
@@ -272,9 +277,7 @@ fn test_array() {
             0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35,
             0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f, 0x40, 0x41, 0x42, 0x43,
             0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f, 0x50, 0x51,
-            0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b, // Payload as sent
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, // 14 bytes of padding
+            0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b,
         ]
         .to_vec(),
     };
@@ -618,6 +621,555 @@ fn test_message_payload_too_large_multi_frame_split_crc() {
     );
 }
 
+/// Replicates this example:
+/// <https://forum.opencyphal.org/t/amendment-to-the-transfer-reception-state-machine-implementations/1870>
+#[test]
+fn slow_multi_frame_no_timeout() {
+    let mut driver = StubDriver::default();
+    let mut rx: CanReceiver<StubClock, StubDriver> = CanReceiver::new(120u8.try_into().unwrap());
+    let subject = SubjectId::try_from(1100).unwrap();
+    // Transfer ID timeout is 2 ms. Some frames are separated by longer than that.
+    // The transfer is still valid.
+    rx.subscribe_message(subject, 62, milliseconds(2), &mut driver)
+        .unwrap();
+    let frame_id = 0x10644c7f.try_into().unwrap();
+    let frames = [
+        Frame::new(
+            instant(288644),
+            frame_id,
+            &[0x09, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0xb1],
+        ),
+        Frame::new(
+            instant(291624),
+            frame_id,
+            &[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11],
+        ),
+        Frame::new(
+            instant(294662),
+            frame_id,
+            &[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x31],
+        ),
+        Frame::new(
+            instant(297647),
+            frame_id,
+            &[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11],
+        ),
+        Frame::new(
+            instant(300635),
+            frame_id,
+            &[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x31],
+        ),
+        Frame::new(
+            instant(303616),
+            frame_id,
+            &[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11],
+        ),
+        Frame::new(
+            instant(306614),
+            frame_id,
+            &[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x31],
+        ),
+        Frame::new(
+            instant(309578),
+            frame_id,
+            &[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11],
+        ),
+        Frame::new(
+            instant(312569),
+            frame_id,
+            &[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x31],
+        ),
+    ];
+    for frame in IntoIterator::into_iter(frames) {
+        driver.push(frame);
+    }
+    driver.push(Frame::new(instant(315564), frame_id, &[0x4a, 0x51]));
+    let clock = ClockOwner::default();
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    assert_eq!(
+        transfer,
+        Some(Transfer {
+            header: Header::Message(MessageHeader {
+                timestamp: instant(288644),
+                transfer_id: 17.try_into().unwrap(),
+                priority: Priority::Nominal,
+                subject,
+                source: Some(CanNodeId::try_from(127u8).unwrap()),
+            }),
+            loopback: false,
+            payload: vec![
+                0x09, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, // Frame 0
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Frame 1
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Frame 2
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Frame 3
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Frame 4
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Frame 5
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Frame 6
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Frame 7
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Frame 8
+            ],
+        })
+    );
+}
+
+#[test]
+fn single_frame_deduplicate_basic() {
+    single_frame_deduplicate(Microseconds32::from_ticks(1000));
+}
+
+#[test]
+fn single_frame_deduplicate_with_clock_overflow() {
+    // The second frame adds 100 ticks to this value, making it overflow.
+    single_frame_deduplicate(Microseconds32::from_ticks(u32::MAX - 50));
+}
+
+fn single_frame_deduplicate(start_time: Microseconds32) {
+    let mut driver = StubDriver::default();
+    let mut rx: CanReceiver<StubClock, StubDriver> = CanReceiver::new(120u8.try_into().unwrap());
+    let subject = SubjectId::try_from(1100).unwrap();
+    rx.subscribe_message(subject, 62, milliseconds(1000), &mut driver)
+        .unwrap();
+    let frame_id = 0x10644c7f.try_into().unwrap();
+    let clock = ClockOwner::default();
+
+    let first_transfer_time = start_time + MicrosecondDuration32::from_ticks(10);
+    let expected_transfer = Transfer {
+        header: Header::Message(MessageHeader {
+            timestamp: first_transfer_time,
+            transfer_id: 27.try_into().unwrap(),
+            priority: Priority::Nominal,
+            subject,
+            source: Some(CanNodeId::try_from(127u8).unwrap()),
+        }),
+        loopback: false,
+        payload: vec![0x09, 0x30],
+    };
+
+    driver.push(Frame::new(
+        first_transfer_time,
+        frame_id,
+        &[0x09, 0x30, tail(true, true, true, 27)],
+    ));
+    assert_eq!(
+        rx.receive(&mut clock.make_clock(), &mut driver).unwrap(),
+        Some(expected_transfer.clone())
+    );
+    // Send the same frame again later. The receiver should ignore it.
+    driver.push(Frame::new(
+        start_time + MicrosecondDuration32::from_ticks(100),
+        frame_id,
+        &[0x09, 0x30, tail(true, true, true, 27)],
+    ));
+    assert_eq!(
+        rx.receive(&mut clock.make_clock(), &mut driver).unwrap(),
+        None
+    );
+    // The transfer ID timeout has now expired. The receiver should accept a frame with the same
+    // transfer ID.
+    let second_transfer_time = start_time + MicrosecondDuration32::from_ticks(1_000_000 + 10 + 1);
+    driver.push(Frame::new(
+        second_transfer_time,
+        frame_id,
+        &[0x09, 0x30, tail(true, true, true, 27)],
+    ));
+    assert_eq!(
+        rx.receive(&mut clock.make_clock(), &mut driver).unwrap(),
+        Some(Transfer {
+            header: Header::Message(MessageHeader {
+                timestamp: second_transfer_time,
+                transfer_id: 27.try_into().unwrap(),
+                priority: Priority::Nominal,
+                subject,
+                source: Some(CanNodeId::try_from(127u8).unwrap()),
+            }),
+            loopback: false,
+            payload: vec![0x09, 0x30],
+        })
+    );
+}
+
+#[test]
+fn multi_frame_each_frame_duplicated() {
+    let mut driver = StubDriver::default();
+    let mut rx: CanReceiver<StubClock, StubDriver> = CanReceiver::new(120u8.try_into().unwrap());
+    let subject = SubjectId::try_from(8003).unwrap();
+    rx.subscribe_message(subject, 12, milliseconds(1000), &mut driver)
+        .unwrap();
+    let frame_id = 0b101_00011_1111101000011_0_1111000.try_into().unwrap();
+    let clock = ClockOwner::default();
+
+    let first_transfer_time = Microseconds32::from_ticks(10);
+    let expected_transfer = Transfer {
+        header: Header::Message(MessageHeader {
+            timestamp: first_transfer_time,
+            transfer_id: 3.try_into().unwrap(),
+            priority: Priority::Low,
+            subject,
+            source: Some(CanNodeId::try_from(120u8).unwrap()),
+        }),
+        loopback: false,
+        payload: vec![
+            0x30, 0x10, 0x09, 0xff, 0xae, 0x69, 0xa2, 0x01, 0x10, 0x13, 0x22, 0x99,
+        ],
+    };
+
+    let frames = [
+        Frame::new(
+            first_transfer_time,
+            frame_id,
+            &[
+                0x30,
+                0x10,
+                0x09,
+                0xff,
+                0xae,
+                0x69,
+                0xa2,
+                tail(true, false, true, 3),
+            ],
+        ),
+        Frame::new(
+            first_transfer_time + milliseconds(120),
+            frame_id,
+            &[
+                0x01,
+                0x10,
+                0x13,
+                0x22,
+                0x99,
+                0xaa,
+                0xed,
+                tail(false, false, false, 3),
+            ],
+        ),
+        Frame::new(
+            first_transfer_time + milliseconds(340),
+            frame_id,
+            &[
+                0x00,
+                0x20,
+                0x41,
+                0x44,
+                0x7a,
+                0x69,
+                tail(false, true, true, 3),
+            ],
+        ),
+    ];
+
+    let (last_frame, other_frames) = frames.split_last().unwrap();
+    for frame in other_frames {
+        clock.set_ticks(frame.timestamp().ticks());
+        driver.push(frame.clone());
+        driver.push(delay_frame(
+            frame.clone(),
+            MicrosecondDuration32::from_ticks(10 * 1000),
+        ));
+        assert_eq!(
+            None,
+            rx.receive(&mut clock.make_clock(), &mut driver).unwrap()
+        );
+    }
+    clock.set_ticks(last_frame.timestamp().ticks());
+    driver.push(last_frame.clone());
+    driver.push(delay_frame(
+        last_frame.clone(),
+        MicrosecondDuration32::from_ticks(10 * 1000),
+    ));
+    assert_eq!(
+        Some(expected_transfer),
+        rx.receive(&mut clock.make_clock(), &mut driver).unwrap()
+    );
+    // No duplicate
+    assert_eq!(
+        None,
+        rx.receive(&mut clock.make_clock(), &mut driver).unwrap()
+    );
+}
+
+#[test]
+fn multi_frame_all_frames_duplicated() {
+    let mut driver = StubDriver::default();
+    let mut rx: CanReceiver<StubClock, StubDriver> = CanReceiver::new(120u8.try_into().unwrap());
+    let subject = SubjectId::try_from(8003).unwrap();
+    rx.subscribe_message(subject, 12, milliseconds(1000), &mut driver)
+        .unwrap();
+    let frame_id = 0b101_00011_1111101000011_0_1111000.try_into().unwrap();
+    let clock = ClockOwner::default();
+
+    let first_transfer_time = Microseconds32::from_ticks(10);
+    let expected_transfer = Transfer {
+        header: Header::Message(MessageHeader {
+            timestamp: first_transfer_time,
+            transfer_id: 3.try_into().unwrap(),
+            priority: Priority::Low,
+            subject,
+            source: Some(CanNodeId::try_from(120u8).unwrap()),
+        }),
+        loopback: false,
+        payload: vec![
+            0x30, 0x10, 0x09, 0xff, 0xae, 0x69, 0xa2, 0x01, 0x10, 0x13, 0x22, 0x99,
+        ],
+    };
+
+    let frames = [
+        Frame::new(
+            first_transfer_time,
+            frame_id,
+            &[
+                0x30,
+                0x10,
+                0x09,
+                0xff,
+                0xae,
+                0x69,
+                0xa2,
+                tail(true, false, true, 3),
+            ],
+        ),
+        Frame::new(
+            first_transfer_time + milliseconds(120),
+            frame_id,
+            &[
+                0x01,
+                0x10,
+                0x13,
+                0x22,
+                0x99,
+                0xaa,
+                0xed,
+                tail(false, false, false, 3),
+            ],
+        ),
+        Frame::new(
+            first_transfer_time + milliseconds(340),
+            frame_id,
+            &[
+                0x00,
+                0x20,
+                0x41,
+                0x44,
+                0x7a,
+                0x69,
+                tail(false, true, true, 3),
+            ],
+        ),
+    ];
+
+    // Send all the frames once, and then send them all again (within the transfer ID timeout)
+    for frame in &frames {
+        driver.push(frame.clone());
+    }
+    for frame in frames {
+        driver.push(delay_frame(
+            frame.clone(),
+            MicrosecondDuration32::from_ticks(220 * 1000),
+        ));
+    }
+
+    assert_eq!(
+        Some(expected_transfer),
+        rx.receive(&mut clock.make_clock(), &mut driver).unwrap()
+    );
+    // No duplicate transfer
+    assert_eq!(
+        None,
+        rx.receive(&mut clock.make_clock(), &mut driver).unwrap()
+    );
+}
+
+#[test]
+fn multi_frame_missed_frame_recovery() {
+    let mut driver = StubDriver::default();
+    let mut rx: CanReceiver<StubClock, StubDriver> = CanReceiver::new(120u8.try_into().unwrap());
+    let subject = SubjectId::try_from(8003).unwrap();
+    rx.subscribe_message(subject, 12, milliseconds(1000), &mut driver)
+        .unwrap();
+    let frame_id = 0b101_00011_1111101000011_0_1111000.try_into().unwrap();
+    let clock = ClockOwner::default();
+
+    let first_transfer_time = Microseconds32::from_ticks(10);
+    let delay_between_transfers = MicrosecondDuration32::from_ticks(1200 * 1000);
+
+    let frames = [
+        Frame::new(
+            first_transfer_time,
+            frame_id,
+            &[
+                0x30,
+                0xdd,
+                0x09,
+                0xff,
+                0xae,
+                0x69,
+                0xa2,
+                tail(true, false, true, 3),
+            ],
+        ),
+        Frame::new(
+            first_transfer_time + milliseconds(120),
+            frame_id,
+            &[
+                0x01,
+                0x10,
+                0x13,
+                0x22,
+                0x99,
+                0xaa,
+                0xed,
+                tail(false, false, false, 3),
+            ],
+        ),
+        Frame::new(
+            first_transfer_time + milliseconds(340),
+            frame_id,
+            &[
+                0x00,
+                0x20,
+                0x41,
+                0x44,
+                0x7a,
+                0x69,
+                tail(false, true, true, 3),
+            ],
+        ),
+    ];
+    // Another transfer later with the same transfer ID but different content
+    let second_transfer_frames = [
+        Frame::new(
+            first_transfer_time + delay_between_transfers,
+            frame_id,
+            &[
+                0x30,
+                0x10,
+                0x09,
+                0xf3,
+                0xae,
+                0x32,
+                0xb6,
+                tail(true, false, true, 3),
+            ],
+        ),
+        Frame::new(
+            first_transfer_time + delay_between_transfers + milliseconds(120),
+            frame_id,
+            &[
+                0x01,
+                0x10,
+                0x13,
+                0x1f,
+                0x99,
+                0xaa,
+                0xed,
+                tail(false, false, false, 3),
+            ],
+        ),
+        Frame::new(
+            first_transfer_time + delay_between_transfers + milliseconds(340),
+            frame_id,
+            &[
+                0x00,
+                0x20,
+                0x41,
+                0x44,
+                0xd4,
+                0x49,
+                tail(false, true, true, 3),
+            ],
+        ),
+    ];
+    let third_transfer_frames = [
+        Frame::new(
+            first_transfer_time + delay_between_transfers * 2,
+            frame_id,
+            &[
+                0x29,
+                0xab,
+                0x09,
+                0x3c,
+                0xae,
+                0x32,
+                0xb6,
+                tail(true, false, true, 3),
+            ],
+        ),
+        Frame::new(
+            first_transfer_time + delay_between_transfers * 2 + milliseconds(120),
+            frame_id,
+            &[
+                0x01,
+                0x10,
+                0x13,
+                0x1f,
+                0x99,
+                0xaa,
+                0xed,
+                tail(false, false, false, 3),
+            ],
+        ),
+        Frame::new(
+            first_transfer_time + delay_between_transfers * 2 + milliseconds(340),
+            frame_id,
+            &[
+                0x00,
+                0x20,
+                0x41,
+                0x44,
+                0xd2,
+                0x6c,
+                tail(false, true, true, 3),
+            ],
+        ),
+    ];
+    let expected_transfer = Transfer {
+        header: Header::Message(MessageHeader {
+            timestamp: first_transfer_time + delay_between_transfers * 2,
+            transfer_id: 3.try_into().unwrap(),
+            priority: Priority::Low,
+            subject,
+            source: Some(CanNodeId::try_from(120u8).unwrap()),
+        }),
+        loopback: false,
+        payload: vec![
+            0x29, 0xab, 0x09, 0x3c, 0xae, 0x32, 0xb6, 0x01, 0x10, 0x13, 0x1f, 0x99,
+        ],
+    };
+
+    // Skip the middle frame
+    driver.push(frames[0].clone());
+    driver.push(frames[2].clone());
+    assert_eq!(
+        None,
+        rx.receive(&mut clock.make_clock(), &mut driver).unwrap()
+    );
+    // Later, after the transfer ID timeout, send another transfer
+    for frame in second_transfer_frames {
+        driver.push(frame);
+    }
+    // Also lost the second transfer although all three frames arrived
+    assert_eq!(
+        None,
+        rx.receive(&mut clock.make_clock(), &mut driver).unwrap()
+    );
+    for frame in third_transfer_frames {
+        driver.push(frame);
+    }
+    // Got the third transfer
+    assert_eq!(
+        Some(expected_transfer),
+        rx.receive(&mut clock.make_clock(), &mut driver).unwrap()
+    );
+    // No duplicate transfer
+    assert_eq!(
+        None,
+        rx.receive(&mut clock.make_clock(), &mut driver).unwrap()
+    );
+}
+
+fn delay_frame(frame: Frame, delay: MicrosecondDuration32) -> Frame {
+    Frame::new(frame.timestamp() + delay, frame.id(), frame.data())
+}
+
 /// A driver that reads from a queue of frames
 ///
 /// This does not keep the frames in order by priority, but it is correct as long as it is used for
@@ -672,4 +1224,9 @@ impl ClockOwner {
     pub fn make_clock(&self) -> StubClock<'_> {
         StubClock { count: &self.count }
     }
+}
+
+/// Creates a tail byte
+fn tail(start: bool, end: bool, toggle: bool, transfer: u8) -> u8 {
+    ((start as u8) << 7) | ((end as u8) << 6) | ((toggle as u8) << 5) | (transfer & 0x1f)
 }
