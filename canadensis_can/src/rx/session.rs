@@ -2,10 +2,12 @@ use crate::rx::buildup::{Buildup, BuildupError};
 use crate::rx::TailByte;
 use crate::types::{CanTransferId, Header, Transfer};
 use crate::Frame;
+use alloc::boxed::Box;
 use alloc::vec::Vec;
-use canadensis_core::time::{MicrosecondDuration32, Microseconds32};
+use canadensis_core::time::Microseconds32;
 use canadensis_core::OutOfMemoryError;
 use core::fmt::Debug;
+use fallible_collections::FallibleBox;
 
 /// A receive session, associated with a particular port ID and source node
 #[derive(Debug)]
@@ -19,6 +21,23 @@ pub struct Session {
 }
 
 impl Session {
+    /// Creates a new session allocated in a `Box`
+    pub fn boxed(
+        transfer_timestamp: Microseconds32,
+        transfer_id: CanTransferId,
+        max_payload_length: usize,
+        loopback: bool,
+    ) -> Result<Box<Session>, OutOfMemoryError> {
+        let session = Session::new(
+            transfer_timestamp,
+            transfer_id,
+            max_payload_length,
+            loopback,
+        )?;
+        let session_box = FallibleBox::try_new(session).map_err(|_| OutOfMemoryError)?;
+        Ok(session_box)
+    }
+
     /// Creates a new session
     ///
     /// This function attempts to allocate `max_payload_length` bytes of memory, which will be
@@ -47,7 +66,6 @@ impl Session {
         frame: Frame,
         frame_header: Header,
         tail: TailByte,
-        transfer_timeout: MicrosecondDuration32,
     ) -> Result<Option<Transfer<Vec<u8>>>, SessionError> {
         if tail.transfer_id != self.buildup.transfer_id() {
             // This is a frame from some other transfer. Ignore it, but keep this session to receive
@@ -59,44 +77,29 @@ impl Session {
             log::info!("Frame loopback flag does not match, ignoring");
             return Ok(None);
         }
-        // Check if this frame is too late
-        let time_since_first_frame = frame.timestamp() - self.transfer_timestamp;
-
-        if time_since_first_frame > transfer_timeout {
-            // Frame arrived too late. Give up on this session.
-            log::info!("Frame timeout expired, ending session");
-            return Err(SessionError::Timeout);
-        }
         // This frame looks OK. Do the reassembly.
-        match self.buildup.add(frame.data())? {
-            Some(transfer_data) => self.handle_transfer_data(transfer_data, frame_header),
-            None => {
-                // Reassembly still in progress
-                Ok(None)
-            }
-        }
+        let maybe_transfer = self
+            .buildup
+            .add(frame.data())?
+            .map(|data| self.handle_transfer_data(data, frame_header));
+        Ok(maybe_transfer)
     }
 
     fn handle_transfer_data(
         &mut self,
         transfer_data: Vec<u8>,
         frame_header: Header,
-    ) -> Result<Option<Transfer<Vec<u8>>>, SessionError> {
+    ) -> Transfer<Vec<u8>> {
         // The header for the transfer has the same priority as the final frame,
         // but the timestamp of the first frame.
         let mut transfer_header = frame_header;
         transfer_header.set_timestamp(self.transfer_timestamp);
 
-        Ok(Some(Transfer {
+        Transfer {
             header: transfer_header,
             loopback: self.loopback,
             payload: transfer_data,
-        }))
-    }
-
-    /// Returns the timestamp of this transfer, which is equal to the timestamp of the first frame
-    pub fn transfer_timestamp(&self) -> Microseconds32 {
-        self.transfer_timestamp
+        }
     }
 
     /// Returns the transfer ID of this session
@@ -104,12 +107,14 @@ impl Session {
     pub fn transfer_id(&self) -> CanTransferId {
         self.buildup.transfer_id()
     }
+
+    pub(crate) fn transfer_timestamp(&self) -> Microseconds32 {
+        self.transfer_timestamp
+    }
 }
 
 #[derive(Debug)]
 pub enum SessionError {
-    /// The session timed out because a frame arrived too lage
-    Timeout,
     /// Reassembly failed because of an unexpected frame
     Buildup,
     /// Memory allocation failed
