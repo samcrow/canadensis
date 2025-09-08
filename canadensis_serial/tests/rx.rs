@@ -5,7 +5,7 @@ mod utils;
 
 use self::utils::{MockDriver, ZeroClock};
 use canadensis_core::subscription::DynamicSubscriptionManager;
-use canadensis_core::time::{milliseconds, Microseconds32};
+use canadensis_core::time::{milliseconds, Clock, Microseconds32};
 use canadensis_core::transfer::{Header, MessageHeader, Transfer};
 use canadensis_core::transport::Receiver;
 use canadensis_core::{Priority, SubjectId};
@@ -57,4 +57,93 @@ fn test_receive_payload_too_large() {
             payload: vec![0xab, 0xac, 0xad,],
         })
     )
+}
+
+#[test]
+fn test_duplicate_transfers() {
+    let mut rx: SerialReceiver<StubClock, MockDriver, DynamicSubscriptionManager<Subscription>> =
+        SerialReceiver::new(SerialNodeId::try_from(309).unwrap());
+    let mut driver = MockDriver::default();
+
+    let subject = SubjectId::try_from(993).unwrap();
+    rx.subscribe_message(subject, 3, milliseconds(1000), &mut driver)
+        .unwrap();
+
+    let wire_bytes = [
+        0x00, // Frame delimiter
+        // -- Begin header --
+        0xb, // COBS group header
+        0x1, // Version
+        0x2, // Priority
+        0xfe, 0x03, // Source node
+        0xff, 0xff, // Destination node
+        0xe1, 0x03, // Subject ID
+        0x09, 0x30, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, // COBS altered transfer ID
+        0x01, 0x01, 0x02, 0x80, // COBS altered frame index and end of transmission
+        0x01, 0x1b, // COBS altered user data
+        0x0d, 0xba, // Header CRC
+        // -- End header --
+        0xab, 0xac, 0xad, 0xae, 0xaf, 0xb0, 0xa3, 0x90, 0x81, 0x28, 0xff, 0x01, 0x1f, 0xcc, 0xbe,
+        0x99, 0x83, 0xf0, 0x73, 0x65, // Data (21 bytes, but will only collect 3)
+        0xa3, 0x54, 0x55, 0x73, // Transfer CRC, little-endian
+        0x00, // Frame delimiter
+    ];
+    IntoIterator::into_iter(wire_bytes).for_each(|byte: u8| driver.send_byte(byte).unwrap());
+    let mut clock = StubClock::new();
+    clock.set_ticks(100);
+    assert_eq!(
+        rx.receive(&mut clock, &mut driver).unwrap(),
+        Some(Transfer {
+            header: Header::Message(MessageHeader {
+                timestamp: Microseconds32::from_ticks(100),
+                transfer_id: SerialTransferId::try_from(0x3009).unwrap(),
+                priority: Priority::Fast,
+                subject,
+                source: Some(SerialNodeId::try_from(0x3fe).unwrap())
+            }),
+            loopback: false,
+            payload: vec![0xab, 0xac, 0xad,],
+        })
+    );
+    // Send the same bytes again (same transfer ID) within the transfer ID timeout
+    IntoIterator::into_iter(wire_bytes).for_each(|byte: u8| driver.send_byte(byte).unwrap());
+    clock.set_ticks(900 * 1000);
+    assert_eq!(rx.receive(&mut clock, &mut driver).unwrap(), None);
+    // After the transfer timeout, the receiver should successfully receive the message again
+    // with the same transfer ID.
+    IntoIterator::into_iter(wire_bytes).for_each(|byte: u8| driver.send_byte(byte).unwrap());
+    clock.set_ticks(1000 * 1000 + 101);
+    assert_eq!(
+        rx.receive(&mut clock, &mut driver).unwrap(),
+        Some(Transfer {
+            header: Header::Message(MessageHeader {
+                timestamp: Microseconds32::from_ticks(1000 * 1000 + 101),
+                transfer_id: SerialTransferId::try_from(0x3009).unwrap(),
+                priority: Priority::Fast,
+                subject,
+                source: Some(SerialNodeId::try_from(0x3fe).unwrap())
+            }),
+            loopback: false,
+            payload: vec![0xab, 0xac, 0xad,],
+        })
+    );
+}
+
+struct StubClock {
+    ticks: u32,
+}
+
+impl StubClock {
+    pub fn new() -> StubClock {
+        StubClock { ticks: 0 }
+    }
+    pub fn set_ticks(&mut self, ticks: u32) {
+        self.ticks = ticks;
+    }
+}
+
+impl Clock for StubClock {
+    fn now(&mut self) -> Microseconds32 {
+        Microseconds32::from_ticks(self.ticks)
+    }
 }
