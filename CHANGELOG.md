@@ -6,14 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-## Added
+### Added
+
+### Changed
+
+### Fixed
+
+## [All packages v0.5.0](https://github.com/samcrow/canadensis/releases/tag/v0.5.0) - 2025-09-09
+
+### Added
 
 - `canadensis_dsdl_parser`: Added support for `byte` and `utf8` types (this is a breaking change for code that uses
   this library, but it does not break compatibility with any existing DSDL file)
 - `canadensis_codegen_rust`: Added unstable optional support for `byte` and `utf8` (code generation is the same as for uint8)
 - `canadensis`: Added methods to get the minimal node inside a basic node [#44](https://github.com/samcrow/canadensis/pull/44) 
 
-## Changed
+### Changed
 
 - `canadensis`: Breaking change: Made instant non-generic, now using `fugit` time types
 - `canadensis_bxcan`: Breaking change: Made instant non-generic, now using `fugit` time types
