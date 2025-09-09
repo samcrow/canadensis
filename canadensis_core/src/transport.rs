@@ -114,12 +114,9 @@ where
     /// subject: The subject ID to subscribe to
     ///
     /// payload_size_max: The maximum number of payload bytes expected on this subject
-    /// (longer transfers will be dropped)
+    /// (longer transfers will be truncated)
     ///
-    /// timeout: The maximum time between the first and last frames in a transfer (transfers that
-    /// do not finish within this time will be dropped)
-    ///
-    /// If all transfers fit into one frame, the timeout has no meaning and may be zero.
+    /// timeout: The transfer-ID timeout, for removing duplicate transfers
     ///
     fn subscribe_message(
         &mut self,
@@ -140,12 +137,9 @@ where
     /// service: The service ID to subscribe to
     ///
     /// payload_size_max: The maximum number of payload bytes expected on this subject
-    /// (longer transfers will be dropped)
+    /// (longer transfers will be truncated)
     ///
-    /// timeout: The maximum time between the first and last frames in a transfer (transfers that
-    /// do not finish within this time will be dropped)
-    ///
-    /// If all transfers fit into one frame, the timeout has no meaning and may be zero.
+    /// timeout: The transfer-ID timeout, for removing duplicate transfers
     ///
     /// This function returns an error if this node is anonymous or some other transport error
     /// occurs.
@@ -169,12 +163,9 @@ where
     /// service: The service ID to subscribe to
     ///
     /// payload_size_max: The maximum number of payload bytes expected on this subject
-    /// (longer transfers will be dropped)
+    /// (longer transfers will be truncated)
     ///
-    /// timeout: The maximum time between the first and last frames in a transfer (transfers that
-    /// do not finish within this time will be dropped)
-    ///
-    /// If all transfers fit into one frame, the timeout has no meaning and may be zero.
+    /// timeout: The transfer-ID timeout, for removing duplicate transfers
     ///
     /// This function returns an error if this node is anonymous or some other transport error
     /// occurs.
