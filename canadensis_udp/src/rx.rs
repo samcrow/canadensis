@@ -6,12 +6,12 @@ use core::net::Ipv4Addr;
 use zerocopy::FromBytes;
 
 use canadensis_core::crc::CrcTracker;
-use canadensis_core::session::{Session, SessionTracker};
+use canadensis_core::session::{ActiveSession, Session, SessionTracker};
 use canadensis_core::time::{Clock, MicrosecondDuration32, Microseconds32};
 use canadensis_core::transfer::{Header, MessageHeader, ServiceHeader, Transfer};
 use canadensis_core::transport::Receiver;
 use canadensis_core::{OutOfMemoryError, ServiceId, ServiceSubscribeError, SubjectId};
-use canadensis_header::{DataSpecifier, Header as UdpHeader, RawHeader};
+use canadensis_header::{DataSpecifier, Header as UdpHeader, NodeId16, RawHeader};
 
 use crate::address::Address;
 use crate::driver::UdpSocket;
@@ -39,6 +39,7 @@ impl<C, T, S, const MTU: usize> UdpReceiver<C, T, S, MTU>
 where
     T: SessionTracker<UdpNodeId, UdpTransferId, UdpSessionData> + Default,
     S: UdpSocket,
+    C: Clock,
 {
     pub fn new(node_id: Option<UdpNodeId>, interface_address: Ipv4Addr) -> Self {
         UdpReceiver {
@@ -51,21 +52,6 @@ where
         }
     }
 
-    fn clean_expired_sessions(&mut self, now: Microseconds32)
-    where
-        T: SessionTracker<UdpNodeId, UdpTransferId, UdpSessionData> + Default,
-    {
-        for subscription in self.subscriptions.message_iter_mut() {
-            subscription.clean_expired_sessions(now);
-        }
-        for subscription in self.subscriptions.request_iter_mut() {
-            subscription.clean_expired_sessions(now);
-        }
-        for subscription in self.subscriptions.response_iter_mut() {
-            subscription.clean_expired_sessions(now);
-        }
-    }
-
     /// Reads one incoming frame and processes it through the matching subscription
     ///
     /// Return values:
@@ -75,12 +61,13 @@ where
     /// * `Err(e)` if a socket or memory allocation error occurred
     fn accept_inner(
         &mut self,
-        now: Microseconds32,
+        clock: &mut C,
         socket: &mut S,
     ) -> Result<Option<Transfer<Vec<u8>, UdpTransport>>, Error<nb::Error<S::Error>>> {
         let mut buffer: [u8; MTU] = [0; MTU];
         let bytes_received = socket.recv(&mut buffer).map_err(Error::Socket)?;
         let buffer = &buffer[..bytes_received];
+        let frame_time = clock.now();
 
         if bytes_received < MIN_PACKET_SIZE {
             // Ignore packet
@@ -103,7 +90,7 @@ where
                     self.subscriptions.find_message_subscription_mut(subject)
                 {
                     return subscription
-                        .handle_frame(&header, bytes_after_header, now)
+                        .handle_frame(&header, bytes_after_header, frame_time)
                         .map_err(Error::Memory);
                 } else {
                     log::trace!("No matching subject subscription");
@@ -114,10 +101,10 @@ where
                     self.subscriptions.find_request_subscription_mut(service)
                 {
                     return subscription
-                        .handle_frame(&header, bytes_after_header, now)
+                        .handle_frame(&header, bytes_after_header, frame_time)
                         .map_err(Error::Memory);
                 } else {
-                    log::trace!("No matching subject subscription");
+                    log::trace!("No matching service request subscription");
                 }
             }
             DataSpecifier::ServiceResponse { service, .. } => {
@@ -125,10 +112,10 @@ where
                     self.subscriptions.find_response_subscription_mut(service)
                 {
                     return subscription
-                        .handle_frame(&header, bytes_after_header, now)
+                        .handle_frame(&header, bytes_after_header, frame_time)
                         .map_err(Error::Memory);
                 } else {
-                    log::trace!("No matching subject subscription");
+                    log::trace!("No matching service response subscription");
                 }
             }
         }
@@ -178,8 +165,8 @@ where
         socket: &mut S,
     ) -> Result<Option<Transfer<Vec<u8>, Self::Transport>>, Self::Error> {
         // Loop until all incoming packets have been read
-        let result = loop {
-            match self.accept_inner(clock.now(), socket) {
+        loop {
+            match self.accept_inner(clock, socket) {
                 Ok(Some(transfer)) => break Ok(Some(transfer)),
                 Ok(None) => { /* Keep going and try to read another packet */ }
                 Err(Error::Socket(nb::Error::WouldBlock)) => {
@@ -189,9 +176,7 @@ where
                 Err(Error::Memory(e)) => break Err(Error::Memory(e)),
                 Err(Error::Socket(nb::Error::Other(e))) => break Err(Error::Socket(e)),
             }
-        };
-        self.clean_expired_sessions(clock.now());
-        result
+        }
     }
 
     fn subscribe_message(
@@ -298,41 +283,15 @@ where
         bytes_after_header: &[u8],
         now: Microseconds32,
     ) -> Result<Option<Transfer<Vec<u8>, UdpTransport>>, OutOfMemoryError> {
-        let timeout = self.timeout;
         if let Some(source_node_id) = header.data_specifier.source_node_id() {
-            let session = self.sessions.get_mut_or_insert_with(source_node_id, || {
-                Session::new(now, timeout, None, UdpSessionData::default())
-            })?;
-            // Check transfer ID
-            if let Some(last_transfer_id) = session.last_transfer_id() {
-                if header.transfer_id <= *last_transfer_id {
-                    // Duplicate
-                    log::debug!(
-                        "Discarding duplicate transfer with ID {:?}",
-                        header.transfer_id
-                    );
-                    return Ok(None);
-                }
-            }
-            session.set_last_activity(now);
-            let result = session.handle_frame(header, bytes_after_header, self.payload_size_max);
-            match result {
-                Ok(Some(payload)) => {
-                    // Successfully received
-                    // Don't need the session anymore
-                    self.sessions.remove(source_node_id);
-                    Ok(Some(self.convert_reassembly_result(payload, header, now)))
-                }
-                Ok(None) => Ok(None),
-                Err(e) => {
-                    log::warn!("Buildup error {:?}, removing session", e);
-                    self.sessions.remove(source_node_id);
-                    Ok(None)
-                }
-            }
+            self.handle_frame_non_anonymous(header, source_node_id, now, bytes_after_header)
         } else {
             // Special case for anonymous transfers, which must be single-frame
-            let mut session = Session::new(now, self.timeout, None, UdpSessionData::default());
+            let mut session = ActiveSession {
+                time: now,
+                transfer_id: header.transfer_id,
+                data: UdpSessionData::default(),
+            };
             let result = session.handle_frame(header, bytes_after_header, self.payload_size_max);
             match result {
                 Ok(Some(payload)) => Ok(Some(self.convert_reassembly_result(payload, header, now))),
@@ -343,23 +302,85 @@ where
         }
     }
 
+    fn handle_frame_non_anonymous(
+        &mut self,
+        header: &UdpHeader,
+        source_node_id: NodeId16,
+        now: Microseconds32,
+        bytes_after_header: &[u8],
+    ) -> Result<Option<Transfer<Vec<u8>, UdpTransport>>, OutOfMemoryError> {
+        let session = self.sessions.get_mut_or_insert_with(source_node_id, || {
+            Session::Active(ActiveSession {
+                time: now,
+                transfer_id: header.transfer_id,
+                data: UdpSessionData::default(),
+            })
+        })?;
+        // Check transfer ID
+        if let Session::Complete {
+            time: last_transfer_time,
+            transfer_id: last_transfer_id,
+        } = session
+        {
+            let last_transfer_age = now - *last_transfer_time;
+            let sequence_correct = header.transfer_id > *last_transfer_id;
+            if !(sequence_correct || last_transfer_age > self.timeout) {
+                // Duplicate
+                return Ok(None);
+            }
+            *session = Session::Active(ActiveSession {
+                time: now,
+                transfer_id: header.transfer_id,
+                data: UdpSessionData::default(),
+            });
+        }
+        let active_session = match session {
+            Session::Active(active) => active,
+            Session::Complete { .. } => {
+                unreachable!("Session must be active due to logic above")
+            }
+        };
+        let result = active_session.handle_frame(header, bytes_after_header, self.payload_size_max);
+        match result {
+            Ok(Some(payload)) => {
+                // Successfully received
+                let first_frame_time = active_session.time;
+                *session = Session::Complete {
+                    time: active_session.time,
+                    transfer_id: active_session.transfer_id,
+                };
+                Ok(Some(self.convert_reassembly_result(
+                    payload,
+                    header,
+                    first_frame_time,
+                )))
+            }
+            Ok(None) => Ok(None),
+            Err(e) => {
+                log::warn!("Buildup error {:?}, removing session", e);
+                self.sessions.remove(source_node_id);
+                Ok(None)
+            }
+        }
+    }
+
     fn convert_reassembly_result(
         &self,
         reassembled: Vec<u8>,
         header: &UdpHeader,
-        now: Microseconds32,
+        first_frame_time: Microseconds32,
     ) -> Transfer<Vec<u8>, UdpTransport> {
         // Add the transfer headers and record the completed transfer
         let header = match header.data_specifier {
             DataSpecifier::Subject { from, subject, .. } => Header::Message(MessageHeader {
-                timestamp: now,
+                timestamp: first_frame_time,
                 transfer_id: header.transfer_id,
                 priority: header.priority,
                 subject,
                 source: from,
             }),
             DataSpecifier::ServiceRequest { service, from, to } => Header::Request(ServiceHeader {
-                timestamp: now,
+                timestamp: first_frame_time,
                 transfer_id: header.transfer_id,
                 priority: header.priority,
                 service,
@@ -368,7 +389,7 @@ where
             }),
             DataSpecifier::ServiceResponse { service, from, to } => {
                 Header::Response(ServiceHeader {
-                    timestamp: now,
+                    timestamp: first_frame_time,
                     transfer_id: header.transfer_id,
                     priority: header.priority,
                     service,
@@ -383,13 +404,9 @@ where
             payload: reassembled,
         }
     }
-
-    fn clean_expired_sessions(&mut self, now: Microseconds32) {
-        self.sessions.remove_expired(now)
-    }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct UdpSessionData {
     buildup: Option<Buildup>,
 }
@@ -403,7 +420,7 @@ trait UdpSession {
     ) -> Result<Option<Vec<u8>>, BuildupError>;
 }
 
-impl UdpSession for Session<UdpTransferId, UdpSessionData> {
+impl UdpSession for ActiveSession<UdpTransferId, UdpSessionData> {
     /// Handles a frame
     ///
     /// If the frame successfully completed a transfer, this function returns the assembled transfer
@@ -420,7 +437,6 @@ impl UdpSession for Session<UdpTransferId, UdpSessionData> {
         }
         let first_frame = header.frame_index == 0;
         let last_frame = header.last_frame;
-        let data = self.data_mut();
 
         if first_frame && last_frame {
             // Special case for a single-frame transfer
@@ -440,7 +456,7 @@ impl UdpSession for Session<UdpTransferId, UdpSessionData> {
                 Err(BuildupError::Crc)
             }
         } else {
-            match data.buildup.take() {
+            match self.data.buildup.take() {
                 Some(mut buildup) => {
                     buildup.push(header, bytes_after_header)?;
                     if last_frame {
@@ -450,12 +466,12 @@ impl UdpSession for Session<UdpTransferId, UdpSessionData> {
                             Err(BuildupError::Crc)
                         }
                     } else {
-                        data.buildup = Some(buildup);
+                        self.data.buildup = Some(buildup);
                         Ok(None)
                     }
                 }
                 None => {
-                    data.buildup = Some(Buildup::new(
+                    self.data.buildup = Some(Buildup::new(
                         header,
                         bytes_after_header,
                         max_payload_length,
@@ -470,21 +486,20 @@ impl UdpSession for Session<UdpTransferId, UdpSessionData> {
 #[cfg(test)]
 mod tests {
     use super::UdpSession;
-    use crate::{UdpSessionData, UdpTransferId};
-    use canadensis_core::session::Session;
-    use canadensis_core::time::{MicrosecondDuration32, Microseconds32};
+    use crate::UdpSessionData;
+    use canadensis_core::session::ActiveSession;
+    use canadensis_core::time::Microseconds32;
     use canadensis_core::Priority;
     use canadensis_header::{DataSpecifier, Header};
     use std::convert::TryInto;
 
     #[test]
     fn small_capacity_single_frame() {
-        let mut session: Session<UdpTransferId, UdpSessionData> = Session::new(
-            Microseconds32::from_ticks(39),
-            MicrosecondDuration32::from_ticks(100_000),
-            None,
-            Default::default(),
-        );
+        let mut session = ActiveSession {
+            time: Microseconds32::from_ticks(1000),
+            transfer_id: 19034.try_into().unwrap(),
+            data: UdpSessionData::default(),
+        };
         let header = Header {
             priority: Priority::Optional,
             data_specifier: DataSpecifier::Subject {
