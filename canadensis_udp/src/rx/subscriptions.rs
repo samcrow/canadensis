@@ -68,19 +68,6 @@ impl<T> Subscriptions<T> {
         self.response.get_mut(&service)
     }
 
-    /// Returns an iterator over mutable references to message subscriptions
-    pub fn message_iter_mut(&mut self) -> MessageIterMut<'_, T> {
-        MessageIterMut(self.message.values_mut())
-    }
-    /// Returns an iterator over mutable references to service request subscriptions
-    pub fn request_iter_mut(&mut self) -> ServiceIterMut<'_, T> {
-        ServiceIterMut(self.request.values_mut())
-    }
-    /// Returns an iterator over mutable references to service response subscriptions
-    pub fn response_iter_mut(&mut self) -> ServiceIterMut<'_, T> {
-        ServiceIterMut(self.response.values_mut())
-    }
-
     /// Returns true if any request or response subscriptions exist
     pub fn any_service_subscriptions(&self) -> bool {
         !(self.request.is_empty() && self.response.is_empty())
@@ -92,30 +79,5 @@ impl<T> Subscriptions<T> {
 
     pub fn servers(&self) -> impl Iterator<Item = ServiceId> + use<'_, T> {
         self.request.iter().map(|x| *x.0)
-    }
-}
-
-/// An iterator over mutable references to message subscriptions
-pub struct MessageIterMut<'m, T>(
-    alloc::collections::btree_map::ValuesMut<'m, SubjectId, Subscription<T>>,
-);
-
-impl<'m, T> Iterator for MessageIterMut<'m, T> {
-    type Item = &'m mut Subscription<T>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.0.next()
-    }
-}
-/// An iterator over mutable references to service subscriptions
-pub struct ServiceIterMut<'m, T>(
-    alloc::collections::btree_map::ValuesMut<'m, ServiceId, Subscription<T>>,
-);
-
-impl<'m, T> Iterator for ServiceIterMut<'m, T> {
-    type Item = &'m mut Subscription<T>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.0.next()
     }
 }

@@ -1,6 +1,6 @@
 //! Methods to keep track of receive sessions
 
-use crate::time::{MicrosecondDuration32, Microseconds32};
+use crate::time::Microseconds32;
 use crate::OutOfMemoryError;
 use alloc::collections::BTreeMap;
 use core::fmt::Debug;
@@ -44,115 +44,34 @@ pub trait SessionTracker<N, T, D> {
     ///
     /// If no matching session exists, this function has no effect.
     fn remove(&mut self, node: N);
-
-    /// Removes all sessions that have expired
-    fn remove_expired(&mut self, now: Microseconds32);
 }
 
 /// A session, associated with a port ID and source node ID
 ///
-/// Multiple transfers may be received during the lifetime of a session
-pub struct Session<T, D> {
-    /// The time when a frame for this session was last received
-    last_activity: Microseconds32,
-    /// The timeout for this session
-    ///
-    /// This session will be deleted if it has not had any activity for this duration
-    timeout: MicrosecondDuration32,
-    /// The ID of the last successfully received transfer, if any
-    ///
-    /// This is used to eliminate duplicate transfers.
-    last_transfer_id: Option<T>,
+/// If a session for a specific port and node ID does not exist, this node has never received a
+/// transfer.
+#[derive(Debug)]
+pub enum Session<T, D> {
+    /// This node is in the process of reassembling a transfer
+    Active(ActiveSession<T, D>),
+    /// This node has successfully received a transfer
+    Complete {
+        /// The timestamp of the first frame of the most recent successfully received transfer
+        time: Microseconds32,
+        /// The ID of that transfer
+        transfer_id: T,
+    },
+}
+
+/// A session with an incoming transfer undergoing reassembly
+#[derive(Debug)]
+pub struct ActiveSession<T, D> {
+    /// The timestamp of the first frame in this transfer
+    pub time: Microseconds32,
+    /// The ID of this transfer
+    pub transfer_id: T,
     /// Additional transport-specific data
-    data: D,
-}
-
-impl<T, D> Session<T, D> {
-    /// Creates a new session
-    pub fn new(
-        last_activity: Microseconds32,
-        timeout: MicrosecondDuration32,
-        last_transfer_id: Option<T>,
-        data: D,
-    ) -> Self {
-        Session {
-            last_activity,
-            timeout,
-            last_transfer_id,
-            data,
-        }
-    }
-
-    /// Returns true if this session has expired and should be removed
-    pub fn is_expired(&self, now: Microseconds32) -> bool {
-        let deadline = self.last_activity + self.timeout;
-        now > deadline
-    }
-
-    /// Returns the time when this session was last active
-    pub fn last_activity(&self) -> Microseconds32 {
-        self.last_activity
-    }
-    /// Sets the time when this session was last active
-    pub fn set_last_activity(&mut self, time: Microseconds32) {
-        self.last_activity = time;
-    }
-    /// Returns the timeout duration for this session
-    pub fn timeout(&self) -> MicrosecondDuration32 {
-        self.timeout
-    }
-    /// Returns the ID of the last received transfer, if any
-    pub fn last_transfer_id(&self) -> Option<&T> {
-        self.last_transfer_id.as_ref()
-    }
-    /// Sets the ID of the most recently received transfer
-    pub fn set_last_transfer_id(&mut self, id: T) {
-        self.last_transfer_id = Some(id);
-    }
-    /// Returns a reference to the transport-specific data
-    pub fn data(&self) -> &D {
-        &self.data
-    }
-    /// Returns a mutable reference to the transport-specific data
-    pub fn data_mut(&mut self) -> &mut D {
-        &mut self.data
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::Session;
-    use crate::time::{MicrosecondDuration32, Microseconds32};
-
-    #[test]
-    fn test_session_expiration_basic() {
-        let session = Session::new(
-            Microseconds32::from_ticks(300),
-            MicrosecondDuration32::from_ticks(100),
-            None::<()>,
-            (),
-        );
-        assert!(!session.is_expired(Microseconds32::from_ticks(300)));
-        assert!(!session.is_expired(Microseconds32::from_ticks(301)));
-        assert!(!session.is_expired(Microseconds32::from_ticks(399)));
-        assert!(!session.is_expired(Microseconds32::from_ticks(400)));
-        assert!(session.is_expired(Microseconds32::from_ticks(401)));
-    }
-
-    #[test]
-    fn test_session_expiration_wraparound() {
-        let session = Session::new(
-            Microseconds32::from_ticks(u32::MAX - 1),
-            MicrosecondDuration32::from_ticks(100),
-            None::<()>,
-            (),
-        );
-        assert!(!session.is_expired(Microseconds32::from_ticks(u32::MAX - 1)));
-        assert!(!session.is_expired(Microseconds32::from_ticks(u32::MAX)));
-        assert!(!session.is_expired(Microseconds32::from_ticks(98)));
-        assert!(session.is_expired(Microseconds32::from_ticks(99)));
-        assert!(session.is_expired(Microseconds32::from_ticks(100)));
-    }
+    pub data: D,
 }
 
 /// A fixed-capacity session map that uses linear search to find sessions
@@ -208,24 +127,6 @@ where
     fn remove(&mut self, node: N) {
         self.sessions.remove(&node);
     }
-
-    fn remove_expired(&mut self, now: Microseconds32) {
-        loop {
-            let mut expired_node_id: Option<N> = None;
-            for (id, session) in &self.sessions {
-                if session.is_expired(now) {
-                    expired_node_id = Some(id.clone());
-                    break;
-                }
-            }
-            match expired_node_id {
-                Some(id) => {
-                    self.sessions.remove(&id);
-                }
-                None => break,
-            }
-        }
-    }
 }
 
 /// A fixed-capacity array of sessions, with one session slot for each possible node ID
@@ -274,20 +175,6 @@ where
 
     fn remove(&mut self, node: N) {
         self.sessions[node.into()] = None;
-    }
-
-    fn remove_expired(&mut self, now: Microseconds32) {
-        for entry in &mut self.sessions {
-            let mut remove = false;
-            if let Some(session) = entry {
-                if session.is_expired(now) {
-                    remove = true;
-                }
-            }
-            if remove {
-                *entry = None;
-            }
-        }
     }
 }
 
@@ -343,24 +230,5 @@ where
 
     fn remove(&mut self, node: N) {
         self.sessions.remove(&node);
-    }
-
-    fn remove_expired(&mut self, now: Microseconds32) {
-        loop {
-            let mut expired_node_id: Option<N> = None;
-            for (id, session) in &self.sessions {
-                if session.is_expired(now) {
-                    expired_node_id = Some(id.clone());
-                    break;
-                }
-            }
-            match expired_node_id {
-                Some(id) => {
-                    log::debug!("Removing expired session from node {:?}", id);
-                    self.sessions.remove(&id);
-                }
-                None => break,
-            }
-        }
     }
 }
