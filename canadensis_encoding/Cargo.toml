@@ -1,6 +1,6 @@
 [package]
 name = "canadensis_encoding"
-version = "0.3.2"
+version = "0.5.0"
 authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
 edition = "2018"
 keywords = ["embedded", "uavcan", "uav", "can", "cyphal"]
