@@ -20,5 +20,8 @@ members = [
     "canadensis_pnp_client",
     "canadensis_serial",
     "canadensis_udp",
-    "canadensis_write_crc"
+    "canadensis_write_crc",
+]
+exclude = [
+    "examples/s32k146_node"
 ]

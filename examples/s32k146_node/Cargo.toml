@@ -1,0 +1,31 @@
+[package]
+edition = "2024"
+readme = "README.md"
+name = "s32k146_node"
+version = "0.1.0"
+
+[dependencies]
+cortex-m = { version = "0.7.6", features = ["critical-section-single-core"] }
+cortex-m-rt = { version = "0.7", features = ["zero-init-ram"] }
+cortex-m-semihosting = "0.5"
+panic-halt = "1.0.0"
+embedded-alloc = "0.6.0"
+canadensis = { version = "0.5.0", path = "../../canadensis" }
+canadensis_can = { version = "0.5.0", path = "../../canadensis_can" }
+canadensis_data_types = { version = "0.5.0", path = "../../canadensis_data_types" }
+heapless = "0.9.1"
+vcell = "0.1.3"
+static_assertions = "1.1.0"
+nb = "1.1.0"
+s32k146-pac = "0.1.0"
+
+# this lets you use `cargo fix`!
+[[bin]]
+name = "s32k146_node"
+test = false
+bench = false
+
+[profile.release]
+codegen-units = 1 # better optimizations
+debug = true # symbols are nice and they don't increase the size on Flash
+lto = true # better optimizations
