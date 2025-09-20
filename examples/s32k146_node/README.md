@@ -35,7 +35,7 @@ rustup target add thumbv7em-none-eabihf
 
 ### Hardware setup
 
-* Connect the 10-pin debug connector on the UCANS32K1SIC board to the DCD-LZ board
+* Connect the 7-pin debug connector on the UCANS32K1SIC board to the DCD-LZ board
 * Connect the DCD-LZ board to your debug adapter
 * Connect two CAN cables to the 4-pin CAN0 connectors on the UCANS32K1SIC board. These two connectors are on the top
   and bottom of the board, close to the corner.
