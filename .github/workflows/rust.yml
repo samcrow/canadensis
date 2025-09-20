@@ -26,3 +26,6 @@ jobs:
       run: cargo run --bin canadensis_codegen_rust -- compile --rustfmt -o canadensis_data_types/src/generated.rs canadensis_dsdl_frontend/tests/public_regulated_data_types
     - name: Run tests
       run: cargo test --verbose --workspace --all-features
+    - name: Build s32k146_node
+      run:
+        rustup target add thumbv7em-none-eabihf && cd examples/s32k146_node && cargo build

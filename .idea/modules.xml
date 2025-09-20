@@ -23,6 +23,7 @@
       <module fileurl="file://$PROJECT_DIR$/canadensis_udp/canadensis_udp.iml" filepath="$PROJECT_DIR$/canadensis_udp/canadensis_udp.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_write_crc/canadensis_write_crc.iml" filepath="$PROJECT_DIR$/canadensis_write_crc/canadensis_write_crc.iml" />
       <module fileurl="file://$PROJECT_DIR$/canadensis_codegen_rust/prdt_compile_test/prdt_compile_test.iml" filepath="$PROJECT_DIR$/canadensis_codegen_rust/prdt_compile_test/prdt_compile_test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/examples/s32k146_node/s32k146_node.iml" filepath="$PROJECT_DIR$/examples/s32k146_node/s32k146_node.iml" />
     </modules>
   </component>
 </project>
