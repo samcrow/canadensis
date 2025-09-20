@@ -27,4 +27,6 @@ jobs:
     - name: Run tests
       run: cargo test --verbose --workspace --all-features
     - name: Build s32k146_node
-      run: cd examples/s32k146_node && cargo build
+      run:
+        rustup target add thumbv7em-none-eabihf
+        cd examples/s32k146_node && cargo build
