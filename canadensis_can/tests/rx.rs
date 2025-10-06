@@ -7,16 +7,17 @@ extern crate canadensis_core;
 
 use core::convert::{TryFrom, TryInto};
 use std::cell::Cell;
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
+use std::iter;
 
 use canadensis_can::driver::ReceiveDriver;
-use canadensis_can::{CanId, CanNodeId, CanReceiver, Frame};
+use canadensis_can::{CanId, CanNodeId, CanReceiver, Frame, FRAME_CAPACITY};
 use canadensis_core::nb;
 use canadensis_core::subscription::Subscription;
 use canadensis_core::time::{milliseconds, Clock, MicrosecondDuration32, Microseconds32};
 use canadensis_core::transfer::*;
 use canadensis_core::transport::Receiver;
-use canadensis_core::{Priority, ServiceId, SubjectId};
+use canadensis_core::{InvalidValue, Priority, ServiceId, SubjectId};
 
 type TestInstant = Microseconds32;
 type TestDuration = MicrosecondDuration32;
@@ -48,7 +49,6 @@ fn test_heartbeat() {
         .receive(&mut clock.make_clock(), &mut driver)
         .unwrap()
         .expect("Didn't get a transfer");
-
     let expected = Transfer {
         header: Header::Message(MessageHeader {
             timestamp: instant(42),
@@ -458,6 +458,399 @@ fn test_anonymous_receive_multi_frame() {
     );
 }
 
+/// Tests messages with consecutive transfer-IDs (including cyclic ID rollover)
+/// Some transfers are invalid; receiver should track transfer-ID appropriately
+#[test]
+fn test_consecutive_messages() {
+    let mut driver = StubDriver::default();
+    let clock = ClockOwner::default();
+    let mut rx: CanReceiver<StubClock, StubDriver> = CanReceiver::new(127u8.try_into().unwrap());
+    let subject = SubjectId::try_from(1337).unwrap();
+    rx.subscribe_message(subject, 8, duration(2_000_000), &mut driver)
+        .unwrap();
+    // Nominal priority, message transfer, non-anonymous
+    let frame_id = 0b1000_0011_0010100111001_01001011.try_into().unwrap();
+    // Transfer-ID 29
+    driver.push(Frame::new(
+        instant(13309),
+        frame_id,
+        &[0x53, 0x4f, 0x4d, 0x45, 0x42, 0x4f, 0x44, 0b101_11101],
+    ));
+    driver.push(Frame::new(
+        instant(13320),
+        frame_id,
+        &[
+            // Payload
+            0x59,
+            // CRC
+            0xcb,
+            0xfa,
+            // Tail byte
+            0b010_11101,
+        ],
+    ));
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    assert_eq!(
+        transfer,
+        Some(Transfer {
+            header: Header::Message(MessageHeader {
+                timestamp: instant(13309),
+                transfer_id: 29.try_into().unwrap(),
+                priority: Priority::Nominal,
+                subject,
+                source: Some(CanNodeId::try_from(75u8).unwrap()),
+            }),
+            loopback: false,
+            payload: vec![0x53, 0x4f, 0x4d, 0x45, 0x42, 0x4f, 0x44, 0x59],
+        })
+    );
+
+    // Transfer-ID 30
+    driver.push(Frame::new(
+        instant(13331),
+        frame_id,
+        &[0x74, 0x30, 0x6c, 0x64, 0x5f, 0x6d, 0x33, 0b101_11110],
+    ));
+    driver.push(Frame::new(
+        instant(13416),
+        frame_id,
+        &[
+            // payload
+            0x21,
+            // CRC
+            0x0f,
+            0x99,
+            // tail byte
+            0b010_11110,
+        ],
+    ));
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    assert_eq!(
+        transfer,
+        Some(Transfer {
+            header: Header::Message(MessageHeader {
+                timestamp: instant(13331),
+                transfer_id: 30.try_into().unwrap(),
+                priority: Priority::Nominal,
+                subject,
+                source: Some(CanNodeId::try_from(75u8).unwrap()),
+            }),
+            loopback: false,
+            payload: vec![0x74, 0x30, 0x6c, 0x64, 0x5f, 0x6d, 0x33, 0x21],
+        })
+    );
+
+    // Transfer-ID 31, but the CRC is wrong
+    driver.push(Frame::new(
+        instant(13450),
+        frame_id,
+        &[0x74, 0x30, 0x6c, 0x64, 0x5f, 0x6d, 0x33, 0b101_11111],
+    ));
+    driver.push(Frame::new(
+        instant(13478),
+        frame_id,
+        &[
+            // payload
+            0x21,
+            // CRC
+            0x1f,
+            0x99,
+            // tail byte
+            0b010_11111,
+        ],
+    ));
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    assert_eq!(transfer, None);
+
+    // Should accept another transfer with transfer-ID 31 with the correct CRC
+    driver.push(Frame::new(
+        instant(13490),
+        frame_id,
+        &[0x74, 0x30, 0x6c, 0x64, 0x5f, 0x6d, 0x33, 0b101_11111],
+    ));
+    driver.push(Frame::new(
+        instant(13500),
+        frame_id,
+        &[
+            // payload
+            0x21,
+            // CRC
+            0x0f,
+            0x99,
+            // tail byte
+            0b010_11111,
+        ],
+    ));
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    assert_eq!(
+        transfer,
+        Some(Transfer {
+            header: Header::Message(MessageHeader {
+                timestamp: instant(13490),
+                transfer_id: 31.try_into().unwrap(),
+                priority: Priority::Nominal,
+                subject,
+                source: Some(CanNodeId::try_from(75u8).unwrap()),
+            }),
+            loopback: false,
+            payload: vec![0x74, 0x30, 0x6c, 0x64, 0x5f, 0x6d, 0x33, 0x21],
+        })
+    );
+
+    // Transfer-ID 0, but missing a start frame
+    driver.push(Frame::new(
+        instant(13508),
+        frame_id,
+        &[
+            // payload
+            0x21,
+            // CRC
+            0x0f,
+            0x99,
+            // tail byte
+            0b010_00000,
+        ],
+    ));
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    assert_eq!(transfer, None);
+
+    // Should accept the same transfer sent properly
+    driver.push(Frame::new(
+        instant(13513),
+        frame_id,
+        &[0x74, 0x30, 0x6c, 0x64, 0x5f, 0x6d, 0x33, 0b101_00000],
+    ));
+    driver.push(Frame::new(
+        instant(13521),
+        frame_id,
+        &[
+            // payload
+            0x21,
+            // CRC
+            0x0f,
+            0x99,
+            // tail byte
+            0b010_00000,
+        ],
+    ));
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    assert_eq!(
+        transfer,
+        Some(Transfer {
+            header: Header::Message(MessageHeader {
+                timestamp: instant(13513),
+                transfer_id: 0.try_into().unwrap(),
+                priority: Priority::Nominal,
+                subject,
+                source: Some(CanNodeId::try_from(75u8).unwrap()),
+            }),
+            loopback: false,
+            payload: vec![0x74, 0x30, 0x6c, 0x64, 0x5f, 0x6d, 0x33, 0x21],
+        })
+    );
+
+    // Should deduplicate within timeout
+    driver.push(Frame::new(
+        instant(13531),
+        frame_id,
+        &[0x74, 0x30, 0x6c, 0x64, 0x5f, 0x6d, 0x33, 0b101_00000],
+    ));
+    driver.push(Frame::new(
+        instant(13532),
+        frame_id,
+        &[
+            // payload
+            0x21,
+            // CRC
+            0x0f,
+            0x99,
+            // tail byte
+            0b010_00000,
+        ],
+    ));
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    assert_eq!(transfer, None);
+
+    // Send first frame of transfer-ID 1, but don't complete transfer
+    driver.push(Frame::new(
+        instant(13831),
+        frame_id,
+        &[0x74, 0x30, 0x6c, 0x64, 0x5f, 0xff, 0x00, 0b101_00001],
+    ));
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    assert_eq!(transfer, None);
+    // Receiver should skip ID 1 and emit next valid transfer with ID 2
+    driver.push(Frame::new(
+        instant(13862),
+        frame_id,
+        &[0x74, 0x30, 0x6c, 0x64, 0x5f, 0x00, 0x00, 0b111_00010],
+    ));
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    assert_eq!(
+        transfer,
+        Some(Transfer {
+            header: Header::Message(MessageHeader {
+                timestamp: instant(13862),
+                transfer_id: 2.try_into().unwrap(),
+                priority: Priority::Nominal,
+                subject,
+                source: Some(CanNodeId::try_from(75u8).unwrap()),
+            }),
+            loopback: false,
+            payload: vec![0x74, 0x30, 0x6c, 0x64, 0x5f, 0x00, 0x00],
+        })
+    );
+}
+
+/// Tests that non-consecutive transfer-IDs are still received properly
+/// (excluding the case where the transfer-ID is reused within the timeout period),
+/// so long as the actual transfers are valid.
+/// This accommodates nodes/sessions getting reset, whole transfers being dropped, etc.
+#[test]
+fn test_confusing_transfer_ids() {
+    let mut driver = StubDriver::default();
+    let clock = ClockOwner::default();
+    let mut rx: CanReceiver<StubClock, StubDriver> = CanReceiver::new(127u8.try_into().unwrap());
+    let subject = SubjectId::try_from(1337).unwrap();
+    rx.subscribe_message(subject, 4, duration(2_000_000), &mut driver)
+        .unwrap();
+    // Nominal priority, message transfer, non-anonymous
+    let frame_id = 0b1000_0011_0010100111001_01001011.try_into().unwrap();
+    // Transfer-ID 3
+    driver.push(Frame::new(
+        instant(59),
+        frame_id,
+        &[0x01, 0x02, 0xca, 0xfe, 0x00, 0x00, 0x00, 0b111_00011],
+    ));
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    assert_eq!(
+        transfer,
+        Some(Transfer {
+            header: Header::Message(MessageHeader {
+                timestamp: instant(59),
+                transfer_id: 3.try_into().unwrap(),
+                priority: Priority::Nominal,
+                subject,
+                source: Some(CanNodeId::try_from(75u8).unwrap()),
+            }),
+            loopback: false,
+            payload: vec![0x01, 0x02, 0xca, 0xfe]
+        })
+    );
+
+    // Transfer-ID 2 (== rolled back 1, or forwards 31)
+    driver.push(Frame::new(
+        instant(199),
+        frame_id,
+        &[0x13, 0x47, 0x84, 0x20, 0x00, 0x00, 0x00, 0b111_00010],
+    ));
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    assert_eq!(
+        transfer,
+        Some(Transfer {
+            header: Header::Message(MessageHeader {
+                timestamp: instant(199),
+                transfer_id: 2.try_into().unwrap(),
+                priority: Priority::Nominal,
+                subject,
+                source: Some(CanNodeId::try_from(75u8).unwrap()),
+            }),
+            loopback: false,
+            payload: vec![0x13, 0x47, 0x84, 0x20],
+        })
+    );
+
+    // Transfer-ID 3.
+    // This is within the transfer-ID timeout window for the initial transfer with ID 3,
+    // but handling a transfer with ID 2 means that ID 3 is now expected.
+    driver.push(Frame::new(
+        instant(211),
+        frame_id,
+        &[0xf1, 0x02, 0x8a, 0xf1, 0x00, 0x00, 0x00, 0b111_00011],
+    ));
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    assert_eq!(
+        transfer,
+        Some(Transfer {
+            header: Header::Message(MessageHeader {
+                timestamp: instant(211),
+                transfer_id: 3.try_into().unwrap(),
+                priority: Priority::Nominal,
+                subject,
+                source: Some(CanNodeId::try_from(75u8).unwrap()),
+            }),
+            loopback: false,
+            payload: vec![0xf1, 0x02, 0x8a, 0xf1]
+        })
+    );
+
+    // Transfer-ID 19
+    driver.push(Frame::new(
+        instant(478),
+        frame_id,
+        &[0xa3, 0x47, 0x84, 0x20, 0x00, 0x00, 0x00, 0b111_10011],
+    ));
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    assert_eq!(
+        transfer,
+        Some(Transfer {
+            header: Header::Message(MessageHeader {
+                timestamp: instant(478),
+                transfer_id: 19.try_into().unwrap(),
+                priority: Priority::Nominal,
+                subject,
+                source: Some(CanNodeId::try_from(75u8).unwrap()),
+            }),
+            loopback: false,
+            payload: vec![0xa3, 0x47, 0x84, 0x20],
+        })
+    );
+
+    // Transfer-ID 0
+    driver.push(Frame::new(
+        instant(799),
+        frame_id,
+        &[0xa3, 0xb2, 0xee, 0x20, 0x00, 0x00, 0x00, 0b111_00000],
+    ));
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    assert_eq!(
+        transfer,
+        Some(Transfer {
+            header: Header::Message(MessageHeader {
+                timestamp: instant(799),
+                transfer_id: 0.try_into().unwrap(),
+                priority: Priority::Nominal,
+                subject,
+                source: Some(CanNodeId::try_from(75u8).unwrap()),
+            }),
+            loopback: false,
+            payload: vec![0xa3, 0xb2, 0xee, 0x20],
+        })
+    );
+
+    // Transfer-ID 31
+    driver.push(Frame::new(
+        instant(802),
+        frame_id,
+        &[0x0f, 0x22, 0x84, 0x2c, 0x00, 0x00, 0x00, 0b111_11111],
+    ));
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    assert_eq!(
+        transfer,
+        Some(Transfer {
+            header: Header::Message(MessageHeader {
+                timestamp: instant(802),
+                transfer_id: 31.try_into().unwrap(),
+                priority: Priority::Nominal,
+                subject,
+                source: Some(CanNodeId::try_from(75u8).unwrap()),
+            }),
+            loopback: false,
+            payload: vec![0x0f, 0x22, 0x84, 0x2c],
+        })
+    );
+}
+
 #[test]
 fn test_ignore_request_to_other_node() {
     let mut driver = StubDriver::default();
@@ -708,6 +1101,72 @@ fn slow_multi_frame_no_timeout() {
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Frame 7
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Frame 8
             ],
+        })
+    );
+}
+
+#[test]
+fn handle_transfer_id_timeout_with_clock_overflow() {
+    let mut driver = StubDriver::default();
+    let clock = ClockOwner::default();
+    let mut rx: CanReceiver<StubClock, StubDriver> = CanReceiver::new(77u8.try_into().unwrap());
+    let subject = SubjectId::try_from(1234).unwrap();
+    let timestamp_before_overflow = instant(u32::MAX - 500);
+    let timestamp_after_overflow = instant(10);
+    let timestamp_after_timeout_window = instant(505);
+    rx.subscribe_message(subject, 4, duration(1000), &mut driver)
+        .unwrap();
+    let frame_id = 0b1000_0011_0010011010010_01001011.try_into().unwrap();
+
+    driver.push(Frame::new(
+        timestamp_before_overflow,
+        frame_id,
+        &[0xff, 0x4f, 0x5a, 0xa5, 0x00, 0x00, 0x00, 0b111_10101],
+    ));
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    assert_eq!(
+        transfer,
+        Some(Transfer {
+            header: Header::Message(MessageHeader {
+                timestamp: timestamp_before_overflow,
+                transfer_id: 21.try_into().unwrap(),
+                priority: Priority::Nominal,
+                subject,
+                source: Some(CanNodeId::try_from(75u8).unwrap()),
+            }),
+            loopback: false,
+            payload: vec![0xff, 0x4f, 0x5a, 0xa5],
+        })
+    );
+
+    // Duplicated transfer within timeout window (wrapping clock around)
+    driver.push(Frame::new(
+        timestamp_after_overflow,
+        frame_id,
+        &[0xff, 0x4f, 0x5a, 0xa5, 0x00, 0x00, 0x00, 0b111_10101],
+    ));
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    assert_eq!(transfer, None);
+
+    // Now it should be accepted
+    driver.push(Frame::new(
+        timestamp_after_timeout_window,
+        frame_id,
+        &[0xff, 0x4f, 0x5a, 0xa5, 0x00, 0x00, 0x00, 0b111_10101],
+    ));
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    assert_eq!(
+        transfer,
+        Some(Transfer {
+            header: Header::Message(MessageHeader {
+                timestamp: timestamp_after_timeout_window,
+                transfer_id: 21.try_into().unwrap(),
+                priority: Priority::Nominal,
+                subject,
+                source: Some(CanNodeId::try_from(75u8).unwrap()),
+            }),
+            loopback: false,
+            payload: vec![0xff, 0x4f, 0x5a, 0xa5],
         })
     );
 }
@@ -1164,6 +1623,311 @@ fn multi_frame_missed_frame_recovery() {
         None,
         rx.receive(&mut clock.make_clock(), &mut driver).unwrap()
     );
+}
+
+/// Send 1024 valid consecutive message transfers, one every tick.
+#[test]
+fn test_stressed_transfer_ids() {
+    let mut driver = StubDriver::default();
+    let clock = ClockOwner::default();
+    let mut rx: CanReceiver<StubClock, StubDriver> = CanReceiver::new(77u8.try_into().unwrap());
+    let subject = SubjectId::try_from(1234).unwrap();
+    rx.subscribe_message(subject, 4, duration(1000), &mut driver)
+        .unwrap();
+    let frame_id = 0b1000_0011_0010011010010_01001011.try_into().unwrap();
+
+    for i in 0..1024 {
+        driver.push(Frame::new(
+            instant(i),
+            frame_id,
+            // the tail function masks out last the 5 bits of i for us
+            &[
+                0xca,
+                0xfe,
+                0xbe,
+                0xef,
+                0x00,
+                0x00,
+                0x00,
+                tail(true, true, true, i as u8),
+            ],
+        ));
+        let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+        assert_eq!(
+            transfer,
+            Some(Transfer {
+                header: Header::Message(MessageHeader {
+                    timestamp: instant(i),
+                    transfer_id: ((i & 0x1f) as u8).try_into().unwrap(),
+                    priority: Priority::Nominal,
+                    subject,
+                    source: Some(CanNodeId::try_from(75u8).unwrap()),
+                }),
+                loopback: false,
+                payload: vec![0xca, 0xfe, 0xbe, 0xef],
+            })
+        );
+    }
+}
+
+// Some helpers for the monster stress test.
+
+struct TestCanNodeIds {
+    current: u8,
+}
+
+struct TestPortIds {
+    max_subject: u16,
+    max_service: u16,
+    current_subject: u16,
+    current_service: u16,
+}
+
+impl TestCanNodeIds {
+    fn new(_seed: usize) -> Self {
+        // The seed leaves open the possibility of the iterator returning IDs in pseudo-random order in future testing.
+        // An LFSR would be cool since we want to cycle through 127 values...
+        TestCanNodeIds { current: 0 }
+    }
+}
+
+// Prefixed with underscore so as not to confuse with the library PortId definition, which is just
+// a wrapper for a u32. Might be sensible to change the library PortId definition...?
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+enum _PortId {
+    SubjectId(SubjectId),
+    ServiceId(ServiceId),
+}
+
+impl TestPortIds {
+    fn new(max_subject: u16, max_service: u16, _seed: usize) -> Self {
+        // Seed argument reserved as in TestCanNodeIds.
+        if max_subject > u16::from(SubjectId::MAX) {
+            panic!("Subject-IDs cannot be greater than {}", SubjectId::MAX);
+        }
+        if max_service > u16::from(ServiceId::MAX) {
+            panic!("Service-IDs cannot be greater than {}", ServiceId::MAX);
+        }
+        TestPortIds {
+            max_subject,
+            max_service,
+            current_subject: 0,
+            current_service: 0,
+        }
+    }
+}
+
+impl iter::Iterator for TestCanNodeIds {
+    type Item = CanNodeId;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current > u8::from(CanNodeId::MAX) {
+            None
+        } else {
+            let next = CanNodeId::from_truncating(self.current);
+            self.current += 1;
+            Some(next)
+        }
+    }
+}
+
+impl iter::Iterator for TestPortIds {
+    type Item = _PortId;
+    fn next(&mut self) -> Option<Self::Item> {
+        // Currently just iterates through all subjects in order, then all services
+        if self.current_subject > self.max_subject {
+            if self.current_service > self.max_service {
+                None
+            } else {
+                let next = _PortId::ServiceId(ServiceId::from_truncating(self.current_service));
+                self.current_service += 1;
+                Some(next)
+            }
+        } else {
+            let next = _PortId::SubjectId(SubjectId::from_truncating(self.current_subject));
+            self.current_subject += 1;
+            Some(next)
+        }
+    }
+}
+
+fn make_message_frame_id(
+    priority: Priority,
+    subject_id: SubjectId,
+    source_node_id: CanNodeId,
+) -> Result<CanId, InvalidValue> {
+    const MESSAGE_BASE: u32 = 0b000_00011_0000000000000_0_0000000;
+    (MESSAGE_BASE
+        | ((priority as u32) << 26)
+        | (u32::from(subject_id) << 8)
+        | u32::from(source_node_id))
+    .try_into()
+}
+fn make_request_frame_id(
+    priority: Priority,
+    service_id: ServiceId,
+    destination_node_id: CanNodeId,
+    source_node_id: CanNodeId,
+) -> Result<CanId, InvalidValue> {
+    const REQUEST_BASE: u32 = 0b000_110_000000000_0000000_0000000;
+    (REQUEST_BASE
+        | ((priority as u32) << 26)
+        | (u32::from(service_id) << 14)
+        | (u32::from(destination_node_id) << 7)
+        | u32::from(source_node_id))
+    .try_into()
+}
+
+const NON_TAIL_BYTES_PER_FRAME: usize = FRAME_CAPACITY - 1;
+
+fn num_frames_for_payload(payload_size: usize) -> usize {
+    if payload_size <= NON_TAIL_BYTES_PER_FRAME {
+        1
+    } else {
+        (payload_size).div_ceil(NON_TAIL_BYTES_PER_FRAME)
+    }
+}
+
+/// Subscribe to many messages and services. Send frames from all 128 nodes across all messages and
+/// services with all transfers being assembled concurrently. Check all transfers were received.
+#[test]
+fn test_stressed_concurrent_subscriptions() {
+    const NUM_SUBJECT_IDS: u16 = 256;
+    const NUM_SERVICE_IDS: u16 = 256;
+    // payload size includes CRC
+    const PAYLOAD_SIZE: usize = 26;
+    const PAYLOAD: [u8; PAYLOAD_SIZE] = [
+        0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d,
+        0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34,
+        0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
+        // CRC
+        0x7c, 0x45,
+    ];
+
+    let num_frames: usize = num_frames_for_payload(PAYLOAD_SIZE);
+    assert!(
+        num_frames > 1,
+        "Stressed subscriptions test requires its transfers to be multi-frame"
+    );
+
+    let mut driver = StubDriver::default();
+    let clock = ClockOwner::default();
+    let dest_node: CanNodeId = 77u8.try_into().unwrap();
+    let mut rx: CanReceiver<StubClock, StubDriver> = CanReceiver::new(dest_node);
+
+    // Subscribe to many subjects and service requests
+    for subject_id in 0..NUM_SUBJECT_IDS {
+        rx.subscribe_message(
+            SubjectId::try_from(subject_id).unwrap(),
+            PAYLOAD_SIZE,
+            duration(0),
+            &mut driver,
+        )
+        .unwrap();
+    }
+    for service_id in 0..NUM_SERVICE_IDS {
+        rx.subscribe_request(
+            ServiceId::try_from(service_id).unwrap(),
+            PAYLOAD_SIZE,
+            duration(0),
+            &mut driver,
+        )
+        .unwrap();
+    }
+
+    // Perform many subject and service request transfers concurrently
+    let mut t = 1000;
+    let mut expected_transfer_times: HashMap<(CanNodeId, _PortId), TestInstant> = HashMap::new();
+    for msg_i in 0..num_frames {
+        for src_node in TestCanNodeIds::new(msg_i) {
+            for port_id in TestPortIds::new(NUM_SUBJECT_IDS - 1, NUM_SERVICE_IDS - 1, msg_i) {
+                // send frame msg_i of a message/request on port_id from node_id
+                let frame_id = match port_id {
+                    _PortId::SubjectId(subject_id) => {
+                        make_message_frame_id(Priority::Nominal, subject_id, src_node).unwrap()
+                    }
+                    _PortId::ServiceId(service_id) => {
+                        make_request_frame_id(Priority::Nominal, service_id, dest_node, src_node)
+                            .unwrap()
+                    }
+                };
+                // construct a slice of variable length containing the payload bytes we want
+                let num_remaining_bytes = PAYLOAD_SIZE - msg_i * NON_TAIL_BYTES_PER_FRAME;
+                let start_i = msg_i * NON_TAIL_BYTES_PER_FRAME;
+                let bytes_to_send = if num_remaining_bytes >= NON_TAIL_BYTES_PER_FRAME {
+                    &PAYLOAD[start_i..start_i + NON_TAIL_BYTES_PER_FRAME]
+                } else {
+                    &PAYLOAD[start_i..PAYLOAD_SIZE]
+                };
+
+                driver.push(Frame::new(
+                    instant(t),
+                    frame_id,
+                    [
+                        bytes_to_send,
+                        &[tail(
+                            msg_i == 0,
+                            msg_i == num_frames - 1,
+                            msg_i % 2 == 0,
+                            24,
+                        )],
+                    ]
+                    .concat()
+                    .as_slice(),
+                ));
+                let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+                if msg_i == 0 {
+                    expected_transfer_times.insert((src_node, port_id), instant(t));
+                    assert_eq!(transfer, None);
+                } else if msg_i == (num_frames - 1) {
+                    // last frame of the transfer, so we should actually get something
+                    match port_id {
+                        _PortId::SubjectId(subject_id) => {
+                            assert_eq!(
+                                transfer,
+                                Some(Transfer {
+                                    header: Header::Message(MessageHeader {
+                                        timestamp: *expected_transfer_times
+                                            .get(&(src_node, port_id))
+                                            .unwrap(),
+                                        transfer_id: 24.try_into().unwrap(),
+                                        priority: Priority::Nominal,
+                                        subject: subject_id,
+                                        source: Some(src_node),
+                                    }),
+                                    loopback: false,
+                                    // exclude last two CRC bytes
+                                    payload: Vec::from(&PAYLOAD[0..PAYLOAD_SIZE - 2]),
+                                })
+                            );
+                        }
+                        _PortId::ServiceId(service_id) => {
+                            assert_eq!(
+                                transfer,
+                                Some(Transfer {
+                                    header: Header::Request(ServiceHeader {
+                                        timestamp: *expected_transfer_times
+                                            .get(&(src_node, port_id))
+                                            .unwrap(),
+                                        transfer_id: 24.try_into().unwrap(),
+                                        priority: Priority::Nominal,
+                                        service: service_id,
+                                        source: src_node,
+                                        destination: dest_node,
+                                    }),
+                                    loopback: false,
+                                    payload: Vec::from(&PAYLOAD[0..PAYLOAD_SIZE - 2]),
+                                })
+                            );
+                        }
+                    }
+                } else {
+                    assert_eq!(transfer, None);
+                }
+
+                t += 1;
+            }
+        }
+    }
 }
 
 fn delay_frame(frame: Frame, delay: MicrosecondDuration32) -> Frame {
