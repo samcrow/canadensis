@@ -38,6 +38,11 @@ const VALID_SUBJECT_IDS: RangeInclusive<u16> = 0..=8191;
 pub struct SubjectId(u16);
 
 impl SubjectId {
+    /// The smallest allowed subject-ID (0)
+    pub const MIN: SubjectId = SubjectId(*VALID_SUBJECT_IDS.start());
+    /// The largest allowed subject-ID (8191)
+    pub const MAX: SubjectId = SubjectId(*VALID_SUBJECT_IDS.end());
+
     /// Creates a SubjectId from a u16, truncating to the allowed number of bits
     pub const fn from_truncating(value: u16) -> Self {
         SubjectId(value & *VALID_SUBJECT_IDS.end())
@@ -91,6 +96,11 @@ const VALID_SERVICE_IDS: RangeInclusive<u16> = 0..=511;
 pub struct ServiceId(u16);
 
 impl ServiceId {
+    /// The smallest allowed service-ID (0)
+    pub const MIN: ServiceId = ServiceId(*VALID_SERVICE_IDS.start());
+    /// The largest allowed service-ID (511)
+    pub const MAX: ServiceId = ServiceId(*VALID_SERVICE_IDS.end());
+
     /// Creates a ServiceId from a u16, truncating to the allowed number of bits
     pub const fn from_truncating(value: u16) -> Self {
         ServiceId(value & *VALID_SERVICE_IDS.end())
