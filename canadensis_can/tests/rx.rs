@@ -511,6 +511,8 @@ fn test_consecutive_messages() {
         frame_id,
         &[0x74, 0x30, 0x6c, 0x64, 0x5f, 0x6d, 0x33, 0b101_11110],
     ));
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    assert_eq!(transfer, None);
     driver.push(Frame::new(
         instant(13416),
         frame_id,
@@ -1625,9 +1627,18 @@ fn multi_frame_missed_frame_recovery() {
     );
 }
 
-/// Send 1024 valid consecutive message transfers, one every tick.
 #[test]
-fn test_stressed_transfer_ids() {
+fn test_stressed_transfer_ids_from_0() {
+    test_stressed_transfer_ids_from(0);
+}
+
+#[test]
+fn test_stressed_transfer_ids_from_31() {
+    test_stressed_transfer_ids_from(31);
+}
+
+/// Send 1024 valid consecutive message transfers, one every tick.
+fn test_stressed_transfer_ids_from(start_tid: u8) {
     let mut driver = StubDriver::default();
     let clock = ClockOwner::default();
     let mut rx: CanReceiver<StubClock, StubDriver> = CanReceiver::new(77u8.try_into().unwrap());
@@ -1636,6 +1647,7 @@ fn test_stressed_transfer_ids() {
         .unwrap();
     let frame_id = 0b1000_0011_0010011010010_01001011.try_into().unwrap();
 
+    let mut tid = start_tid;
     for i in 0..1024 {
         driver.push(Frame::new(
             instant(i),
@@ -1649,7 +1661,7 @@ fn test_stressed_transfer_ids() {
                 0x00,
                 0x00,
                 0x00,
-                tail(true, true, true, i as u8),
+                tail(true, true, true, tid),
             ],
         ));
         let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
@@ -1658,7 +1670,7 @@ fn test_stressed_transfer_ids() {
             Some(Transfer {
                 header: Header::Message(MessageHeader {
                     timestamp: instant(i),
-                    transfer_id: ((i & 0x1f) as u8).try_into().unwrap(),
+                    transfer_id: tid.try_into().unwrap(),
                     priority: Priority::Nominal,
                     subject,
                     source: Some(CanNodeId::try_from(75u8).unwrap()),
@@ -1667,6 +1679,7 @@ fn test_stressed_transfer_ids() {
                 payload: vec![0xca, 0xfe, 0xbe, 0xef],
             })
         );
+        tid = (tid + 1) % 32;
     }
 }
 

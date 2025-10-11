@@ -2,8 +2,6 @@ use alloc::collections::TryReserveError;
 use alloc::vec::Vec;
 use core::mem;
 
-use crate::types::CanTransferId;
-
 use super::TailByte;
 use canadensis_core::crc::Crc16CcittFalse as TransferCrc;
 use canadensis_core::OutOfMemoryError;
@@ -11,8 +9,6 @@ use canadensis_core::OutOfMemoryError;
 /// Reassembles frames into a transfer
 #[derive(Debug)]
 pub struct Buildup {
-    /// Transfer ID of expected frames
-    transfer_id: CanTransferId,
     /// The number of frames processed
     frames: usize,
     /// The number of payload bytes processed, not including the transfer CRC or tail bytes
@@ -23,6 +19,9 @@ pub struct Buildup {
     expect_start: bool,
     /// If the next frame should have the toggle bit set
     expect_toggle: bool,
+    /// Tail flags from the previous frame, for the purposes of duplicate detection
+    prev_expect_start: bool,
+    prev_expect_toggle: bool,
     /// The bytes collected so far, not including tail bytes
     ///
     /// The length of this never exceeds payload_size_max.
@@ -38,18 +37,18 @@ impl Buildup {
     /// This function attempts to allocate enough memory to hold the largest possible payload.
     /// It returns an error if memory allocation fails.
     pub fn new(
-        transfer_id: CanTransferId,
         payload_size_max: usize,
     ) -> Result<Self, OutOfMemoryError> {
         let mut transfer = Vec::new();
         transfer.try_reserve_exact(payload_size_max)?;
 
         Ok(Buildup {
-            transfer_id,
             frames: 0,
             payload_size: 0,
             expect_start: true,
             expect_toggle: true,
+            prev_expect_start: false,
+            prev_expect_toggle: false,
             transfer,
             crc: TransferCrc::new(),
         })
@@ -69,19 +68,31 @@ impl Buildup {
             !frame_data.is_empty(),
             "Can't reassemble with an empty frame"
         );
-        // Check tail byte
+        // Check if frame a likely duplicate of the previous
+        if self.frames > 1 && self.expect_start == self.prev_expect_start && self.expect_toggle == self.prev_expect_toggle {
+            // Drop it
+            return Ok(None);
+        }
         let tail = TailByte::parse(*frame_data.last().unwrap());
+        // Check if new (non-duplicate) start frame
+        if tail.start {
+            // Restart buildup and continue
+            self.frames = 1;
+            self.expect_start = true;
+            self.expect_toggle = true;
+            self.transfer.clear();
+            self.crc = TransferCrc::new();
+        }
+        // Check tail byte
         if tail.start != self.expect_start {
             return Ok(None);
         }
         if tail.toggle != self.expect_toggle {
             return Ok(None);
         }
-        assert_eq!(
-            tail.transfer_id, self.transfer_id,
-            "Incorrect transfer ID for frame to be reassembled"
-        );
         // Prepare for the next frame
+        self.prev_expect_start = self.expect_start;
+        self.prev_expect_toggle = self.expect_toggle;
         self.expect_start = false;
         self.expect_toggle = !self.expect_toggle;
 
@@ -114,11 +125,6 @@ impl Buildup {
             Ok(None)
         }
     }
-
-    /// Returns the ID of the transfer that is being reassembled
-    pub fn transfer_id(&self) -> CanTransferId {
-        self.transfer_id
-    }
 }
 
 #[derive(Debug)]
@@ -136,18 +142,17 @@ impl From<TryReserveError> for BuildupError {
 #[cfg(test)]
 mod test {
     use super::*;
-    use core::convert::TryFrom;
 
     #[test]
     fn test_buildup_heartbeat() {
         // Heartbeat example from specification section 4.2.3
         for transfer_id in 0u8..=31 {
             let mut buildup =
-                Buildup::new(CanTransferId::try_from(transfer_id).unwrap(), 7).unwrap();
+                Buildup::new(7).unwrap();
             let payload = make_heartbeat_payload(u32::from(transfer_id));
 
             // A frame with 7 bytes of payload and a tail byte with first 1, last 1,
-            // toggle 1, and the correct transfer ID
+            // toggle 1, and correct transfer ID
             let frame: [u8; 8] = [
                 payload[0],
                 payload[1],
@@ -188,7 +193,7 @@ mod test {
             let frame = make_frame(&payload, transfer_id);
 
             let mut buildup =
-                Buildup::new(CanTransferId::try_from(transfer_id).unwrap(), 16).unwrap();
+                Buildup::new(16).unwrap();
 
             // Put in the payload bytes
             assert_eq!(Some(payload.to_vec()), buildup.add(&frame).unwrap());
@@ -208,7 +213,7 @@ mod test {
 
     #[test]
     fn test_node_info_request() {
-        let mut buildup = Buildup::new(CanTransferId::try_from(1).unwrap(), 0).unwrap();
+        let mut buildup = Buildup::new(0).unwrap();
         assert_eq!(Some(Vec::new()), buildup.add(&[0xe1]).unwrap());
     }
 
@@ -244,7 +249,7 @@ mod test {
             &[0xe7, 0x61],
         ];
 
-        let mut buildup = Buildup::new(CanTransferId::try_from(1).unwrap(), 71).unwrap();
+        let mut buildup = Buildup::new(71).unwrap();
 
         for (i, frame) in frames.iter().enumerate() {
             if i != frames.len() - 1 {
@@ -286,7 +291,7 @@ mod test {
                 0x00, 0x00, 0x00, 0xc0, 0x48, 0x40,
             ],
         ];
-        let mut buildup = Buildup::new(CanTransferId::try_from(0).unwrap(), 63 + 47).unwrap();
+        let mut buildup = Buildup::new(63 + 47).unwrap();
 
         for (i, frame) in frames.iter().enumerate() {
             if i != frames.len() - 1 {
