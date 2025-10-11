@@ -1,6 +1,5 @@
 use crate::rx::buildup::{Buildup, BuildupError};
-use crate::rx::TailByte;
-use crate::types::{CanTransferId, Header, Transfer};
+use crate::types::{Header, Transfer};
 use crate::Frame;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
@@ -24,13 +23,11 @@ impl Session {
     /// Creates a new session allocated in a `Box`
     pub fn boxed(
         transfer_timestamp: Microseconds32,
-        transfer_id: CanTransferId,
         max_payload_length: usize,
         loopback: bool,
     ) -> Result<Box<Session>, OutOfMemoryError> {
         let session = Session::new(
             transfer_timestamp,
-            transfer_id,
             max_payload_length,
             loopback,
         )?;
@@ -44,14 +41,13 @@ impl Session {
     /// used to assemble the received frames.
     pub fn new(
         transfer_timestamp: Microseconds32,
-        transfer_id: CanTransferId,
         max_payload_length: usize,
         loopback: bool,
     ) -> Result<Self, OutOfMemoryError> {
         Ok(Session {
             transfer_timestamp,
             loopback,
-            buildup: Buildup::new(transfer_id, max_payload_length)?,
+            buildup: Buildup::new(max_payload_length)?,
         })
     }
 
@@ -65,14 +61,7 @@ impl Session {
         &mut self,
         frame: Frame,
         frame_header: Header,
-        tail: TailByte,
     ) -> Result<Option<Transfer<Vec<u8>>>, SessionError> {
-        if tail.transfer_id != self.buildup.transfer_id() {
-            // This is a frame from some other transfer. Ignore it, but keep this session to receive
-            // possible later frames.
-            log::info!("Frame transfer ID does not match, ignoring");
-            return Ok(None);
-        }
         if frame.loopback() != self.loopback {
             log::info!("Frame loopback flag does not match, ignoring");
             return Ok(None);
@@ -100,12 +89,6 @@ impl Session {
             loopback: self.loopback,
             payload: transfer_data,
         }
-    }
-
-    /// Returns the transfer ID of this session
-    #[allow(dead_code)]
-    pub fn transfer_id(&self) -> CanTransferId {
-        self.buildup.transfer_id()
     }
 
     pub(crate) fn transfer_timestamp(&self) -> Microseconds32 {

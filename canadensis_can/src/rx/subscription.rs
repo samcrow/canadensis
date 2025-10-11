@@ -6,12 +6,23 @@ use alloc::boxed::Box;
 use alloc::vec::Vec;
 use canadensis_core::time::{MicrosecondDuration32, Microseconds32};
 use canadensis_core::{OutOfMemoryError, PortId};
+use canadensis_core::transport::TransferId;
 use core::fmt;
 use core::fmt::Debug;
+use core::array;
 use fallible_collections::{FallibleVec, TryReserveError};
 
 const NUM_NODE_IDS: usize = CanNodeId::MAX.to_u8() as usize + 1;
-const NUM_TRANSFER_IDS: usize = CanTransferId::MAX.to_u8() as usize + 1;
+
+/// The Subscription layer handles transfer-ID filtering and the transfer-ID timeout. The Session
+/// and Buildup layers are not aware of transfer-IDs and do not check or track them.
+
+#[derive(Debug)]
+struct SessionState {
+    expected_transfer_id: CanTransferId,
+    last_transfer_time: Option<Microseconds32>,
+    session: Option<Box<Session>>,
+}
 
 /// Transfer subscription state. The application can register its interest in a particular kind of data exchanged
 /// over the bus by creating such subscription objects. Frames that carry data for which there is no active
@@ -20,7 +31,9 @@ pub struct Subscription {
     /// Transfer-ID timeout for this subscription
     ///
     /// This is not the maximum time between the first and last frames in a multi-frame transfer.
-    /// Instead, it's more like the minimum time between transfers with the same transfer-ID.
+    /// Instead, it's effectively the time that must pass before we consider a transfer with the
+    /// same transfer-ID as the previous transfer to be a new transfer (due to e.g. the
+    /// transmitter resetting) instead of a duplicate.
     timeout: MicrosecondDuration32,
     /// Maximum number of payload bytes to receive
     ///
@@ -31,7 +44,7 @@ pub struct Subscription {
     /// Subject or service ID that this subscription is about
     port_id: PortId,
     /// State information from each possible node ID
-    states: PerNodeStates,
+    states: SessionStates
 }
 
 impl Debug for Subscription {
@@ -55,7 +68,7 @@ impl Subscription {
             timeout,
             payload_size_max,
             port_id,
-            states: PerNodeStates::new(),
+            states: SessionStates::new(),
         }
     }
 
@@ -67,9 +80,53 @@ impl Subscription {
         tail: TailByte,
     ) -> Result<Option<Transfer<Vec<u8>>>, SubscriptionError> {
         if let Some(source_node) = frame_header.source().cloned() {
-            self.accept_non_anonymous(frame, frame_header, source_node, tail)
+            self.checked_accept_non_anonymous(frame, frame_header, source_node, tail)
         } else {
             self.accept_anonymous(frame, frame_header)
+        }
+    }
+
+    /// Performs transfer-ID checks before passing the frame further up the chain
+    fn checked_accept_non_anonymous(
+        &mut self,
+        frame: Frame,
+        frame_header: Header,
+        source: CanNodeId,
+        tail: TailByte,
+    ) -> Result<Option<Transfer<Vec<u8>>>, SubscriptionError> {
+        let expected_transfer_id = self.states.get(source).expected_transfer_id;
+        if tail.transfer_id == expected_transfer_id {
+            self.accept_non_anonymous(frame, frame_header, source, tail)
+        } else if tail.transfer_id.increment() == expected_transfer_id && !self.has_transfer_id_timed_out(source, frame.timestamp()) {
+            // Drop frame, as we consider this to be a duplicate transfer.
+            Ok(None)
+        } else {
+            // Either the new frame has messed with the transfer ID that isn't a simple duplication
+            // (e.g. they've reset the counter to some other value), or it uses the previous
+            // transfer-ID but we've timed out. Therefore, reset the session and the expected transfer-ID.
+            self.states.get_mut(source).session = None;
+            self.states.get_mut(source).expected_transfer_id = tail.transfer_id;
+            self.accept_non_anonymous(frame, frame_header, source, tail)
+        }
+    }
+
+    fn has_transfer_id_timed_out(
+        &self,
+        source: CanNodeId,
+        frame_time: Microseconds32,
+    ) -> bool {
+        let last_transfer_time = self.states.get(source).last_transfer_time;
+        match last_transfer_time {
+            None => true,
+            Some(t) => {
+                let age = frame_time.checked_duration_since(t);
+                match age {
+                    // Session is old enough that this new frame starts a new session
+                    Some(age) if age > self.timeout => true,
+                    Some(_) => false, // Have a recent transfer with the same ID
+                    None => true,     // Problem comparing timestamps
+                }
+            }
         }
     }
 
@@ -77,12 +134,10 @@ impl Subscription {
         &mut self,
         frame: Frame,
         frame_header: Header,
-        source_node: CanNodeId,
+        source: CanNodeId,
         tail: TailByte,
     ) -> Result<Option<Transfer<Vec<u8>>>, SubscriptionError> {
-        if !self.check_transfer_id_timeout(source_node, tail.transfer_id, frame.timestamp()) {
-            return Ok(None);
-        }
+        debug_assert!(tail.transfer_id == self.states.get(source).expected_transfer_id);
         if tail.start && tail.end {
             // Special case: Everything fits into one frame, so we don't need to allocate a session
             // Make a transfer from this frame (remove the tail byte)
@@ -96,39 +151,10 @@ impl Subscription {
                 payload,
             };
             // Record that we got a transfer with this ID
-            *self.states.get_mut(source_node).get_mut(tail.transfer_id) =
-                TransferIdState::Complete(frame.timestamp());
+            self.states.flag_successful_transfer(source, frame.timestamp());
             Ok(Some(transfer))
         } else {
-            self.accept_with_session(frame, frame_header, source_node, tail)
-        }
-    }
-
-    /// Based on the transfer ID and received timestamp of an incoming frame, returns true
-    /// to continue processing this frame or false to ignore it
-    fn check_transfer_id_timeout(
-        &self,
-        source: CanNodeId,
-        transfer_id: CanTransferId,
-        frame_time: Microseconds32,
-    ) -> bool {
-        match self.states.get(source).get(transfer_id) {
-            // First transfer with this ID
-            TransferIdState::None => true,
-            // Send this frame into the current session even if the session is too old.
-            // This may sometimes mix frames from an old and new transfer with the same transfer ID,
-            // possibly causing a CRC error.
-            // The CRC error will make the state change to Complete.
-            TransferIdState::Active(_) => true,
-            TransferIdState::Complete(last_transfer_time) => {
-                let age = frame_time.checked_duration_since(*last_transfer_time);
-                match age {
-                    // Session is old enough that this new frame starts a new session
-                    Some(age) if age > self.timeout => true,
-                    Some(_) => false, // Have a recent transfer with the same ID
-                    None => true,     // Problem comparing timestamps
-                }
-            }
+            self.accept_with_session(frame, frame_header, source, tail)
         }
     }
 
@@ -136,21 +162,21 @@ impl Subscription {
         &mut self,
         frame: Frame,
         frame_header: Header,
-        source_node: CanNodeId,
+        source: CanNodeId,
         tail: TailByte,
     ) -> Result<Option<Transfer<Vec<u8>>>, SubscriptionError> {
-        let slot = self.states.get_mut(source_node).get_mut(tail.transfer_id);
-        let session = match slot {
-            TransferIdState::Active(session) => {
+        debug_assert!(tail.transfer_id == self.states.get(source).expected_transfer_id);
+        let slot: &mut Option<Box<Session>> = &mut self.states.get_mut(source).session;
+        let session: &mut Box<Session> = match slot {
+            Some(session) => {
                 log::debug!(
-                    "Using existing session with transfer ID {:?} for port {:?} (frame transfer ID {:?})",
-                    session.transfer_id(),
-                    self.port_id,
+                    "Using existing session with transfer ID {:?} for port {:?}",
                     tail.transfer_id,
+                    self.port_id,
                 );
                 session
             }
-            TransferIdState::None | TransferIdState::Complete(_) => {
+            None => {
                 // Check if this frame is appropriate for creating a new session
                 if !tail.start {
                     // Not the start of a transfer, so it must be a fragment of some other transfer.
@@ -163,32 +189,32 @@ impl Subscription {
                 );
                 let session = Session::boxed(
                     frame_header.timestamp(),
-                    tail.transfer_id,
                     self.payload_size_max,
                     frame.loopback(),
                 )?;
-                *slot = TransferIdState::Active(session);
+                *slot = Some(session);
                 match slot {
-                    TransferIdState::Active(session) => &mut *session,
-                    TransferIdState::Complete(_) | TransferIdState::None => unreachable!(
-                        "We just set this transfer to active, so it can't have any other state."
+                    Some(session) => session,
+                    None => unreachable!(
+                        "We just allocated this session, so it can't be unallocated."
                     ),
                 }
             }
         };
 
-        let accept_status = session.accept(frame, frame_header, tail);
+        let accept_status = session.accept(frame, frame_header);
         match accept_status {
             Ok(Some(transfer)) => {
-                // Transfer received, this session has served its purpose and can be deleted.
-                *slot = TransferIdState::Complete(session.transfer_timestamp());
+                // Transfer received, update state
+                let completion_time = session.transfer_timestamp();
+                self.states.flag_successful_transfer(source, completion_time);
                 Ok(Some(transfer))
             }
             Ok(None) => Ok(None),
             Err(e) => {
-                // This is either out-of-memory or an unexpected frame that invalidates
-                // the session. Delete the session to free memory.
-                *slot = TransferIdState::None;
+                // This is either out-of-memory or an unexpected frame that invalidates the
+                // session.
+                self.states.get_mut(source).session = None;
                 Err(e.into())
             }
         }
@@ -207,6 +233,7 @@ impl Subscription {
         let mut transfer_data = Vec::new();
         transfer_data.try_extend_from_slice(data_without_tail)?;
 
+        // Don't flag as successful transfer, since it's anonymous.
         Ok(Some(Transfer {
             header: frame_header,
             loopback: frame.loopback(),
@@ -248,57 +275,35 @@ impl From<TryReserveError> for SubscriptionError {
 }
 
 #[derive(Debug)]
-struct PerNodeStates {
-    states: [TransferIdStates; NUM_NODE_IDS],
+struct SessionStates {
+    states: [SessionState; NUM_NODE_IDS],
 }
 
-impl PerNodeStates {
-    pub fn new() -> PerNodeStates {
-        const DEFAULT: TransferIdStates = TransferIdStates::new();
-        PerNodeStates {
-            states: [DEFAULT; NUM_NODE_IDS],
+impl SessionStates {
+    pub fn new() -> Self {
+        SessionStates {
+            states: array::from_fn(|_| { SessionState {
+                expected_transfer_id: CanTransferId::default(),
+                last_transfer_time: None,
+                session: None
+            }})
         }
     }
-    pub fn get(&self, source: CanNodeId) -> &TransferIdStates {
-        &self.states[usize::from(source)]
-    }
-    pub fn get_mut(&mut self, source: CanNodeId) -> &mut TransferIdStates {
-        &mut self.states[usize::from(source)]
-    }
-}
 
-#[derive(Debug)]
-struct TransferIdStates {
-    states: [TransferIdState; NUM_TRANSFER_IDS],
-}
+    pub fn get(&self, node: CanNodeId) -> &SessionState {
+        &self.states[usize::from(node)]
+    }
+    pub fn get_mut(&mut self, node: CanNodeId) -> &mut SessionState {
+        &mut self.states[usize::from(node)]
+    }
 
-impl TransferIdStates {
-    pub const fn new() -> TransferIdStates {
-        const DEFAULT: TransferIdState = TransferIdState::None;
-        TransferIdStates {
-            states: [DEFAULT; NUM_TRANSFER_IDS],
-        }
+    /// Called on receipt of a transfer from a given node on this subscription, for the purposes of
+    /// the transfer-ID timeout.
+    pub fn flag_successful_transfer(&mut self, node: CanNodeId, timestamp: Microseconds32) {
+        let session_state = &self.states[usize::from(node)];
+        let next_transfer_id = session_state.expected_transfer_id.increment();
+        self.states[usize::from(node)].last_transfer_time = Some(timestamp);
+        self.states[usize::from(node)].expected_transfer_id = next_transfer_id;
+        self.states[usize::from(node)].session = None;
     }
-    pub fn get(&self, id: CanTransferId) -> &TransferIdState {
-        &self.states[usize::from(id)]
-    }
-    pub fn get_mut(&mut self, id: CanTransferId) -> &mut TransferIdState {
-        &mut self.states[usize::from(id)]
-    }
-}
-
-/// Information about what is happening with a specific transfer ID
-#[derive(Debug)]
-enum TransferIdState {
-    /// We haven't received any frames with this transfer ID, or we received some frames but
-    /// had a problem validating or reassembling them
-    None,
-    /// We got at least one frame and are in the process of reassembling a transfer
-    ///
-    /// If the transfer finishes or encounters an error, this moves to the `Complete` state.
-    Active(Box<Session>),
-    /// Got a frame with this transfer ID, and reassembly finished successfully
-    ///
-    /// The enclosed timestamp is the time we received the first frame of the most recent transfer.
-    Complete(Microseconds32),
 }
