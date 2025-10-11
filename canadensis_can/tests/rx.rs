@@ -854,6 +854,82 @@ fn test_confusing_transfer_ids() {
 }
 
 #[test]
+fn test_interleaved_frame_rejection() {
+    let mut driver = StubDriver::default();
+    let clock = ClockOwner::default();
+    let mut rx: CanReceiver<StubClock, StubDriver> = CanReceiver::new(120u8.try_into().unwrap());
+    let subject = SubjectId::try_from(39).unwrap();
+    rx.subscribe_message(subject, 8, duration(100), &mut driver)
+        .unwrap();
+    // Nominal priority, message transfer, non-anonymous
+    let frame_id = 0b1000_0011_0000000100111_01001011.try_into().unwrap();
+    // Frame 1 of 2 of transfer 1
+    driver.push(Frame::new(
+        instant(13309),
+        frame_id,
+        // SOF, !EOF, TOGGLE = 1, transfer-ID 1
+        &[0x53, 0x4f, 0x4d, 0x45, 0x42, 0x4f, 0x44, 0b101_00001],
+    ));
+    // Frame 1 of 2 of transfer 2
+    driver.push(Frame::new(
+        instant(13311),
+        frame_id,
+        // SOF, !EOF, TOGGLE = 1, transfer-ID 2
+        &[0x74, 0x30, 0x6c, 0x64, 0x5f, 0x6d, 0x33, 0b101_00010],
+    ));
+    // Frame 2 of 2 of transfer 2
+    driver.push(Frame::new(
+        instant(13316),
+        frame_id,
+        &[
+            // payload
+            0x21,
+            // CRC
+            0x0f, 0x99,
+            // tail byte: !SOF, EOF, TOGGLE = 0, transfer-ID 2
+            0b010_00010
+        ],
+    ));
+
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    assert_eq!(
+        transfer,
+        Some(Transfer {
+            header: Header::Message(MessageHeader {
+                timestamp: instant(13311),
+                transfer_id: 2.try_into().unwrap(),
+                priority: Priority::Nominal,
+                subject,
+                source: Some(CanNodeId::try_from(75u8).unwrap()),
+            }),
+            loopback: false,
+            payload: vec![0x74, 0x30, 0x6c, 0x64, 0x5f, 0x6d, 0x33, 0x21],
+        })
+    );
+
+    // Frame 2 of 2 of transfer 1
+    driver.push(Frame::new(
+        instant(13320),
+        frame_id,
+        &[
+            // Payload
+            0x59,
+            // Transfer CRC
+            0xcb,
+            0xfa,
+            // Tail byte
+            0b010_00001,
+        ],
+    ));
+    let transfer = rx.receive(&mut clock.make_clock(), &mut driver).unwrap();
+    // Shouldn't reassemble transfer 1 if we've already reassembled transfer 2
+    assert_eq!(
+        transfer,
+        None
+    );
+}
+
+#[test]
 fn test_ignore_request_to_other_node() {
     let mut driver = StubDriver::default();
     let mut rx = CanReceiver::new(43u8.try_into().unwrap());
