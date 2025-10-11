@@ -5,11 +5,11 @@ use crate::{CanTransferId, Frame};
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 use canadensis_core::time::{MicrosecondDuration32, Microseconds32};
-use canadensis_core::{OutOfMemoryError, PortId};
 use canadensis_core::transport::TransferId;
+use canadensis_core::{OutOfMemoryError, PortId};
+use core::array;
 use core::fmt;
 use core::fmt::Debug;
-use core::array;
 use fallible_collections::{FallibleVec, TryReserveError};
 
 const NUM_NODE_IDS: usize = CanNodeId::MAX.to_u8() as usize + 1;
@@ -44,7 +44,7 @@ pub struct Subscription {
     /// Subject or service ID that this subscription is about
     port_id: PortId,
     /// State information from each possible node ID
-    states: SessionStates
+    states: SessionStates,
 }
 
 impl Debug for Subscription {
@@ -97,7 +97,9 @@ impl Subscription {
         let expected_transfer_id = self.states.get(source).expected_transfer_id;
         if tail.transfer_id == expected_transfer_id {
             self.accept_non_anonymous(frame, frame_header, source, tail)
-        } else if tail.transfer_id.increment() == expected_transfer_id && !self.has_transfer_id_timed_out(source, frame.timestamp()) {
+        } else if tail.transfer_id.increment() == expected_transfer_id
+            && !self.has_transfer_id_timed_out(source, frame.timestamp())
+        {
             // Drop frame, as we consider this to be a duplicate transfer.
             Ok(None)
         } else {
@@ -110,11 +112,7 @@ impl Subscription {
         }
     }
 
-    fn has_transfer_id_timed_out(
-        &self,
-        source: CanNodeId,
-        frame_time: Microseconds32,
-    ) -> bool {
+    fn has_transfer_id_timed_out(&self, source: CanNodeId, frame_time: Microseconds32) -> bool {
         let last_transfer_time = self.states.get(source).last_transfer_time;
         match last_transfer_time {
             None => true,
@@ -151,7 +149,8 @@ impl Subscription {
                 payload,
             };
             // Record that we got a transfer with this ID
-            self.states.flag_successful_transfer(source, frame.timestamp());
+            self.states
+                .flag_successful_transfer(source, frame.timestamp());
             Ok(Some(transfer))
         } else {
             self.accept_with_session(frame, frame_header, source, tail)
@@ -195,9 +194,9 @@ impl Subscription {
                 *slot = Some(session);
                 match slot {
                     Some(session) => session,
-                    None => unreachable!(
-                        "We just allocated this session, so it can't be unallocated."
-                    ),
+                    None => {
+                        unreachable!("We just allocated this session, so it can't be unallocated.")
+                    }
                 }
             }
         };
@@ -207,7 +206,8 @@ impl Subscription {
             Ok(Some(transfer)) => {
                 // Transfer received, update state
                 let completion_time = session.transfer_timestamp();
-                self.states.flag_successful_transfer(source, completion_time);
+                self.states
+                    .flag_successful_transfer(source, completion_time);
                 Ok(Some(transfer))
             }
             Ok(None) => Ok(None),
@@ -282,11 +282,11 @@ struct SessionStates {
 impl SessionStates {
     pub fn new() -> Self {
         SessionStates {
-            states: array::from_fn(|_| { SessionState {
+            states: array::from_fn(|_| SessionState {
                 expected_transfer_id: CanTransferId::default(),
                 last_transfer_time: None,
-                session: None
-            }})
+                session: None,
+            }),
         }
     }
 

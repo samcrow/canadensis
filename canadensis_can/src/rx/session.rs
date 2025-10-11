@@ -26,11 +26,7 @@ impl Session {
         max_payload_length: usize,
         loopback: bool,
     ) -> Result<Box<Session>, OutOfMemoryError> {
-        let session = Session::new(
-            transfer_timestamp,
-            max_payload_length,
-            loopback,
-        )?;
+        let session = Session::new(transfer_timestamp, max_payload_length, loopback)?;
         let session_box = FallibleBox::try_new(session).map_err(|_| OutOfMemoryError)?;
         Ok(session_box)
     }
