@@ -36,9 +36,7 @@ impl Buildup {
     ///
     /// This function attempts to allocate enough memory to hold the largest possible payload.
     /// It returns an error if memory allocation fails.
-    pub fn new(
-        payload_size_max: usize,
-    ) -> Result<Self, OutOfMemoryError> {
+    pub fn new(payload_size_max: usize) -> Result<Self, OutOfMemoryError> {
         let mut transfer = Vec::new();
         transfer.try_reserve_exact(payload_size_max)?;
 
@@ -69,7 +67,10 @@ impl Buildup {
             "Can't reassemble with an empty frame"
         );
         // Check if frame a likely duplicate of the previous
-        if self.frames > 1 && self.expect_start == self.prev_expect_start && self.expect_toggle == self.prev_expect_toggle {
+        if self.frames > 1
+            && self.expect_start == self.prev_expect_start
+            && self.expect_toggle == self.prev_expect_toggle
+        {
             // Drop it
             return Ok(None);
         }
@@ -147,8 +148,7 @@ mod test {
     fn test_buildup_heartbeat() {
         // Heartbeat example from specification section 4.2.3
         for transfer_id in 0u8..=31 {
-            let mut buildup =
-                Buildup::new(7).unwrap();
+            let mut buildup = Buildup::new(7).unwrap();
             let payload = make_heartbeat_payload(u32::from(transfer_id));
 
             // A frame with 7 bytes of payload and a tail byte with first 1, last 1,
@@ -192,8 +192,7 @@ mod test {
             ];
             let frame = make_frame(&payload, transfer_id);
 
-            let mut buildup =
-                Buildup::new(16).unwrap();
+            let mut buildup = Buildup::new(16).unwrap();
 
             // Put in the payload bytes
             assert_eq!(Some(payload.to_vec()), buildup.add(&frame).unwrap());
