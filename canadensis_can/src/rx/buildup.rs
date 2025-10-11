@@ -19,9 +19,6 @@ pub struct Buildup {
     expect_start: bool,
     /// If the next frame should have the toggle bit set
     expect_toggle: bool,
-    /// Tail flags from the previous frame, for the purposes of duplicate detection
-    prev_expect_start: bool,
-    prev_expect_toggle: bool,
     /// The bytes collected so far, not including tail bytes
     ///
     /// The length of this never exceeds payload_size_max.
@@ -45,8 +42,6 @@ impl Buildup {
             payload_size: 0,
             expect_start: true,
             expect_toggle: true,
-            prev_expect_start: false,
-            prev_expect_toggle: false,
             transfer,
             crc: TransferCrc::new(),
         })
@@ -66,24 +61,7 @@ impl Buildup {
             !frame_data.is_empty(),
             "Can't reassemble with an empty frame"
         );
-        // Check if frame a likely duplicate of the previous
-        if self.frames > 1
-            && self.expect_start == self.prev_expect_start
-            && self.expect_toggle == self.prev_expect_toggle
-        {
-            // Drop it
-            return Ok(None);
-        }
         let tail = TailByte::parse(*frame_data.last().unwrap());
-        // Check if new (non-duplicate) start frame
-        if tail.start {
-            // Restart buildup and continue
-            self.frames = 1;
-            self.expect_start = true;
-            self.expect_toggle = true;
-            self.transfer.clear();
-            self.crc = TransferCrc::new();
-        }
         // Check tail byte
         if tail.start != self.expect_start {
             return Ok(None);
@@ -92,8 +70,6 @@ impl Buildup {
             return Ok(None);
         }
         // Prepare for the next frame
-        self.prev_expect_start = self.expect_start;
-        self.prev_expect_toggle = self.expect_toggle;
         self.expect_start = false;
         self.expect_toggle = !self.expect_toggle;
 
