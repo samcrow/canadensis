@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `canadensis_can`: Reduced memory use following a large increse in v0.5.0 [#57](https://github.com/samcrow/canadensis/pull/57)
+
 ## [All packages v0.5.0](https://github.com/samcrow/canadensis/releases/tag/v0.5.0) - 2025-09-09
 
 ### Added
