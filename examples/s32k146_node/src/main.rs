@@ -19,28 +19,30 @@ use alloc::vec::Vec;
 use core::convert::{Infallible, TryFrom};
 use core::num::NonZeroU8;
 
+use canadensis::Node as _;
 use canadensis::core::subscription::Subscription;
-use canadensis::core::time::{Clock, Microseconds32};
+use canadensis::core::time::{Clock, Microseconds32, milliseconds};
 use canadensis::core::transfer::{MessageTransfer, ServiceTransfer};
 use canadensis::core::transport::Transport;
-use canadensis::core::OutOfMemoryError;
+use canadensis::core::{OutOfMemoryError, SubjectId};
+use canadensis::encoding::Deserialize;
 use canadensis::node::data_types::{GetInfoResponse, Version};
 use canadensis::node::{BasicNode, CoreNode};
-use canadensis::Node as _;
-use canadensis::{nb, ResponseToken, TransferHandler};
+use canadensis::{ResponseToken, TransferHandler, nb};
 use canadensis_can::driver::{ReceiveDriver, TransmitDriver};
 use canadensis_can::queue::{ArrayQueue, SingleQueueDriver};
 use canadensis_can::{CanNodeId, CanReceiver, CanTransferIdTracker, CanTransmitter, Frame, Mtu};
+use canadensis_data_types::reg::udral::physics::optics::high_color_0_1::HighColor;
 use canadensis_data_types::uavcan::node::health_1_0::Health;
 
 use cortex_m::delay::Delay;
 use cortex_m_rt::entry;
 use embedded_alloc::LlffHeap as Heap;
+use flexcan::FlexCan;
 use flexcan::blocks::{MessageBufferSize, OneBlock};
 use flexcan::config::{PhaseSegment2Length, ResyncJumpWidth, SegmentLength, StandardTiming};
 use flexcan::id::Id;
-use flexcan::FlexCan;
-use s32k146::{Peripherals, CAN0, SIM};
+use s32k146::{CAN0, PTD, Peripherals, SIM};
 
 #[global_allocator]
 static HEAP: Heap = Heap::empty();
@@ -48,6 +50,7 @@ static HEAP: Heap = Heap::empty();
 const MAX_PUBLISH_TOPICS: usize = 4;
 const MAX_REQUEST_SERVICES: usize = 4;
 const TX_QUEUE_SIZE: usize = 32;
+const LED_COLOR_SUBJECT: SubjectId = SubjectId::from_truncating(5999);
 type Driver = SingleQueueDriver<TimerClock, ArrayQueue<TX_QUEUE_SIZE>, FlexCanDriver>;
 type Node = BasicNode<
     CoreNode<
@@ -126,10 +129,18 @@ fn main() -> ! {
     // Enable clocks to GPIO port D
     dp.PCC.pcc_portd.write(|w| w.cgc().set_bit());
 
-    // GPIO: PTD16 controls the green LED
+    // GPIO: PTD0, PTD15, and PTD16 control the RGB LED
     let gpiod = dp.PTD;
+    // All are initially high, so the LED is off
+    gpiod
+        .psor
+        .write(|w| unsafe { w.bits(1 << 16 | 1 << 15 | 1 << 0) });
     // Output
-    gpiod.pddr.write(|w| unsafe { w.pdd().bits(1 << 16) });
+    gpiod
+        .pddr
+        .write(|w| unsafe { w.pdd().bits(1 << 16 | 1 << 15 | 1 << 0) });
+    dp.PORTD.pcr0.write(|w| w.mux()._001());
+    dp.PORTD.pcr15.write(|w| w.mux()._001());
     dp.PORTD.pcr16.write(|w| w.mux()._001());
     // End LED blink setup
 
@@ -222,6 +233,12 @@ fn main() -> ! {
     node.set_health(Health {
         value: Health::CAUTION,
     });
+    node.subscribe_message(
+        LED_COLOR_SUBJECT,
+        size_of::<HighColor>(),
+        milliseconds(10_000),
+    )
+    .unwrap();
     // End Cyphal
 
     let mut counter = 0u16;
@@ -233,8 +250,6 @@ fn main() -> ! {
 
     loop {
         if syst.has_wrapped() {
-            // Toggle output
-            gpiod.ptor.write(|w| unsafe { w.ptto().bits(1 << 16) });
             counter = counter.wrapping_add(1);
             let _ = node.run_per_second_tasks();
         }
@@ -340,11 +355,53 @@ impl ReceiveDriver<TimerClock> for FlexCanDriver {
 struct EmptyHandler;
 
 impl<T: Transport> TransferHandler<T> for EmptyHandler {
-    fn handle_message<N>(&mut self, _node: &mut N, _transfer: &MessageTransfer<Vec<u8>, T>) -> bool
+    fn handle_message<N>(&mut self, _node: &mut N, transfer: &MessageTransfer<Vec<u8>, T>) -> bool
     where
         N: canadensis::Node<Transport = T>,
     {
-        false
+        if transfer.header.subject == LED_COLOR_SUBJECT {
+            let Ok(color) = HighColor::deserialize_from_bytes(&transfer.payload) else {
+                return false;
+            };
+            // We don't have PWM drivers yet, so just use the most
+            // significant bit to turn the relevant color on or off.
+            let red_on = (color.red & 0x10) != 0;
+            let green_on = (color.green & 0x20) != 0;
+            let blue_on = (color.blue & 0x10) != 0;
+
+            // Toggle LED
+            // PTD15 = red
+            // PTD16 = green
+            // PTD0 = blue
+            // Outputs are also inverted because they connect to the LED anodes.
+            const BIT_RED: u32 = 1 << 15;
+            const BIT_GREEN: u32 = 1 << 16;
+            const BIT_BLUE: u32 = 1 << 0;
+            let mut bits_set = 0u32;
+            let mut bits_clear = 0u32;
+            if red_on {
+                bits_clear |= BIT_RED;
+            } else {
+                bits_set |= BIT_RED;
+            }
+            if green_on {
+                bits_clear |= BIT_GREEN;
+            } else {
+                bits_set |= BIT_GREEN;
+            }
+            if blue_on {
+                bits_clear |= BIT_BLUE;
+            } else {
+                bits_set |= BIT_BLUE;
+            }
+
+            let gpio = unsafe { &*PTD::PTR };
+            gpio.psor.write(|w| unsafe { w.ptso().bits(bits_set) });
+            gpio.pcor.write(|w| unsafe { w.ptco().bits(bits_clear) });
+            true
+        } else {
+            false
+        }
     }
 
     fn handle_request<N>(

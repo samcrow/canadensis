@@ -58,8 +58,6 @@ cargo run --release
 ```
 For OpenOCD or the Black Magic Debug App, you can find the compiled file at `target/thumbv7em-none-eabihf/release/s32k146_node`.
 
-If the code is running correctly, the green LED on the board should blink with a period of one second.
-
 ### Interacting with the microcontroller
 
 Set the CAN-USB adapter bit rate to 1 megabit/second.
@@ -76,6 +74,21 @@ export UAVCAN__NODE__ID=127
 yakut monitor
 ```
 ![yakut screenshot](doc/yakut_monitor.png)
+
+#### Setting the color of the on-board LED
+
+This example subscribes to `reg.udral.physics.optics.HighColor.0.1` messages on subject 5999.
+When it gets a message, it sets the color of the on-board RGB LED. There is no PWM support,
+so each color will be on or off depending on the most significant bit of the message's color value.
+
+This example sets the LED color to magenta:
+```shell
+export CYPHAL_PATH=~/.cyphal
+export UAVCAN__CAN__IFACE=socketcan:can0
+export UAVCAN__CAN__MTU=8
+export UAVCAN__NODE__ID=126
+yakut publish 5999:reg.udral.physics.optics.HighColor.0.1 '{red: 31, green: 0, blue: 31}'
+```
 
 ## Known issues and limitations
 
