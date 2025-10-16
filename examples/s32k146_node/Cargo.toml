@@ -3,6 +3,7 @@ edition = "2024"
 readme = "README.md"
 name = "s32k146_node"
 version = "0.1.0"
+publish = false
 
 [dependencies]
 cortex-m = { version = "0.7.6", features = ["critical-section-single-core"] }
