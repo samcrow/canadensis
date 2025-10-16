@@ -18,7 +18,7 @@ log = "0.4"
 
 # Depends on most other canadensis crates that are not transport-specific
 [dependencies.canadensis_core]
-version = "0.5.0"
+version = "0.5.1"
 path = "../canadensis_core"
 [dependencies.canadensis_derive_register_block]
 version = "0.5.0"
