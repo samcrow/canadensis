@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added an example that runs on a microcontroller, under `examples/s32k146_node`
+- `canadensis_core`: Added public constants for maximum/minimum subject and service IDs
 
 ### Changed
 
