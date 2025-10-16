@@ -8,14 +8,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added an example that runs on a microcontroller, under `examples/s32k146_node`
-- `canadensis_core`: Added public constants for maximum/minimum subject and service IDs
-
 ### Changed
 
 ### Fixed
 
-- `canadensis_can`: Reduced memory use following a large increase in v0.5.0 [#57](https://github.com/samcrow/canadensis/pull/57)
+## [canadensis_can v0.5.1](https://github.com/samcrow/canadensis/releases/tag/canadensis_can-v0.5.1) -  2025-10-15
+
+### Fixed
+
+- Reduced memory use following a large increase in v0.5.0 [#57](https://github.com/samcrow/canadensis/pull/57)
+
+## [canadensis_core v0.5.1](https://github.com/samcrow/canadensis/releases/tag/canadensis_core-v0.5.1) - 2025-10-15
+
+### Added
+
+- Added public constants for maximum/minimum subject and service IDs
+
+## Examples (no package release)
+
+### Added
+
+- Added an example that runs on a microcontroller, under `examples/s32k146_node`
 
 ## [All packages v0.5.0](https://github.com/samcrow/canadensis/releases/tag/v0.5.0) - 2025-09-09
 
