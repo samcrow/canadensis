@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `canadensis_can`: Improve `LinuxCan` receive behavior with non-blocking socket
+
 ## [canadensis_can v0.5.1](https://github.com/samcrow/canadensis/releases/tag/canadensis_can-v0.5.1) -  2025-10-15
 
 ### Fixed
