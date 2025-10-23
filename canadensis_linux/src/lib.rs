@@ -89,7 +89,13 @@ where
 
     fn receive(&mut self, clock: &mut SystemClock) -> nb::Result<Frame, Self::Error> {
         loop {
-            let socketcan_frame = self.socket.read_frame()?;
+            let socketcan_frame = self.socket.read_frame().map_err(|e| {
+                if e.kind() == ErrorKind::WouldBlock {
+                    nb::Error::WouldBlock
+                } else {
+                    nb::Error::Other(e)
+                }
+            })?;
             if socketcan_frame.data().len() <= canadensis_can::FRAME_CAPACITY {
                 let raw_id = match socketcan_frame.id() {
                     Id::Standard(_) => continue,
