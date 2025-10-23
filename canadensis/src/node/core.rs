@@ -197,8 +197,12 @@ where
     where
         H: TransferHandler<Self::Transport>,
     {
-        if let Some(transfer) = self.receiver.receive(&mut self.clock, &mut self.driver)? {
-            self.handle_incoming_transfer(transfer, handler)
+        loop {
+            if let Some(transfer) = self.receiver.receive(&mut self.clock, &mut self.driver)? {
+                self.handle_incoming_transfer(transfer, handler)
+            } else {
+                break;
+            }
         }
         Ok(())
     }
