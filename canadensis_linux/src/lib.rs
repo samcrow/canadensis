@@ -15,24 +15,29 @@ use canadensis_can::{CanNodeId, Frame};
 use canadensis_core::subscription::Subscription;
 use canadensis_core::time::{Clock, Microseconds32};
 use canadensis_core::{nb, OutOfMemoryError};
-use socketcan::{CanSocket, EmbeddedFrame, Id, Socket, SocketOptions};
+use socketcan::frame::AsPtr;
+use socketcan::{EmbeddedFrame, Id, Socket, SocketOptions};
 use std::convert::TryInto;
 use std::io;
 use std::io::ErrorKind;
+use std::os::fd::AsRawFd;
 
 /// An adapter between SocketCAN and the canadensis frame format
-pub struct LinuxCan {
-    socket: CanSocket,
+pub struct LinuxCan<S: Socket> {
+    socket: S,
 }
 
-impl LinuxCan {
+impl<S: Socket> LinuxCan<S> {
     /// Creates a Linux CAN adapter around a SocketCAN socket
-    pub fn new(socket: CanSocket) -> Self {
+    pub fn new(socket: S) -> Self {
         LinuxCan { socket }
     }
 }
 
-impl TransmitDriver<SystemClock> for LinuxCan {
+impl<S: Socket> TransmitDriver<SystemClock> for LinuxCan<S>
+where
+    <S as Socket>::FrameType: EmbeddedFrame + AsPtr,
+{
     type Error = io::Error;
 
     fn try_reserve(&mut self, _frames: usize) -> Result<(), OutOfMemoryError> {
@@ -51,7 +56,7 @@ impl TransmitDriver<SystemClock> for LinuxCan {
             log::warn!("Dropping frame that has missed its deadline");
             return Ok(None);
         }
-        let socketcan_frame = socketcan::CanFrame::new(
+        let socketcan_frame = S::FrameType::new(
             socketcan::Id::Extended(
                 socketcan::ExtendedId::new(frame.id().into()).expect("Invalid CAN ID"),
             ),
@@ -76,7 +81,10 @@ impl TransmitDriver<SystemClock> for LinuxCan {
     }
 }
 
-impl ReceiveDriver<SystemClock> for LinuxCan {
+impl<SK: Socket + SocketOptions> ReceiveDriver<SystemClock> for LinuxCan<SK>
+where
+    <SK as Socket>::FrameType: EmbeddedFrame,
+{
     type Error = io::Error;
 
     fn receive(&mut self, clock: &mut SystemClock) -> nb::Result<Frame, Self::Error> {
@@ -118,6 +126,12 @@ impl ReceiveDriver<SystemClock> for LinuxCan {
 
     fn apply_accept_all(&mut self) {
         self.socket.set_filter_accept_all().unwrap();
+    }
+}
+
+impl<S: Socket> AsRawFd for LinuxCan<S> {
+    fn as_raw_fd(&self) -> std::os::unix::io::RawFd {
+        self.socket.as_raw_fd()
     }
 }
 

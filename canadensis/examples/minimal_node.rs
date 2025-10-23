@@ -67,10 +67,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     const REQUESTERS: usize = 2;
     let core_node: CoreNode<
         SystemClock,
-        CanTransmitter<SystemClock, LinuxCan>,
-        CanReceiver<SystemClock, LinuxCan>,
+        CanTransmitter<SystemClock, LinuxCan<CanSocket>>,
+        CanReceiver<SystemClock, LinuxCan<CanSocket>>,
         TransferIdFixedMap<CanTransport, TRANSFER_IDS>,
-        LinuxCan,
+        LinuxCan<CanSocket>,
         PUBLISHERS,
         REQUESTERS,
     > = CoreNode::new(SystemClock::new(), node_id, transmitter, receiver, can);

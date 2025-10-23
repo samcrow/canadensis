@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `canadensis_can`: Breaking change: Make `LinuxCan` generic to enable CAN FD
+
 ### Fixed
 
 ## [canadensis_can v0.5.1](https://github.com/samcrow/canadensis/releases/tag/canadensis_can-v0.5.1) -  2025-10-15
