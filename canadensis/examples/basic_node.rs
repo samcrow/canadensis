@@ -96,7 +96,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     const QUEUE_CAPACITY: usize = 1210;
-    type Queue = SingleQueueDriver<SystemClock, ArrayQueue<QUEUE_CAPACITY>, LinuxCan>;
+    type Queue = SingleQueueDriver<SystemClock, ArrayQueue<QUEUE_CAPACITY>, LinuxCan<CanSocket>>;
     let queue_driver: Queue = SingleQueueDriver::new(ArrayQueue::new(), can);
 
     // Create a node with capacity for 8 publishers and 8 requesters

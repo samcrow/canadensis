@@ -94,7 +94,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // Create a node with capacity for 82 publishers and 2 requesters
-    type Queue = SingleQueueDriver<SystemClock, ArrayQueue<64>, LinuxCan>;
+    type Queue = SingleQueueDriver<SystemClock, ArrayQueue<64>, LinuxCan<CanSocket>>;
     const TRANSFER_IDS: usize = 1;
     const PUBLISHERS: usize = 2;
     const REQUESTERS: usize = 2;
