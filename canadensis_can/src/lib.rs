@@ -28,9 +28,11 @@ mod rx;
 mod tx;
 mod types;
 
+use bitvec::prelude::*;
 use canadensis_core::transport::{TransferId, Transport};
 use canadensis_core::{OutOfMemoryError, TransferIdTracker};
 use core::cmp;
+use core::convert::TryFrom;
 
 /// Calculates the number of frames required and the number of padding bytes to add to a payload so
 /// that all frames will have valid length values for CAN FD
@@ -97,25 +99,53 @@ fn round_up_frame_length(length: usize) -> usize {
 ///
 /// This is much more memory efficient than the generic one since there are only 128 destinations possible.
 pub struct CanTransferIdTracker {
-    ids: [CanTransferId; 128],
+    ids: BitArray<[u32; 20], LocalBits>,
 }
 
 impl Default for CanTransferIdTracker {
     fn default() -> Self {
         Self {
-            ids: [CanTransferId::default(); 128],
+            ids: BitArray::ZERO,
         }
     }
 }
 
 impl TransferIdTracker<CanTransport> for CanTransferIdTracker {
+    /// Despite the use of `unwrap` this function should never panic as the `BitSlice` is limited to 5 bits.
     fn next_transfer_id(
         &mut self,
         destination: <CanTransport as Transport>::NodeId,
     ) -> Result<<CanTransport as Transport>::TransferId, OutOfMemoryError> {
-        let idx = destination.to_u8() as usize;
-        let current = self.ids[idx];
-        self.ids[idx].increment();
-        Ok(current)
+        let offset = destination.to_u8() as usize * 5;
+        let id_ref = &mut self.ids[0 + offset..5 + offset];
+
+        let id = <CanTransport as Transport>::TransferId::try_from(id_ref.load::<u8>()).unwrap();
+        id_ref.store(id.increment().to_u8());
+
+        Ok(id)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    use core::convert::TryInto;
+
+    #[test]
+    fn test_transfer_id_tracker() {
+        let mut tracker = CanTransferIdTracker::default();
+
+        for j in 0..256u16 {
+            for i in 0..64 {
+                debug_assert_eq!(
+                    tracker
+                        .next_transfer_id(CanNodeId::from_truncating((j % 128).try_into().unwrap()))
+                        .unwrap()
+                        .to_u8(),
+                    i % 32
+                );
+            }
+        }
     }
 }
