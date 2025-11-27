@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `canadensis`: Add `PnpServerService`
+
 ### Changed
 
 - `canadensis_can`: Breaking change: Make `LinuxCan` generic to enable CAN FD

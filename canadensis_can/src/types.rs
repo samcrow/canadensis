@@ -4,6 +4,7 @@ use canadensis_core::transport::{TransferId, Transport};
 use canadensis_core::{InvalidValue, OutOfMemoryError, Priority};
 use core::convert::TryFrom;
 use core::ops::RangeInclusive;
+use num_traits::Bounded;
 
 /// The Cyphal/CAN transport
 pub struct CanTransport(());
@@ -48,6 +49,16 @@ impl CanNodeId {
     /// diagnostic and debugging tools
     pub fn is_diagnostic_reserved(self) -> bool {
         self.0 >= *VALID_NODE_IDS.end() - 1
+    }
+}
+
+impl Bounded for CanNodeId {
+    fn max_value() -> Self {
+        Self::MAX
+    }
+
+    fn min_value() -> Self {
+        Self::MIN
     }
 }
 

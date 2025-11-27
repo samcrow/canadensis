@@ -8,13 +8,21 @@ use alloc::vec::Vec;
 use core::convert::TryFrom;
 use core::fmt::Debug;
 use core::hash::Hash;
+use num_traits::Bounded;
 
 /// Basic requirements for a transport that can be used to send and receive transfers
 ///
 /// The [`Transmitter`] and [`Receiver`] sub-traits add additional functions.
 pub trait Transport {
     /// A node ID type that can hold the node ID values that this transport allows
-    type NodeId: Debug + Clone + PartialEq + Eq + Hash + Into<usize> + TryFrom<u16>;
+    type NodeId: Debug
+        + Clone
+        + PartialEq
+        + Eq
+        + Hash
+        + Into<u16>
+        + TryFrom<u16, Error: Debug>
+        + Bounded;
     /// A transfer ID type that can hold all supported transfer ID values
     type TransferId: TransferId;
     /// A priority type that can hold all supported priority values

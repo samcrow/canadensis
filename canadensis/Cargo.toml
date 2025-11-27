@@ -15,6 +15,7 @@ fallible_collections = "0.5.1"
 heapless = "0.9.1"
 half = { version = "2.6.0", default-features = false }
 log = "0.4"
+num-traits = { version = "0.2.19", default-features = false }
 
 # Depends on most other canadensis crates that are not transport-specific
 [dependencies.canadensis_core]

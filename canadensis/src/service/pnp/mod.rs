@@ -1,6 +1,9 @@
 /// Cyphal plug-and-play client
 pub mod client;
 
+/// Cyphal plug-and-play server
+pub mod server;
+
 use crate::Node;
 use canadensis_core::transport::{Receiver, Transmitter, Transport};
 use canadensis_core::SubjectId;

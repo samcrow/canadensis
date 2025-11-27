@@ -9,4 +9,5 @@ description = "The frame header format used by Cyphal/Serial and Cyphal/UDP"
 
 [dependencies]
 canadensis_core = { version = "0.5.1", path = "../canadensis_core" }
+num-traits = { version = "0.2.19", default-features = false }
 zerocopy = { version = "0.8.26", features = ["derive"] }

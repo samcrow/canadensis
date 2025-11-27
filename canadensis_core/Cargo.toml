@@ -15,3 +15,4 @@ fallible_collections = "0.5.1"
 heapless = "0.9.1"
 log = "0.4.14"
 nb = "1.0.0"
+num-traits = { version = "0.2.19", default-features = false }
