@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `canadensis_can`: Breaking change: Make `LinuxCan` generic to enable CAN FD
 - `canadensis_can`: Handle all available transfers in `CoreNode`
+- `canadensis`: Breaking change: `PnpClientService` is moved to `canadensis::service::pnp::PnpClientService`
 
 ### Fixed
 
