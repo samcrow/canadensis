@@ -10,6 +10,7 @@ use canadensis_core::transport::{TransferId, Transport};
 use canadensis_core::{InvalidValue, Priority, ServiceId, SubjectId};
 use core::convert::TryFrom;
 use core::mem;
+use num_traits::Bounded;
 use zerocopy::byteorder::{U16, U32, U64};
 use zerocopy::{BigEndian, FromBytes, Immutable, IntoBytes, LittleEndian};
 
@@ -361,6 +362,16 @@ impl From<NodeId16> for u32 {
 impl From<NodeId16> for usize {
     fn from(id: NodeId16) -> Self {
         id.0.into()
+    }
+}
+
+impl Bounded for NodeId16 {
+    fn max_value() -> Self {
+        NodeId16(NODE_ID_RESERVED_ANONYMOUS_OR_BROADCAST - 1)
+    }
+
+    fn min_value() -> Self {
+        NodeId16(u16::MIN)
     }
 }
 
