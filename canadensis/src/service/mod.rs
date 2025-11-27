@@ -7,8 +7,8 @@ pub mod get_info;
 /// Generate heartbeat messages
 pub mod heartbeat;
 
-/// Cyphal plug-and-play client
-pub mod pnp_client;
+/// PnP namespace
+pub mod pnp;
 
 /// Port list service
 pub mod port_list;
