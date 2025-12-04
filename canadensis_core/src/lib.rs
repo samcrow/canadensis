@@ -47,6 +47,11 @@ impl SubjectId {
     pub const fn from_truncating(value: u16) -> Self {
         SubjectId(value & *VALID_SUBJECT_IDS.end())
     }
+
+    /// Returns the integer value of this subject ID
+    pub const fn to_u16(self) -> u16 {
+        self.0
+    }
 }
 
 impl TryFrom<u16> for SubjectId {
@@ -104,6 +109,11 @@ impl ServiceId {
     /// Creates a ServiceId from a u16, truncating to the allowed number of bits
     pub const fn from_truncating(value: u16) -> Self {
         ServiceId(value & *VALID_SERVICE_IDS.end())
+    }
+
+    /// Returns the integer value of this service ID
+    pub const fn to_u16(self) -> u16 {
+        self.0
     }
 }
 
