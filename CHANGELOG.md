@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `canadensis`: Add `PnpServerService`
+- `canadensis_core`: Add const decomposition methods to `SubjectId` and `ServiceId`
 
 ### Changed
 
