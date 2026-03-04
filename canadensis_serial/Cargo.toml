@@ -10,10 +10,11 @@ description = "A Cyphal implementation: Cyphal/Serial transport"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+defmt = { version = "1.0", optional = true }
 zerocopy = "0.8.26"
 heapless = "0.9.1"
 fallible_collections = "0.5.1"
-log = "0.4.14"
+l0g = "1.0"
 
 [dependencies.canadensis_core]
 version = "0.5.1"
@@ -21,3 +22,6 @@ path = "../canadensis_core"
 [dependencies.canadensis_header]
 version = "0.5.0"
 path = "../canadensis_header"
+
+[features]
+defmt = ["dep:defmt", "canadensis_core/defmt"]

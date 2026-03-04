@@ -27,6 +27,7 @@ const VALID_NODE_IDS: RangeInclusive<u8> = 0..=127;
 /// Valid node IDs are in the range 0..=127 (7 bits). IDs 126 and 127 are reserved for diagnostic
 /// and debugging tools.
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct CanNodeId(u8);
 
 impl CanNodeId {
@@ -129,6 +130,7 @@ const VALID_TRANSFER_IDS: RangeInclusive<u8> = 0..=31;
 
 /// Transfer ID, 5 bits, in range 0..=31
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct CanTransferId(u8);
 
 impl CanTransferId {
@@ -204,6 +206,7 @@ impl Default for CanTransferId {
 
 /// CAN transport errors
 #[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Error<E> {
     /// Memory allocation failed
     Memory(OutOfMemoryError),

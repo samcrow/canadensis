@@ -138,6 +138,7 @@ where
 
 /// Errors that can occur when publishing an anonymous message
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum AnonymousPublishError<E> {
     /// The message was too long to fit into one frame
     Length,

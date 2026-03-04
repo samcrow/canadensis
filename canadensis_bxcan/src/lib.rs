@@ -18,7 +18,6 @@ extern crate canadensis_pnp_client;
 extern crate cortex_m;
 extern crate fallible_collections;
 extern crate heapless;
-extern crate log;
 extern crate nb;
 
 pub mod pnp;
@@ -332,4 +331,5 @@ fn bxcan_frame_to_cyphal(
 
 /// An error indicating that a frame did not have the correct format for use with Cyphal
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct InvalidFrameFormat;

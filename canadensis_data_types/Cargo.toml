@@ -12,6 +12,7 @@ description = "Automatically generated types for all Cyphal public regulated dat
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+defmt = { version = "1.0", optional = true }
 half = { version = "2.6.0", default-features = false, features = ["zerocopy"] }
 heapless = "0.9.1"
 zerocopy = "0.8.26"

@@ -9,7 +9,6 @@ extern crate alloc;
 extern crate fallible_collections;
 extern crate fugit;
 extern crate heapless;
-extern crate log;
 pub extern crate nb;
 
 pub mod crc;
@@ -27,6 +26,7 @@ use core::str::FromStr;
 
 /// An error indicating that an unacceptable integer was provided to a TryFrom implementation
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct InvalidValue;
 pub use crate::error::{OutOfMemoryError, ServiceSubscribeError};
 
@@ -35,6 +35,7 @@ const VALID_SUBJECT_IDS: RangeInclusive<u16> = 0..=8191;
 
 /// Subject ID, in range 0..=8191
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct SubjectId(u16);
 
 impl SubjectId {
@@ -98,6 +99,7 @@ const VALID_SERVICE_IDS: RangeInclusive<u16> = 0..=511;
 
 /// Service ID, in range 0..=511
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct ServiceId(u16);
 
 impl ServiceId {
@@ -150,6 +152,7 @@ impl From<ServiceId> for usize {
 
 /// A value that can represent a service ID (0..=511) or a subject ID (0..=8192)
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct PortId(u16);
 
 impl From<SubjectId> for PortId {
@@ -182,6 +185,7 @@ impl TryFrom<PortId> for ServiceId {
 ///
 /// Transports can define their own priority levels with more detail.
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Priority {
     /// The bus designer can ignore these messages when calculating bus load since they should
     /// only be sent when a total system failure has occurred. For example, a self-destruct message

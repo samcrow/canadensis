@@ -8,6 +8,7 @@ use canadensis_core::OutOfMemoryError;
 
 /// Reassembles frames into a transfer
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Buildup {
     /// The number of frames processed
     frames: usize,
@@ -94,7 +95,7 @@ impl Buildup {
                 let data = mem::take(&mut self.transfer);
                 Ok(Some(data))
             } else {
-                log::debug!("Incorrect transfer CRC");
+                l0g::debug!("Incorrect transfer CRC");
                 Err(BuildupError::Crc)
             }
         } else {
@@ -105,6 +106,7 @@ impl Buildup {
 }
 
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum BuildupError {
     OutOfMemory,
     Crc,

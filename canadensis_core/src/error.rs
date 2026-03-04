@@ -6,6 +6,7 @@ use fallible_collections::TryReserveError;
 
 /// An error indicating that memory could not be allocated
 #[derive(Debug, Eq, PartialEq, Clone)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct OutOfMemoryError;
 
 impl From<TryReserveError> for OutOfMemoryError {
@@ -16,6 +17,7 @@ impl From<TryReserveError> for OutOfMemoryError {
 
 /// An error that may occur when subscribing to a service
 #[derive(Debug, Eq, PartialEq, Clone)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum ServiceSubscribeError<E> {
     /// Can't subscribe to a service because this is an anonymous node
     Anonymous,

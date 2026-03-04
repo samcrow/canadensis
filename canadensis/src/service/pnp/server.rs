@@ -15,6 +15,7 @@ use num_traits::Bounded;
 
 /// Defines the states of assignment
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Assignment {
     /// No assignment
     Unassigned,

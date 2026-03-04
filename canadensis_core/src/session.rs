@@ -51,6 +51,7 @@ pub trait SessionTracker<N, T, D> {
 /// If a session for a specific port and node ID does not exist, this node has never received a
 /// transfer.
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Session<T, D> {
     /// This node is in the process of reassembling a transfer
     Active(ActiveSession<T, D>),
@@ -65,6 +66,7 @@ pub enum Session<T, D> {
 
 /// A session with an incoming transfer undergoing reassembly
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct ActiveSession<T, D> {
     /// The timestamp of the first frame in this transfer
     pub time: Microseconds32,

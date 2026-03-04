@@ -43,6 +43,25 @@ pub struct RawHeader {
     header_checksum: U16<BigEndian>,
 }
 
+#[cfg(feature = "defmt")]
+impl defmt::Format for RawHeader {
+    fn format(&self, f: defmt::Formatter) {
+        defmt::write!(
+            f,
+            "RawHeader {{ version: {}, priority: {}, source_node_id: {}, destination_node_id: {}, data_specifier: {}, transfer_id: {}, frame_index_eot: {}, data: {}, header_checksum: {} }}",
+            self.version,
+            self.priority,
+            self.source_node_id.get(),
+            self.destination_node_id.get(),
+            self.data_specifier.get(),
+            self.transfer_id.get(),
+            self.frame_index_eot.get(),
+            self.data.get(),
+            self.header_checksum.get()
+        )
+    }
+}
+
 impl RawHeader {
     /// Returns true if this is the last frame in a transfer
     pub fn is_last_frame(&self) -> bool {
@@ -79,6 +98,7 @@ const DATA_SPEC_SERVICE_ID_MASK: u16 =
 /// [This post](https://forum.opencyphal.org/t/cyphal-udp-architectural-issues-caused-by-the-dependency-between-the-nodes-ip-address-and-its-identity/1765/60)
 /// specifies the header format.
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Header {
     /// Priority level
     pub priority: Priority,
@@ -287,6 +307,7 @@ where
 
 /// The message/service, subject ID/service ID, source, and destination of a frame
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum DataSpecifier {
     Subject {
         from: Option<NodeId16>,
@@ -333,6 +354,7 @@ fn check_node_id(id: u16) -> Result<Option<NodeId16>, InvalidValue> {
 ///
 /// This allows all u16 values except 65535, which is reserved for anonymous transfers
 #[derive(Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct NodeId16(u16);
 
 const NODE_ID_RESERVED_ANONYMOUS_OR_BROADCAST: u16 = 0xffff;
@@ -379,6 +401,7 @@ impl Bounded for NodeId16 {
 ///
 /// This is just a `u64`.
 #[derive(Default, Copy, Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct TransferId64(u64);
 
 impl TransferId for TransferId64 {

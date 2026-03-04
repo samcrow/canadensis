@@ -5,7 +5,6 @@ extern crate canadensis_core;
 extern crate canadensis_header;
 extern crate fallible_collections;
 extern crate heapless;
-extern crate log;
 extern crate zerocopy;
 
 use canadensis_core::crc::Crc32c;
@@ -52,6 +51,7 @@ fn make_payload_crc(payload: &[u8]) -> u32 {
 
 /// Serial transport errors
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Error<E> {
     /// Memory allocation failed
     Memory(OutOfMemoryError),

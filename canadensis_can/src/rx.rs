@@ -27,6 +27,7 @@ use canadensis_core::{
 
 /// Handles subscriptions and assembles incoming frames into transfers
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct CanReceiver<C, D> {
     /// Subscriptions for messages
     subscriptions_message: Vec<Subscription>,
@@ -278,7 +279,7 @@ where
             Some(data) => data,
             None => {
                 // Can't use this frame
-                log::debug!("Frame failed sanity checks, ignoring");
+                l0g::debug!("Frame failed sanity checks, ignoring");
                 self.increment_error_count();
                 return Ok(None);
             }
@@ -322,7 +323,7 @@ where
                 }
                 Ok(None) => Ok(None),
                 Err(e) => {
-                    log::info!("Receiver accept error {:?}", e);
+                    l0g::info!("Receiver accept error {:?}", e);
                     self.increment_error_count();
                     match e {
                         SubscriptionError::Session(SessionError::Memory(e))
@@ -353,7 +354,7 @@ where
             if message_header.source.is_none() {
                 // Anonymous message transfers must always fit into one frame
                 if !(tail_byte.toggle && tail_byte.start && tail_byte.end) {
-                    log::debug!("Anonymous multi-frame transfer, ignoring");
+                    l0g::debug!("Anonymous multi-frame transfer, ignoring");
                     return None;
                 }
             }
@@ -436,6 +437,7 @@ where
 }
 
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum CanIdParseError {
     /// Reserved bit 23 was set
     Bit23Set,
@@ -634,6 +636,7 @@ impl TailByte {
 
 /// Types of transfers
 #[derive(Debug, Copy, Clone)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 enum TransferKind {
     Message,
     Request,

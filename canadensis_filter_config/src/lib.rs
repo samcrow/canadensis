@@ -131,10 +131,30 @@ mod debug_impl {
         }
     }
 
+    #[cfg(feature = "defmt")]
+    impl defmt::Format for Filter {
+        fn format(&self, f: defmt::Formatter) {
+            defmt::write!(
+                f,
+                "Filter {{ valid: {}, mask: {}, id: {}",
+                self.is_valid(),
+                DebugHex(self.mask()),
+                DebugHex(self.id())
+            )
+        }
+    }
+
     struct DebugHex(u32);
     impl Debug for DebugHex {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
             write!(f, "{:#010x}", self.0)
+        }
+    }
+
+    #[cfg(feature = "defmt")]
+    impl defmt::Format for DebugHex {
+        fn format(&self, f: defmt::Formatter) {
+            defmt::write!(f, "{:#010x}", self.0)
         }
     }
 }

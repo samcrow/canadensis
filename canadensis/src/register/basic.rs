@@ -22,6 +22,7 @@ use half::f16;
 
 /// A register containing its name, value, and mutable/persistent flags
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct SimpleRegister<T> {
     name: &'static str,
     access: Access,
@@ -143,6 +144,22 @@ where
             .field("access", &self.access)
             .field("value", &self.value)
             .finish()
+    }
+}
+
+#[cfg(feature = "defmt")]
+impl<T, V> defmt::Format for ValidatedRegister<T, V>
+where
+    T: defmt::Format,
+{
+    fn format(&self, f: defmt::Formatter) {
+        defmt::write!(
+            f,
+            "ValidatedRegister {{ name: \"{}\", access: {}, value: {} }}",
+            self.name,
+            self.access,
+            self.value
+        )
     }
 }
 
@@ -352,6 +369,7 @@ register_primitive_array!(f64, Real64);
 
 /// A string value for a register
 #[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct RegisterString(pub heapless::Vec<u8, 256>);
 
 impl RegisterType for RegisterString {
@@ -395,6 +413,7 @@ impl TryFrom<&str> for RegisterString {
 
 /// An unstructured byte array value for a register
 #[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Unstructured(pub heapless::Vec<u8, 256>);
 
 impl RegisterType for Unstructured {
@@ -476,12 +495,14 @@ impl<const N: usize> RegisterType for [bool; N] {
 
 /// An error indicating that a provided value was too long
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct LengthError(());
 
 /// A non-mutable, persistent register that holds a fixed string value
 ///
 /// This is useful for registers that provide information and cannot be changed.
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct FixedStringRegister {
     /// Register name, not empty, 256 bytes or shorter
     name: &'static str,

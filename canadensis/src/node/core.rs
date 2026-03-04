@@ -33,6 +33,7 @@ use crate::{Node, PublishError, ResponseToken, ServiceToken, StartSendError, Tra
 ///   two, or the software may behave incorrectly.
 ///
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct CoreNode<C, T, U, TR, D, const P: usize, const R: usize>
 where
     C: Clock,

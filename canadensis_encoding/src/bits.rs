@@ -9,6 +9,7 @@ use core::fmt;
 /// Because the const generics feature is incomplete, the integer generic parameter is a number
 /// of bytes (= 8 bits), not a number of bits. The functions still use bit indexes.
 #[derive(Clone)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct BitArray<const BYTES: usize> {
     bytes: [u8; BYTES],
     bit_length: usize,

@@ -89,6 +89,25 @@ where
     }
 }
 
+#[cfg(feature = "defmt")]
+impl<T: Transport> defmt::Format for ResponseToken<T>
+where
+    T::NodeId: defmt::Format,
+    T::TransferId: defmt::Format,
+    T::Priority: defmt::Format,
+{
+    fn format(&self, f: defmt::Formatter) {
+        defmt::write!(
+            f,
+            "ResponseToken {{ service: {}, client: {}, transfer: {}, priority: {} }}",
+            self.service,
+            self.client,
+            self.transfer,
+            self.priority
+        )
+    }
+}
+
 /// Something that may be able to handle incoming transfers
 pub trait TransferHandler<T: Transport> {
     /// Potentially handles an incoming message transfer
@@ -514,6 +533,7 @@ pub trait Node {
 
 /// Errors that may occur when publishing a message
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum PublishError<T> {
     /// [`Node::start_publishing`](Node#tymethod.start_publishing) has not been called for this subject
     NotPublishing,
@@ -536,6 +556,7 @@ impl<T> ServiceToken<T> {
 
 /// Errors that may occur when starting to send messages or requests
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum StartSendError<E> {
     /// Memory to store the publisher was not available
     Memory(OutOfMemoryError),

@@ -19,6 +19,7 @@ use crate::UdpTransferId;
 /// * Frames have the same priority
 ///
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Buildup {
     /// The transfer bytes (not including UDP frame headers) that have been collected so far,
     /// excluding any bytes after `max_length`
@@ -99,6 +100,7 @@ impl Buildup {
 
 /// Errors that the buildup may produce
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum BuildupError {
     /// The frame index did not match
     Index,

@@ -103,6 +103,7 @@ where
 
 /// An error from a DoubleRedundantQueueDriver
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum RedundantError<E0, E1> {
     /// An error from driver 0
     Driver0(E0),

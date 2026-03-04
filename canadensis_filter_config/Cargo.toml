@@ -16,3 +16,4 @@ name = "optimize_filters"
 path = "bin/optimize_filters.rs"
 
 [dependencies]
+defmt = { version = "1.0", optional = true }

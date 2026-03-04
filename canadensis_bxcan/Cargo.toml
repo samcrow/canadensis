@@ -13,8 +13,8 @@ description = "Bridge between Canadensis and the BXCAN peripherals found in some
 
 [dependencies]
 bxcan = "0.8.0"
+defmt = { version = "1.0", optional = true }
 nb = "1.0.0"
-log = "0.4"
 fallible_collections = "0.5.1"
 heapless = "0.9.1"
 cortex-m = "0.7.3"

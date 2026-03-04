@@ -21,6 +21,7 @@ use canadensis_core::time::{MicrosecondDuration32, Microseconds32};
 /// For more explanation, see [the comments in pycyphal](https://github.com/OpenCyphal/pycyphal/blob/87c27a978119d24ac77c9a7f2d6f289846ac96fd/pyuavcan/transport/redundant/__init__.py).
 ///
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Deduplicator<const N: usize> {
     /// The state for each transport
     states: [TransportState; N],
@@ -85,6 +86,7 @@ impl<const N: usize> Deduplicator<N> {
 
 /// Information about a transport
 #[derive(Debug, Default, Copy, Clone)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct TransportState {
     last_frame_time: Option<Microseconds32>,
 }

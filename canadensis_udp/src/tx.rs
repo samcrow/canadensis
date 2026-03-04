@@ -74,7 +74,7 @@ where
             if frame.deadline > clock.now() {
                 socket.send_to(&frame.data, destination_address)?;
             } else {
-                log::trace!("Discarding outgoing frame because its deadline has passed");
+                l0g::trace!("Discarding outgoing frame because its deadline has passed");
             }
         }
         Ok(())
@@ -172,6 +172,7 @@ where
 }
 
 #[derive(Eq, PartialEq, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct UdpFrame {
     deadline: Microseconds32,
     data: Vec<u8>,
