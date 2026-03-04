@@ -21,6 +21,13 @@ impl fmt::Debug for CanId {
     }
 }
 
+#[cfg(feature = "defmt")]
+impl defmt::Format for CanId {
+    fn format(&self, f: defmt::Formatter) {
+        defmt::write!(f, "CanId({:#010x})", self.0)
+    }
+}
+
 impl TryFrom<u32> for CanId {
     type Error = InvalidValue;
 
@@ -42,6 +49,7 @@ impl From<CanId> for u32 {
 
 /// Allowed maximum transmission unit (MTU) values
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Mtu {
     /// 8 bytes, for standard CAN
     Can8 = 8,
@@ -83,6 +91,7 @@ pub const FRAME_CAPACITY: usize = 8;
 /// This is useful for time synchronization.
 ///
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Frame {
     /// For RX frames: reception timestamp.
     /// For TX frames: transmission deadline.

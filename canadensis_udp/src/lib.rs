@@ -27,7 +27,6 @@ extern crate alloc;
 extern crate canadensis_core;
 extern crate canadensis_header;
 extern crate heapless;
-extern crate log;
 extern crate nb;
 #[cfg(feature = "std")]
 extern crate socket2;
@@ -93,6 +92,7 @@ impl AsMut<[UdpTransferId]> for UdpTransferIds {
 pub type UdpTransferId = TransferId64;
 
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Error<S> {
     Memory(OutOfMemoryError),
     Socket(S),

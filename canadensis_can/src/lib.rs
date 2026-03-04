@@ -13,7 +13,6 @@ extern crate canadensis_core;
 extern crate canadensis_filter_config;
 extern crate fallible_collections;
 extern crate heapless;
-extern crate log;
 
 pub use crate::data::*;
 pub use crate::rx::CanReceiver;
@@ -72,6 +71,7 @@ fn calculate_frame_stats(payload_length: usize, mtu: usize) -> FrameStats {
 
 /// Information about how to fit a transfer payload into frames
 #[derive(Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct FrameStats {
     /// The total number of frames
     pub frames: usize,

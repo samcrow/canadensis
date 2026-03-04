@@ -11,9 +11,10 @@ description = "A Cyphal implementation: Cyphal/CAN (CAN and CAN FD) transport la
 
 [dependencies]
 bitvec = { version = "1.0.1", default-features = false }
+defmt = { version = "1.0", optional = true, features = ["alloc"] }
 fallible_collections = "0.5.1"
 heapless = "0.9.1"
-log = "0.4"
+l0g = "1.0"
 num-traits = { version = "0.2.19", default-features = false }
 
 [dependencies.canadensis_core]
@@ -27,3 +28,4 @@ path = "../canadensis_filter_config"
 [features]
 # The can-fd feature increases the maximum frame capacity and maximum MTU from 8 to 64 bytes
 can-fd = []
+defmt = ["dep:defmt", "canadensis_core/defmt", "heapless/defmt"]

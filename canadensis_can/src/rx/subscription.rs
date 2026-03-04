@@ -18,6 +18,7 @@ const NUM_NODE_IDS: usize = CanNodeId::MAX.to_u8() as usize + 1;
 /// and Buildup layers are not aware of transfer-IDs and do not check or track them.
 
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct SessionState {
     expected_transfer_id: CanTransferId,
     last_transfer_time: Option<Microseconds32>,
@@ -27,6 +28,7 @@ struct SessionState {
 /// Transfer subscription state. The application can register its interest in a particular kind of data exchanged
 /// over the bus by creating such subscription objects. Frames that carry data for which there is no active
 /// subscription will be silently dropped by the library.
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Subscription {
     /// Transfer-ID timeout for this subscription
     ///
@@ -168,7 +170,7 @@ impl Subscription {
         let slot: &mut Option<Box<Session>> = &mut self.states.get_mut(source).session;
         let session: &mut Box<Session> = match slot {
             Some(session) => {
-                log::debug!(
+                l0g::debug!(
                     "Using existing session with transfer ID {:?} for port {:?}",
                     tail.transfer_id,
                     self.port_id,
@@ -181,7 +183,7 @@ impl Subscription {
                     // Not the start of a transfer, so it must be a fragment of some other transfer.
                     return Err(SubscriptionError::NotStart);
                 }
-                log::debug!(
+                l0g::debug!(
                     "Creating new session for transfer ID {:?} on port {:?}",
                     tail.transfer_id,
                     self.port_id
@@ -249,6 +251,7 @@ impl Subscription {
 
 /// Errors that a subscription may encounter
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum SubscriptionError {
     /// Received a frame with no corresponding session, but its start bit was not set
     NotStart,
@@ -275,6 +278,7 @@ impl From<TryReserveError> for SubscriptionError {
 }
 
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct SessionStates {
     states: [SessionState; NUM_NODE_IDS],
 }

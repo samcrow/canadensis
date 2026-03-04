@@ -98,6 +98,7 @@ pub fn escaped_size(raw_size: usize) -> usize {
 
 /// An error that occurs if the unescaper encounters a zero byte
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct DecodeZeroError;
 
 #[cfg(test)]

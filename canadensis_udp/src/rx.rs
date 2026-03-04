@@ -93,7 +93,7 @@ where
                         .handle_frame(&header, bytes_after_header, frame_time)
                         .map_err(Error::Memory);
                 } else {
-                    log::trace!("No matching subject subscription");
+                    l0g::trace!("No matching subject subscription");
                 }
             }
             DataSpecifier::ServiceRequest { service, .. } => {
@@ -104,7 +104,7 @@ where
                         .handle_frame(&header, bytes_after_header, frame_time)
                         .map_err(Error::Memory);
                 } else {
-                    log::trace!("No matching service request subscription");
+                    l0g::trace!("No matching service request subscription");
                 }
             }
             DataSpecifier::ServiceResponse { service, .. } => {
@@ -115,7 +115,7 @@ where
                         .handle_frame(&header, bytes_after_header, frame_time)
                         .map_err(Error::Memory);
                 } else {
-                    log::trace!("No matching service response subscription");
+                    l0g::trace!("No matching service response subscription");
                 }
             }
         }
@@ -356,8 +356,9 @@ where
                 )))
             }
             Ok(None) => Ok(None),
+            #[allow(unused_variables)]
             Err(e) => {
-                log::warn!("Buildup error {:?}, removing session", e);
+                l0g::warn!("Buildup error {:?}, removing session", e);
                 self.sessions.remove(source_node_id);
                 Ok(None)
             }
@@ -407,6 +408,7 @@ where
 }
 
 #[derive(Default, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct UdpSessionData {
     buildup: Option<Buildup>,
 }

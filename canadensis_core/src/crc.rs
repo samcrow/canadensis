@@ -5,6 +5,7 @@
 ///
 /// Internally, this uses CRC-32C.
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct CrcTracker {
     /// CRC of all bytes before last_four_bytes
     crc: Crc32c,
@@ -103,6 +104,7 @@ const CRC32_REFLECTED_POLY: u32 = 0x82f6_3b78;
 ///
 /// The Cyphal/Serial and Cyphal/UDP transfer CRC uses this.
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Crc32c {
     value: u32,
 }
@@ -151,6 +153,7 @@ const CRC16_POLY: u16 = 0x1021;
 ///
 /// The Cyphal/CAN transfer CRC and Cyphal/Serial and Cyphal/UDP header CRC use this.
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Crc16CcittFalse {
     value: u16,
 }

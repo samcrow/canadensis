@@ -263,6 +263,7 @@ impl<S> Default for DynamicSubscriptionManager<S> {
 
 /// Information about something that a receiver/node is subscribed to
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Subscription {
     /// A message subscription, for messages with the specified subject ID
     Message(SubjectId),

@@ -10,6 +10,7 @@ use fallible_collections::FallibleBox;
 
 /// A receive session, associated with a particular port ID and source node
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Session {
     /// Timestamp of the first frame received in this transfer
     transfer_timestamp: Microseconds32,
@@ -59,7 +60,7 @@ impl Session {
         frame_header: Header,
     ) -> Result<Option<Transfer<Vec<u8>>>, SessionError> {
         if frame.loopback() != self.loopback {
-            log::info!("Frame loopback flag does not match, ignoring");
+            l0g::info!("Frame loopback flag does not match, ignoring");
             return Ok(None);
         }
         // This frame looks OK. Do the reassembly.
@@ -93,6 +94,7 @@ impl Session {
 }
 
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum SessionError {
     /// Reassembly failed because of an unexpected frame
     Buildup,

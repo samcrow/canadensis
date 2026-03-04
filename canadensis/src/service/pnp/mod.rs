@@ -117,6 +117,7 @@ where
 
 /// Error type returned by [`PnpClientService::new`].
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum NewError<N: Node> {
     /// The client could not subscribe to the message subject due to a receiver error.
     Subscribe(<N::Receiver as Receiver<N::Clock>>::Error),

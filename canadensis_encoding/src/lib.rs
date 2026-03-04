@@ -97,6 +97,7 @@ pub trait Response {}
 /// Errors that can occur when deserializing
 #[non_exhaustive]
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum DeserializeError {
     /// A variable-length array length field was greater than the maximum allowed length
     ArrayLength,

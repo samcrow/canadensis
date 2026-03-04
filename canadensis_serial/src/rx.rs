@@ -79,7 +79,7 @@ where
             State::BetweenTransfers => {
                 if byte != 0 {
                     // Start decoding
-                    log::debug!("Starting frame");
+                    l0g::debug!("Starting frame");
                     let mut unescaper = Unescaper::new();
                     match unescaper.accept(byte) {
                         Ok(Some(byte)) => {
@@ -133,13 +133,14 @@ where
                                         }
                                     } else {
                                         // Not interested in this transfer
-                                        log::debug!("Got header, but not subscribed");
+                                        l0g::debug!("Got header, but not subscribed");
                                         State::Idle
                                     }
                                 }
+                                #[allow(unused_variables)]
                                 Err(e) => {
                                     // Invalid header CRC or format
-                                    log::debug!("Header format or CRC invalid: {:?}", e);
+                                    l0g::debug!("Header format or CRC invalid: {:?}", e);
                                     State::Idle
                                 }
                             }
@@ -153,7 +154,7 @@ where
                         State::Header { unescaper, header }
                     }
                     Err(_) => {
-                        log::warn!("Unexpected zero byte in Header state");
+                        l0g::warn!("Unexpected zero byte in Header state");
                         State::Idle
                     }
                 }
@@ -188,7 +189,7 @@ where
                         }
                     }
                     Err(_) => {
-                        log::debug!("Got a zero (end delimiter)");
+                        l0g::debug!("Got a zero (end delimiter)");
                         self.state = State::BetweenTransfers;
                         // Check and finish the transfer
                         return Ok(self.complete_transfer(header, payload, crc));
@@ -371,7 +372,7 @@ where
         crc: CrcTracker,
     ) -> Option<Transfer<Vec<u8>, SerialTransport>> {
         if !crc.correct() {
-            log::debug!("Dropping transfer due to incorrect transfer CRC");
+            l0g::debug!("Dropping transfer due to incorrect transfer CRC");
             return None;
         }
         // Record that this transfer was received
@@ -394,7 +395,7 @@ where
             })
         } else {
             // The subscription was removed while receiving the transfer
-            log::debug!("No matching subscription for header");
+            l0g::debug!("No matching subscription for header");
             None
         }
     }

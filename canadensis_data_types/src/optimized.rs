@@ -7,6 +7,7 @@ const SUBJECT_ID_SPARSE_LIST_DISCRIMINANT: u8 = 1;
 /// A fixed-capacity list of subject IDs that is compatible with
 /// `uavcan.node.port.SubjectIDList.1.0`
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct SubjectIdList<const N: usize>(pub Vec<SubjectId, N>);
 
 impl<const N: usize> SubjectIdList<N> {

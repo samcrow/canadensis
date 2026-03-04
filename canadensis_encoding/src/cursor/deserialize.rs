@@ -13,6 +13,7 @@ use crate::{Deserialize, DeserializeError};
 /// Functions that read values will return zero when reading beyond the end of the bytes,
 /// in accordance with the implicit zero extension rule (specification section 3.7.1.5)
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct ReadCursor<'b> {
     /// The bytes available to read from
     ///

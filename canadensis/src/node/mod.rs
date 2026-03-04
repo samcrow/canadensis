@@ -27,6 +27,7 @@ pub mod data_types {
 
 /// An error from a transmitter or receiver
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum NodeError<T, R> {
     /// An error from a transmitter
     Transmitter(T),

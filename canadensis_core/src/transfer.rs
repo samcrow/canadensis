@@ -8,6 +8,7 @@ use crate::{PortId, ServiceId, SubjectId};
 use core::fmt::{Debug, Formatter};
 
 /// The header of a message transfer
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct MessageHeader<T: Transport + ?Sized> {
     /// For RX transfers: the time when the first frame was received
     /// For TX transfers: the transmission deadline for all frames
@@ -68,6 +69,7 @@ where
 }
 
 /// The header of a service transfer
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct ServiceHeader<T: Transport + ?Sized> {
     /// For RX transfers: the time when the first frame was received
     /// For TX transfers: the transmission deadline for all frames
@@ -133,6 +135,7 @@ where
 }
 
 /// Header fields for a message, request, or response
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Header<T: Transport + ?Sized> {
     /// A message header
     Message(MessageHeader<T>),
@@ -287,6 +290,25 @@ where
     }
 }
 
+#[cfg(feature = "defmt")]
+impl<A, T: Transport + ?Sized> defmt::Format for Transfer<A, T>
+where
+    A: defmt::Format,
+    <T as Transport>::NodeId: defmt::Format,
+    <T as Transport>::Priority: defmt::Format,
+    <T as Transport>::TransferId: defmt::Format,
+{
+    fn format(&self, f: defmt::Formatter) {
+        defmt::write!(
+            f,
+            "Transfer {{ header: {}, loopback: {}, payload: {} }}",
+            self.header,
+            self.loopback,
+            self.payload
+        )
+    }
+}
+
 impl<A, T: Transport + ?Sized> PartialEq for Transfer<A, T>
 where
     A: PartialEq,
@@ -349,6 +371,25 @@ where
     }
 }
 
+#[cfg(feature = "defmt")]
+impl<A, T: Transport + ?Sized> defmt::Format for MessageTransfer<A, T>
+where
+    A: defmt::Format,
+    <T as Transport>::NodeId: defmt::Format,
+    <T as Transport>::Priority: defmt::Format,
+    <T as Transport>::TransferId: defmt::Format,
+{
+    fn format(&self, f: defmt::Formatter) {
+        defmt::write!(
+            f,
+            "Transfer {{ header: {}, loopback: {}, payload: {} }}",
+            self.header,
+            self.loopback,
+            self.payload
+        )
+    }
+}
+
 impl<A, T: Transport + ?Sized> PartialEq for MessageTransfer<A, T>
 where
     A: PartialEq,
@@ -393,6 +434,25 @@ where
             .field("loopback", &self.loopback)
             .field("payload", &self.payload)
             .finish()
+    }
+}
+
+#[cfg(feature = "defmt")]
+impl<A, T: Transport + ?Sized> defmt::Format for ServiceTransfer<A, T>
+where
+    A: defmt::Format,
+    <T as Transport>::NodeId: defmt::Format,
+    <T as Transport>::Priority: defmt::Format,
+    <T as Transport>::TransferId: defmt::Format,
+{
+    fn format(&self, f: defmt::Formatter) {
+        defmt::write!(
+            f,
+            "Transfer {{ header: {}, loopback: {}, payload: {} }}",
+            self.header,
+            self.loopback,
+            self.payload
+        )
     }
 }
 

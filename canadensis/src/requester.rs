@@ -203,4 +203,25 @@ mod fmt_impl {
                 .finish()
         }
     }
+
+    #[cfg(feature = "defmt")]
+    impl<C, T, R> defmt::Format for Requester<C, T, R>
+    where
+        C: Clock,
+        T: Transmitter<C>,
+        <T::Transport as Transport>::TransferId: defmt::Format,
+        <T::Transport as Transport>::Priority: defmt::Format,
+        <T::Transport as Transport>::NodeId: defmt::Format,
+        R: defmt::Format,
+    {
+        fn format(&self, f: defmt::Formatter) {
+            defmt::write!(
+                f,
+                "Requester {{ priority: {}, timeout: {}, transfer_ids: {} }}",
+                self.priority,
+                self.timeout,
+                self.transfer_ids
+            )
+        }
+    }
 }
