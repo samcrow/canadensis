@@ -1,6 +1,6 @@
 [package]
 name = "canadensis_can"
-version = "0.5.1"
+version = "0.6.0"
 authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
 edition = "2018"
 keywords = ["embedded", "uavcan", "uav", "can", "cyphal"]
