@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## Most packages v0.6.0, canadensis_bxcan and canadensis v0.6.1 - 2026-03-31
+
+### Added
+
 - `canadensis`: Add `PnpServerService`
 - `canadensis_core`: Add const decomposition methods to `SubjectId` and `ServiceId`
 
