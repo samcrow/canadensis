@@ -25,5 +25,5 @@ path = "../canadensis"
 version = "0.5.0"
 path = "../canadensis_data_types"
 [dependencies.canadensis_filter_config]
-version = "0.5.0"
+version = "0.6.0"
 path = "../canadensis_filter_config"
