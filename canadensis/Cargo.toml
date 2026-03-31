@@ -20,7 +20,7 @@ num-traits = { version = "0.2.19", default-features = false }
 
 # Depends on most other canadensis crates that are not transport-specific
 [dependencies.canadensis_core]
-version = "0.5.1"
+version = "0.6.0"
 path = "../canadensis_core"
 [dependencies.canadensis_derive_register_block]
 version = "0.5.0"

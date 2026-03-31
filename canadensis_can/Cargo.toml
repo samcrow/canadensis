@@ -18,7 +18,7 @@ l0g = "1.0"
 num-traits = { version = "0.2.19", default-features = false }
 
 [dependencies.canadensis_core]
-version = "0.5.1"
+version = "0.6.0"
 path = "../canadensis_core"
 
 [dependencies.canadensis_filter_config]
