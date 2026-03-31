@@ -20,7 +20,7 @@ heapless = "0.9.1"
 cortex-m = "0.7.3"
 
 [dependencies.canadensis]
-version = "0.6.0"
+version = "0.6.1"
 path = "../canadensis"
 [dependencies.canadensis_can]
 version = "0.6.0"
