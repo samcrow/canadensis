@@ -20,7 +20,7 @@ l0g = "1.0"
 version = "0.6.0"
 path = "../canadensis_core"
 [dependencies.canadensis_header]
-version = "0.5.0"
+version = "0.6.0"
 path = "../canadensis_header"
 
 [features]
