@@ -140,7 +140,13 @@ impl Display for WriteArrayElementSizes<'_> {
                 Extent::Delimited(_) => 32 + size_min,
                 Extent::Sealed => size_min,
             };
-            writeln!(f, "({}).len() * {}", self.expr, element_size)
+            writeln!(
+                f,
+                "({}).len() * {}_usize.next_multiple_of({})",
+                self.expr,
+                element_size,
+                self.ty.alignment()
+            )
         } else {
             // In general, we need to iterate over every element and add up the
             // lengths.
@@ -176,10 +182,19 @@ impl Display for WriteScalarSize<'_> {
                 let inner_max_size = inner.bit_length().max_value();
                 if inner_min_size == inner_max_size {
                     // Fixed-size type, use a literal
-                    write!(f, "{}", inner_min_size)?;
+                    write!(
+                        f,
+                        "{}",
+                        inner_min_size.next_multiple_of(self.ty.alignment().into())
+                    )?;
                 } else {
                     // Call size_bits() on the inner type
-                    write!(f, "({}).size_bits()", self.expr)?;
+                    write!(
+                        f,
+                        "({}).size_bits().next_multiple_of({})",
+                        self.expr,
+                        self.ty.alignment()
+                    )?;
                 }
             }
             ResolvedScalarType::Primitive(primitive) => match primitive {
