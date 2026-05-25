@@ -4030,7 +4030,8 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                         fn size_bits(&self) -> usize {
                             64 + 32
                                 + 32
-                                + (self.design_cell_voltage_min_max).len() * 32
+                                + (self.design_cell_voltage_min_max).len()
+                                    * 32_usize.next_multiple_of(8)
                                 + 32
                                 + 32
                                 + 32
@@ -4046,7 +4047,7 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                                 + 32
                                 + 40
                                 + 8
-                                + (self.name).len() * 8
+                                + (self.name).len() * 8_usize.next_multiple_of(1)
                                 + 0
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
@@ -4193,11 +4194,11 @@ pub fault_flags: crate::reg::udral::service::actuator::common::fault_flags_0_1::
                     }
                     impl ::canadensis_encoding::Serialize for Status {
                         fn size_bits(&self) -> usize {
-                            16 + (self.temperature_min_max).len() * 32
+                            16 + (self.temperature_min_max).len() * 32_usize.next_multiple_of(8)
                                 + 32
                                 + 8
                                 + 8
-                                + (self.cell_voltages).len() * 16
+                                + (self.cell_voltages).len() * 16_usize.next_multiple_of(1)
                                 + 0
                         }
                         fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
@@ -4638,7 +4639,7 @@ pub mod uavcan {
             impl Record {}
             impl ::canadensis_encoding::Serialize for Record {
                 fn size_bits(&self) -> usize {
-                    56 + 8 + 8 + (self.text).len() * 8 + 0
+                    56 + 8 + 8 + (self.text).len() * 8_usize.next_multiple_of(1) + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_composite(&self.timestamp);
@@ -4723,7 +4724,7 @@ pub mod uavcan {
             impl Record {}
             impl ::canadensis_encoding::Serialize for Record {
                 fn size_bits(&self) -> usize {
-                    56 + 8 + 8 + (self.text).len() * 8 + 0
+                    56 + 8 + 8 + (self.text).len() * 8_usize.next_multiple_of(1) + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_composite(&self.timestamp);
@@ -4947,7 +4948,7 @@ pub mod uavcan {
             impl GetInfoRequest {}
             impl ::canadensis_encoding::Serialize for GetInfoRequest {
                 fn size_bits(&self) -> usize {
-                    (self.path).size_bits() + 0
+                    (self.path).size_bits().next_multiple_of(8) + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_composite(&self.path);
@@ -5107,7 +5108,7 @@ pub mod uavcan {
             impl GetInfoRequest {}
             impl ::canadensis_encoding::Serialize for GetInfoRequest {
                 fn size_bits(&self) -> usize {
-                    (self.path).size_bits() + 0
+                    (self.path).size_bits().next_multiple_of(8) + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_composite(&self.path);
@@ -5277,7 +5278,7 @@ pub mod uavcan {
             impl ListRequest {}
             impl ::canadensis_encoding::Serialize for ListRequest {
                 fn size_bits(&self) -> usize {
-                    32 + 32 + (self.directory_path).size_bits() + 0
+                    32 + 32 + (self.directory_path).size_bits().next_multiple_of(8) + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_aligned_u32(self.entry_index);
@@ -5328,7 +5329,7 @@ pub mod uavcan {
             impl ListResponse {}
             impl ::canadensis_encoding::Serialize for ListResponse {
                 fn size_bits(&self) -> usize {
-                    32 + (self.entry_base_name).size_bits() + 0
+                    32 + (self.entry_base_name).size_bits().next_multiple_of(8) + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.skip_32();
@@ -5387,7 +5388,7 @@ pub mod uavcan {
             impl ListRequest {}
             impl ::canadensis_encoding::Serialize for ListRequest {
                 fn size_bits(&self) -> usize {
-                    32 + 32 + (self.directory_path).size_bits() + 0
+                    32 + 32 + (self.directory_path).size_bits().next_multiple_of(8) + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_aligned_u32(self.entry_index);
@@ -5437,7 +5438,7 @@ pub mod uavcan {
             impl ListResponse {}
             impl ::canadensis_encoding::Serialize for ListResponse {
                 fn size_bits(&self) -> usize {
-                    32 + (self.entry_base_name).size_bits() + 0
+                    32 + (self.entry_base_name).size_bits().next_multiple_of(8) + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.skip_32();
@@ -5520,7 +5521,11 @@ pub mod uavcan {
             impl ModifyRequest {}
             impl ::canadensis_encoding::Serialize for ModifyRequest {
                 fn size_bits(&self) -> usize {
-                    1 + 1 + 30 + (self.source).size_bits() + (self.destination).size_bits() + 0
+                    1 + 1
+                        + 30
+                        + (self.source).size_bits().next_multiple_of(8)
+                        + (self.destination).size_bits().next_multiple_of(8)
+                        + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_bool(self.preserve_source);
@@ -5650,7 +5655,11 @@ pub mod uavcan {
             impl ModifyRequest {}
             impl ::canadensis_encoding::Serialize for ModifyRequest {
                 fn size_bits(&self) -> usize {
-                    1 + 1 + 30 + (self.source).size_bits() + (self.destination).size_bits() + 0
+                    1 + 1
+                        + 30
+                        + (self.source).size_bits().next_multiple_of(8)
+                        + (self.destination).size_bits().next_multiple_of(8)
+                        + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_bool(self.preserve_source);
@@ -5754,7 +5763,7 @@ pub mod uavcan {
             }
             impl ::canadensis_encoding::Serialize for Path {
                 fn size_bits(&self) -> usize {
-                    8 + (self.path).len() * 8 + 0
+                    8 + (self.path).len() * 8_usize.next_multiple_of(1) + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_aligned_u8((self.path).len() as u8);
@@ -5813,7 +5822,7 @@ pub mod uavcan {
             }
             impl ::canadensis_encoding::Serialize for Path {
                 fn size_bits(&self) -> usize {
-                    8 + (self.path).len() * 8 + 0
+                    8 + (self.path).len() * 8_usize.next_multiple_of(1) + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_aligned_u8((self.path).len() as u8);
@@ -5883,7 +5892,7 @@ pub mod uavcan {
             impl ReadRequest {}
             impl ::canadensis_encoding::Serialize for ReadRequest {
                 fn size_bits(&self) -> usize {
-                    40 + (self.path).size_bits() + 0
+                    40 + (self.path).size_bits().next_multiple_of(8) + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_u40(self.offset);
@@ -5931,7 +5940,7 @@ pub mod uavcan {
             impl ReadResponse {}
             impl ::canadensis_encoding::Serialize for ReadResponse {
                 fn size_bits(&self) -> usize {
-                    16 + 16 + (self.data).len() * 8 + 0
+                    16 + 16 + (self.data).len() * 8_usize.next_multiple_of(1) + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_composite(&self.error);
@@ -5999,7 +6008,7 @@ pub mod uavcan {
             impl ReadRequest {}
             impl ::canadensis_encoding::Serialize for ReadRequest {
                 fn size_bits(&self) -> usize {
-                    40 + (self.path).size_bits() + 0
+                    40 + (self.path).size_bits().next_multiple_of(8) + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_u40(self.offset);
@@ -6046,7 +6055,7 @@ pub mod uavcan {
             impl ReadResponse {}
             impl ::canadensis_encoding::Serialize for ReadResponse {
                 fn size_bits(&self) -> usize {
-                    16 + (self.data).size_bits() + 0
+                    16 + (self.data).size_bits().next_multiple_of(8) + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_composite(&self.error);
@@ -6116,7 +6125,10 @@ pub mod uavcan {
             impl WriteRequest {}
             impl ::canadensis_encoding::Serialize for WriteRequest {
                 fn size_bits(&self) -> usize {
-                    40 + (self.path).size_bits() + 8 + (self.data).len() * 8 + 0
+                    40 + (self.path).size_bits().next_multiple_of(8)
+                        + 8
+                        + (self.data).len() * 8_usize.next_multiple_of(1)
+                        + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_u40(self.offset);
@@ -6237,7 +6249,9 @@ pub mod uavcan {
             impl WriteRequest {}
             impl ::canadensis_encoding::Serialize for WriteRequest {
                 fn size_bits(&self) -> usize {
-                    40 + (self.path).size_bits() + (self.data).size_bits() + 0
+                    40 + (self.path).size_bits().next_multiple_of(8)
+                        + (self.data).size_bits().next_multiple_of(8)
+                        + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_u40(self.offset);
@@ -6354,7 +6368,7 @@ pub mod uavcan {
                 impl HandleIncomingPacketRequest {}
                 impl ::canadensis_encoding::Serialize for HandleIncomingPacketRequest {
                     fn size_bits(&self) -> usize {
-                        16 + 16 + (self.payload).len() * 8 + 0
+                        16 + 16 + (self.payload).len() * 8_usize.next_multiple_of(1) + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u16(self.session_id);
@@ -6472,7 +6486,7 @@ pub mod uavcan {
                 impl HandleIncomingPacketRequest {}
                 impl ::canadensis_encoding::Serialize for HandleIncomingPacketRequest {
                     fn size_bits(&self) -> usize {
-                        16 + 16 + (self.payload).len() * 8 + 0
+                        16 + 16 + (self.payload).len() * 8_usize.next_multiple_of(1) + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u16(self.session_id);
@@ -6639,12 +6653,12 @@ pub mod uavcan {
                     fn size_bits(&self) -> usize {
                         16 + 16
                             + 8
-                            + (self.destination_address).len() * 8
+                            + (self.destination_address).len() * 8_usize.next_multiple_of(1)
                             + 1
                             + 1
                             + 6
                             + 16
-                            + (self.payload).len() * 8
+                            + (self.payload).len() * 8_usize.next_multiple_of(1)
                             + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
@@ -6793,12 +6807,12 @@ pub mod uavcan {
                     fn size_bits(&self) -> usize {
                         16 + 16
                             + 8
-                            + (self.destination_address).len() * 8
+                            + (self.destination_address).len() * 8_usize.next_multiple_of(1)
                             + 1
                             + 1
                             + 6
                             + 16
-                            + (self.payload).len() * 8
+                            + (self.payload).len() * 8_usize.next_multiple_of(1)
                             + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
@@ -6988,7 +7002,7 @@ Extended
                 impl DataClassic {}
                 impl ::canadensis_encoding::Serialize for DataClassic {
                     fn size_bits(&self) -> usize {
-                        40 + 8 + (self.data).len() * 8 + 0
+                        40 + 8 + (self.data).len() * 8_usize.next_multiple_of(1) + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_composite(&self.arbitration_id);
@@ -7052,7 +7066,7 @@ Extended
                 impl DataFD {}
                 impl ::canadensis_encoding::Serialize for DataFD {
                     fn size_bits(&self) -> usize {
-                        40 + 8 + (self.data).len() * 8 + 0
+                        40 + 8 + (self.data).len() * 8_usize.next_multiple_of(1) + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_composite(&self.arbitration_id);
@@ -7203,7 +7217,7 @@ Extended
                 impl Frame {}
                 impl ::canadensis_encoding::Serialize for Frame {
                     fn size_bits(&self) -> usize {
-                        56 + (self.manifestation).size_bits() + 0
+                        56 + (self.manifestation).size_bits().next_multiple_of(8) + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_composite(&self.timestamp);
@@ -7264,8 +7278,8 @@ Extended
                     fn size_bits(&self) -> usize {
                         8 + match self {
                             Frame::Error(inner) => 32,
-                            Frame::DataFd(inner) => (inner).size_bits(),
-                            Frame::DataClassic(inner) => (inner).size_bits(),
+                            Frame::DataFd(inner) => (inner).size_bits().next_multiple_of(8),
+                            Frame::DataClassic(inner) => (inner).size_bits().next_multiple_of(8),
                             Frame::RemoteTransmissionRequest(inner) => 40,
                         }
                     }
@@ -7349,8 +7363,10 @@ Extended
                     fn size_bits(&self) -> usize {
                         8 + match self {
                             Manifestation::Error(inner) => 32,
-                            Manifestation::DataFd(inner) => (inner).size_bits(),
-                            Manifestation::DataClassic(inner) => (inner).size_bits(),
+                            Manifestation::DataFd(inner) => (inner).size_bits().next_multiple_of(8),
+                            Manifestation::DataClassic(inner) => {
+                                (inner).size_bits().next_multiple_of(8)
+                            }
                             Manifestation::RemoteTransmissionRequest(inner) => 40,
                         }
                     }
@@ -7542,11 +7558,11 @@ Extended
                 impl Frame {}
                 impl ::canadensis_encoding::Serialize for Frame {
                     fn size_bits(&self) -> usize {
-                        (self.destination).len() * 8
-                            + (self.source).len() * 8
+                        (self.destination).len() * 8_usize.next_multiple_of(1)
+                            + (self.source).len() * 8_usize.next_multiple_of(1)
                             + 16
                             + 16
-                            + (self.payload).len() * 8
+                            + (self.payload).len() * 8_usize.next_multiple_of(1)
                             + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
@@ -7643,7 +7659,7 @@ Extended
                 }
                 impl ::canadensis_encoding::Serialize for Fragment {
                     fn size_bits(&self) -> usize {
-                        56 + 16 + (self.data).len() * 8 + 0
+                        56 + 16 + (self.data).len() * 8_usize.next_multiple_of(1) + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_composite(&self.timestamp);
@@ -7705,7 +7721,7 @@ Extended
                 }
                 impl ::canadensis_encoding::Serialize for Fragment {
                     fn size_bits(&self) -> usize {
-                        16 + (self.data).len() * 8 + 0
+                        16 + (self.data).len() * 8_usize.next_multiple_of(1) + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u16((self.data).len() as u16);
@@ -7896,7 +7912,12 @@ Extended
                 }
                 impl ::canadensis_encoding::Serialize for Frame {
                     fn size_bits(&self) -> usize {
-                        56 + 8 + 256 + 256 + 16 + (self.data).len() * 8 + 0
+                        56 + 8
+                            + 256
+                            + 256
+                            + 16
+                            + (self.data).len() * 8_usize.next_multiple_of(1)
+                            + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_composite(&self.timestamp);
@@ -8020,7 +8041,7 @@ Extended
             }
             impl ::canadensis_encoding::Serialize for ExecuteCommandRequest {
                 fn size_bits(&self) -> usize {
-                    16 + 8 + (self.parameter).len() * 8 + 0
+                    16 + 8 + (self.parameter).len() * 8_usize.next_multiple_of(1) + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_aligned_u16(self.command);
@@ -8210,7 +8231,7 @@ Extended
             }
             impl ::canadensis_encoding::Serialize for ExecuteCommandRequest {
                 fn size_bits(&self) -> usize {
-                    16 + 8 + (self.parameter).len() * 8 + 0
+                    16 + 8 + (self.parameter).len() * 8_usize.next_multiple_of(1) + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_aligned_u16(self.command);
@@ -8405,7 +8426,7 @@ Extended
             }
             impl ::canadensis_encoding::Serialize for ExecuteCommandRequest {
                 fn size_bits(&self) -> usize {
-                    16 + 8 + (self.parameter).len() * 8 + 0
+                    16 + 8 + (self.parameter).len() * 8_usize.next_multiple_of(1) + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_aligned_u16(self.command);
@@ -8596,7 +8617,7 @@ Extended
             }
             impl ::canadensis_encoding::Serialize for ExecuteCommandRequest {
                 fn size_bits(&self) -> usize {
-                    16 + 8 + (self.parameter).len() * 8 + 0
+                    16 + 8 + (self.parameter).len() * 8_usize.next_multiple_of(1) + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_aligned_u16(self.command);
@@ -8690,7 +8711,7 @@ Extended
             }
             impl ::canadensis_encoding::Serialize for ExecuteCommandResponse {
                 fn size_bits(&self) -> usize {
-                    8 + 8 + (self.output).len() * 8 + 0
+                    8 + 8 + (self.output).len() * 8_usize.next_multiple_of(1) + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_aligned_u8(self.status);
@@ -8861,13 +8882,13 @@ Extended
                     16 + 16
                         + 16
                         + 64
-                        + (self.unique_id).len() * 8
+                        + (self.unique_id).len() * 8_usize.next_multiple_of(1)
                         + 8
-                        + (self.name).len() * 8
+                        + (self.name).len() * 8_usize.next_multiple_of(1)
                         + 8
-                        + (self.software_image_crc).len() * 64
+                        + (self.software_image_crc).len() * 64_usize.next_multiple_of(1)
                         + 8
-                        + (self.certificate_of_authenticity).len() * 8
+                        + (self.certificate_of_authenticity).len() * 8_usize.next_multiple_of(1)
                         + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
@@ -9047,7 +9068,9 @@ Extended
             }
             impl ::canadensis_encoding::Serialize for GetTransportStatisticsResponse {
                 fn size_bits(&self) -> usize {
-                    120 + 8 + (self.network_interface_statistics).len() * 120 + 0
+                    120 + 8
+                        + (self.network_interface_statistics).len() * 120_usize.next_multiple_of(8)
+                        + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_composite(&self.transfer_statistics);
@@ -9530,9 +9553,9 @@ Extended
                 }
                 impl ::canadensis_encoding::Serialize for List {
                     fn size_bits(&self) -> usize {
-                        32 + (self.publishers).size_bits()
+                        32 + (self.publishers).size_bits().next_multiple_of(8)
                             + 32
-                            + (self.subscribers).size_bits()
+                            + (self.subscribers).size_bits().next_multiple_of(8)
                             + 32
                             + 512
                             + 32
@@ -9615,9 +9638,9 @@ Extended
                 }
                 impl ::canadensis_encoding::Serialize for List {
                     fn size_bits(&self) -> usize {
-                        32 + (self.publishers).size_bits()
+                        32 + (self.publishers).size_bits().next_multiple_of(8)
                             + 32
-                            + (self.subscribers).size_bits()
+                            + (self.subscribers).size_bits().next_multiple_of(8)
                             + 32
                             + 512
                             + 32
@@ -9898,8 +9921,12 @@ Extended
                 impl ::canadensis_encoding::Serialize for SubjectIDList {
                     fn size_bits(&self) -> usize {
                         8 + match self {
-                            SubjectIDList::Mask(inner) => (inner).len() * 1,
-                            SubjectIDList::SparseList(inner) => 8 + (inner).len() * 16,
+                            SubjectIDList::Mask(inner) => {
+                                (inner).len() * 1_usize.next_multiple_of(1)
+                            }
+                            SubjectIDList::SparseList(inner) => {
+                                8 + (inner).len() * 16_usize.next_multiple_of(8)
+                            }
                             SubjectIDList::Total(inner) => 0,
                         }
                     }
@@ -10001,8 +10028,12 @@ Extended
                 impl ::canadensis_encoding::Serialize for SubjectIDList {
                     fn size_bits(&self) -> usize {
                         8 + match self {
-                            SubjectIDList::Mask(inner) => (inner).len() * 1,
-                            SubjectIDList::SparseList(inner) => 8 + (inner).len() * 16,
+                            SubjectIDList::Mask(inner) => {
+                                (inner).len() * 1_usize.next_multiple_of(1)
+                            }
+                            SubjectIDList::SparseList(inner) => {
+                                8 + (inner).len() * 16_usize.next_multiple_of(8)
+                            }
                             SubjectIDList::Total(inner) => 0,
                         }
                     }
@@ -10185,7 +10216,12 @@ Extended
                 }
                 impl ::canadensis_encoding::Serialize for AppendEntriesRequest {
                     fn size_bits(&self) -> usize {
-                        32 + 32 + 16 + 16 + 8 + (self.entries).len() * 176 + 0
+                        32 + 32
+                            + 16
+                            + 16
+                            + 8
+                            + (self.entries).len() * 176_usize.next_multiple_of(8)
+                            + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u32(self.term);
@@ -10331,7 +10367,7 @@ Extended
                 }
                 impl ::canadensis_encoding::Serialize for Discovery {
                     fn size_bits(&self) -> usize {
-                        3 + 5 + 8 + (self.known_nodes).len() * 16 + 0
+                        3 + 5 + 8 + (self.known_nodes).len() * 16_usize.next_multiple_of(8) + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_u3(self.configured_cluster_size);
@@ -10605,7 +10641,7 @@ Extended
             impl NodeIDAllocationData {}
             impl ::canadensis_encoding::Serialize for NodeIDAllocationData {
                 fn size_bits(&self) -> usize {
-                    48 + 8 + (self.allocated_node_id).len() * 16 + 0
+                    48 + 8 + (self.allocated_node_id).len() * 16_usize.next_multiple_of(8) + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_u48(self.unique_id_hash);
@@ -10742,7 +10778,7 @@ Extended
                 impl Bit {}
                 impl ::canadensis_encoding::Serialize for Bit {
                     fn size_bits(&self) -> usize {
-                        16 + (self.value).len() * 1 + 0
+                        16 + (self.value).len() * 1_usize.next_multiple_of(1) + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u16((self.value).len() as u16);
@@ -10790,7 +10826,7 @@ Extended
                 impl Integer16 {}
                 impl ::canadensis_encoding::Serialize for Integer16 {
                     fn size_bits(&self) -> usize {
-                        8 + (self.value).len() * 16 + 0
+                        8 + (self.value).len() * 16_usize.next_multiple_of(1) + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u8((self.value).len() as u8);
@@ -10846,7 +10882,7 @@ Extended
                 impl Integer32 {}
                 impl ::canadensis_encoding::Serialize for Integer32 {
                     fn size_bits(&self) -> usize {
-                        8 + (self.value).len() * 32 + 0
+                        8 + (self.value).len() * 32_usize.next_multiple_of(1) + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u8((self.value).len() as u8);
@@ -10902,7 +10938,7 @@ Extended
                 impl Integer64 {}
                 impl ::canadensis_encoding::Serialize for Integer64 {
                     fn size_bits(&self) -> usize {
-                        8 + (self.value).len() * 64 + 0
+                        8 + (self.value).len() * 64_usize.next_multiple_of(1) + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u8((self.value).len() as u8);
@@ -10958,7 +10994,7 @@ Extended
                 impl Integer8 {}
                 impl ::canadensis_encoding::Serialize for Integer8 {
                     fn size_bits(&self) -> usize {
-                        16 + (self.value).len() * 8 + 0
+                        16 + (self.value).len() * 8_usize.next_multiple_of(1) + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u16((self.value).len() as u16);
@@ -11014,7 +11050,7 @@ Extended
                 impl Natural16 {}
                 impl ::canadensis_encoding::Serialize for Natural16 {
                     fn size_bits(&self) -> usize {
-                        8 + (self.value).len() * 16 + 0
+                        8 + (self.value).len() * 16_usize.next_multiple_of(1) + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u8((self.value).len() as u8);
@@ -11070,7 +11106,7 @@ Extended
                 impl Natural32 {}
                 impl ::canadensis_encoding::Serialize for Natural32 {
                     fn size_bits(&self) -> usize {
-                        8 + (self.value).len() * 32 + 0
+                        8 + (self.value).len() * 32_usize.next_multiple_of(1) + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u8((self.value).len() as u8);
@@ -11126,7 +11162,7 @@ Extended
                 impl Natural64 {}
                 impl ::canadensis_encoding::Serialize for Natural64 {
                     fn size_bits(&self) -> usize {
-                        8 + (self.value).len() * 64 + 0
+                        8 + (self.value).len() * 64_usize.next_multiple_of(1) + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u8((self.value).len() as u8);
@@ -11182,7 +11218,7 @@ Extended
                 impl Natural8 {}
                 impl ::canadensis_encoding::Serialize for Natural8 {
                     fn size_bits(&self) -> usize {
-                        16 + (self.value).len() * 8 + 0
+                        16 + (self.value).len() * 8_usize.next_multiple_of(1) + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u16((self.value).len() as u16);
@@ -11237,7 +11273,7 @@ Extended
                 impl Real16 {}
                 impl ::canadensis_encoding::Serialize for Real16 {
                     fn size_bits(&self) -> usize {
-                        8 + (self.value).len() * 16 + 0
+                        8 + (self.value).len() * 16_usize.next_multiple_of(1) + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u8((self.value).len() as u8);
@@ -11297,7 +11333,7 @@ Extended
                 impl Real32 {}
                 impl ::canadensis_encoding::Serialize for Real32 {
                     fn size_bits(&self) -> usize {
-                        8 + (self.value).len() * 32 + 0
+                        8 + (self.value).len() * 32_usize.next_multiple_of(1) + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u8((self.value).len() as u8);
@@ -11357,7 +11393,7 @@ Extended
                 impl Real64 {}
                 impl ::canadensis_encoding::Serialize for Real64 {
                     fn size_bits(&self) -> usize {
-                        8 + (self.value).len() * 64 + 0
+                        8 + (self.value).len() * 64_usize.next_multiple_of(1) + 0
                     }
                     fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                         cursor.write_aligned_u8((self.value).len() as u8);
@@ -12004,7 +12040,7 @@ Extended
             impl String {}
             impl ::canadensis_encoding::Serialize for String {
                 fn size_bits(&self) -> usize {
-                    16 + (self.value).len() * 8 + 0
+                    16 + (self.value).len() * 8_usize.next_multiple_of(1) + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_aligned_u16((self.value).len() as u16);
@@ -12060,7 +12096,7 @@ Extended
             impl Unstructured {}
             impl ::canadensis_encoding::Serialize for Unstructured {
                 fn size_bits(&self) -> usize {
-                    16 + (self.value).len() * 8 + 0
+                    16 + (self.value).len() * 8_usize.next_multiple_of(1) + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_aligned_u16((self.value).len() as u16);
@@ -12136,7 +12172,9 @@ Extended
             impl AccessRequest {}
             impl ::canadensis_encoding::Serialize for AccessRequest {
                 fn size_bits(&self) -> usize {
-                    (self.name).size_bits() + (self.value).size_bits() + 0
+                    (self.name).size_bits().next_multiple_of(8)
+                        + (self.value).size_bits().next_multiple_of(8)
+                        + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_composite(&self.name);
@@ -12213,7 +12251,7 @@ Extended
             impl AccessResponse {}
             impl ::canadensis_encoding::Serialize for AccessResponse {
                 fn size_bits(&self) -> usize {
-                    56 + 1 + 1 + 6 + (self.value).size_bits() + 0
+                    56 + 1 + 1 + 6 + (self.value).size_bits().next_multiple_of(8) + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_composite(&self.timestamp);
@@ -12319,7 +12357,7 @@ Extended
             impl ListResponse {}
             impl ::canadensis_encoding::Serialize for ListResponse {
                 fn size_bits(&self) -> usize {
-                    (self.name).size_bits() + 0
+                    (self.name).size_bits().next_multiple_of(8) + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_composite(&self.name);
@@ -12360,7 +12398,7 @@ Extended
             impl Name {}
             impl ::canadensis_encoding::Serialize for Name {
                 fn size_bits(&self) -> usize {
-                    8 + (self.name).len() * 8 + 0
+                    8 + (self.name).len() * 8_usize.next_multiple_of(1) + 0
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
                     cursor.write_aligned_u8((self.name).len() as u8);
@@ -12481,20 +12519,20 @@ Extended
                 fn size_bits(&self) -> usize {
                     8 + match self {
                         Value::Empty(inner) => 0,
-                        Value::String(inner) => (inner).size_bits(),
-                        Value::Unstructured(inner) => (inner).size_bits(),
-                        Value::Bit(inner) => (inner).size_bits(),
-                        Value::Integer64(inner) => (inner).size_bits(),
-                        Value::Integer32(inner) => (inner).size_bits(),
-                        Value::Integer16(inner) => (inner).size_bits(),
-                        Value::Integer8(inner) => (inner).size_bits(),
-                        Value::Natural64(inner) => (inner).size_bits(),
-                        Value::Natural32(inner) => (inner).size_bits(),
-                        Value::Natural16(inner) => (inner).size_bits(),
-                        Value::Natural8(inner) => (inner).size_bits(),
-                        Value::Real64(inner) => (inner).size_bits(),
-                        Value::Real32(inner) => (inner).size_bits(),
-                        Value::Real16(inner) => (inner).size_bits(),
+                        Value::String(inner) => (inner).size_bits().next_multiple_of(8),
+                        Value::Unstructured(inner) => (inner).size_bits().next_multiple_of(8),
+                        Value::Bit(inner) => (inner).size_bits().next_multiple_of(8),
+                        Value::Integer64(inner) => (inner).size_bits().next_multiple_of(8),
+                        Value::Integer32(inner) => (inner).size_bits().next_multiple_of(8),
+                        Value::Integer16(inner) => (inner).size_bits().next_multiple_of(8),
+                        Value::Integer8(inner) => (inner).size_bits().next_multiple_of(8),
+                        Value::Natural64(inner) => (inner).size_bits().next_multiple_of(8),
+                        Value::Natural32(inner) => (inner).size_bits().next_multiple_of(8),
+                        Value::Natural16(inner) => (inner).size_bits().next_multiple_of(8),
+                        Value::Natural8(inner) => (inner).size_bits().next_multiple_of(8),
+                        Value::Real64(inner) => (inner).size_bits().next_multiple_of(8),
+                        Value::Real32(inner) => (inner).size_bits().next_multiple_of(8),
+                        Value::Real16(inner) => (inner).size_bits().next_multiple_of(8),
                     }
                 }
                 fn serialize(&self, cursor: &mut ::canadensis_encoding::WriteCursor<'_>) {
