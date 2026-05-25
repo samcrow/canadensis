@@ -12,6 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+## [canadensis_codegen_rust v0.6.1](https://github.com/samcrow/canadensis/releases/tag/canadensis_codegen_rust-v0.6.1) - 2026-05-25
+
+### Fixed
+
+- Fixed length calculation in generated code that sometimes triggered panics because the message serialization buffer
+was too short [#62](https://github.com/samcrow/canadensis/pull/62)
+
 ## Most packages v0.6.0, canadensis_bxcan and canadensis v0.6.1 - 2026-03-31
 
 ### Added
