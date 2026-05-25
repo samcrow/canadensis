@@ -27,8 +27,9 @@ path = "../canadensis_dsdl_frontend"
 version = "0.6.0"
 path = "../canadensis_codegen_rust"
 
-# These dev-dependencies are required by the generated code
+# These dev-dependencies are required by the generated code or tests
 [dev-dependencies]
+fallible_collections = "0.5.1"
 half = { version = "2.6.0", default-features = false }
 heapless = "0.9.1"
 zerocopy = "0.8.26"
