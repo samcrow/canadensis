@@ -1,4 +1,5 @@
 use alloc::vec::Vec;
+use canadensis_core::OutOfMemoryError;
 use core::marker::PhantomData;
 
 use core::net::SocketAddrV4;
@@ -51,11 +52,11 @@ where
         payload: &[u8],
         clock: &mut C,
         socket: &mut S,
-    ) -> Result<(), S::Error>
+    ) -> Result<(), Error<S::Error>>
     where
         C: Clock,
     {
-        let breakdown = Breakdown::new(header_base, deadline, payload.iter().copied(), MTU);
+        let breakdown = Breakdown::new(header_base, deadline, payload.iter().copied(), MTU)?;
         self.send_frames(breakdown, dest, clock, socket)
     }
 
@@ -65,14 +66,17 @@ where
         destination_address: SocketAddrV4,
         clock: &mut C,
         socket: &mut S,
-    ) -> Result<(), S::Error>
+    ) -> Result<(), Error<S::Error>>
     where
-        B: IntoIterator<Item = UdpFrame>,
+        B: IntoIterator<Item = Result<UdpFrame, OutOfMemoryError>>,
         C: Clock,
     {
-        for frame in breakdown {
+        for frame_result in breakdown {
+            let frame = frame_result?;
             if frame.deadline > clock.now() {
-                socket.send_to(&frame.data, destination_address)?;
+                socket
+                    .send_to(&frame.data, destination_address)
+                    .map_err(Error::Socket)?;
             } else {
                 l0g::trace!("Discarding outgoing frame because its deadline has passed");
             }
@@ -151,7 +155,6 @@ where
             clock,
             socket,
         )
-        .map_err(Error::Socket)
         .map_err(nb::Error::Other)
     }
 

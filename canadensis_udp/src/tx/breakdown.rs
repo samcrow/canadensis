@@ -6,7 +6,7 @@ use zerocopy::IntoBytes;
 
 use canadensis_core::crc::Crc32c;
 use canadensis_core::time::Microseconds32;
-use canadensis_core::Priority;
+use canadensis_core::{OutOfMemoryError, Priority};
 use canadensis_header::{DataSpecifier, Header, RawHeader, LAST_FRAME};
 
 use crate::tx::UdpFrame;
@@ -45,21 +45,24 @@ pub(crate) struct HeaderBase {
 }
 
 impl<P: Iterator<Item = u8>> Breakdown<P> {
-    pub fn new(header_base: HeaderBase, deadline: Microseconds32, payload: P, mtu: usize) -> Self {
-        Breakdown {
+    pub fn new(
+        header_base: HeaderBase,
+        deadline: Microseconds32,
+        payload: P,
+        mtu: usize,
+    ) -> Result<Self, OutOfMemoryError> {
+        let mut frame: Vec<u8> = Vec::new();
+        frame.try_reserve_exact(mtu)?;
+        frame.extend_from_slice(&[0; canadensis_header::SIZE]);
+        Ok(Breakdown {
             header_base,
             deadline,
             payload: AddCrc::new(payload).peekable(),
             frame_index: 0,
             done: false,
-            // Initialize the current frame with empty space for the header. The payload will follow.
-            current_frame: {
-                let mut frame: Vec<u8> = Vec::with_capacity(mtu);
-                frame.extend_from_slice(&[0; canadensis_header::SIZE]);
-                frame
-            },
+            current_frame: frame,
             mtu,
-        }
+        })
     }
 
     /// Fills in self.current_frame with the provided header and CRC, clears self.current_frame,
@@ -67,7 +70,7 @@ impl<P: Iterator<Item = u8>> Breakdown<P> {
     ///
     /// This function also re-initializes self.current_frame with header::SIZE zero bytes
     /// so that payload bytes can be added.
-    fn take_frame(&mut self, header: Header) -> UdpFrame {
+    fn take_frame(&mut self, header: Header) -> Result<UdpFrame, OutOfMemoryError> {
         // Copy the header into the current frame
         self.current_frame[..canadensis_header::SIZE]
             .copy_from_slice(RawHeader::from(header).as_bytes());
@@ -75,11 +78,11 @@ impl<P: Iterator<Item = u8>> Breakdown<P> {
             deadline: self.deadline,
             data: mem::take(&mut self.current_frame),
         };
-        // Add space in the new current frame for the header
-        self.current_frame.reserve(self.mtu);
+        // Reserve space in the new current frame for the next frame's header and payload
+        self.current_frame.try_reserve_exact(self.mtu)?;
         self.current_frame
             .extend_from_slice(&[0; canadensis_header::SIZE]);
-        frame
+        Ok(frame)
     }
 
     /// Generates and returns a Cyphal/UDP header, including the CRC
@@ -99,7 +102,7 @@ impl<P> Iterator for Breakdown<P>
 where
     P: Iterator<Item = u8>,
 {
-    type Item = UdpFrame;
+    type Item = Result<UdpFrame, OutOfMemoryError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.done {
@@ -108,15 +111,28 @@ where
         loop {
             match self.payload.next() {
                 Some(byte) => {
+                    // Safe: capacity was reserved for exactly `mtu` bytes and we only push
+                    // while len < capacity, so no reallocation occurs here.
                     self.current_frame.push(byte);
 
                     if self.current_frame.len() == self.current_frame.capacity() {
                         let more_payload_coming = self.payload.peek().is_some();
                         let header = self.make_header(!more_payload_coming);
-                        let frame = self.take_frame(header);
-                        self.frame_index += 1;
-                        assert_eq!(self.frame_index & LAST_FRAME, 0, "Frame index too large");
-                        break Some(frame);
+                        match self.take_frame(header) {
+                            Ok(frame) => {
+                                self.frame_index += 1;
+                                assert_eq!(
+                                    self.frame_index & LAST_FRAME,
+                                    0,
+                                    "Frame index too large"
+                                );
+                                break Some(Ok(frame));
+                            }
+                            Err(e) => {
+                                self.done = true;
+                                break Some(Err(e));
+                            }
+                        }
                     }
                 }
                 None => {
@@ -167,7 +183,8 @@ mod breakdown_tests {
             Microseconds32::from_ticks(0),
             iter::empty(),
             1472,
-        );
+        )
+        .unwrap();
         assert_eq!(
             Some(UdpFrame {
                 deadline: Microseconds32::from_ticks(0),
@@ -185,7 +202,7 @@ mod breakdown_tests {
                     0x00, 0x00, 0x00, 0x00, // Transfer CRC
                 ]
             }),
-            breakdown.next()
+            breakdown.next().map(|r| r.unwrap())
         );
     }
 
@@ -206,8 +223,9 @@ mod breakdown_tests {
             Microseconds32::from_ticks(0),
             IntoIterator::into_iter(payload),
             1472,
-        );
-        let frame = breakdown.next().expect("No frame");
+        )
+        .unwrap();
+        let frame = breakdown.next().expect("No frame").unwrap();
         assert!(breakdown.next().is_none(), "Extra frame at end");
         let expected_bytes = [
             0x1, // Version
@@ -244,8 +262,9 @@ mod breakdown_tests {
             Microseconds32::from_ticks(0),
             IntoIterator::into_iter(payload),
             mtu,
-        );
-        let frame = breakdown.next().expect("No frame");
+        )
+        .unwrap();
+        let frame = breakdown.next().expect("No frame").unwrap();
         assert!(breakdown.next().is_none(), "Extra frame at end");
         let expected_bytes = [
             0x1, // Version
@@ -283,10 +302,11 @@ mod breakdown_tests {
             Microseconds32::from_ticks(0),
             IntoIterator::into_iter(payload),
             mtu,
-        );
+        )
+        .unwrap();
         // First frame
         {
-            let frame = breakdown.next().expect("No frame");
+            let frame = breakdown.next().expect("No frame").unwrap();
             let expected_bytes: [u8; 32] = [
                 0x1, // Version
                 0x5, // Priority
@@ -304,7 +324,7 @@ mod breakdown_tests {
         }
         // Second frame
         {
-            let frame = breakdown.next().expect("No frame");
+            let frame = breakdown.next().expect("No frame").unwrap();
             let expected_bytes = [
                 0x1, // Version
                 0x5, // Priority
