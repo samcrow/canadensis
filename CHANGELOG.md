@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `canadensis_udp` breaking change: Changed UDP transmit code to handle memory allocation failures by returning an error instead of aborting [#64](https://github.com/samcrow/canadensis/pull/64)
+
 ### Fixed
 
 ## [canadensis_codegen_rust v0.6.1](https://github.com/samcrow/canadensis/releases/tag/canadensis_codegen_rust-v0.6.1) - 2026-05-25
