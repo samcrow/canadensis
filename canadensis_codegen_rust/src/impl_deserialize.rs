@@ -216,7 +216,25 @@ impl Display for ReadUnalignedScalar<'_> {
                 PrimitiveType::Utf8 | PrimitiveType::Byte => {
                     Display::fmt(&CallRead { bits: 8 }, f)?
                 }
-                PrimitiveType::Int { bits } => Display::fmt(&CallRead { bits: *bits }, f)?,
+                PrimitiveType::Int { bits } => {
+                    // Sign-extend signed values narrower than the read word.
+                    let word_bits: u8 = match *bits {
+                        0..=8 => 8,
+                        9..=16 => 16,
+                        17..=32 => 32,
+                        _ => 64,
+                    };
+                    if *bits < word_bits {
+                        let shift = word_bits - *bits;
+                        write!(
+                            f,
+                            "((cursor.read_u{0}() << {1}) as i{2} >> {1}) as _",
+                            bits, shift, word_bits
+                        )?;
+                    } else {
+                        Display::fmt(&CallRead { bits: *bits }, f)?;
+                    }
+                }
                 PrimitiveType::UInt { bits, .. } => Display::fmt(&CallRead { bits: *bits }, f)?,
                 PrimitiveType::Float16 { .. } => write!(f, "cursor.read_f16()")?,
                 PrimitiveType::Float32 { .. } => write!(f, "cursor.read_f32()")?,
