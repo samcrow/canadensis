@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+## [canadensis_codegen_rust v0.6.2](https://github.com/samcrow/canadensis/releases/tag/canadensis_codegen_rust-v0.6.2) - 2026-07-05
+
+### Fixed
+
+- `canadensis_codegen_rust`: Fixed deserialization for signed integers with sizes other than 8, 16, 32, or 64 [#65](https://github.com/samcrow/canadensis/pull/65)
+
 ## [canadensis_codegen_rust v0.6.1](https://github.com/samcrow/canadensis/releases/tag/canadensis_codegen_rust-v0.6.1) - 2026-05-25
 
 ### Fixed
