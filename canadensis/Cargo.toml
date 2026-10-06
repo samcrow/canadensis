@@ -51,7 +51,7 @@ path = "../canadensis_can"
 version = "0.6.0"
 path = "../canadensis_serial"
 [dev-dependencies.canadensis_udp]
-version = "0.6.0"
+version = "0.7.0"
 path = "../canadensis_udp"
 
 [features]
