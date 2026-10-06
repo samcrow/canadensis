@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+## [canadensis_codegen_rust v0.6.3](https://github.com/samcrow/canadensis/releases/tag/canadensis_codegen_rust-v0.6.3) - 2026-10-05
+
+### Fixed
+
 - `canadensis_codegen_rust`: Fixed panic in generated code when deserializing variable-length boolean arrays with length
   values greater than the maximum length in the data type definition [#67](https://github.com/samcrow/canadensis/pull/67)
 
