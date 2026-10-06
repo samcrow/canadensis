@@ -142,7 +142,7 @@ impl Display for ReadUnalignedField<'_> {
             }
             ResolvedType::VariableArray {
                 inner: ResolvedScalarType::Primitive(PrimitiveType::Boolean),
-                ..
+                max_len,
             } => {
                 // Use BitArray with a length field
                 let length_bits = match &self.ty.implicit_field() {
@@ -150,6 +150,7 @@ impl Display for ReadUnalignedField<'_> {
                     _ => unreachable!("Variable-length array does not have a length field"),
                 };
                 writeln!(f, "{{ let length = {};", CallRead { bits: length_bits })?;
+                writeln!(f, "if length > {max_len} {{ return Err(::canadensis_encoding::DeserializeError::ArrayLength); }}")?;
                 writeln!(
                     f,
                     "::canadensis_encoding::bits::BitArray::deserialize(length, cursor) }}"
