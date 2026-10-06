@@ -10796,6 +10796,11 @@ Extended
                             value: {
                                 {
                                     let length = cursor.read_u16() as _;
+                                    if length > 2048 {
+                                        return Err(
+                                            ::canadensis_encoding::DeserializeError::ArrayLength,
+                                        );
+                                    }
                                     ::canadensis_encoding::bits::BitArray::deserialize(
                                         length, cursor,
                                     )
