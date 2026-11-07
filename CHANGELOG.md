@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+## [canadensis_data_types v0.6.1](https://github.com/samcrow/canadensis/releases/tag/canadensis_data_types-v0.6.1) - 2026-11-07
+
+### Fixed
+
+Fixed panic when deserializing a `uavcan.primitive.array.Bit.1.0` with a length field larger than allowed (this is regenerated code with the fix from canadensis_codegen_rust v0.6.3)
+
 ## [canadensis_udp v0.7.0](https://github.com/samcrow/canadensis/releases/tag/canadensis_udp-v0.7.0) - 2026-10-05
 
 ### Changed
